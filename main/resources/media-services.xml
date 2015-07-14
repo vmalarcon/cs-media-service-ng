@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+       xmlns:context="http://www.springframework.org/schema/context" xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <context:property-placeholder location="classpath:media-services.properties"/>
+
+    <bean id="rabbitConnectionFactory" class="com.rabbitmq.client.ConnectionFactory">
+        <property name="host" value="${rabbitmq.host}"/>
+        <property name="port" value="${rabbitmq.port}"/>
+        <property name="username" value="${rabbitmq.user}"/>
+        <property name="password" value="${rabbitmq.pass}"/>
+        <property name="connectionTimeout" value="${rabbitmq.connection.timeout}"/>
+    </bean>
+
+    <bean id="cachingRabbitConnectionFactory" class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory">
+        <constructor-arg name="rabbitConnectionFactory" ref="rabbitConnectionFactory"/>
+    </bean>
+
+    <bean id="filenamesRabbitTemplate" class="org.springframework.amqp.rabbit.core.RabbitTemplate">
+        <property name="connectionFactory" ref="cachingRabbitConnectionFactory"/>
+        <property name="queue" value="${filenames.queue}" />
+        <property name="routingKey" value="${filenames.queue}" />
+    </bean>
+
+    <!--can define multiple validator-->
+    <bean id="mediaServiceProcess" class="com.expedia.content.media.processing.services.MediaServiceProcess">
+        <constructor-arg>
+            <list>
+                <ref bean="expediaValidator" />
+                <ref bean="categoryValidator" />
+                <ref bean="mediaProviderValidator" />
+            </list>
+        </constructor-arg>
+        <constructor-arg ref="filenamesRabbitTemplate" />
+    </bean>
+
+    <bean id="expediaValidator" class="com.expedia.content.media.processing.services.validator.ExpediaIdValidator">
+        <property name="fieldName" value="expediaId" />
+    </bean>
+
+    <bean id="categoryValidator" class="com.expedia.content.media.processing.services.validator.CategoryIdValidator">
+        <property name="fieldName" value="categoryId" />
+    </bean>
+    <bean id="mediaProviderValidator" class="com.expedia.content.media.processing.services.validator.MediaProviderValidator">
+        <property name="fieldName" value="mediaProviderId" />
+    </bean>
+
+    <bean id="dataSource"
+        class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <property name="driverClassName" value="net.sourceforge.jtds.jdbc.Driver" />
+        <property name="url" value="${datasource.url}" />
+        <property name="username" value="${datasource.username}" />
+        <property name="password" value="${datasource.password}" />
+    </bean>
+
+    <bean id="lodgingLogActivityProcess" class="com.expedia.content.media.processing.pipleline.reporting.LodgingLogActivityProcess">
+        <constructor-arg value="${log.thread.pool.size}" />
+    </bean>
+
+    <bean id="carsLogActivityProcess" class="com.expedia.content.media.processing.pipleline.reporting.CarsLogActivityProcess">
+        <constructor-arg value="${log.thread.pool.size}" />
+    </bean>
+
+    <bean id="logActivityPicker" class="com.expedia.content.media.processing.domain.ImageTypeComponentPicker">
+        <constructor-arg name="imageTypeComponentMap">
+            <map>
+                <entry key="VirtualTour" value-ref="lodgingLogActivityProcess" />
+                <entry key="Lodging" value-ref="lodgingLogActivityProcess" />
+                <entry key="Cars" value-ref="carsLogActivityProcess" />
+            </map>
+        </constructor-arg>
+    </bean>
+
+</beans>
