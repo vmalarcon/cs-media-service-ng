@@ -8,26 +8,39 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Field;
 
 /**
- * Created by seli on 2015-07-14.
- * this class is parent class that can be used to check field is number or not
+ * Base implementation of ImageMessage numeric field validation
  */
-public class IsNumbericValidator implements MediaMessageValidator {
+public class NumericValidator implements MediaMessageValidator {
+    private static final Logger LOGGER = LoggerFactory.getLogger(NumericValidator.class);
     protected String fieldName;
-    private static final Logger LOGGER = LoggerFactory.getLogger(IsNumbericValidator.class);
 
-    @Override public ValidationStatus validate(ImageMessage imageMessage) {
+    /**
+     * this method will validate specific field is a number
+     *
+     * @param imageMessage message to validate
+     * @return ValidationStatus contain two validation status, true-successful,
+     * false- validation fail , in false case, a validation message is set in ValidationStatus
+     */
+    @Override
+    public ValidationStatus validate(ImageMessage imageMessage) {
         ValidationStatus validationStatus = new ValidationStatus();
 
-        if (validateFieldNumberic(imageMessage) == false) {
+        if (!validateFieldNumeric(imageMessage)) {
             validationStatus.setStatus(false);
-            validationStatus.setMessage(fieldName + " is not numberic");
+            validationStatus.setMessage(fieldName + " is not numeric");
         } else {
             validationStatus.setStatus(true);
         }
         return validationStatus;
     }
 
-    public boolean validateFieldNumberic(ImageMessage imageMessage) {
+    /**
+     * validate the field value is a number or not
+     *
+     * @param imageMessage
+     * @return boolean
+     */
+    private boolean validateFieldNumeric(ImageMessage imageMessage) {
         Object fieldValue = getFieldValue(imageMessage);
         if (fieldValue != null && !StringUtils.isNumeric(fieldValue.toString())) {
             return false;
@@ -35,8 +48,11 @@ public class IsNumbericValidator implements MediaMessageValidator {
         return true;
     }
 
-    /*
-    *this method use reflection to get the object field value.
+    /**
+     * this method use reflection to get the object field value.
+     *
+     * @param obj
+     * @return field value
      */
     private Object getFieldValue(Object obj) {
         Field[] fields = obj.getClass().getDeclaredFields();
@@ -44,14 +60,14 @@ public class IsNumbericValidator implements MediaMessageValidator {
         for (Field field : fields) {
             field.setAccessible(true);
             try {
-                if (field.getName().equals(fieldName))
+                if (field.getName().equals(fieldName)) {
                     objectValue = field.get(obj);
-
+                }
             } catch (Exception e) {
-                LOGGER.error("getFieldValue fail",e);
+                LOGGER.error("getFieldValue fail", e);
             }
         }
-        LOGGER.debug("getFiledValue for field {} return value:{}",fieldName,objectValue);
+        LOGGER.debug("getFiledValue for field {} return value:{}", fieldName, objectValue);
         return objectValue;
     }
 

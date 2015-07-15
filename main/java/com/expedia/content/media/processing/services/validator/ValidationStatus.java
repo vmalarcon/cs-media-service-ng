@@ -1,7 +1,8 @@
 package com.expedia.content.media.processing.services.validator;
 
 /**
- * Created by seli on 2015-07-13.
+ * This class contain validation result, true means validation successful.
+ * false means validation fail, for validation fail, the message will be set to specify with property failure.
  */
 public class ValidationStatus {
 

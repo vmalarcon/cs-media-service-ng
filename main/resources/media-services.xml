@@ -40,10 +40,10 @@
         <property name="fieldName" value="expediaId" />
     </bean>
 
-    <bean id="categoryValidator" class="com.expedia.content.media.processing.services.validator.CategoryIdValidator">
+    <bean id="categoryValidator" class="com.expedia.content.media.processing.services.validator.NumericValidator">
         <property name="fieldName" value="categoryId" />
     </bean>
-    <bean id="mediaProviderValidator" class="com.expedia.content.media.processing.services.validator.MediaProviderValidator">
+    <bean id="mediaProviderValidator" class="com.expedia.content.media.processing.services.validator.NumericValidator">
         <property name="fieldName" value="mediaProviderId" />
     </bean>
 

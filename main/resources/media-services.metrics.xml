@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+This is a generated/edited file, it handles the JMX properties published in Hubble.
+In order to generate it, start the target application with remote JMX enabled and use the same JMX_PORT in the following command:
+
+java -cp platform-monitoring-0.10.19.jar com.expedia.www.platform.monitoring.tool.JMXToMonitorConfiguration localhost ${JMX_PORT} > monitor.config.xml
+
+From the generated file, we can remove some JMX properties that are not related to the application or we are already exposing in a different way.
+-->
+<monitor>
+    <publishList>
+        <publish name="metrics:name=Application.acquireMessageCounter">
+            <delay>30</delay>
+            <unit>SECONDS</unit>
+            <include>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="Application.acquireMessageCounter"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="Application.acquireMessageCounter"/>
+                <metric attribute="MeanRate" isCounter="false" name="Application.acquireMessageCounter"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="Application.acquireMessageCounter"/>
+                <metric attribute="RateUnit" isCounter="false" name="Application.acquireMessageCounter"/>
+                <metric attribute="Count" isCounter="false" name="Application.acquireMessageCounter"/>
+            </include>
+        </publish>
+        <publish name="metrics:name=Application.acquireMessageCounter.failure">
+            <delay>30</delay>
+            <unit>SECONDS</unit>
+            <include>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="Application.acquireMessageCounter.failure"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="Application.acquireMessageCounter.failure"/>
+                <metric attribute="MeanRate" isCounter="false" name="Application.acquireMessageCounter.failure"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="Application.acquireMessageCounter.failure"/>
+                <metric attribute="RateUnit" isCounter="false" name="Application.acquireMessageCounter.failure"/>
+                <metric attribute="Count" isCounter="false" name="Application.acquireMessageCounter.failure"/>
+            </include>
+        </publish>
+        <publish name="metrics:name=Application.acquireMessageCounter.success">
+            <delay>30</delay>
+            <unit>SECONDS</unit>
+            <include>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="Application.acquireMessageCounter.success"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="Application.acquireMessageCounter.success"/>
+                <metric attribute="MeanRate" isCounter="false" name="Application.acquireMessageCounter.success"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="Application.acquireMessageCounter.success"/>
+                <metric attribute="RateUnit" isCounter="false" name="Application.acquireMessageCounter.success"/>
+                <metric attribute="Count" isCounter="false" name="Application.acquireMessageCounter.success"/>
+            </include>
+        </publish>
+        <publish name="metrics:name=Application.acquireMessageTimer">
+            <delay>30</delay>
+            <unit>SECONDS</unit>
+            <include>
+                <metric attribute="Min" isCounter="false" name="Application.acquireMessageTimer"/>
+                <metric attribute="Mean" isCounter="false" name="Application.acquireMessageTimer"/>
+                <metric attribute="StdDev" isCounter="false" name="Application.acquireMessageTimer"/>
+                <metric attribute="75thPercentile" isCounter="false" name="Application.acquireMessageTimer"/>
+                <metric attribute="95thPercentile" isCounter="false" name="Application.acquireMessageTimer"/>
+                <metric attribute="98thPercentile" isCounter="false" name="Application.acquireMessageTimer"/>
+                <metric attribute="99thPercentile" isCounter="false" name="Application.acquireMessageTimer"/>
+                <metric attribute="999thPercentile" isCounter="false" name="Application.acquireMessageTimer"/>
+                <metric attribute="DurationUnit" isCounter="false" name="Application.acquireMessageTimer"/>
+                <metric attribute="50thPercentile" isCounter="false" name="Application.acquireMessageTimer"/>
+                <metric attribute="Max" isCounter="false" name="Application.acquireMessageTimer"/>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="Application.acquireMessageTimer"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="Application.acquireMessageTimer"/>
+                <metric attribute="MeanRate" isCounter="false" name="Application.acquireMessageTimer"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="Application.acquireMessageTimer"/>
+                <metric attribute="RateUnit" isCounter="false" name="Application.acquireMessageTimer"/>
+                <metric attribute="Count" isCounter="false" name="Application.acquireMessageTimer"/>
+            </include>
+        </publish>
+        <publish name="metrics:name=LcmReporting.findName">
+            <delay>30</delay>
+            <unit>SECONDS</unit>
+            <include>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="LcmReporting.findName"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="LcmReporting.findName"/>
+                <metric attribute="MeanRate" isCounter="false" name="LcmReporting.findName"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="LcmReporting.findName"/>
+                <metric attribute="RateUnit" isCounter="false" name="LcmReporting.findName"/>
+                <metric attribute="Count" isCounter="false" name="LcmReporting.findName"/>
+            </include>
+        </publish>
+        <publish name="metrics:name=LcmReporting.findName.failure">
+            <delay>30</delay>
+            <unit>SECONDS</unit>
+            <include>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="LcmReporting.findName.failure"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="LcmReporting.findName.failure"/>
+                <metric attribute="MeanRate" isCounter="false" name="LcmReporting.findName.failure"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="LcmReporting.findName.failure"/>
+                <metric attribute="RateUnit" isCounter="false" name="LcmReporting.findName.failure"/>
+                <metric attribute="Count" isCounter="false" name="LcmReporting.findName.failure"/>
+            </include>
+        </publish>
+        <publish name="metrics:name=LcmReporting.findName.success">
+            <delay>30</delay>
+            <unit>SECONDS</unit>
+            <include>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="LcmReporting.findName.success"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="LcmReporting.findName.success"/>
+                <metric attribute="MeanRate" isCounter="false" name="LcmReporting.findName.success"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="LcmReporting.findName.success"/>
+                <metric attribute="RateUnit" isCounter="false" name="LcmReporting.findName.success"/>
+                <metric attribute="Count" isCounter="false" name="LcmReporting.findName.success"/>
+            </include>
+        </publish>
+        <publish name="metrics:name=LcmReporting.logEntry">
+            <delay>30</delay>
+            <unit>SECONDS</unit>
+            <include>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="LcmReporting.logEntry"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="LcmReporting.logEntry"/>
+                <metric attribute="MeanRate" isCounter="false" name="LcmReporting.logEntry"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="LcmReporting.logEntry"/>
+                <metric attribute="RateUnit" isCounter="false" name="LcmReporting.logEntry"/>
+                <metric attribute="Count" isCounter="false" name="LcmReporting.logEntry"/>
+            </include>
+        </publish>
+        <publish name="metrics:name=LcmReporting.logEntry.failure">
+            <delay>30</delay>
+            <unit>SECONDS</unit>
+            <include>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="LcmReporting.logEntry.failure"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="LcmReporting.logEntry.failure"/>
+                <metric attribute="MeanRate" isCounter="false" name="LcmReporting.logEntry.failure"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="LcmReporting.logEntry.failure"/>
+                <metric attribute="RateUnit" isCounter="false" name="LcmReporting.logEntry.failure"/>
+                <metric attribute="Count" isCounter="false" name="LcmReporting.logEntry.failure"/>
+            </include>
+        </publish>
+        <publish name="metrics:name=LcmReporting.logEntry.success">
+            <delay>30</delay>
+            <unit>SECONDS</unit>
+            <include>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="LcmReporting.logEntry.success"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="LcmReporting.logEntry.success"/>
+                <metric attribute="MeanRate" isCounter="false" name="LcmReporting.logEntry.success"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="LcmReporting.logEntry.success"/>
+                <metric attribute="RateUnit" isCounter="false" name="LcmReporting.logEntry.success"/>
+                <metric attribute="Count" isCounter="false" name="LcmReporting.logEntry.success"/>
+            </include>
+        </publish>
+    </publishList>
+</monitor>

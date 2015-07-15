@@ -10,8 +10,9 @@ public class ExpediaValidatorTest {
 
     @Test
     public void testValidationCategoryMessagePass() {
-
-        ImageMessage image = new ImageMessage(null, null, "", "", "", null, new Integer(201), "123", "", "", null);
+        final int expedia_test_id = 23419;
+        ImageMessage image = new ImageMessage(null, null, "", "", "", null, expedia_test_id).setCategoryId("801")
+                .setCaption("caption").setMediaProviderId("1001").setCallBack(null);
         ExpediaIdValidator expediaIdValidator = new ExpediaIdValidator();
         expediaIdValidator.setFieldName("expediaId");
         ValidationStatus validationStatus = expediaIdValidator.validate(image);
@@ -21,7 +22,8 @@ public class ExpediaValidatorTest {
     @Test
     public void testValidationCategoryMessageFail() {
 
-        ImageMessage image = new ImageMessage(null, null, "", "", "", null, null, "123", "", "", null);
+        ImageMessage image = new ImageMessage(null, null, "", "", "", null, null).setCategoryId("801")
+                .setCaption("caption").setMediaProviderId("1001").setCallBack(null);
         ExpediaIdValidator expediaIdValidator = new ExpediaIdValidator();
         expediaIdValidator.setFieldName("expediaId");
         ValidationStatus validationStatus = expediaIdValidator.validate(image);

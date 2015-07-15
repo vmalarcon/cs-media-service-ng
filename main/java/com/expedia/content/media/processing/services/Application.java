@@ -1,8 +1,10 @@
 package com.expedia.content.media.processing.services;
 
-import com.expedia.content.media.processing.domain.ImageMessage;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.expedia.content.metrics.aspects.EnableMonitoringAspects;
+
+import com.expedia.content.metrics.aspects.annotations.Meter;
+import com.expedia.content.metrics.aspects.annotations.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +20,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.net.MalformedURLException;
-
 /**
  * <code>MPP media service</code> application.
  * This class has the main Spring configuration and also the bootstrap for the application.
@@ -29,7 +29,7 @@ import java.net.MalformedURLException;
 @ImportResource("classpath:media-services.xml")
 @RestController
 @EnableAutoConfiguration
-//@EnableMonitoringAspects
+@EnableMonitoringAspects
 public class Application {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
@@ -41,21 +41,32 @@ public class Application {
         new SpringApplicationBuilder().showBanner(true).sources(Application.class).run(args);
     }
 
+    /**
+     * web service interface to consume media message
+     * * Note that the {@code @Meter} {@code @Timer} {@code @Retryable} annotations introduce aspects from metrics-support and spring-retry
+     * modules. The aspects should be applied in order, Metrics being outside (outer) and retry being inside (inner).
+     *
+     * @param message is json format media message,fileUrl and expedia is required.
+     * @return ResponseEntity is the standard spring mvn response object
+     * @throws Exception
+     */
+    @Meter(name = "acquireMessageCounter")
+    @Timer(name = "acquireMessageTimer")
     @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST)
     public ResponseEntity<?> acquireMedia(@RequestBody final String message) throws Exception {
         LOGGER.debug("RECEIVED - Processing message: [{}]", message);
         try {
             ValidationStatus validationStatus = mediaServiceProcess.validateImage(message);
-            if (validationStatus.isStatus() == false) {
-                return new ResponseEntity<>("Bad Request " + validationStatus.getMessage(), HttpStatus.BAD_REQUEST);
+            if (!validationStatus.isStatus()) {
+                return new ResponseEntity<>("Bad Request :" + validationStatus.getMessage(), HttpStatus.BAD_REQUEST);
             }
-            mediaServiceProcess.disPatchMsg(message);
-            LOGGER.debug("process message successfully");
+            mediaServiceProcess.publishMsg(message);
+            LOGGER.debug("processed message successfully");
             return new ResponseEntity<>("OK", HttpStatus.OK);
         } catch (IllegalStateException e) {
-            LOGGER.error("acquireMeda fail:",e);
+            LOGGER.error("acquireMeda fail:", e);
             //this means that json message is not right
-            return new ResponseEntity<>("Bad Request json request format is not right.", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>("Bad Request: JSON request format is invalid.", HttpStatus.BAD_REQUEST);
         }
 
     }
