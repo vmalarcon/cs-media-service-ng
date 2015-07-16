@@ -54,10 +54,10 @@ public class Application {
     @Timer(name = "acquireMessageTimer")
     @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST)
     public ResponseEntity<?> acquireMedia(@RequestBody final String message) throws Exception {
-        LOGGER.debug("RECEIVED - Processing message: [{}]", message);
+        LOGGER.info("RECEIVED - Processing message: [{}]", message);
         try {
             ValidationStatus validationStatus = mediaServiceProcess.validateImage(message);
-            if (!validationStatus.isStatus()) {
+            if (!validationStatus.isValid()) {
                 return new ResponseEntity<>("Bad Request :" + validationStatus.getMessage(), HttpStatus.BAD_REQUEST);
             }
             mediaServiceProcess.publishMsg(message);

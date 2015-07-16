@@ -22,7 +22,7 @@ public class ExpediaIdValidator extends NumericValidator {
     public ValidationStatus validate(ImageMessage image) {
         if (image.getExpediaId() == null) {
             ValidationStatus validationStatus = new ValidationStatus();
-            validationStatus.setStatus(false);
+            validationStatus.setValid(false);
             validationStatus.setMessage("expediaId is required.");
             LOGGER.debug("expediaId is missed");
         }

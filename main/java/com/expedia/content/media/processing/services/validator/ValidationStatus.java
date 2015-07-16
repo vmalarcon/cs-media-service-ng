@@ -6,15 +6,15 @@ package com.expedia.content.media.processing.services.validator;
  */
 public class ValidationStatus {
 
-    private boolean status;
+    private boolean isValid;
     private String message;
 
-    public boolean isStatus() {
-        return status;
+    public boolean isValid() {
+        return isValid;
     }
 
-    public void setStatus(boolean status) {
-        this.status = status;
+    public void setValid(boolean valid) {
+        this.isValid = valid;
     }
 
     public String getMessage() {

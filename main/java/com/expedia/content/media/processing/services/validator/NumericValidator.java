@@ -26,10 +26,10 @@ public class NumericValidator implements MediaMessageValidator {
         ValidationStatus validationStatus = new ValidationStatus();
 
         if (!validateFieldNumeric(imageMessage)) {
-            validationStatus.setStatus(false);
+            validationStatus.setValid(false);
             validationStatus.setMessage(fieldName + " is not numeric");
         } else {
-            validationStatus.setStatus(true);
+            validationStatus.setValid(true);
         }
         return validationStatus;
     }

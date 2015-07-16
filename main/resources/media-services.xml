@@ -20,8 +20,8 @@
 
     <bean id="filenamesRabbitTemplate" class="org.springframework.amqp.rabbit.core.RabbitTemplate">
         <property name="connectionFactory" ref="cachingRabbitConnectionFactory"/>
-        <property name="queue" value="${filenames.queue}" />
-        <property name="routingKey" value="${filenames.queue}" />
+        <property name="queue" value="${collector.queue}" />
+        <property name="routingKey" value="${collector.queue}" />
     </bean>
 
     <!--can define multiple validator-->
@@ -34,6 +34,8 @@
             </list>
         </constructor-arg>
         <constructor-arg ref="filenamesRabbitTemplate" />
+        <constructor-arg ref="lcmReporting" />
+        <constructor-arg ref="logActivityPicker" />
     </bean>
 
     <bean id="expediaValidator" class="com.expedia.content.media.processing.services.validator.ExpediaIdValidator">
