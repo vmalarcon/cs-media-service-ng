@@ -9,6 +9,7 @@ import com.expedia.content.media.processing.pipleline.reporting.Reporting;
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -97,30 +98,17 @@ public class MediaServiceProcess {
     }
 
     /**
-     * Logs a completed activity and its time.
+     * Logs a completed activity and its time. and exepdiaId is appended before the file name
      *
      * @param imageMessage The imageMessage of the file being processed.
      * @param activity     The activity to log.
      */
     private void logActivity(ImageMessage imageMessage, Activity activity) throws URISyntaxException {
         URL imageUrl = imageMessage.getImageUrl();
-        String fileName = imageMessage.getExpediaId() + "_" + parseFileName(imageUrl.toString());
+        //exepdiaId is appended before the file name
+        String fileName = imageMessage.getExpediaId() + "_" + FilenameUtils.getName(imageUrl.toString());
         LogActivityProcess logActivityProcess = logActivityPicker.getImageTypeComponent(imageMessage.getImageType());
         logActivityProcess.log(imageUrl, fileName, activity, new Date(), reporting, imageMessage.getImageType());
-    }
-
-    /**
-     * parse the file name from http://images.com/dir1/img1.jpg
-     *
-     * @param url
-     * @return image file name
-     */
-    private String parseFileName(String url) {
-        int location = url.lastIndexOf("/");
-        if (location > 0) {
-            return url.substring(location + 1);
-        }
-        return url;
     }
 
 }
