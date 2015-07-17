@@ -2,31 +2,40 @@ package com.expedia.content.media.processing.services.validator;
 
 import com.expedia.content.media.processing.domain.ImageMessage;
 import org.junit.Test;
+import org.junit.Assert;
 
-/**
- * Created by seli on 2015-07-14.
- */
 public class NumericValidatorTest {
 
     @Test
     public void testValidationCategoryNumericMessagePass() {
         final int expedia_test_id = 23419;
-        ImageMessage image = new ImageMessage(null, null, "", "", "", null, expedia_test_id).setCategoryId("801")
-                .setCaption("caption").setMediaProviderId("1001").setCallBack(null);
+        ImageMessage image = new ImageMessage.ImageMessageBuilder().expediaId(expedia_test_id)
+                .categoryId("801").caption("caption").mediaProviderId("1001").build();
         NumericValidator expediaIdValidator = new NumericValidator();
         expediaIdValidator.setFieldName("categoryId");
         ValidationStatus validationStatus = expediaIdValidator.validate(image);
-        org.junit.Assert.assertTrue(validationStatus.isValid());
+        Assert.assertTrue(validationStatus.isValid());
+    }
+
+    @Test
+    public void testValidationCategoryNumericMessagePassWithNull() {
+        final int expedia_test_id = 23419;
+        ImageMessage image = new ImageMessage.ImageMessageBuilder().expediaId(expedia_test_id)
+                .caption("caption").mediaProviderId("1001").build();
+        NumericValidator numericValidator = new NumericValidator();
+        numericValidator.setFieldName("categoryId");
+        ValidationStatus validationStatus = numericValidator.validate(image);
+        Assert.assertTrue(validationStatus.isValid());
     }
 
     @Test
     public void testValidationCategoryNumericMessageFail() {
-
-        ImageMessage image = new ImageMessage(null, null, "", "", "", null, null).setCategoryId("801b")
-                .setCaption("caption").setMediaProviderId("1001").setCallBack(null);
+        final int expedia_test_id = 23419;
+        ImageMessage image = new ImageMessage.ImageMessageBuilder().expediaId(expedia_test_id)
+                .categoryId("801b").caption("caption").mediaProviderId("1001").build();
         NumericValidator expediaIdValidator = new NumericValidator();
         expediaIdValidator.setFieldName("categoryId");
         ValidationStatus validationStatus = expediaIdValidator.validate(image);
-        org.junit.Assert.assertFalse(validationStatus.isValid());
+        Assert.assertFalse(validationStatus.isValid());
     }
 }

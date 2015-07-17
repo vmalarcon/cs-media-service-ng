@@ -9,19 +9,20 @@ import com.expedia.content.media.processing.services.validator.ExpediaIdValidato
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
-/**
- * Created by seli on 2015-07-14.
- */
+@RunWith(MockitoJUnitRunner.class)
 public class MediaServiceProcessTest {
 
     @Mock
@@ -48,6 +49,7 @@ public class MediaServiceProcessTest {
                 "}";
         List<MediaMessageValidator> validators = new ArrayList<>();
         ExpediaIdValidator expediaIdValidator = new ExpediaIdValidator();
+        expediaIdValidator.setFieldName("expediaId");
         validators.add(expediaIdValidator);
         ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
         LodgingLogActivityProcess lodgingLogActivityProcess = mock(LodgingLogActivityProcess.class);
@@ -105,14 +107,13 @@ public class MediaServiceProcessTest {
         List<MediaMessageValidator> validators = new ArrayList<>();
         ExpediaIdValidator expediaIdValidator = new ExpediaIdValidator();
         validators.add(expediaIdValidator);
-        RabbitTemplate rabbit = mock(RabbitTemplate.class);
-        doNothing().when(rabbit).convertAndSend(jsonMessage);
         ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
         LodgingLogActivityProcess lodgingLogActivityProcess = mock(LodgingLogActivityProcess.class);
         when(mockLogActivityPicker.getImageTypeComponent(ImageType.LODGING)).thenReturn(lodgingLogActivityProcess);
-
-        MediaServiceProcess mediaServiceProcess = new MediaServiceProcess(validators, rabbit, mockLogActivityPicker, reporting);
+        MediaServiceProcess mediaServiceProcess = new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
         mediaServiceProcess.publishMsg(jsonMessage);
+        verify(rabbitTemplateMock, times(1)).convertAndSend(jsonMessage);
+
     }
 
 }

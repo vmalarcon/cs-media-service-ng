@@ -12,7 +12,7 @@ import java.lang.reflect.Field;
  */
 public class NumericValidator implements MediaMessageValidator {
     private static final Logger LOGGER = LoggerFactory.getLogger(NumericValidator.class);
-    protected String fieldName;
+    private String fieldName;
 
     /**
      * this method will validate specific field is a number
@@ -55,17 +55,15 @@ public class NumericValidator implements MediaMessageValidator {
      * @return field value
      */
     private Object getFieldValue(Object obj) {
-        Field[] fields = obj.getClass().getDeclaredFields();
         Object objectValue = null;
-        for (Field field : fields) {
+        try {
+            Field field = obj.getClass().getDeclaredField(fieldName);
             field.setAccessible(true);
-            try {
-                if (field.getName().equals(fieldName)) {
-                    objectValue = field.get(obj);
-                }
-            } catch (Exception e) {
-                LOGGER.error("getFieldValue fail", e);
+            if (field.getName().equals(fieldName)) {
+                objectValue = field.get(obj);
             }
+        } catch (Exception e) {
+            LOGGER.error("getFieldValue fail", e);
         }
         LOGGER.debug("getFiledValue for field {} return value:{}", fieldName, objectValue);
         return objectValue;
