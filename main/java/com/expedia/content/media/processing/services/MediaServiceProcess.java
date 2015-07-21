@@ -2,6 +2,7 @@ package com.expedia.content.media.processing.services;
 
 import com.expedia.content.media.processing.domain.ImageMessage;
 import com.expedia.content.media.processing.domain.ImageTypeComponentPicker;
+import com.expedia.content.media.processing.domain.InvalidImageTypeException;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.pipleline.reporting.Activity;
 import com.expedia.content.media.processing.pipleline.reporting.LogActivityProcess;
@@ -9,6 +10,8 @@ import com.expedia.content.media.processing.pipleline.reporting.Reporting;
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 
+import com.expedia.content.metrics.aspects.annotations.Meter;
+import com.expedia.content.metrics.aspects.annotations.Timer;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,9 +52,13 @@ public class MediaServiceProcess {
 
     /**
      * publish message to jms queue
+     * Note that the {@code @Meter} {@code @Timer} {@code @RetryableMethod} annotations introduce aspects from metrics-support and spring-retry
+     * modules. The aspects should be applied in order, Metrics being outside (outer) and retry being inside (inner).
      *
      * @param message is the received json format message from main application
      */
+    @Meter(name = "publishMessageCounter")
+    @Timer(name = "publishMessageTimer")
     @RetryableMethod
     public void publishMsg(String message) {
         try {
@@ -78,7 +85,9 @@ public class MediaServiceProcess {
      */
     public ValidationStatus validateImage(String imageMessage) throws Exception {
         ValidationStatus validationStatus = new ValidationStatus();
-        LOGGER.debug("Validating: {}", imageMessage.toString());
+        //in case, no validator defined, we make it true.
+        validationStatus.setValid(true);
+        LOGGER.debug("Validating: {}", imageMessage);
         ImageMessage imageMessageObj = null;
         try {
             imageMessageObj = ImageMessage.parseJsonMessage(imageMessage);
@@ -86,6 +95,11 @@ public class MediaServiceProcess {
             LOGGER.error("parseJson message error", malformException);
             validationStatus.setValid(false);
             validationStatus.setMessage(malformException.getMessage());
+            return validationStatus;
+        } catch (InvalidImageTypeException invalidImageTypeException) {
+            LOGGER.error("parseJson message error", invalidImageTypeException);
+            validationStatus.setValid(false);
+            validationStatus.setMessage(invalidImageTypeException.getMessage());
             return validationStatus;
         }
         for (MediaMessageValidator validator : validators) {

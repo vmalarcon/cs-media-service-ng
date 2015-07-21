@@ -9,8 +9,8 @@ import org.slf4j.LoggerFactory;
 /**
  * Base implementation of ImageMessage numeric field validation
  */
-public class NumericValidator implements MediaMessageValidator {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NumericValidator.class);
+public class RequiredValidator implements MediaMessageValidator {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequiredValidator.class);
     private String fieldName;
 
     /**
@@ -24,9 +24,9 @@ public class NumericValidator implements MediaMessageValidator {
     public ValidationStatus validate(ImageMessage imageMessage) {
         ValidationStatus validationStatus = new ValidationStatus();
 
-        if (!validateFieldNumeric(imageMessage)) {
+        if (!validateFieldNotNullOrNotEmpty(imageMessage)) {
             validationStatus.setValid(false);
-            validationStatus.setMessage(fieldName + " is not numeric.");
+            validationStatus.setMessage(fieldName + " is required.");
         } else {
             validationStatus.setValid(true);
         }
@@ -39,7 +39,7 @@ public class NumericValidator implements MediaMessageValidator {
      * @param imageMessage
      * @return boolean
      */
-    private boolean validateFieldNumeric(ImageMessage imageMessage) {
+    private boolean validateFieldNotNullOrNotEmpty(ImageMessage imageMessage) {
         Object fieldValue = null;
         try {
             fieldValue = ReflectionUtil.getFieldValue(imageMessage, fieldName);
@@ -47,12 +47,13 @@ public class NumericValidator implements MediaMessageValidator {
             LOGGER.error("reflection call fail", e);
             return false;
         }
-        if (fieldValue != null && !StringUtils.isNumeric(fieldValue.toString())) {
+        if (fieldValue == null) {
+            return false;
+        } else if (fieldValue != null && StringUtils.isEmpty(fieldValue.toString())) {
             return false;
         }
         return true;
     }
-
 
     public String getFieldName() {
         return fieldName;

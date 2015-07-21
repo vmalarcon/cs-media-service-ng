@@ -1,6 +1,7 @@
 package com.expedia.content.media.processing.services.validator;
 
 import com.expedia.content.media.processing.domain.ImageMessage;
+import com.expedia.content.media.processing.domain.ImageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +21,8 @@ public class ExpediaIdValidator extends NumericValidator {
      */
     @Override
     public ValidationStatus validate(ImageMessage image) {
-        if (image.getExpediaId() == null) {
+        //only imageType is lodging, expedia id is required.
+        if (image.getExpediaId() == null && image.getImageType() != null && image.getImageType().equals(ImageType.LODGING)) {
             ValidationStatus validationStatus = new ValidationStatus();
             validationStatus.setValid(false);
             validationStatus.setMessage("expediaId is required.");

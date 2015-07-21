@@ -43,7 +43,7 @@ public class Application {
 
     /**
      * web service interface to consume media message
-     * * Note that the {@code @Meter} {@code @Timer} {@code @Retryable} annotations introduce aspects from metrics-support and spring-retry
+     * Note that the {@code @Meter} {@code @Timer} {@code @Retryable} annotations introduce aspects from metrics-support and spring-retry
      * modules. The aspects should be applied in order, Metrics being outside (outer) and retry being inside (inner).
      *
      * @param message is json format media message,fileUrl and expedia is required.

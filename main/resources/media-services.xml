@@ -30,6 +30,7 @@
             <list>
                 <ref bean="expediaValidator" />
                 <ref bean="categoryValidator" />
+                <ref bean="providerRequiredValidator" />
                 <ref bean="mediaProviderValidator" />
             </list>
         </constructor-arg>
@@ -40,6 +41,10 @@
 
     <bean id="expediaValidator" class="com.expedia.content.media.processing.services.validator.ExpediaIdValidator">
         <property name="fieldName" value="expediaId" />
+    </bean>
+
+    <bean id="providerRequiredValidator" class="com.expedia.content.media.processing.services.validator.RequiredValidator">
+        <property name="fieldName" value="mediaProviderId" />
     </bean>
 
     <bean id="categoryValidator" class="com.expedia.content.media.processing.services.validator.NumericValidator">

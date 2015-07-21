@@ -1,6 +1,7 @@
 package com.expedia.content.media.processing.services.validator;
 
 import com.expedia.content.media.processing.domain.ImageMessage;
+import com.expedia.content.media.processing.domain.ImageType;
 import org.junit.Test;
 
 public class ExpediaIdValidatorTest {
@@ -19,7 +20,7 @@ public class ExpediaIdValidatorTest {
     @Test
     public void testValidationMessageWithoutExpediaIdFail() {
         ImageMessage image =
-                new ImageMessage.ImageMessageBuilder().categoryId("801").caption("caption").mediaProviderId("1001").build();
+                new ImageMessage.ImageMessageBuilder().categoryId("801").caption("caption").mediaProviderId("1001").imageType(ImageType.LODGING).build();
         ExpediaIdValidator expediaIdValidator = new ExpediaIdValidator();
         expediaIdValidator.setFieldName("expediaId");
         ValidationStatus validationStatus = expediaIdValidator.validate(image);
