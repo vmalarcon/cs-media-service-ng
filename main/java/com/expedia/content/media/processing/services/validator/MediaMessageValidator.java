@@ -17,5 +17,5 @@ public interface MediaMessageValidator {
      * @return ValidationStatus contain two validation status, true-successful,
      * false- validation fail , in false case, a validation message is included in ValidationStatus
      */
-    ValidationStatus validate(ImageMessage imageMessage);
+    ValidationStatus validate(ImageMessage imageMessage) throws Exception;
 }

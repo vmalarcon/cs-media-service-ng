@@ -5,6 +5,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.NoSuchElementException;
 
 /**
  * Base implementation of ImageMessage numeric field validation
@@ -45,14 +46,13 @@ public class NumericValidator implements MediaMessageValidator {
             fieldValue = ReflectionUtil.getFieldValue(imageMessage, fieldName);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             LOGGER.error("reflection call fail", e);
-            return false;
+            throw new NoSuchElementException(fieldName + " does not exist, please check configuration file");
         }
         if (fieldValue != null && !StringUtils.isNumeric(fieldValue.toString())) {
             return false;
         }
         return true;
     }
-
 
     public String getFieldName() {
         return fieldName;

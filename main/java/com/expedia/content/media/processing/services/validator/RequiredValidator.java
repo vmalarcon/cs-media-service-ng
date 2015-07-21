@@ -5,16 +5,17 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.NoSuchElementException;
 
 /**
- * Base implementation of ImageMessage numeric field validation
+ * Base implementation of ImageMessage required field validation
  */
 public class RequiredValidator implements MediaMessageValidator {
     private static final Logger LOGGER = LoggerFactory.getLogger(RequiredValidator.class);
     private String fieldName;
 
     /**
-     * this method will validate specific field is a number
+     * this method will validate specific field is exists in message
      *
      * @param imageMessage message to validate
      * @return ValidationStatus contain two validation status, true-successful,
@@ -45,7 +46,7 @@ public class RequiredValidator implements MediaMessageValidator {
             fieldValue = ReflectionUtil.getFieldValue(imageMessage, fieldName);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             LOGGER.error("reflection call fail", e);
-            return false;
+            throw new NoSuchElementException(fieldName + " does not exist, please check configuration file");
         }
         if (fieldValue == null) {
             return false;

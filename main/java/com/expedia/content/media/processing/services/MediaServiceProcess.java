@@ -75,7 +75,7 @@ public class MediaServiceProcess {
     /**
      * validate whether the message is valid
      * numeric: mediaProviderId, expediaId,categoryId,
-     * required: expediaId, fileUrl
+     * required: expediaId, fileUrl,imageType, mediaProviderId
      * URL pattern: fileURL, callback
      *
      * @param imageMessage is the received json format message from main application
