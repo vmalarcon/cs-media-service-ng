@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services;
 
+import com.expedia.content.media.processing.domain.ImageMessage;
 import com.expedia.content.media.processing.domain.ImageType;
 import com.expedia.content.media.processing.domain.ImageTypeComponentPicker;
 import com.expedia.content.media.processing.pipleline.reporting.LodgingLogActivityProcess;
@@ -14,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,11 +57,12 @@ public class MediaServiceProcessTest {
         LodgingLogActivityProcess lodgingLogActivityProcess = mock(LodgingLogActivityProcess.class);
         when(mockLogActivityPicker.getImageTypeComponent(ImageType.LODGING)).thenReturn(lodgingLogActivityProcess);
         MediaServiceProcess mediaServiceProcess = new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
-        ValidationStatus validationStatus = mediaServiceProcess.validateImage(jsonMessage);
+        ImageMessage imageMessage = mediaServiceProcess.parseJsonMessage(jsonMessage);
+        ValidationStatus validationStatus = mediaServiceProcess.validateImage(imageMessage);
         org.junit.Assert.assertTrue(validationStatus.isValid());
     }
 
-    @Test
+    @Test(expected = MalformedURLException.class)
     public void testvalidateImageFail() throws Exception {
 
         String jsonMessage = "{  \n" +
@@ -83,8 +86,7 @@ public class MediaServiceProcessTest {
         LodgingLogActivityProcess lodgingLogActivityProcess = mock(LodgingLogActivityProcess.class);
         when(mockLogActivityPicker.getImageTypeComponent(ImageType.LODGING)).thenReturn(lodgingLogActivityProcess);
         MediaServiceProcess mediaServiceProcess = new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
-        ValidationStatus validationStatus = mediaServiceProcess.validateImage(jsonMessage);
-        org.junit.Assert.assertFalse(validationStatus.isValid());
+        ImageMessage imageMessage = mediaServiceProcess.parseJsonMessage(jsonMessage);
     }
 
     @Test

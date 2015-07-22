@@ -83,32 +83,38 @@ public class MediaServiceProcess {
      * false- validation fail , in false case, a validation message is set in ValidationStatus
      * @throws Exception in case like jms connection is down
      */
-    public ValidationStatus validateImage(String imageMessage) throws Exception {
+    public ValidationStatus validateImage(ImageMessage imageMessage) throws Exception {
         ValidationStatus validationStatus = new ValidationStatus();
         //in case, no validator defined, we make it true.
         validationStatus.setValid(true);
-        LOGGER.debug("Validating: {}", imageMessage);
-        ImageMessage imageMessageObj = null;
-        try {
-            imageMessageObj = ImageMessage.parseJsonMessage(imageMessage);
-        } catch (MalformedURLException malformException) {
-            LOGGER.error("parseJson message error", malformException);
-            validationStatus.setValid(false);
-            validationStatus.setMessage(malformException.getMessage());
-            return validationStatus;
-        } catch (InvalidImageTypeException invalidImageTypeException) {
-            LOGGER.error("parseJson message error", invalidImageTypeException);
-            validationStatus.setValid(false);
-            validationStatus.setMessage(invalidImageTypeException.getMessage());
-            return validationStatus;
-        }
         for (MediaMessageValidator validator : validators) {
-            validationStatus = validator.validate(imageMessageObj);
+            validationStatus = validator.validate(imageMessage);
             if (!validationStatus.isValid()) {
                 return validationStatus;
             }
         }
         return validationStatus;
+    }
+
+    /**
+     * parse string to ImageMessageObject
+     *
+     * @param imageMessage
+     * @return
+     * @throws Exception
+     */
+    public ImageMessage parseJsonMessage(String imageMessage) throws Exception {
+        ImageMessage imageMessageObj = null;
+        try {
+            imageMessageObj = ImageMessage.parseJsonMessage(imageMessage);
+        } catch (MalformedURLException malformException) {
+            LOGGER.error("parseJson message error", malformException);
+            throw malformException;
+        } catch (InvalidImageTypeException invalidImageTypeException) {
+            LOGGER.error("parseJson message error", invalidImageTypeException);
+            throw invalidImageTypeException;
+        }
+        return imageMessageObj;
     }
 
     /**

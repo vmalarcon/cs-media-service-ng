@@ -21,7 +21,8 @@ public class ExpediaIdValidator extends NumericValidator {
      */
     @Override
     public ValidationStatus validate(ImageMessage image) {
-        if (image.getExpediaId() == null && ImageType.LODGING.equals(image.getImageType())) {
+        if (image.getExpediaId() == null && (ImageType.LODGING.equals(image.getImageType())
+                || ImageType.VT.equals(image.getImageType()))) {
             ValidationStatus validationStatus = new ValidationStatus();
             validationStatus.setValid(false);
             validationStatus.setMessage("expediaId is required.");

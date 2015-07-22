@@ -127,6 +127,41 @@ From the generated file, we can remove some JMX properties that are not related 
                 <metric attribute="Count" isCounter="false" name="MediaServiceProcess.publishMessageTimer"/>
             </include>
         </publish>
+        <publish name="metrics:name=Application.acquireMessageBadRequestCounter">
+            <delay>30</delay>
+            <unit>SECONDS</unit>
+            <include>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="Application.acquireMessageBadRequestCounter"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="Application.acquireMessageBadRequestCounter"/>
+                <metric attribute="MeanRate" isCounter="false" name="Application.acquireMessageBadRequestCounter"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="Application.acquireMessageBadRequestCounter"/>
+                <metric attribute="RateUnit" isCounter="false" name="Application.acquireMessageBadRequestCounter"/>
+                <metric attribute="Count" isCounter="false" name="Application.acquireMessageBadRequestCounter"/>
+            </include>
+        </publish>
+        <publish name="metrics:name=Application.acquireMessageBadRequestTimer">
+            <delay>30</delay>
+            <unit>SECONDS</unit>
+            <include>
+                <metric attribute="95thPercentile" isCounter="false" name="Application.acquireMessageBadRequestTimer"/>
+                <metric attribute="98thPercentile" isCounter="false" name="Application.acquireMessageBadRequestTimer"/>
+                <metric attribute="99thPercentile" isCounter="false" name="Application.acquireMessageBadRequestTimer"/>
+                <metric attribute="999thPercentile" isCounter="false" name="Application.acquireMessageBadRequestTimer"/>
+                <metric attribute="DurationUnit" isCounter="false" name="Application.acquireMessageBadRequestTimer"/>
+                <metric attribute="Mean" isCounter="false" name="Application.acquireMessageBadRequestTimer"/>
+                <metric attribute="50thPercentile" isCounter="false" name="Application.acquireMessageBadRequestTimer"/>
+                <metric attribute="StdDev" isCounter="false" name="Application.acquireMessageBadRequestTimer"/>
+                <metric attribute="75thPercentile" isCounter="false" name="Application.acquireMessageBadRequestTimer"/>
+                <metric attribute="Max" isCounter="false" name="Application.acquireMessageBadRequestTimer"/>
+                <metric attribute="Min" isCounter="false" name="Application.acquireMessageBadRequestTimer"/>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="Application.acquireMessageBadRequestTimer"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="Application.acquireMessageBadRequestTimer"/>
+                <metric attribute="MeanRate" isCounter="false" name="Application.acquireMessageBadRequestTimer"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="Application.acquireMessageBadRequestTimer"/>
+                <metric attribute="RateUnit" isCounter="false" name="Application.acquireMessageBadRequestTimer"/>
+                <metric attribute="Count" isCounter="false" name="Application.acquireMessageBadRequestTimer"/>
+            </include>
+        </publish>
         <publish name="metrics:name=LcmReporting.findName">
             <delay>30</delay>
             <unit>SECONDS</unit>

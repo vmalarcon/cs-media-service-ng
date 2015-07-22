@@ -48,9 +48,7 @@ public class RequiredValidator implements MediaMessageValidator {
             LOGGER.error("reflection call fail", e);
             throw new NoSuchElementException(fieldName + " does not exist, please check configuration file");
         }
-        if (fieldValue == null) {
-            return false;
-        } else if (fieldValue != null && StringUtils.isEmpty(fieldValue.toString())) {
+        if (fieldValue == null || StringUtils.isEmpty(fieldValue.toString())) {
             return false;
         }
         return true;

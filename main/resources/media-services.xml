@@ -31,6 +31,8 @@
                 <ref bean="expediaValidator" />
                 <ref bean="categoryValidator" />
                 <ref bean="providerRequiredValidator" />
+                <ref bean="fileUrlRequiredValidator" />
+                <ref bean="imageTypeRequiredValidator" />
                 <ref bean="mediaProviderValidator" />
             </list>
         </constructor-arg>
@@ -45,6 +47,14 @@
 
     <bean id="providerRequiredValidator" class="com.expedia.content.media.processing.services.validator.RequiredValidator">
         <property name="fieldName" value="mediaProviderId" />
+    </bean>
+
+    <bean id="fileUrlRequiredValidator" class="com.expedia.content.media.processing.services.validator.RequiredValidator">
+        <property name="fieldName" value="imageUrl" />
+    </bean>
+
+    <bean id="imageTypeRequiredValidator" class="com.expedia.content.media.processing.services.validator.RequiredValidator">
+        <property name="fieldName" value="imageType" />
     </bean>
 
     <bean id="categoryValidator" class="com.expedia.content.media.processing.services.validator.NumericValidator">

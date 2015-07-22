@@ -1,10 +1,13 @@
 package com.expedia.content.media.processing.services;
 
+import com.expedia.content.media.processing.domain.ImageMessage;
+import com.expedia.content.media.processing.domain.InvalidImageTypeException;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.expedia.content.metrics.aspects.EnableMonitoringAspects;
 
 import com.expedia.content.metrics.aspects.annotations.Meter;
 import com.expedia.content.metrics.aspects.annotations.Timer;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +22,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.net.MalformedURLException;
 
 /**
  * <code>MPP media service</code> application.
@@ -56,19 +61,43 @@ public class Application {
     public ResponseEntity<?> acquireMedia(@RequestBody final String message) throws Exception {
         LOGGER.info("RECEIVED - Processing message: [{}]", message);
         try {
-            ValidationStatus validationStatus = mediaServiceProcess.validateImage(message);
+            ImageMessage imageMessage = mediaServiceProcess.parseJsonMessage(message);
+            ValidationStatus validationStatus = mediaServiceProcess.validateImage(imageMessage);
             if (!validationStatus.isValid()) {
-                return new ResponseEntity<>("Bad Request :" + validationStatus.getMessage(), HttpStatus.BAD_REQUEST);
+                return throwBadRequestRes(validationStatus.getMessage());
             }
             mediaServiceProcess.publishMsg(message);
             LOGGER.debug("processed message successfully");
             return new ResponseEntity<>("OK", HttpStatus.OK);
         } catch (IllegalStateException e) {
             LOGGER.error("acquireMeda fail:", e);
-            //this means that json message is not right
-            return new ResponseEntity<>("Bad Request: JSON request format is invalid.", HttpStatus.BAD_REQUEST);
+            return throwBadRequestRes("");
+        } catch (MalformedURLException malformException) {
+            LOGGER.error("parseJson message error", malformException);
+            return throwBadRequestRes(malformException.getMessage());
+        } catch (InvalidImageTypeException invalidImageTypeException) {
+            LOGGER.error("parseJson message error", invalidImageTypeException);
+            return throwBadRequestRes(invalidImageTypeException.getMessage());
         }
 
+    }
+
+    /**
+     * encapsulate throw Bad Request logic
+     * Note that the {@code @Meter} {@code @Timer}  annotations introduce aspects from metrics-support
+     *
+     * @param validationMessage
+     * @return ResponseEntity is the standard spring mvn response object
+     */
+    @Meter(name = "acquireMessageBadRequestCounter")
+    @Timer(name = "acquireMessageBadRequestTimer")
+    public ResponseEntity<?> throwBadRequestRes(String validationMessage) {
+        if (StringUtils.isNotEmpty(validationMessage)) {
+            return new ResponseEntity<>("Bad Request:" + validationMessage, HttpStatus.BAD_REQUEST);
+        } else {
+            return new ResponseEntity<>("Bad Request: JSON request format is invalid.", HttpStatus.BAD_REQUEST);
+
+        }
     }
 }
 
