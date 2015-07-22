@@ -64,34 +64,30 @@ public class Application {
             ImageMessage imageMessage = mediaServiceProcess.parseJsonMessage(message);
             ValidationStatus validationStatus = mediaServiceProcess.validateImage(imageMessage);
             if (!validationStatus.isValid()) {
-                return throwBadRequestRes(validationStatus.getMessage());
+                return buildBadRequestResponse(validationStatus.getMessage());
             }
             mediaServiceProcess.publishMsg(message);
             LOGGER.debug("processed message successfully");
             return new ResponseEntity<>("OK", HttpStatus.OK);
         } catch (IllegalStateException e) {
             LOGGER.error("acquireMeda fail:", e);
-            return throwBadRequestRes("");
-        } catch (MalformedURLException malformException) {
-            LOGGER.error("parseJson message error", malformException);
-            return throwBadRequestRes(malformException.getMessage());
-        } catch (InvalidImageTypeException invalidImageTypeException) {
-            LOGGER.error("parseJson message error", invalidImageTypeException);
-            return throwBadRequestRes(invalidImageTypeException.getMessage());
+            return buildBadRequestResponse("");
+        } catch (MalformedURLException | InvalidImageTypeException exception) {
+            LOGGER.error("parseJson message error:", exception);
+            return buildBadRequestResponse(exception.getMessage());
         }
 
     }
 
     /**
-     * encapsulate throw Bad Request logic
+     * Builds a Bad Request response for when the incoming message fails validation.
      * Note that the {@code @Meter} {@code @Timer}  annotations introduce aspects from metrics-support
      *
-     * @param validationMessage
-     * @return ResponseEntity is the standard spring mvn response object
+     * @param validationMessage, failed message from validate.
+     * @return A Bad Request response.
      */
     @Meter(name = "acquireMessageBadRequestCounter")
-    @Timer(name = "acquireMessageBadRequestTimer")
-    public ResponseEntity<?> throwBadRequestRes(String validationMessage) {
+    public ResponseEntity<?> buildBadRequestResponse(String validationMessage) {
         if (StringUtils.isNotEmpty(validationMessage)) {
             return new ResponseEntity<>("Bad Request:" + validationMessage, HttpStatus.BAD_REQUEST);
         } else {

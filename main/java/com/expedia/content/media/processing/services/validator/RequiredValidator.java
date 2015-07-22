@@ -15,7 +15,7 @@ public class RequiredValidator implements MediaMessageValidator {
     private String fieldName;
 
     /**
-     * this method will validate specific field is exists in message
+     * Validate the specified field exists in message.
      *
      * @param imageMessage message to validate
      * @return ValidationStatus contain two validation status, true-successful,
