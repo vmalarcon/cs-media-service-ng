@@ -55,7 +55,7 @@ public class Application {
     @Meter(name = "acquireMessageCounter")
     @Timer(name = "acquireMessageTimer")
     @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST)
-    public ResponseEntity<?> acquireMedia(@RequestBody final String message) throws Exception {
+    public ResponseEntity<String> acquireMedia(@RequestBody final String message) throws Exception {
         LOGGER.info("RECEIVED - Processing message: [{}]", message);
         try {
             ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);

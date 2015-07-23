@@ -54,7 +54,7 @@ public class MediaServiceProcessTest {
                 "   },\n" +
                 "   \"expediaId\":2001002,\n" +
                 "   \"categoryId\":\"801\",\n" +
-                "   \"callBack\":\"http://multi.source.callback/callback\",\n" +
+                "   \"callback\":\"http://multi.source.callback/callback\",\n" +
                 "   \"caption\":\"caption\"\n" +
                 "}";
         List<MediaMessageValidator> validators = new ArrayList<>();
@@ -82,7 +82,7 @@ public class MediaServiceProcessTest {
                 "   },\n" +
                 "   \"expediaId\":2001002,\n" +
                 "   \"categoryId\":\"NOT_NUMBER\",\n" +
-                "   \"callBack\":\"http://multi.source.callback/callback\",\n" +
+                "   \"callback\":\"http://multi.source.callback/callback\",\n" +
                 "   \"caption\":\"caption\"\n" +
                 "}";
         List<MediaMessageValidator> validators = new ArrayList<>();
