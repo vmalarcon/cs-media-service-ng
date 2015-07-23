@@ -131,11 +131,6 @@ From the generated file, we can remove some JMX properties that are not related 
             <delay>30</delay>
             <unit>SECONDS</unit>
             <include>
-                <metric attribute="FifteenMinuteRate" isCounter="false" name="Application.acquireMessageBadRequestCounter"/>
-                <metric attribute="FiveMinuteRate" isCounter="false" name="Application.acquireMessageBadRequestCounter"/>
-                <metric attribute="MeanRate" isCounter="false" name="Application.acquireMessageBadRequestCounter"/>
-                <metric attribute="OneMinuteRate" isCounter="false" name="Application.acquireMessageBadRequestCounter"/>
-                <metric attribute="RateUnit" isCounter="false" name="Application.acquireMessageBadRequestCounter"/>
                 <metric attribute="Count" isCounter="false" name="Application.acquireMessageBadRequestCounter"/>
             </include>
         </publish>

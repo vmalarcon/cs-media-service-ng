@@ -23,6 +23,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MediaServiceProcessTest {
@@ -33,7 +34,7 @@ public class MediaServiceProcessTest {
     private Reporting reporting;
 
     @Test
-    public void testvalidateImageSuccess() throws Exception {
+    public void testValidateImageSuccess() throws Exception {
 
         String jsonMessage = "{  \n" +
                 "   \"mediaProviderId\":\"1001\",\n" +
@@ -59,11 +60,11 @@ public class MediaServiceProcessTest {
         MediaServiceProcess mediaServiceProcess = new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
         ImageMessage imageMessage = mediaServiceProcess.parseJsonMessage(jsonMessage);
         ValidationStatus validationStatus = mediaServiceProcess.validateImage(imageMessage);
-        org.junit.Assert.assertTrue(validationStatus.isValid());
+        assertTrue(validationStatus.isValid());
     }
 
     @Test(expected = MalformedURLException.class)
-    public void testvalidateImageFail() throws Exception {
+    public void testValidateImageFail() throws Exception {
 
         String jsonMessage = "{  \n" +
                 "   \"mediaProviderId\":\"1001\",\n" +

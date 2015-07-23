@@ -107,12 +107,9 @@ public class MediaServiceProcess {
         ImageMessage imageMessageObj = null;
         try {
             imageMessageObj = ImageMessage.parseJsonMessage(imageMessage);
-        } catch (MalformedURLException malformException) {
-            LOGGER.error("parseJson message error", malformException);
-            throw malformException;
-        } catch (InvalidImageTypeException invalidImageTypeException) {
-            LOGGER.error("parseJson message error", invalidImageTypeException);
-            throw invalidImageTypeException;
+        } catch (MalformedURLException |InvalidImageTypeException exception) {
+            LOGGER.error("parseJson message error", exception);
+            throw exception;
         }
         return imageMessageObj;
     }

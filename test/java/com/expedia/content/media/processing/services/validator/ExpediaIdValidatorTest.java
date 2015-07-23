@@ -3,7 +3,8 @@ package com.expedia.content.media.processing.services.validator;
 import com.expedia.content.media.processing.domain.ImageMessage;
 import com.expedia.content.media.processing.domain.ImageType;
 import org.junit.Test;
-
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 public class ExpediaIdValidatorTest {
 
     @Test
@@ -14,7 +15,7 @@ public class ExpediaIdValidatorTest {
         ExpediaIdValidator expediaIdValidator = new ExpediaIdValidator();
         expediaIdValidator.setFieldName("expediaId");
         ValidationStatus validationStatus = expediaIdValidator.validate(image);
-        org.junit.Assert.assertTrue(validationStatus.isValid());
+        assertTrue(validationStatus.isValid());
     }
 
     @Test
@@ -24,6 +25,6 @@ public class ExpediaIdValidatorTest {
         ExpediaIdValidator expediaIdValidator = new ExpediaIdValidator();
         expediaIdValidator.setFieldName("expediaId");
         ValidationStatus validationStatus = expediaIdValidator.validate(image);
-        org.junit.Assert.assertFalse(validationStatus.isValid());
+        assertFalse(validationStatus.isValid());
     }
 }

@@ -5,9 +5,9 @@ import com.expedia.content.media.processing.domain.InvalidImageTypeException;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.expedia.content.metrics.aspects.EnableMonitoringAspects;
 
+import com.expedia.content.metrics.aspects.annotations.Counter;
 import com.expedia.content.metrics.aspects.annotations.Meter;
 import com.expedia.content.metrics.aspects.annotations.Timer;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -71,7 +71,7 @@ public class Application {
             return new ResponseEntity<>("OK", HttpStatus.OK);
         } catch (IllegalStateException e) {
             LOGGER.error("acquireMeda fail:", e);
-            return buildBadRequestResponse("");
+            return buildBadRequestResponse("Bad Request: JSON request format is invalid.");
         } catch (MalformedURLException | InvalidImageTypeException exception) {
             LOGGER.error("parseJson message error:", exception);
             return buildBadRequestResponse(exception.getMessage());
@@ -86,14 +86,10 @@ public class Application {
      * @param validationMessage, failed message from validate.
      * @return A Bad Request response.
      */
-    @Meter(name = "acquireMessageBadRequestCounter")
+    @Counter(name = "acquireMessageBadRequestCounter")
     public ResponseEntity<?> buildBadRequestResponse(String validationMessage) {
-        if (StringUtils.isNotEmpty(validationMessage)) {
-            return new ResponseEntity<>("Bad Request:" + validationMessage, HttpStatus.BAD_REQUEST);
-        } else {
-            return new ResponseEntity<>("Bad Request: JSON request format is invalid.", HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>("Bad Request:" + validationMessage, HttpStatus.BAD_REQUEST);
 
-        }
     }
 }
 
