@@ -5,6 +5,8 @@ import com.expedia.content.media.processing.domain.ImageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.MessageFormat;
+
 /**
  * ExpediaIdValidator will check whether expediaId is a number or is missed
  */
@@ -23,10 +25,12 @@ public class ExpediaIdValidator extends NumericValidator {
     public ValidationStatus validate(ImageMessage image) {
         if (image.getExpediaId() == null && (ImageType.LODGING.equals(image.getImageType())
                 || ImageType.VT.equals(image.getImageType()))) {
+            String errorMsg = "expediaId is required when imageType is {0}.";
             ValidationStatus validationStatus = new ValidationStatus();
             validationStatus.setValid(false);
-            validationStatus.setMessage("expediaId is required.");
-            LOGGER.debug("expediaId is required");
+            errorMsg = MessageFormat.format(errorMsg, image.getImageType());
+            validationStatus.setMessage(errorMsg);
+            LOGGER.debug(errorMsg);
             return validationStatus;
         }
         return super.validate(image);
