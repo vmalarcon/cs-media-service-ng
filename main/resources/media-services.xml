@@ -48,7 +48,7 @@
         <property name="fieldName" value="mediaProviderId" />
     </bean>
     <bean id="fileUrlRequiredValidator" class="com.expedia.content.media.processing.services.validator.RequiredValidator">
-        <property name="fieldName" value="imageUrl" />
+        <property name="fieldName" value="fileUrl" />
     </bean>
     <bean id="imageTypeRequiredValidator" class="com.expedia.content.media.processing.services.validator.RequiredValidator">
         <property name="fieldName" value="imageType" />
