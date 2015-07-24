@@ -113,6 +113,17 @@ public class MediaServiceProcess {
         }
         return imageMessageObj;
     }
+    /**
+     * Builds the file name for use once the file is downloaded. Based on the content of the imageMessage.
+     *
+     * @param imageMessage Image message containing data on the file to process.
+     * @return The file name to be.
+     */
+    private String buildFileName(final ImageMessage imageMessage) {
+        String fileName = FilenameUtils.getName(imageMessage.getImageUrl().toString());
+        String eidPrefix = (imageMessage.getExpediaId() != null) ? imageMessage.getExpediaId() + "_" : "";
+        return eidPrefix + fileName;
+    }
 
     /**
      * Logs a completed activity and its time. and exepdiaId is appended before the file name
@@ -122,10 +133,8 @@ public class MediaServiceProcess {
      */
     private void logActivity(ImageMessage imageMessage, Activity activity) throws URISyntaxException {
         URL imageUrl = imageMessage.getImageUrl();
-        //exepdiaId is appended before the file name
-        String fileName = imageMessage.getExpediaId() + "_" + FilenameUtils.getName(imageUrl.toString());
         LogActivityProcess logActivityProcess = logActivityPicker.getImageTypeComponent(imageMessage.getImageType());
-        logActivityProcess.log(imageUrl, fileName, activity, new Date(), reporting, imageMessage.getImageType());
+        logActivityProcess.log(imageUrl, buildFileName(imageMessage), activity, new Date(), reporting, imageMessage.getImageType());
     }
 
 }

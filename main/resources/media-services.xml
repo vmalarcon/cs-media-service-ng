@@ -74,6 +74,7 @@
 
     <bean id="lodgingLogActivityProcess" class="com.expedia.content.media.processing.pipleline.reporting.LodgingLogActivityProcess">
         <constructor-arg value="${log.thread.pool.size}" />
+        <constructor-arg type="boolean" value="false"/>
     </bean>
 
     <bean id="carsLogActivityProcess" class="com.expedia.content.media.processing.pipleline.reporting.CarsLogActivityProcess">
