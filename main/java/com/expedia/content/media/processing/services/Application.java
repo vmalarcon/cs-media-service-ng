@@ -67,7 +67,7 @@ public class Application {
             LOGGER.debug("processed message=[{}] successfully", message);
             return new ResponseEntity<>("OK", HttpStatus.OK);
         } catch (IllegalStateException ex) {
-            LOGGER.error("acquireMedia fail for Json message=[{}]:", message, ex);
+            LOGGER.error("acquireMedia failed for Json message=[{}]:", message, ex);
             return buildBadRequestResponse("JSON request format is invalid. Json message=" + message);
         } catch (ImageMessageException ex) {
             LOGGER.error("Error parsing Json message=[{}].", message, ex);

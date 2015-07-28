@@ -9,6 +9,7 @@ import com.expedia.content.media.processing.pipleline.reporting.LogActivityProce
 import com.expedia.content.media.processing.pipleline.reporting.Reporting;
 import com.expedia.content.media.processing.services.validator.ExpediaIdValidator;
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
+import com.expedia.content.media.processing.services.validator.NumericValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -64,6 +66,39 @@ public class MediaServiceProcessTest {
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMessage);
         ValidationStatus validationStatus = mediaServiceProcess.validateImage(imageMessage);
         assertTrue(validationStatus.isValid());
+    }
+
+    @Test
+    public void testValidateImageFail() throws Exception {
+
+        String jsonMessage = "{  \n" +
+                "   \"mediaProviderId\":\"1001\",\n" +
+                "   \"fileUrl\":\"http://images.com/dir1/img1.jpg\",\n" +
+                "   \"imageType\":\"Lodging\",\n" +
+                "   \"stagingKeyMap\":{  \n" +
+                "      \"externalId\":\"222\",\n" +
+                "      \"providerId\":\"300\",\n" +
+                "      \"sourceId\":\"99\"\n" +
+                "   },\n" +
+                "   \"expediaId\":2001002,\n" +
+                "   \"categoryId\":\"NOT_NUMBER\",\n" +
+                "   \"callBack\":\"http://multi.source.callback/callback\",\n" +
+                "   \"caption\":\"caption\"\n" +
+                "}";
+        List<MediaMessageValidator> validators = new ArrayList<>();
+        ExpediaIdValidator expediaIdValidator = new ExpediaIdValidator();
+        expediaIdValidator.setFieldName("expediaId");
+        NumericValidator numericValidator = new NumericValidator();
+        numericValidator.setFieldName("categoryId");
+
+        validators.add(expediaIdValidator);
+        validators.add(numericValidator);
+        validators.add(expediaIdValidator);
+        ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
+        MediaServiceProcess mediaServiceProcess = new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
+        ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMessage);
+        ValidationStatus validationStatus = mediaServiceProcess.validateImage(imageMessage);
+        assertFalse(validationStatus.isValid());
     }
 
     @Test
