@@ -4,6 +4,7 @@ import com.expedia.content.media.processing.domain.ImageMessage;
 import com.expedia.content.media.processing.domain.ImageTypeComponentPicker;
 import com.expedia.content.media.processing.domain.InvalidImageTypeException;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
+import com.expedia.content.media.processing.pipeline.util.FileSystemUtil;
 import com.expedia.content.media.processing.pipleline.reporting.Activity;
 import com.expedia.content.media.processing.pipleline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipleline.reporting.Reporting;
@@ -12,7 +13,6 @@ import com.expedia.content.media.processing.services.validator.ValidationStatus;
 
 import com.expedia.content.metrics.aspects.annotations.Meter;
 import com.expedia.content.metrics.aspects.annotations.Timer;
-import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -113,17 +113,6 @@ public class MediaServiceProcess {
         }
         return imageMessageObj;
     }
-    /**
-     * Builds the file name for use once the file is downloaded. Based on the content of the imageMessage.
-     *
-     * @param imageMessage Image message containing data on the file to process.
-     * @return The file name to be.
-     */
-    private String buildFileName(final ImageMessage imageMessage) {
-        String fileName = FilenameUtils.getName(imageMessage.getImageUrl().toString());
-        String eidPrefix = (imageMessage.getExpediaId() != null) ? imageMessage.getExpediaId() + "_" : "";
-        return eidPrefix + fileName;
-    }
 
     /**
      * Logs a completed activity and its time. and exepdiaId is appended before the file name
@@ -134,7 +123,7 @@ public class MediaServiceProcess {
     private void logActivity(ImageMessage imageMessage, Activity activity) throws URISyntaxException {
         URL imageUrl = imageMessage.getImageUrl();
         LogActivityProcess logActivityProcess = logActivityPicker.getImageTypeComponent(imageMessage.getImageType());
-        logActivityProcess.log(imageUrl, buildFileName(imageMessage), activity, new Date(), reporting, imageMessage.getImageType());
+        logActivityProcess.log(imageUrl, FileSystemUtil.buildFileName(imageMessage), activity, new Date(), reporting, imageMessage.getImageType());
     }
 
 }
