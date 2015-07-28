@@ -44,19 +44,15 @@
     <bean id="expediaValidator" class="com.expedia.content.media.processing.services.validator.ExpediaIdValidator">
         <property name="fieldName" value="expediaId" />
     </bean>
-
     <bean id="providerRequiredValidator" class="com.expedia.content.media.processing.services.validator.RequiredValidator">
         <property name="fieldName" value="mediaProviderId" />
     </bean>
-
     <bean id="fileUrlRequiredValidator" class="com.expedia.content.media.processing.services.validator.RequiredValidator">
         <property name="fieldName" value="imageUrl" />
     </bean>
-
     <bean id="imageTypeRequiredValidator" class="com.expedia.content.media.processing.services.validator.RequiredValidator">
         <property name="fieldName" value="imageType" />
     </bean>
-
     <bean id="categoryValidator" class="com.expedia.content.media.processing.services.validator.NumericValidator">
         <property name="fieldName" value="categoryId" />
     </bean>
