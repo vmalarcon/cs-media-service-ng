@@ -3,11 +3,13 @@ package com.expedia.content.media.processing.services;
 import com.expedia.content.media.processing.domain.ImageMessage;
 import com.expedia.content.media.processing.domain.ImageType;
 import com.expedia.content.media.processing.domain.ImageTypeComponentPicker;
+import com.expedia.content.media.processing.pipleline.reporting.Activity;
 import com.expedia.content.media.processing.pipleline.reporting.LodgingLogActivityProcess;
 import com.expedia.content.media.processing.pipleline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipleline.reporting.Reporting;
 import com.expedia.content.media.processing.services.validator.ExpediaIdValidator;
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
+import com.expedia.content.media.processing.services.validator.NumericValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,15 +17,20 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
-import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MediaServiceProcessTest {
@@ -55,43 +62,14 @@ public class MediaServiceProcessTest {
         expediaIdValidator.setFieldName("expediaId");
         validators.add(expediaIdValidator);
         ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
-        LodgingLogActivityProcess lodgingLogActivityProcess = mock(LodgingLogActivityProcess.class);
-        when(mockLogActivityPicker.getImageTypeComponent(ImageType.LODGING)).thenReturn(lodgingLogActivityProcess);
         MediaServiceProcess mediaServiceProcess = new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
-        ImageMessage imageMessage = mediaServiceProcess.parseJsonMessage(jsonMessage);
+        ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMessage);
         ValidationStatus validationStatus = mediaServiceProcess.validateImage(imageMessage);
         assertTrue(validationStatus.isValid());
     }
 
-    @Test(expected = MalformedURLException.class)
-    public void testValidateImageFail() throws Exception {
-
-        String jsonMessage = "{  \n" +
-                "   \"mediaProviderId\":\"1001\",\n" +
-                "   \"fileUrl\":\"httpp://images.com/dir1/img1.jpg\",\n" +
-                "   \"imageType\":\"Lodging\",\n" +
-                "   \"stagingKeyMap\":{  \n" +
-                "      \"externalId\":\"222\",\n" +
-                "      \"providerId\":\"300\",\n" +
-                "      \"sourceId\":\"99\"\n" +
-                "   },\n" +
-                "   \"expediaId\":2001002,\n" +
-                "   \"categoryId\":\"801\",\n" +
-                "   \"callBack\":\"http://multi.source.callback/callback\",\n" +
-                "   \"caption\":\"caption\"\n" +
-                "}";
-        List<MediaMessageValidator> validators = new ArrayList<>();
-        ExpediaIdValidator expediaIdValidator = new ExpediaIdValidator();
-        validators.add(expediaIdValidator);
-        ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
-        LodgingLogActivityProcess lodgingLogActivityProcess = mock(LodgingLogActivityProcess.class);
-        when(mockLogActivityPicker.getImageTypeComponent(ImageType.LODGING)).thenReturn(lodgingLogActivityProcess);
-        MediaServiceProcess mediaServiceProcess = new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
-        ImageMessage imageMessage = mediaServiceProcess.parseJsonMessage(jsonMessage);
-    }
-
     @Test
-    public void testPublishMessage() throws Exception {
+    public void testValidateImageFail() throws Exception {
 
         String jsonMessage = "{  \n" +
                 "   \"mediaProviderId\":\"1001\",\n" +
@@ -103,20 +81,39 @@ public class MediaServiceProcessTest {
                 "      \"sourceId\":\"99\"\n" +
                 "   },\n" +
                 "   \"expediaId\":2001002,\n" +
-                "   \"categoryId\":\"801\",\n" +
+                "   \"categoryId\":\"NOT_NUMBER\",\n" +
                 "   \"callBack\":\"http://multi.source.callback/callback\",\n" +
                 "   \"caption\":\"caption\"\n" +
                 "}";
         List<MediaMessageValidator> validators = new ArrayList<>();
         ExpediaIdValidator expediaIdValidator = new ExpediaIdValidator();
+        expediaIdValidator.setFieldName("expediaId");
+        NumericValidator numericValidator = new NumericValidator();
+        numericValidator.setFieldName("categoryId");
+
+        validators.add(expediaIdValidator);
+        validators.add(numericValidator);
         validators.add(expediaIdValidator);
         ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
-        LodgingLogActivityProcess lodgingLogActivityProcess = mock(LodgingLogActivityProcess.class);
-        when(mockLogActivityPicker.getImageTypeComponent(ImageType.LODGING)).thenReturn(lodgingLogActivityProcess);
         MediaServiceProcess mediaServiceProcess = new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
-        mediaServiceProcess.publishMsg(jsonMessage);
-        verify(rabbitTemplateMock, times(1)).convertAndSend(jsonMessage);
-
+        ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMessage);
+        ValidationStatus validationStatus = mediaServiceProcess.validateImage(imageMessage);
+        assertFalse(validationStatus.isValid());
     }
 
+    @Test
+    public void testPublishMessage() throws Exception {
+        List<MediaMessageValidator> validators = mock(List.class);
+        ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
+        LodgingLogActivityProcess lodgingProcessMock = mock(LodgingLogActivityProcess.class);
+        when(mockLogActivityPicker.getImageTypeComponent(ImageType.LODGING)).thenReturn(lodgingProcessMock);
+        MediaServiceProcess mediaServiceProcess = new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
+        ImageMessage imageMessageMock = mock(ImageMessage.class);
+        when(imageMessageMock.getImageType()).thenReturn(ImageType.LODGING);
+        when(imageMessageMock.getImageUrl()).thenReturn(new URL("http://media.com/img1.jpg"));
+        mediaServiceProcess.publishMsg(imageMessageMock);
+        verify(rabbitTemplateMock, times(1)).convertAndSend(anyString());
+        verify(lodgingProcessMock, times(1))
+                .log(any(URL.class), anyString(), eq(Activity.MEDIA_MESSAGE_RECEIVED), any(Date.class), eq(reporting), eq(ImageType.LODGING));
+    }
 }

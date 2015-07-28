@@ -1,10 +1,9 @@
 package com.expedia.content.media.processing.services;
 
 import com.expedia.content.media.processing.domain.ImageMessage;
-import com.expedia.content.media.processing.domain.InvalidImageTypeException;
+import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.expedia.content.metrics.aspects.EnableMonitoringAspects;
-
 import com.expedia.content.metrics.aspects.annotations.Counter;
 import com.expedia.content.metrics.aspects.annotations.Meter;
 import com.expedia.content.metrics.aspects.annotations.Timer;
@@ -22,8 +21,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.net.MalformedURLException;
 
 /**
  * <code>MPP media service</code> application.
@@ -61,20 +58,20 @@ public class Application {
     public ResponseEntity<?> acquireMedia(@RequestBody final String message) throws Exception {
         LOGGER.info("RECEIVED - Processing message: [{}]", message);
         try {
-            ImageMessage imageMessage = mediaServiceProcess.parseJsonMessage(message);
+            ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
             ValidationStatus validationStatus = mediaServiceProcess.validateImage(imageMessage);
             if (!validationStatus.isValid()) {
                 return buildBadRequestResponse(validationStatus.getMessage());
             }
-            mediaServiceProcess.publishMsg(message);
-            LOGGER.debug("processed message successfully");
+            mediaServiceProcess.publishMsg(imageMessage);
+            LOGGER.debug("processed message=[{}] successfully", message);
             return new ResponseEntity<>("OK", HttpStatus.OK);
-        } catch (IllegalStateException e) {
-            LOGGER.error("acquireMeda fail:", e);
-            return buildBadRequestResponse("Bad Request: JSON request format is invalid.");
-        } catch (MalformedURLException | InvalidImageTypeException exception) {
-            LOGGER.error("parseJson message error:", exception);
-            return buildBadRequestResponse(exception.getMessage());
+        } catch (IllegalStateException ex) {
+            LOGGER.error("acquireMedia failed for Json message=[{}]:", message, ex);
+            return buildBadRequestResponse("JSON request format is invalid. Json message=" + message);
+        } catch (ImageMessageException ex) {
+            LOGGER.error("Error parsing Json message=[{}].", message, ex);
+            return buildBadRequestResponse(ex.getMessage());
         }
 
     }

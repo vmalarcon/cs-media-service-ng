@@ -2,7 +2,6 @@ package com.expedia.content.media.processing.services;
 
 import com.expedia.content.media.processing.domain.ImageMessage;
 import com.expedia.content.media.processing.domain.ImageTypeComponentPicker;
-import com.expedia.content.media.processing.domain.InvalidImageTypeException;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.pipeline.util.FileSystemUtil;
 import com.expedia.content.media.processing.pipleline.reporting.Activity;
@@ -10,17 +9,14 @@ import com.expedia.content.media.processing.pipleline.reporting.LogActivityProce
 import com.expedia.content.media.processing.pipleline.reporting.Reporting;
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
-
 import com.expedia.content.metrics.aspects.annotations.Meter;
 import com.expedia.content.metrics.aspects.annotations.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Date;
@@ -60,15 +56,15 @@ public class MediaServiceProcess {
     @Meter(name = "publishMessageCounter")
     @Timer(name = "publishMessageTimer")
     @RetryableMethod
-    public void publishMsg(String message) {
+    public void publishMsg(ImageMessage message) {
+        String jsonMessage = message.toJSONMessage();
         try {
-            rabbitTemplate.convertAndSend(message);
-            LOGGER.debug("send message to queue done: [{}]", message);
-            ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
-            logActivity(imageMessage, Activity.MEDIA_MESSAGE_RECEIVED);
-        } catch (Exception e) {
-            LOGGER.error("disPatchMessage fail", e);
-            throw new RuntimeException("Failed to send messge to queue", e);
+            rabbitTemplate.convertAndSend(jsonMessage);
+            LOGGER.debug("send message to queue done: [{}]", jsonMessage);
+            logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED);
+        } catch (Exception ex) {
+            LOGGER.error("Error publishing message=[{}]", jsonMessage, ex);
+            throw new RuntimeException("Error publishing message=[" + jsonMessage + "]", ex);
         }
     }
 
@@ -94,24 +90,6 @@ public class MediaServiceProcess {
             }
         }
         return validationStatus;
-    }
-
-    /**
-     * parse string to ImageMessageObject
-     *
-     * @param imageMessage
-     * @return
-     * @throws Exception
-     */
-    public ImageMessage parseJsonMessage(String imageMessage) throws Exception {
-        ImageMessage imageMessageObj = null;
-        try {
-            imageMessageObj = ImageMessage.parseJsonMessage(imageMessage);
-        } catch (MalformedURLException |InvalidImageTypeException exception) {
-            LOGGER.error("parseJson message error", exception);
-            throw exception;
-        }
-        return imageMessageObj;
     }
 
     /**
