@@ -3,7 +3,6 @@ package com.expedia.content.media.processing.services;
 import com.expedia.content.media.processing.domain.ImageMessage;
 import com.expedia.content.media.processing.domain.ImageTypeComponentPicker;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
-import com.expedia.content.media.processing.pipeline.util.FileSystemUtil;
 import com.expedia.content.media.processing.pipleline.reporting.Activity;
 import com.expedia.content.media.processing.pipleline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipleline.reporting.Reporting;
@@ -101,7 +100,7 @@ public class MediaServiceProcess {
     private void logActivity(ImageMessage imageMessage, Activity activity) throws URISyntaxException {
         URL imageUrl = imageMessage.getImageUrl();
         LogActivityProcess logActivityProcess = logActivityPicker.getImageTypeComponent(imageMessage.getImageType());
-        logActivityProcess.log(imageUrl, FileSystemUtil.buildFileName(imageMessage), activity, new Date(), reporting, imageMessage.getImageType());
+        logActivityProcess.log(imageUrl, imageMessage.processingFileName(), activity, new Date(), reporting, imageMessage.getImageType());
     }
 
 }
