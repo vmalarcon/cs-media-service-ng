@@ -29,14 +29,14 @@ public class ApplicationTest {
                 "   \"mediaProviderId\":\"1001\",\n" +
                 "   \"fileUrl\":\"http://images.com/dir1/img1.jpg\",\n" +
                 "   \"imageType\":\"Lodging\",\n" +
-                "   \"stagingKeyMap\":{  \n" +
+                "   \"stagingKey\":{  \n" +
                 "      \"externalId\":\"222\",\n" +
                 "      \"providerId\":\"300\",\n" +
                 "      \"sourceId\":\"99\"\n" +
                 "   },\n" +
                 "   \"expediaId\":\"NOT_A_NUMBER\",\n" +
                 "   \"categoryId\":\"801\",\n" +
-                "   \"callBack\":\"http://multi.source.callback/callback\",\n" +
+                "   \"callback\":\"http://multi.source.callback/callback\",\n" +
                 "   \"caption\":\"caption\"\n" +
                 "}";
         ResponseEntity<?> responseEntity = application.acquireMedia(jsonMessage);
@@ -50,14 +50,14 @@ public class ApplicationTest {
                 "   \"mediaProviderId\":\"1001\",\n" +
                 "   \"fileUrl\":\"http://images.com/dir1/img1.jpg\",\n" +
                 "   \"imageType\":\"Lodging\",\n" +
-                "   \"stagingKeyMap\":{  \n" +
+                "   \"stagingKey\":{  \n" +
                 "      \"externalId\":\"222\",\n" +
                 "      \"providerId\":\"300\",\n" +
                 "      \"sourceId\":\"99\"\n" +
                 "   },\n" +
                 "   \"expediaId\":NOT_A_NUMBER,\n" +
                 "   \"categoryId\":\"801\",\n" +
-                "   \"callBack\":\"http://multi.source.callback/callback\",\n" +
+                "   \"callback\":\"http://multi.source.callback/callback\",\n" +
                 "   \"caption\":\"caption\"\n" +
                 "}";
         ResponseEntity<?> responseEntity = application.acquireMedia(jsonMessage);
