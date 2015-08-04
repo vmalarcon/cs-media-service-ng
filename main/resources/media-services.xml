@@ -2,24 +2,16 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rabbit="http://www.springframework.org/schema/rabbit"
        xmlns:context="http://www.springframework.org/schema/context" xmlns:util="http://www.springframework.org/schema/util"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
 
     <context:property-placeholder location="classpath:media-services.properties"/>
-
-    <bean id="rabbitConnectionFactory" class="com.rabbitmq.client.ConnectionFactory">
-        <property name="host" value="${rabbitmq.host}"/>
-        <property name="port" value="${rabbitmq.port}"/>
-        <property name="username" value="${rabbitmq.user}"/>
-        <property name="password" value="${rabbitmq.pass}"/>
-        <property name="connectionTimeout" value="${rabbitmq.connection.timeout}"/>
-    </bean>
-
-    <bean id="cachingRabbitConnectionFactory" class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory">
-        <constructor-arg name="rabbitConnectionFactory" ref="rabbitConnectionFactory"/>
-    </bean>
+    <import resource="collector-rabbit.xml" />
 
     <bean id="filenamesRabbitTemplate" class="org.springframework.amqp.rabbit.core.RabbitTemplate">
-        <property name="connectionFactory" ref="cachingRabbitConnectionFactory"/>
+        <property name="connectionFactory" ref="rabbitConnectionFactory"/>
         <property name="queue" value="${collector.queue}" />
         <property name="routingKey" value="${collector.queue}" />
     </bean>
