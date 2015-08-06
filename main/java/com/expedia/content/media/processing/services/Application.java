@@ -84,7 +84,7 @@ public class Application {
      * @return A Bad Request response.
      */
     @Counter(name = "acquireMessageBadRequestCounter")
-    public ResponseEntity<?> buildBadRequestResponse(String validationMessage) {
+    public ResponseEntity<String> buildBadRequestResponse(String validationMessage) {
         return new ResponseEntity<>("Bad Request: " + validationMessage, HttpStatus.BAD_REQUEST);
     }
 }
