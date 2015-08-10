@@ -98,9 +98,9 @@ public class MediaServiceProcess {
      * @param activity     The activity to log.
      */
     private void logActivity(ImageMessage imageMessage, Activity activity) throws URISyntaxException {
-        URL imageUrl = imageMessage.getImageUrl();
+        URL fileUrl = imageMessage.getFileUrl();
         LogActivityProcess logActivityProcess = logActivityPicker.getImageTypeComponent(imageMessage.getImageType());
-        logActivityProcess.log(imageUrl, imageMessage.processingFileName(), activity, new Date(), reporting, imageMessage.getImageType());
+        logActivityProcess.log(fileUrl, imageMessage.processingFileName(), activity, new Date(), reporting, imageMessage.getImageType());
     }
 
 }

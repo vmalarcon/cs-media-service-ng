@@ -93,7 +93,6 @@ public class MediaServiceProcessTest {
 
         validators.add(expediaIdValidator);
         validators.add(numericValidator);
-        validators.add(expediaIdValidator);
         ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
         MediaServiceProcess mediaServiceProcess = new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMessage);
@@ -110,7 +109,7 @@ public class MediaServiceProcessTest {
         MediaServiceProcess mediaServiceProcess = new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
         ImageMessage imageMessageMock = mock(ImageMessage.class);
         when(imageMessageMock.getImageType()).thenReturn(ImageType.LODGING);
-        when(imageMessageMock.getImageUrl()).thenReturn(new URL("http://media.com/img1.jpg"));
+        when(imageMessageMock.getFileUrl()).thenReturn(new URL("http://media.com/img1.jpg"));
         mediaServiceProcess.publishMsg(imageMessageMock);
         verify(rabbitTemplateMock, times(1)).convertAndSend(anyString());
         verify(lodgingProcessMock, times(1))
