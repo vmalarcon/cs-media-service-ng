@@ -1,7 +1,7 @@
 package com.expedia.content.media.processing.services.validator;
 
-import com.expedia.content.media.processing.domain.ImageMessage;
-import com.expedia.content.media.processing.domain.ImageType;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.ImageType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

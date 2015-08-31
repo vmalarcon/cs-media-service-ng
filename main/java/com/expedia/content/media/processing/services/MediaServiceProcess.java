@@ -1,11 +1,11 @@
 package com.expedia.content.media.processing.services;
 
-import com.expedia.content.media.processing.domain.ImageMessage;
-import com.expedia.content.media.processing.domain.ImageTypeComponentPicker;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.ImageTypeComponentPicker;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
-import com.expedia.content.media.processing.pipleline.reporting.Activity;
-import com.expedia.content.media.processing.pipleline.reporting.LogActivityProcess;
-import com.expedia.content.media.processing.pipleline.reporting.Reporting;
+import com.expedia.content.media.processing.pipeline.reporting.Activity;
+import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
+import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.expedia.content.metrics.aspects.annotations.Meter;

@@ -1,12 +1,12 @@
 package com.expedia.content.media.processing.services;
 
-import com.expedia.content.media.processing.domain.ImageMessage;
-import com.expedia.content.media.processing.domain.ImageType;
-import com.expedia.content.media.processing.domain.ImageTypeComponentPicker;
-import com.expedia.content.media.processing.pipleline.reporting.Activity;
-import com.expedia.content.media.processing.pipleline.reporting.LodgingLogActivityProcess;
-import com.expedia.content.media.processing.pipleline.reporting.LogActivityProcess;
-import com.expedia.content.media.processing.pipleline.reporting.Reporting;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.ImageType;
+import com.expedia.content.media.processing.pipeline.domain.ImageTypeComponentPicker;
+import com.expedia.content.media.processing.pipeline.reporting.Activity;
+import com.expedia.content.media.processing.pipeline.reporting.LodgingLogActivityProcess;
+import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
+import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.services.validator.ExpediaIdValidator;
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
 import com.expedia.content.media.processing.services.validator.NumericValidator;

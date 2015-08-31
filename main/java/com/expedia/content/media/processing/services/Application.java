@@ -1,6 +1,6 @@
 package com.expedia.content.media.processing.services;
 
-import com.expedia.content.media.processing.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.expedia.content.metrics.aspects.EnableMonitoringAspects;

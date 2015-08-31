@@ -60,16 +60,16 @@
         <property name="password" value="${datasource.password}" />
     </bean>
 
-    <bean id="lodgingLogActivityProcess" class="com.expedia.content.media.processing.pipleline.reporting.LodgingLogActivityProcess">
+    <bean id="lodgingLogActivityProcess" class="com.expedia.content.media.processing.pipeline.reporting.LodgingLogActivityProcess">
         <constructor-arg value="${log.thread.pool.size}" />
         <constructor-arg type="boolean" value="false"/>
     </bean>
 
-    <bean id="carsLogActivityProcess" class="com.expedia.content.media.processing.pipleline.reporting.CarsLogActivityProcess">
+    <bean id="carsLogActivityProcess" class="com.expedia.content.media.processing.pipeline.reporting.CarsLogActivityProcess">
         <constructor-arg value="${log.thread.pool.size}" />
     </bean>
 
-    <bean id="logActivityPicker" class="com.expedia.content.media.processing.domain.ImageTypeComponentPicker">
+    <bean id="logActivityPicker" class="com.expedia.content.media.processing.pipeline.domain.ImageTypeComponentPicker">
         <constructor-arg name="imageTypeComponentMap">
             <map>
                 <entry key="VirtualTour" value-ref="lodgingLogActivityProcess" />
