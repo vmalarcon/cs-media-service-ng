@@ -16,11 +16,15 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * <code>MPP media service</code> application.
@@ -86,6 +90,22 @@ public class Application {
     @Counter(name = "acquireMessageBadRequestCounter")
     public ResponseEntity<String> buildBadRequestResponse(String validationMessage) {
         return new ResponseEntity<>("Bad Request: " + validationMessage, HttpStatus.BAD_REQUEST);
+    }
+
+    @RequestMapping(value = "/media/v1/statuses", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity mediaStatuses(@RequestBody final String message) throws Exception {
+        LOGGER.info("RECEIVED - mediaStatuses get message: [{}]", message);
+        Map<String, Object> map = ImageMessage.buildMapFromJson(message);
+        try {
+            if (map.get("mediaNames") == null) {
+                return buildBadRequestResponse("invalid property");
+            }
+            String json = mediaServiceProcess.getMediaStatusList((List<String>) map.get("mediaNames"));
+            return new ResponseEntity<>(json, HttpStatus.OK);
+        } catch (ImageMessageException ex) {
+            LOGGER.error("Error parsing Json message=[{}].", message, ex);
+            return buildBadRequestResponse(ex.getMessage());
+        }
     }
 }
 

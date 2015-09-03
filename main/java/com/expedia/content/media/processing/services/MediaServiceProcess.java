@@ -6,10 +6,12 @@ import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.pipleline.reporting.Activity;
 import com.expedia.content.media.processing.pipleline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipleline.reporting.Reporting;
+import com.expedia.content.media.processing.pipleline.reporting.sql.MediaProcessLog;
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.expedia.content.metrics.aspects.annotations.Meter;
 import com.expedia.content.metrics.aspects.annotations.Timer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -18,8 +20,7 @@ import org.springframework.stereotype.Component;
 
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 /**
  * MediaServiceProcess is called by main class
@@ -28,21 +29,32 @@ import java.util.List;
 public class MediaServiceProcess {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MediaServiceProcess.class);
+    private static final String SQL_PARAM_TEMPLATE = "<Parameter type=\"MediaFileName\" val=\"fileName\"/>";
+    private static final String JSON_TAG_STATUS = "status";
+    private static final String JSON_TAG_TIME = "time";
+    private static final String JSON_TAG_MEDIA_NAME = "mediaName";
+    private static final String JSON_TAG_MEDIA_STATUS = "mediaStatuses";
+    private static final String JSON_TAG_STATUS_LIST = "statuses";
+
+
+
     private final List<MediaMessageValidator> validators;
     private final RabbitTemplate rabbitTemplate;
     private final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker;
     private final Reporting reporting;
+    private final Map<String, String> mediaStatusMap;
 
     /**
      * @param validators     injected from spring configuration file
      * @param rabbitTemplate jms queue template
      */
     public MediaServiceProcess(List<MediaMessageValidator> validators, RabbitTemplate rabbitTemplate,
-            @Qualifier("logActivityPicker") final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker, final Reporting reporting) {
+            @Qualifier("logActivityPicker") final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker, final Reporting reporting, final Map mediaStatusMap) {
         this.validators = validators;
         this.rabbitTemplate = rabbitTemplate;
         this.logActivityPicker = logActivityPicker;
         this.reporting = reporting;
+        this.mediaStatusMap = mediaStatusMap;
     }
 
     /**
@@ -101,6 +113,34 @@ public class MediaServiceProcess {
         URL fileUrl = imageMessage.getFileUrl();
         LogActivityProcess logActivityProcess = logActivityPicker.getImageTypeComponent(imageMessage.getImageType());
         logActivityProcess.log(fileUrl, imageMessage.processingFileName(), activity, new Date(), reporting, imageMessage.getImageType());
+    }
+
+    public String getMediaStatusList(List<String> fileNameList) throws Exception {
+        Map<String, Object> allMap = new HashMap<>();
+        ObjectMapper mapper = new ObjectMapper();
+        List mediaStatusList = new ArrayList();
+        for (String fileName : fileNameList) {
+            Map<String, Object> fileMap = new HashMap<>();
+            List subStatusList = new ArrayList();
+            String param = SQL_PARAM_TEMPLATE.replace("fileName", fileName);
+            List<MediaProcessLog> statusLogList = reporting.findMediaStatus(param);
+            if (statusLogList != null) {
+                for (MediaProcessLog status : statusLogList) {
+                    Map<String, String> objectMap = new HashMap<>();
+                    String mappingValue =
+                            mediaStatusMap.get(status.getActivityNameAndType()) != null ? mediaStatusMap.get(status.getActivityNameAndType()) :
+                                    status.getActivityNameAndType();
+                    objectMap.put(JSON_TAG_STATUS, mappingValue);
+                    objectMap.put(JSON_TAG_TIME, status.getActivityTime());
+                    subStatusList.add(objectMap);
+                }
+            }
+            fileMap.put(JSON_TAG_STATUS_LIST, subStatusList);
+            fileMap.put(JSON_TAG_MEDIA_NAME, fileName);
+            mediaStatusList.add(fileMap);
+        }
+        allMap.put(JSON_TAG_MEDIA_STATUS, mediaStatusList);
+        return mapper.writeValueAsString(allMap);
     }
 
 }

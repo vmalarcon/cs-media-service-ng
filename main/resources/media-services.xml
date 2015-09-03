@@ -20,17 +20,22 @@
     <bean id="mediaServiceProcess" class="com.expedia.content.media.processing.services.MediaServiceProcess">
         <constructor-arg>
             <list>
-                <ref bean="expediaValidator" />
-                <ref bean="categoryValidator" />
-                <ref bean="providerRequiredValidator" />
-                <ref bean="fileUrlRequiredValidator" />
-                <ref bean="imageTypeRequiredValidator" />
-                <ref bean="mediaProviderValidator" />
+                <ref bean="expediaValidator"/>
+                <ref bean="categoryValidator"/>
+                <ref bean="providerRequiredValidator"/>
+                <ref bean="fileUrlRequiredValidator"/>
+                <ref bean="imageTypeRequiredValidator"/>
+                <ref bean="mediaProviderValidator"/>
             </list>
         </constructor-arg>
-        <constructor-arg ref="filenamesRabbitTemplate" />
-        <constructor-arg ref="lcmReporting" />
-        <constructor-arg ref="logActivityPicker" />
+        <constructor-arg ref="filenamesRabbitTemplate"/>
+        <constructor-arg ref="lcmReporting"/>
+        <constructor-arg ref="logActivityPicker"/>
+        <constructor-arg>
+            <map>
+                <entry key="LCM/Publish" value="Media published in LCM"/>
+            </map>
+        </constructor-arg>
     </bean>
 
     <bean id="expediaValidator" class="com.expedia.content.media.processing.services.validator.ExpediaIdValidator">
