@@ -43,6 +43,7 @@ public class MediaServiceProcess {
     private final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker;
     private final Reporting reporting;
     private final Map<String, String> mediaStatusMap;
+    private  List<MediaMessageValidator> mediaStatusValidatorList;
 
     /**
      * @param validators     injected from spring configuration file
@@ -55,6 +56,15 @@ public class MediaServiceProcess {
         this.logActivityPicker = logActivityPicker;
         this.reporting = reporting;
         this.mediaStatusMap = mediaStatusMap;
+    }
+
+    public List<MediaMessageValidator> getMediaStatusValidatorList() {
+        return mediaStatusValidatorList;
+    }
+
+    public void setMediaStatusValidatorList(
+            List<MediaMessageValidator> mediaStatusValidatorList) {
+        this.mediaStatusValidatorList = mediaStatusValidatorList;
     }
 
     /**
@@ -104,6 +114,29 @@ public class MediaServiceProcess {
     }
 
     /**
+     * validate whether the message is valid
+     * required: mediaNames
+     * value type: mediaNames must be array.
+     *
+     * @param object value of 'mediaNames'
+     * @return ValidationStatus contain two validation status, true-successful,
+     * false- validation fail , in false case, a validation message is set in ValidationStatus
+     * @throws Exception
+     */
+    public ValidationStatus validateMediaStatus(Object object) throws Exception {
+        ValidationStatus validationStatus = new ValidationStatus();
+        //in case, no validator defined, we make it true.
+        validationStatus.setValid(true);
+        for (MediaMessageValidator validator : mediaStatusValidatorList) {
+            validationStatus = validator.validate(object);
+            if (!validationStatus.isValid()) {
+                return validationStatus;
+            }
+        }
+        return validationStatus;
+    }
+
+    /**
      * Logs a completed activity and its time. and exepdiaId is appended before the file name
      *
      * @param imageMessage The imageMessage of the file being processed.
@@ -115,6 +148,14 @@ public class MediaServiceProcess {
         logActivityProcess.log(fileUrl, imageMessage.processingFileName(), activity, new Date(), reporting, imageMessage.getImageType());
     }
 
+    /**
+     * query LCM DB to get the media file status.
+     *
+     * @param fileNameList
+     * @return json message than contain status and time
+     * @throws Exception
+     */
+    @RetryableMethod
     public String getMediaStatusList(List<String> fileNameList) throws Exception {
         Map<String, Object> allMap = new HashMap<>();
         ObjectMapper mapper = new ObjectMapper();
@@ -123,22 +164,27 @@ public class MediaServiceProcess {
             Map<String, Object> fileMap = new HashMap<>();
             List subStatusList = new ArrayList();
             String param = SQL_PARAM_TEMPLATE.replace("fileName", fileName);
+            Date being = new Date();
             List<MediaProcessLog> statusLogList = reporting.findMediaStatus(param);
+            Date end = new Date();
+            System.out.println("used time:" + (end.getTime() - being.getTime()));
             if (statusLogList != null) {
-                for (MediaProcessLog status : statusLogList) {
-                    Map<String, String> objectMap = new HashMap<>();
-                    String mappingValue =
-                            mediaStatusMap.get(status.getActivityNameAndType()) != null ? mediaStatusMap.get(status.getActivityNameAndType()) :
-                                    status.getActivityNameAndType();
-                    objectMap.put(JSON_TAG_STATUS, mappingValue);
-                    objectMap.put(JSON_TAG_TIME, status.getActivityTime());
-                    subStatusList.add(objectMap);
-                }
+                MediaProcessLog mediaProcessLog = statusLogList.get(statusLogList.size() - 1);
+                Map<String, String> objectMap = new HashMap<>();
+                String mappingValue =
+                        mediaStatusMap.get(mediaProcessLog.getActivityType()) != null ? mediaStatusMap.get(mediaProcessLog.getActivityType()) :
+                                mediaProcessLog.getActivityNameAndType();
+                objectMap.put(JSON_TAG_STATUS, mappingValue);
+                objectMap.put(JSON_TAG_TIME, mediaProcessLog.getActivityTime());
+                subStatusList.add(objectMap);
+
             }
+
             fileMap.put(JSON_TAG_STATUS_LIST, subStatusList);
             fileMap.put(JSON_TAG_MEDIA_NAME, fileName);
             mediaStatusList.add(fileMap);
         }
+
         allMap.put(JSON_TAG_MEDIA_STATUS, mediaStatusList);
         return mapper.writeValueAsString(allMap);
     }

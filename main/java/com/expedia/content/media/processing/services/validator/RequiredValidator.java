@@ -1,6 +1,5 @@
 package com.expedia.content.media.processing.services.validator;
 
-import com.expedia.content.media.processing.domain.ImageMessage;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,15 +16,15 @@ public class RequiredValidator implements MediaMessageValidator {
     /**
      * Validate the specified field exists in message.
      *
-     * @param imageMessage message to validate
+     * @param object message to validate
      * @return ValidationStatus contain two validation status, true-successful,
      * false- validation fail , in false case, a validation message is set in ValidationStatus
      */
     @Override
-    public ValidationStatus validate(ImageMessage imageMessage) {
+    public ValidationStatus validate(Object object) {
         ValidationStatus validationStatus = new ValidationStatus();
 
-        if (!validateFieldNotNullOrNotEmpty(imageMessage)) {
+        if (!validateFieldNotNullOrNotEmpty(object)) {
             validationStatus.setValid(false);
             validationStatus.setMessage(fieldName + " is required.");
         } else {
@@ -37,13 +36,13 @@ public class RequiredValidator implements MediaMessageValidator {
     /**
      * validate the field value is a number or not
      *
-     * @param imageMessage
+     * @param object
      * @return boolean
      */
-    private boolean validateFieldNotNullOrNotEmpty(ImageMessage imageMessage) {
+    private boolean validateFieldNotNullOrNotEmpty(Object object) {
         Object fieldValue = null;
         try {
-            fieldValue = ReflectionUtil.getFieldValue(imageMessage, fieldName);
+            fieldValue = ReflectionUtil.getFieldValue(object, fieldName);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             LOGGER.error("reflection call fail", e);
             throw new NoSuchElementException(fieldName + " does not exist, please check configuration file");

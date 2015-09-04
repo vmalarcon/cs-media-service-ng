@@ -134,6 +134,66 @@ From the generated file, we can remove some JMX properties that are not related 
                 <metric attribute="Count" isCounter="false" name="Application.acquireMessageBadRequestCounter"/>
             </include>
         </publish>
+        <publish name="metrics:name=Application.mediaStatusCounter">
+            <delay>30</delay>
+            <unit>SECONDS</unit>
+            <include>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="Application.mediaStatusCounter"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="Application.mediaStatusCounter"/>
+                <metric attribute="MeanRate" isCounter="false" name="Application.mediaStatusCounter"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="Application.mediaStatusCounter"/>
+                <metric attribute="RateUnit" isCounter="false" name="Application.mediaStatusCounter"/>
+                <metric attribute="Count" isCounter="false" name="Application.mediaStatusCounter"/>
+            </include>
+        </publish>
+        <publish name="metrics:name=Application.mediaStatusCounter.failure">
+            <delay>30</delay>
+            <unit>SECONDS</unit>
+            <include>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="Application.mediaStatusCounter.failure"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="Application.mediaStatusCounter.failure"/>
+                <metric attribute="MeanRate" isCounter="false" name="Application.mediaStatusCounter.failure"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="Application.mediaStatusCounter.failure"/>
+                <metric attribute="RateUnit" isCounter="false" name="Application.mediaStatusCounter.failure"/>
+                <metric attribute="Count" isCounter="false" name="Application.mediaStatusCounter.failure"/>
+            </include>
+        </publish>
+        <publish name="metrics:name=Application.mediaStatusCounter.success">
+            <delay>30</delay>
+            <unit>SECONDS</unit>
+            <include>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="Application.mediaStatusCounter.success"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="Application.mediaStatusCounter.success"/>
+                <metric attribute="MeanRate" isCounter="false" name="Application.mediaStatusCounter.success"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="Application.mediaStatusCounter.success"/>
+                <metric attribute="RateUnit" isCounter="false" name="Application.mediaStatusCounter.success"/>
+                <metric attribute="Count" isCounter="false" name="Application.mediaStatusCounter.success"/>
+            </include>
+        </publish>
+        <publish name="metrics:name=Application.mediaStatusTimer">
+            <delay>30</delay>
+            <unit>SECONDS</unit>
+            <include>
+                <metric attribute="Max" isCounter="false" name="Application.mediaStatusTimer"/>
+                <metric attribute="Min" isCounter="false" name="Application.mediaStatusTimer"/>
+                <metric attribute="Mean" isCounter="false" name="Application.mediaStatusTimer"/>
+                <metric attribute="50thPercentile" isCounter="false" name="Application.mediaStatusTimer"/>
+                <metric attribute="StdDev" isCounter="false" name="Application.mediaStatusTimer"/>
+                <metric attribute="75thPercentile" isCounter="false" name="Application.mediaStatusTimer"/>
+                <metric attribute="95thPercentile" isCounter="false" name="Application.mediaStatusTimer"/>
+                <metric attribute="98thPercentile" isCounter="false" name="Application.mediaStatusTimer"/>
+                <metric attribute="99thPercentile" isCounter="false" name="Application.mediaStatusTimer"/>
+                <metric attribute="999thPercentile" isCounter="false" name="Application.mediaStatusTimer"/>
+                <metric attribute="DurationUnit" isCounter="false" name="Application.mediaStatusTimer"/>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="Application.mediaStatusTimer"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="Application.mediaStatusTimer"/>
+                <metric attribute="MeanRate" isCounter="false" name="Application.mediaStatusTimer"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="Application.mediaStatusTimer"/>
+                <metric attribute="RateUnit" isCounter="false" name="Application.mediaStatusTimer"/>
+                <metric attribute="Count" isCounter="false" name="Application.mediaStatusTimer"/>
+            </include>
+        </publish>
+
         <publish name="metrics:name=LcmReporting.findName">
             <delay>30</delay>
             <unit>SECONDS</unit>

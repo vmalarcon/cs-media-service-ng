@@ -92,16 +92,26 @@ public class Application {
         return new ResponseEntity<>("Bad Request: " + validationMessage, HttpStatus.BAD_REQUEST);
     }
 
+    /**
+     * web service interface to get the media file process status.
+     *
+     * @param message Json format message, mediaNames is arraylist that contains media file name.
+     * @return ResponseEntity is the standard spring mvn response object
+     * @throws Exception
+     */
+    @Meter(name = "mediaStatusCounter")
+    @Timer(name = "mediaStatusTimer")
     @RequestMapping(value = "/media/v1/statuses", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity mediaStatuses(@RequestBody final String message) throws Exception {
         LOGGER.info("RECEIVED - mediaStatuses get message: [{}]", message);
-        Map<String, Object> map = ImageMessage.buildMapFromJson(message);
         try {
-            if (map.get("mediaNames") == null) {
-                return buildBadRequestResponse("invalid property");
+            Map<String, Object> map = ImageMessage.buildMapFromJson(message);
+            ValidationStatus validationStatus = mediaServiceProcess.validateMediaStatus(map.get("mediaNames"));
+            if (!validationStatus.isValid()) {
+                return buildBadRequestResponse(validationStatus.getMessage());
             }
-            String json = mediaServiceProcess.getMediaStatusList((List<String>) map.get("mediaNames"));
-            return new ResponseEntity<>(json, HttpStatus.OK);
+            String jsonResponse = mediaServiceProcess.getMediaStatusList((List<String>) map.get("mediaNames"));
+            return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
         } catch (ImageMessageException ex) {
             LOGGER.error("Error parsing Json message=[{}].", message, ex);
             return buildBadRequestResponse(ex.getMessage());

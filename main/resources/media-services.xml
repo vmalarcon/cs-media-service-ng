@@ -33,9 +33,25 @@
         <constructor-arg ref="logActivityPicker"/>
         <constructor-arg>
             <map>
-                <entry key="LCM/Publish" value="Media published in LCM"/>
+                <entry key="Reception" value="Media File Received"/>
+                <entry key="MediaImport" value="Media is being processed"/>
+                <entry key="DcpPickup" value="Media is being processed"/>
+                <entry key="PreProcess" value="Media is being processed"/>
+                <entry key="DerivativeCalculation" value="Media is being processed"/>
+                <entry key="DerivativeCreation" value="Media is being processed"/>
+                <entry key="PostProcess" value="Media is being processed"/>
+                <entry key="Archive" value="Media is being processed"/>
+                <entry key="Derivatives" value="Media is being processed"/>
+                <entry key="Reject" value="Media is corrupted"/>
+                <entry key="Publish" value="Media is published"/>
             </map>
         </constructor-arg>
+
+        <property name="mediaStatusValidatorList">
+            <list value-type="com.expedia.content.media.processing.services.validator.MediaMessageValidator">
+                <ref bean="mediaStatusTypeValidator"/>
+            </list>
+        </property>
     </bean>
 
     <bean id="expediaValidator" class="com.expedia.content.media.processing.services.validator.ExpediaIdValidator">
@@ -55,6 +71,9 @@
     </bean>
     <bean id="mediaProviderValidator" class="com.expedia.content.media.processing.services.validator.NumericValidator">
         <property name="fieldName" value="mediaProviderId" />
+    </bean>
+
+    <bean id="mediaStatusTypeValidator" class="com.expedia.content.media.processing.services.validator.MediaNamesValidator">
     </bean>
 
     <bean id="dataSource"

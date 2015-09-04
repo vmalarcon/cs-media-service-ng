@@ -1,6 +1,5 @@
 package com.expedia.content.media.processing.services.validator;
 
-import com.expedia.content.media.processing.domain.ImageMessage;
 
 /**
  * Validates an image message content.
@@ -17,5 +16,5 @@ public interface MediaMessageValidator {
      * @return ValidationStatus contain two validation status, true-successful,
      * false- validation fail , in false case, a validation message is included in ValidationStatus
      */
-    ValidationStatus validate(ImageMessage imageMessage) throws Exception;
+    ValidationStatus validate(Object imageMessage) throws Exception;
 }
