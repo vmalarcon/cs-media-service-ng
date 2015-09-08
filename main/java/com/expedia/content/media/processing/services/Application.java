@@ -95,7 +95,7 @@ public class Application {
     /**
      * web service interface to get the media file process status.
      *
-     * @param message Json format message, mediaNames is arraylist that contains media file name.
+     * @param message Json format message, mediaNames is array that contains media file name.
      * @return ResponseEntity is the standard spring mvn response object
      * @throws Exception
      */

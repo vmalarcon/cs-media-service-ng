@@ -44,6 +44,7 @@ public class MediaServiceProcess {
     private final Reporting reporting;
     private final Map<String, String> mediaStatusMap;
     private  List<MediaMessageValidator> mediaStatusValidatorList;
+    private  List<String> filterActivityList;
 
     /**
      * @param validators     injected from spring configuration file
@@ -65,6 +66,14 @@ public class MediaServiceProcess {
     public void setMediaStatusValidatorList(
             List<MediaMessageValidator> mediaStatusValidatorList) {
         this.mediaStatusValidatorList = mediaStatusValidatorList;
+    }
+
+    public List<String> getFilterActivityList() {
+        return filterActivityList;
+    }
+
+    public void setFilterActivityList(List<String> filterActivityList) {
+        this.filterActivityList = filterActivityList;
     }
 
     /**
@@ -115,7 +124,7 @@ public class MediaServiceProcess {
 
     /**
      * validate whether the message is valid
-     * required: mediaNames
+     * required json property: mediaNames
      * value type: mediaNames must be array.
      *
      * @param object value of 'mediaNames'
@@ -155,38 +164,48 @@ public class MediaServiceProcess {
      * @return json message than contain status and time
      * @throws Exception
      */
+    @Meter(name = "getMediaStatusCounter")
+    @Timer(name = "getMediaStatusTimer")
     @RetryableMethod
     public String getMediaStatusList(List<String> fileNameList) throws Exception {
         Map<String, Object> allMap = new HashMap<>();
         ObjectMapper mapper = new ObjectMapper();
         List mediaStatusList = new ArrayList();
         for (String fileName : fileNameList) {
-            Map<String, Object> fileMap = new HashMap<>();
+            Map<String, Object> eachEntryMap = new HashMap<>();
             List subStatusList = new ArrayList();
             String param = SQL_PARAM_TEMPLATE.replace("fileName", fileName);
-            Date being = new Date();
             List<MediaProcessLog> statusLogList = reporting.findMediaStatus(param);
-            Date end = new Date();
-            System.out.println("used time:" + (end.getTime() - being.getTime()));
             if (statusLogList != null) {
+                filterList(statusLogList);
                 MediaProcessLog mediaProcessLog = statusLogList.get(statusLogList.size() - 1);
                 Map<String, String> objectMap = new HashMap<>();
+                LOGGER.debug("status type from db:" + mediaProcessLog.getActivityType());
                 String mappingValue =
                         mediaStatusMap.get(mediaProcessLog.getActivityType()) != null ? mediaStatusMap.get(mediaProcessLog.getActivityType()) :
-                                mediaProcessLog.getActivityNameAndType();
+                                "Unrecognized status:" + mediaProcessLog.getActivityType();
                 objectMap.put(JSON_TAG_STATUS, mappingValue);
                 objectMap.put(JSON_TAG_TIME, mediaProcessLog.getActivityTime());
                 subStatusList.add(objectMap);
-
             }
-
-            fileMap.put(JSON_TAG_STATUS_LIST, subStatusList);
-            fileMap.put(JSON_TAG_MEDIA_NAME, fileName);
-            mediaStatusList.add(fileMap);
+            eachEntryMap.put(JSON_TAG_STATUS_LIST, subStatusList);
+            eachEntryMap.put(JSON_TAG_MEDIA_NAME, fileName);
+            mediaStatusList.add(eachEntryMap);
         }
-
         allMap.put(JSON_TAG_MEDIA_STATUS, mediaStatusList);
         return mapper.writeValueAsString(allMap);
+    }
+
+    private void filterList(List<MediaProcessLog> statusLogList) {
+        for (Iterator<MediaProcessLog> iterator = statusLogList.iterator(); iterator.hasNext();) {
+            MediaProcessLog string = iterator.next();
+            for (String activity : filterActivityList) {
+                if (string.getActivityType().equalsIgnoreCase(activity)) {
+                    iterator.remove();
+                }
+            }
+
+        }
     }
 
 }

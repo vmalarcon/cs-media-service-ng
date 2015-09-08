@@ -40,7 +40,6 @@
                 <entry key="DerivativeCalculation" value="Media is being processed"/>
                 <entry key="DerivativeCreation" value="Media is being processed"/>
                 <entry key="PostProcess" value="Media is being processed"/>
-                <entry key="Archive" value="Media is being processed"/>
                 <entry key="Derivatives" value="Media is being processed"/>
                 <entry key="Reject" value="Media is corrupted"/>
                 <entry key="Publish" value="Media is published"/>
@@ -50,6 +49,12 @@
         <property name="mediaStatusValidatorList">
             <list value-type="com.expedia.content.media.processing.services.validator.MediaMessageValidator">
                 <ref bean="mediaStatusTypeValidator"/>
+            </list>
+        </property>
+        <property name="filterActivityList">
+            <list>
+                <value>Archive</value>
+                <value>MediaUpload</value>
             </list>
         </property>
     </bean>
@@ -77,7 +82,7 @@
     </bean>
 
     <bean id="dataSource"
-        class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+          class="org.springframework.jdbc.datasource.DriverManagerDataSource">
         <property name="driverClassName" value="net.sourceforge.jtds.jdbc.Driver" />
         <property name="url" value="${datasource.url}" />
         <property name="username" value="${datasource.username}" />

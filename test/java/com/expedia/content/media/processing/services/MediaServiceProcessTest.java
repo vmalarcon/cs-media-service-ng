@@ -12,6 +12,7 @@ import com.expedia.content.media.processing.services.validator.ExpediaIdValidato
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
 import com.expedia.content.media.processing.services.validator.NumericValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -19,10 +20,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -36,14 +34,30 @@ import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MediaServiceProcessTest {
-
+    private static Map<String, String> maps = new HashMap<>();
+    private static List<String> filterActivityList = new ArrayList<>();
     @Mock
     private RabbitTemplate rabbitTemplateMock;
     @Mock
     private Reporting reporting;
 
-    @Mock
-    private Map maps;
+
+
+    @BeforeClass
+    public static void setUpClass() {
+        maps.put("Publish", "Media is published");
+        maps.put("Reception", "Media File Received");
+        maps.put("MediaImport", "Media is being processed");
+        maps.put("DcpPickup", "Media is being processed");
+        maps.put("PreProcess", "Media is being processed");
+        maps.put("DerivativeCalculation", "Media is being processed");
+        maps.put("DerivativeCreation", "Media is being processed");
+        maps.put("PostProcess", "Media is being processed");
+        maps.put("Derivatives", "Media is being processed");
+        maps.put("Reject", "Media is corrupted");
+        filterActivityList.add("Archive");
+        filterActivityList.add("MediaUpload");
+    }
 
     @Test
     public void testValidateImageSuccess() throws Exception {
@@ -112,6 +126,7 @@ public class MediaServiceProcessTest {
         LodgingLogActivityProcess lodgingProcessMock = mock(LodgingLogActivityProcess.class);
         when(mockLogActivityPicker.getImageTypeComponent(ImageType.LODGING)).thenReturn(lodgingProcessMock);
         MediaServiceProcess mediaServiceProcess = new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting, maps);
+        mediaServiceProcess.setFilterActivityList(filterActivityList);
         ImageMessage imageMessageMock = mock(ImageMessage.class);
         when(imageMessageMock.getImageType()).thenReturn(ImageType.LODGING);
         when(imageMessageMock.getFileUrl()).thenReturn(new URL("http://media.com/img1.jpg"));
@@ -122,19 +137,108 @@ public class MediaServiceProcessTest {
     }
 
     @Test
-    public void testGetMediaStatusSuccess() throws Exception {
+    public void testGetMediaStatusPublished() throws Exception {
         String jsonMessage =
-                "{\"mediaStatuses\":[{\"statuses\":[{\"time\":\"2014-07-29 10:08:12.6890000 -07:00\",\"status\":\"1037678_109010ice.jpg\"}],\"mediaName\":\"test.jpg\"}]}";
+                "{\"mediaStatuses\":[{\"statuses\":[{\"time\":\"2014-07-29 10:08:12.6890000 -07:00\",\"status\":\"Media is published\"}],\"mediaName\":\"test.jpg\"}]}";
         List<MediaMessageValidator> validators = mock(List.class);
         ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
-        LodgingLogActivityProcess lodgingProcessMock = mock(LodgingLogActivityProcess.class);
-        List<MediaProcessLog> mediaLogStatuses = new ArrayList<MediaProcessLog>();
-        MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "LCM/Publish", "1037678_109010ice.jpg");
+        List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
+        MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "LCM/Publish");
         mediaLogStatuses.add(mediaLogStatus);
         List<String> fileNameList = new ArrayList();
         fileNameList.add("test.jpg");
         when(reporting.findMediaStatus(anyString())).thenReturn(mediaLogStatuses);
+
         MediaServiceProcess mediaServiceProcess = new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting, maps);
+        mediaServiceProcess.setFilterActivityList(filterActivityList);
+        String response = mediaServiceProcess.getMediaStatusList(fileNameList);
+        assertTrue(response.equals(jsonMessage));
+    }
+
+    @Test
+    public void testGetMediaStatusBeingProcessed() throws Exception {
+        String jsonMessage =
+                "{\"mediaStatuses\":[{\"statuses\":[{\"time\":\"2014-07-29 10:08:12.6890000 -07:00\",\"status\":\"Media is being processed\"}],\"mediaName\":\"test.jpg\"}]}";
+        List<MediaMessageValidator> validators = mock(List.class);
+        ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
+        List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
+        MediaProcessLog mediaLogStatusRece = new MediaProcessLog("2014-07-29 10:06:12.6890000 -07:00", "1037678_109010ice.jpg", "Repo1/Reception");
+        MediaProcessLog mediaLogStatus =
+                new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "mpp_collector/DerivativeCalculation");
+        mediaLogStatuses.add(mediaLogStatusRece);
+
+        mediaLogStatuses.add(mediaLogStatus);
+        List<String> fileNameList = new ArrayList();
+        fileNameList.add("test.jpg");
+        when(reporting.findMediaStatus(anyString())).thenReturn(mediaLogStatuses);
+
+        MediaServiceProcess mediaServiceProcess = new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting, maps);
+        mediaServiceProcess.setFilterActivityList(filterActivityList);
+        String response = mediaServiceProcess.getMediaStatusList(fileNameList);
+        assertTrue(response.equals(jsonMessage));
+    }
+
+    @Test
+    public void testGetMediaStatusRejected() throws Exception {
+        String jsonMessage =
+                "{\"mediaStatuses\":[{\"statuses\":[{\"time\":\"2014-07-29 10:08:12.6890000 -07:00\",\"status\":\"Media is corrupted\"}],\"mediaName\":\"test.jpg\"}]}";
+        List<MediaMessageValidator> validators = mock(List.class);
+        ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
+        List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
+        MediaProcessLog mediaLogStatusRece = new MediaProcessLog("2014-07-29 10:06:12.6890000 -07:00", "1037678_109010ice.jpg", "Repo1/Reception");
+        MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "mpp_collector/Reject");
+        mediaLogStatuses.add(mediaLogStatusRece);
+
+        mediaLogStatuses.add(mediaLogStatus);
+        List<String> fileNameList = new ArrayList();
+        fileNameList.add("test.jpg");
+        when(reporting.findMediaStatus(anyString())).thenReturn(mediaLogStatuses);
+
+        MediaServiceProcess mediaServiceProcess = new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting, maps);
+        mediaServiceProcess.setFilterActivityList(filterActivityList);
+        String response = mediaServiceProcess.getMediaStatusList(fileNameList);
+        assertTrue(response.equals(jsonMessage));
+    }
+
+
+    @Test
+    public void testGetMediaStatusUnrecognized() throws Exception {
+        String jsonMessage =
+                "{\"mediaStatuses\":[{\"statuses\":[{\"time\":\"2014-07-29 10:08:12.6890000 -07:00\",\"status\":\"Unrecognized status:test\"}],\"mediaName\":\"test.jpg\"}]}";
+        List<MediaMessageValidator> validators = mock(List.class);
+        ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
+        List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
+        MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "mpp_collector/test");
+
+        mediaLogStatuses.add(mediaLogStatus);
+        List<String> fileNameList = new ArrayList();
+        fileNameList.add("test.jpg");
+        when(reporting.findMediaStatus(anyString())).thenReturn(mediaLogStatuses);
+
+        MediaServiceProcess mediaServiceProcess = new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting, maps);
+        mediaServiceProcess.setFilterActivityList(filterActivityList);
+        String response = mediaServiceProcess.getMediaStatusList(fileNameList);
+        assertTrue(response.equals(jsonMessage));
+    }
+
+    @Test
+    public void testGetMediaSuccessFilterArchive() throws Exception {
+        String jsonMessage =
+                "{\"mediaStatuses\":[{\"statuses\":[{\"time\":\"2014-07-29 10:08:12.6890000 -07:00\",\"status\":\"Media is published\"}],\"mediaName\":\"test.jpg\"}]}";
+        List<MediaMessageValidator> validators = mock(List.class);
+        ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
+        List<MediaProcessLog> mediaLogStatuses = new ArrayList<MediaProcessLog>();
+        MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "LCM/Publish");
+        MediaProcessLog mediaLogStatusArchive =
+                new MediaProcessLog("2014-07-29 10:09:12.6890000 -07:00", "1037678_109010ice.jpg", "MediaProcessingPipeline/Archive");
+
+        mediaLogStatuses.add(mediaLogStatus);
+        mediaLogStatuses.add(mediaLogStatusArchive);
+        List<String> fileNameList = new ArrayList();
+        fileNameList.add("test.jpg");
+        when(reporting.findMediaStatus(anyString())).thenReturn(mediaLogStatuses);
+        MediaServiceProcess mediaServiceProcess = new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting, maps);
+        mediaServiceProcess.setFilterActivityList(filterActivityList);
         String response = mediaServiceProcess.getMediaStatusList(fileNameList);
         assertTrue(response.equals(jsonMessage));
     }

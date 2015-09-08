@@ -76,4 +76,14 @@ public class ApplicationTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    public void testWrongFormatMediaStatusMessage() throws Exception {
+        String jsonMessage = "{  \n"
+                + "   \"mediaNames\":\"1037678_109010ice.jpg\",\"1055797_1742165ice.jpg\"]\n"
+                + "}";
+        ResponseEntity<?> responseEntity = application.mediaStatuses(jsonMessage);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
 }
