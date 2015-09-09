@@ -12,6 +12,7 @@ import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.expedia.content.metrics.aspects.annotations.Meter;
 import com.expedia.content.metrics.aspects.annotations.Timer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -35,23 +36,23 @@ public class MediaServiceProcess {
     private static final String JSON_TAG_MEDIA_NAME = "mediaName";
     private static final String JSON_TAG_MEDIA_STATUS = "mediaStatuses";
     private static final String JSON_TAG_STATUS_LIST = "statuses";
-
-
+    private static final String JSON_TAG_STATUS_NOT_FOUND = "status is not found";
 
     private final List<MediaMessageValidator> validators;
     private final RabbitTemplate rabbitTemplate;
     private final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker;
     private final Reporting reporting;
     private final Map<String, String> mediaStatusMap;
-    private  List<MediaMessageValidator> mediaStatusValidatorList;
-    private  List<String> filterActivityList;
+    private List<MediaMessageValidator> mediaStatusValidatorList;
+    private List<String> filterActivityList;
 
     /**
      * @param validators     injected from spring configuration file
      * @param rabbitTemplate jms queue template
      */
     public MediaServiceProcess(List<MediaMessageValidator> validators, RabbitTemplate rabbitTemplate,
-            @Qualifier("logActivityPicker") final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker, final Reporting reporting, final Map mediaStatusMap) {
+            @Qualifier("logActivityPicker") final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker, final Reporting reporting,
+            final Map mediaStatusMap) {
         this.validators = validators;
         this.rabbitTemplate = rabbitTemplate;
         this.logActivityPicker = logActivityPicker;
@@ -169,23 +170,29 @@ public class MediaServiceProcess {
     @RetryableMethod
     public String getMediaStatusList(List<String> fileNameList) throws Exception {
         Map<String, Object> allMap = new HashMap<>();
+        String fileNameAll = StringUtils.join(fileNameList, ";");
+        List<MediaProcessLog> statusLogList = reporting.findMediaStatus(fileNameAll);
         ObjectMapper mapper = new ObjectMapper();
+        Map<String, List<MediaProcessLog>> mapList = new HashMap<>();
+        filterList(statusLogList);
+        divideListToMap(statusLogList, mapList, fileNameList.size());
         List mediaStatusList = new ArrayList();
         for (String fileName : fileNameList) {
             Map<String, Object> eachEntryMap = new HashMap<>();
             List subStatusList = new ArrayList();
-            String param = SQL_PARAM_TEMPLATE.replace("fileName", fileName);
-            List<MediaProcessLog> statusLogList = reporting.findMediaStatus(param);
-            if (statusLogList != null) {
-                filterList(statusLogList);
-                MediaProcessLog mediaProcessLog = statusLogList.get(statusLogList.size() - 1);
-                Map<String, String> objectMap = new HashMap<>();
+            Map<String, String> objectMap = new HashMap<>();
+            List<MediaProcessLog> eachList = mapList.get(fileName);
+            if (eachList != null && eachList.size() > 0) {
+                MediaProcessLog mediaProcessLog = eachList.get(eachList.size() - 1);
                 LOGGER.debug("status type from db:" + mediaProcessLog.getActivityType());
                 String mappingValue =
                         mediaStatusMap.get(mediaProcessLog.getActivityType()) != null ? mediaStatusMap.get(mediaProcessLog.getActivityType()) :
                                 "Unrecognized status:" + mediaProcessLog.getActivityType();
                 objectMap.put(JSON_TAG_STATUS, mappingValue);
                 objectMap.put(JSON_TAG_TIME, mediaProcessLog.getActivityTime());
+                subStatusList.add(objectMap);
+            } else {
+                objectMap.put(JSON_TAG_STATUS, JSON_TAG_STATUS_NOT_FOUND);
                 subStatusList.add(objectMap);
             }
             eachEntryMap.put(JSON_TAG_STATUS_LIST, subStatusList);
@@ -195,6 +202,27 @@ public class MediaServiceProcess {
         allMap.put(JSON_TAG_MEDIA_STATUS, mediaStatusList);
         return mapper.writeValueAsString(allMap);
     }
+
+    private static void divideListToMap(List<MediaProcessLog> statusLogList, Map<String, List<MediaProcessLog>> mapList, int size) {
+        if (statusLogList != null && statusLogList.size() > 0) {
+            List[] list = new ArrayList[size];
+            Arrays.fill(list, new ArrayList<MediaProcessLog>());
+            int i = 0;
+            String preName = statusLogList.get(0).getMediaFileName();
+            mapList.put(preName, list[0]);
+            for (MediaProcessLog mediaProcessLog : statusLogList) {
+                if (mediaProcessLog.getMediaFileName().equals(preName)) {
+                    list[i].add(mediaProcessLog);
+                } else {
+                    i++;
+                    list[i].add(mediaProcessLog);
+                    preName = mediaProcessLog.getMediaFileName();
+                    mapList.put(preName, list[i]);
+                }
+            }
+        }
+    }
+
 
     private void filterList(List<MediaProcessLog> statusLogList) {
         for (Iterator<MediaProcessLog> iterator = statusLogList.iterator(); iterator.hasNext();) {
