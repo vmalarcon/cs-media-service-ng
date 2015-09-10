@@ -47,7 +47,7 @@
         </constructor-arg>
 
         <property name="mediaStatusValidatorList">
-            <list value-type="com.expedia.content.media.processing.services.validator.MediaMessageValidator">
+            <list value-type="com.expedia.content.media.processing.services.validator.MediaStatusValidator">
                 <ref bean="mediaStatusTypeValidator"/>
             </list>
         </property>

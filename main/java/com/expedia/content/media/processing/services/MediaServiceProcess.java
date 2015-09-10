@@ -7,11 +7,12 @@ import com.expedia.content.media.processing.pipleline.reporting.Activity;
 import com.expedia.content.media.processing.pipleline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipleline.reporting.Reporting;
 import com.expedia.content.media.processing.pipleline.reporting.sql.MediaProcessLog;
+import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
+import com.expedia.content.media.processing.services.validator.MediaStatusValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.expedia.content.metrics.aspects.annotations.Meter;
 import com.expedia.content.metrics.aspects.annotations.Timer;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,20 +31,13 @@ import java.util.*;
 public class MediaServiceProcess {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MediaServiceProcess.class);
-    private static final String SQL_PARAM_TEMPLATE = "<Parameter type=\"MediaFileName\" val=\"fileName\"/>";
-    private static final String JSON_TAG_STATUS = "status";
-    private static final String JSON_TAG_TIME = "time";
-    private static final String JSON_TAG_MEDIA_NAME = "mediaName";
-    private static final String JSON_TAG_MEDIA_STATUS = "mediaStatuses";
-    private static final String JSON_TAG_STATUS_LIST = "statuses";
-    private static final String JSON_TAG_STATUS_NOT_FOUND = "status is not found";
 
     private final List<MediaMessageValidator> validators;
     private final RabbitTemplate rabbitTemplate;
     private final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker;
     private final Reporting reporting;
     private final Map<String, String> mediaStatusMap;
-    private List<MediaMessageValidator> mediaStatusValidatorList;
+    private List<MediaStatusValidator> mediaStatusValidatorList;
     private List<String> filterActivityList;
 
     /**
@@ -60,12 +54,12 @@ public class MediaServiceProcess {
         this.mediaStatusMap = mediaStatusMap;
     }
 
-    public List<MediaMessageValidator> getMediaStatusValidatorList() {
+    public List<MediaStatusValidator> getMediaStatusValidatorList() {
         return mediaStatusValidatorList;
     }
 
     public void setMediaStatusValidatorList(
-            List<MediaMessageValidator> mediaStatusValidatorList) {
+            List<MediaStatusValidator> mediaStatusValidatorList) {
         this.mediaStatusValidatorList = mediaStatusValidatorList;
     }
 
@@ -128,17 +122,17 @@ public class MediaServiceProcess {
      * required json property: mediaNames
      * value type: mediaNames must be array.
      *
-     * @param object value of 'mediaNames'
+     * @param message input json message
      * @return ValidationStatus contain two validation status, true-successful,
      * false- validation fail , in false case, a validation message is set in ValidationStatus
      * @throws Exception
      */
-    public ValidationStatus validateMediaStatus(Object object) throws Exception {
+    public ValidationStatus validateMediaStatus(String message) throws Exception {
         ValidationStatus validationStatus = new ValidationStatus();
         //in case, no validator defined, we make it true.
         validationStatus.setValid(true);
-        for (MediaMessageValidator validator : mediaStatusValidatorList) {
-            validationStatus = validator.validate(object);
+        for (MediaStatusValidator validator : mediaStatusValidatorList) {
+            validationStatus = validator.validate(message);
             if (!validationStatus.isValid()) {
                 return validationStatus;
             }
@@ -169,41 +163,15 @@ public class MediaServiceProcess {
     @Timer(name = "getMediaStatusTimer")
     @RetryableMethod
     public String getMediaStatusList(List<String> fileNameList) throws Exception {
-        Map<String, Object> allMap = new HashMap<>();
         String fileNameAll = StringUtils.join(fileNameList, ";");
         List<MediaProcessLog> statusLogList = reporting.findMediaStatus(fileNameAll);
-        ObjectMapper mapper = new ObjectMapper();
         Map<String, List<MediaProcessLog>> mapList = new HashMap<>();
         filterList(statusLogList);
         divideListToMap(statusLogList, mapList, fileNameList.size());
-        List mediaStatusList = new ArrayList();
-        for (String fileName : fileNameList) {
-            Map<String, Object> eachEntryMap = new HashMap<>();
-            List subStatusList = new ArrayList();
-            Map<String, String> objectMap = new HashMap<>();
-            List<MediaProcessLog> eachList = mapList.get(fileName);
-            if (eachList != null && eachList.size() > 0) {
-                MediaProcessLog mediaProcessLog = eachList.get(eachList.size() - 1);
-                LOGGER.debug("status type from db:" + mediaProcessLog.getActivityType());
-                String mappingValue =
-                        mediaStatusMap.get(mediaProcessLog.getActivityType()) != null ? mediaStatusMap.get(mediaProcessLog.getActivityType()) :
-                                "Unrecognized status:" + mediaProcessLog.getActivityType();
-                objectMap.put(JSON_TAG_STATUS, mappingValue);
-                objectMap.put(JSON_TAG_TIME, mediaProcessLog.getActivityTime());
-                subStatusList.add(objectMap);
-            } else {
-                objectMap.put(JSON_TAG_STATUS, JSON_TAG_STATUS_NOT_FOUND);
-                subStatusList.add(objectMap);
-            }
-            eachEntryMap.put(JSON_TAG_STATUS_LIST, subStatusList);
-            eachEntryMap.put(JSON_TAG_MEDIA_NAME, fileName);
-            mediaStatusList.add(eachEntryMap);
-        }
-        allMap.put(JSON_TAG_MEDIA_STATUS, mediaStatusList);
-        return mapper.writeValueAsString(allMap);
+        return JSONUtil.generateJsonResponse(mapList, fileNameList, mediaStatusMap);
     }
 
-    private static void divideListToMap(List<MediaProcessLog> statusLogList, Map<String, List<MediaProcessLog>> mapList, int size) {
+    private void divideListToMap(List<MediaProcessLog> statusLogList, Map<String, List<MediaProcessLog>> mapList, int size) {
         if (statusLogList != null && statusLogList.size() > 0) {
             List[] list = new ArrayList[size];
             Arrays.fill(list, new ArrayList<MediaProcessLog>());
@@ -223,7 +191,6 @@ public class MediaServiceProcess {
         }
     }
 
-
     private void filterList(List<MediaProcessLog> statusLogList) {
         for (Iterator<MediaProcessLog> iterator = statusLogList.iterator(); iterator.hasNext();) {
             MediaProcessLog string = iterator.next();
@@ -232,7 +199,6 @@ public class MediaServiceProcess {
                     iterator.remove();
                 }
             }
-
         }
     }
 

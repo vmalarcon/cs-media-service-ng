@@ -1,10 +1,8 @@
 package com.expedia.content.media.processing.services.validator;
 
-import com.expedia.content.media.processing.domain.ImageMessage;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
-import java.util.Map;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -16,10 +14,9 @@ public class MediaNamesValidatorTest {
         String validJson = "{  \n"
                 + "   \"mediaNames\":[\"1037678_109010ice.jpg\",\"1055797_1742165ice.jpg\"]\n"
                 + "}";
-        Map<String, Object> map = ImageMessage.buildMapFromJson(validJson);
         MediaNamesValidator mediaNamesValidator = new MediaNamesValidator();
         setFieldValue(mediaNamesValidator, "maximumRequestCount", 4);
-        ValidationStatus validationStatus = mediaNamesValidator.validate(map.get("mediaNames"));
+        ValidationStatus validationStatus = mediaNamesValidator.validate(validJson);
         assertTrue(validationStatus.isValid());
     }
 
@@ -28,9 +25,8 @@ public class MediaNamesValidatorTest {
         String validJson = "{  \n"
                 + "   \"mediaNames\":[]\n"
                 + "}";
-        Map<String, Object> map = ImageMessage.buildMapFromJson(validJson);
         MediaNamesValidator mediaNamesValidator = new MediaNamesValidator();
-        ValidationStatus validationStatus = mediaNamesValidator.validate(map.get("mediaNames"));
+        ValidationStatus validationStatus = mediaNamesValidator.validate(validJson);
         assertTrue(("messageNames value is required.").equals(validationStatus.getMessage()));
         assertFalse(validationStatus.isValid());
     }
@@ -40,9 +36,8 @@ public class MediaNamesValidatorTest {
         String validJson = "{  \n"
                 + "   \"mediaNames\":\"test.jpg\"\n"
                 + "}";
-        Map<String, Object> map = ImageMessage.buildMapFromJson(validJson);
         MediaNamesValidator mediaNamesValidator = new MediaNamesValidator();
-        ValidationStatus validationStatus = mediaNamesValidator.validate(map.get("mediaNames"));
+        ValidationStatus validationStatus = mediaNamesValidator.validate(validJson);
         assertTrue(("messageNames value should be array.").equals(validationStatus.getMessage()));
         assertFalse(validationStatus.isValid());
     }
@@ -53,10 +48,9 @@ public class MediaNamesValidatorTest {
         String validJson = "{  \n"
                 + "   \"mediaNames\":[\"3760389_SCORE_IMG_4066.jpg\",\"test.jpg\",\"test1.jpg\",\"test2.jpg\",\"test3.jpg\"]\n"
                 + "}";
-        Map<String, Object> map = ImageMessage.buildMapFromJson(validJson);
         MediaNamesValidator mediaNamesValidator = new MediaNamesValidator();
         setFieldValue(mediaNamesValidator, "maximumRequestCount", 4);
-        ValidationStatus validationStatus = mediaNamesValidator.validate(map.get("mediaNames"));
+        ValidationStatus validationStatus = mediaNamesValidator.validate(validJson);
         assertTrue(("messageNames count exceed the maximum 4").equals(validationStatus.getMessage()));
         assertFalse(validationStatus.isValid());
     }
@@ -72,9 +66,8 @@ public class MediaNamesValidatorTest {
         String jsonWithWrongProperty = "{  \n"
                 + "   \"mediaName1\":\"test.jpg\"\n"
                 + "}";
-        Map<String, Object> map = ImageMessage.buildMapFromJson(jsonWithWrongProperty);
         MediaNamesValidator mediaNamesValidator = new MediaNamesValidator();
-        ValidationStatus validationStatus = mediaNamesValidator.validate(map.get("mediaNames"));
+        ValidationStatus validationStatus = mediaNamesValidator.validate(jsonWithWrongProperty);
         assertTrue(("message does not contain property 'messageNames'.").equals(validationStatus.getMessage()));
         assertFalse(validationStatus.isValid());
     }
