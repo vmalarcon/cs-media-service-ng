@@ -167,28 +167,8 @@ public class MediaServiceProcess {
         List<MediaProcessLog> statusLogList = reporting.findMediaStatus(fileNameAll);
         Map<String, List<MediaProcessLog>> mapList = new HashMap<>();
         filterList(statusLogList);
-        divideListToMap(statusLogList, mapList, fileNameList.size());
+        JSONUtil.divideListToMap(statusLogList, mapList, fileNameList.size());
         return JSONUtil.generateJsonResponse(mapList, fileNameList, mediaStatusMap);
-    }
-
-    private void divideListToMap(List<MediaProcessLog> statusLogList, Map<String, List<MediaProcessLog>> mapList, int size) {
-        if (statusLogList != null && statusLogList.size() > 0) {
-            List[] list = new ArrayList[size];
-            Arrays.fill(list, new ArrayList<MediaProcessLog>());
-            int i = 0;
-            String preName = statusLogList.get(0).getMediaFileName();
-            mapList.put(preName, list[0]);
-            for (MediaProcessLog mediaProcessLog : statusLogList) {
-                if (mediaProcessLog.getMediaFileName().equals(preName)) {
-                    list[i].add(mediaProcessLog);
-                } else {
-                    i++;
-                    list[i].add(mediaProcessLog);
-                    preName = mediaProcessLog.getMediaFileName();
-                    mapList.put(preName, list[i]);
-                }
-            }
-        }
     }
 
     private void filterList(List<MediaProcessLog> statusLogList) {

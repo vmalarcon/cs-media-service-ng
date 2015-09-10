@@ -19,8 +19,7 @@ public final class JSONUtil {
     private static final String JSON_TAG_TIME = "time";
     private static final String JSON_TAG_MEDIA_NAME = "mediaName";
     private static final String JSON_TAG_MEDIA_STATUS = "mediaStatuses";
-    private static final String JSON_TAG_STATUS_LIST = "statuses";
-    private static final String JSON_TAG_STATUS_NOT_FOUND = "status is not found";
+    private static final String JSON_TAG_STATUS_NOT_FOUND = "No record found for this media";
     private static final Logger LOGGER = LoggerFactory.getLogger(JSONUtil.class);
 
     private JSONUtil() {
@@ -60,6 +59,29 @@ public final class JSONUtil {
         }
         allMap.put(JSON_TAG_MEDIA_STATUS, mediaStatusList);
         return mapper.writeValueAsString(allMap);
+    }
+
+    public static void divideListToMap(List<MediaProcessLog> statusLogList, Map<String, List<MediaProcessLog>> mapList, int size) {
+        if (statusLogList != null && statusLogList.size() > 0) {
+            List[] sublist = new ArrayList[size];
+            for (int k = 0; k < size; k++) {
+                List<MediaProcessLog> eachNameList = new ArrayList<>();
+                sublist[k] = eachNameList;
+            }
+            int i = 0;
+            String preName = statusLogList.get(0).getMediaFileName();
+            mapList.put(preName, sublist[0]);
+            for (MediaProcessLog mediaProcessLog : statusLogList) {
+                if (mediaProcessLog.getMediaFileName().equals(preName)) {
+                    sublist[i].add(mediaProcessLog);
+                } else {
+                    i++;
+                    sublist[i].add(mediaProcessLog);
+                    preName = mediaProcessLog.getMediaFileName();
+                    mapList.put(preName, sublist[i]);
+                }
+            }
+        }
     }
 
 }

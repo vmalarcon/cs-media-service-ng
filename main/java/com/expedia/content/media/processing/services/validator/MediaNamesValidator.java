@@ -19,7 +19,7 @@ public class MediaNamesValidator implements MediaStatusValidator {
     @Value("${medianame.maximum.count}")
     private int maximumRequestCount;
     /**
-     * Validate the object type is as expected.
+     * Validate the json is as expected.
      *
      * @param message to validate
      * @return ValidationStatus contain two validation status, true-successful,
