@@ -1,6 +1,6 @@
 package com.expedia.content.media.processing.services.util;
 
-import com.expedia.content.media.processing.pipleline.reporting.sql.MediaProcessLog;
+import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -26,6 +26,27 @@ public class JSONUtilTest {
         String expededJson =
                 "{\"mediaStatuses\":[{\"mediaName\":\"test.jpg\",\"status\":\"Media is published\",\"time\":\"2014-07-11 16:25:06.0290552 -07:00\"}]}";
         MediaProcessLog mediaProcessLog = new MediaProcessLog("2014-07-11 16:25:06.0290552 -07:00", "test.jpg", "Publish");
+
+        List<MediaProcessLog> mediaProcessLogs = new ArrayList<>();
+        mediaProcessLogs.add(mediaProcessLog);
+
+        Map<String, java.util.List<MediaProcessLog>> mapList = new HashMap<>();
+        mapList.put("test.jpg", mediaProcessLogs);
+
+        List<String> fileNameList = new ArrayList<>();
+        fileNameList.add("test.jpg");
+        Map<String, String> mediaStatusMap = new HashMap<>();
+        mediaStatusMap.put("Publish", "Media is published");
+
+        String response = JSONUtil.generateJsonResponse(mapList, fileNameList, mediaStatusMap);
+        assertTrue(expededJson.equals(response));
+    }
+
+    @Test
+    public void testGenerateJsonResponseNotFound() throws Exception {
+        String expededJson =
+                "{\"mediaStatuses\":[{\"mediaName\":\"test.jpg\",\"status\":\"NOT_FOUND\"}]}";
+        MediaProcessLog mediaProcessLog = new MediaProcessLog("2014-07-11 16:25:06.0290552 -07:00", "test.jpg", "UnKnown");
 
         List<MediaProcessLog> mediaProcessLogs = new ArrayList<>();
         mediaProcessLogs.add(mediaProcessLog);

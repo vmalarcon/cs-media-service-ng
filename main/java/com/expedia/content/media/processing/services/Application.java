@@ -2,7 +2,7 @@ package com.expedia.content.media.processing.services;
 
 import com.expedia.content.media.processing.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
-import com.expedia.content.media.processing.services.util.ImageStatusException;
+import com.expedia.content.media.processing.services.util.RequestMessageException;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.expedia.content.metrics.aspects.EnableMonitoringAspects;
@@ -94,16 +94,17 @@ public class Application {
     }
 
     /**
-     * web service interface to get the media file process status.
+     * web service interface to get the media file process status,
+     * and only return the latest status.
      *
-     * @param message Json format message, mediaNames is array that contains media file name.
+     * @param message JSON formatted message, "mediaNames", contains an array of media file names.
      * @return ResponseEntity is the standard spring mvn response object
      * @throws Exception
      */
-    @Meter(name = "mediaStatusCounter")
-    @Timer(name = "mediaStatusTimer")
+    @Meter(name = "getMediaLatestStatusCounter")
+    @Timer(name = "getMediaLatestStatusTimer")
     @RequestMapping(value = "/media/v1/lateststatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity mediaStatuses(@RequestBody final String message) throws Exception {
+    public ResponseEntity getMediaLatestStatus(@RequestBody final String message) throws Exception {
         LOGGER.info("RECEIVED - mediaStatuses get message: [{}]", message);
         try {
             Map<String, Object> map = JSONUtil.buildMapFromJson(message);
@@ -113,7 +114,7 @@ public class Application {
             }
             String jsonResponse = mediaServiceProcess.getMediaStatusList((List<String>) map.get("mediaNames"));
             return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
-        } catch (ImageStatusException ex) {
+        } catch (RequestMessageException ex) {
             LOGGER.error("Error parsing Json message=[{}].", message, ex);
             return buildBadRequestResponse(ex.getMessage());
         }

@@ -33,29 +33,32 @@
         <constructor-arg ref="logActivityPicker"/>
         <constructor-arg>
             <map>
-                <entry key="Reception" value="Media File Received"/>
-                <entry key="MediaImport" value="Media is being processed"/>
-                <entry key="DcpPickup" value="Media is being processed"/>
-                <entry key="PreProcess" value="Media is being processed"/>
-                <entry key="DerivativeCalculation" value="Media is being processed"/>
-                <entry key="DerivativeCreation" value="Media is being processed"/>
-                <entry key="PostProcess" value="Media is being processed"/>
-                <entry key="Derivatives" value="Media is being processed"/>
-                <entry key="Reject" value="Media is corrupted"/>
-                <entry key="Publish" value="Media is published"/>
+                <entry key="Reception" value="RECEIVED"/>
+                <entry key="DerivativeCreation" value="DERIVATIVES_CREATED"/>
+                <entry key="Reject" value="REJECTED"/>
+                <entry key="Publish" value="PUBLISHED"/>
             </map>
         </constructor-arg>
 
         <property name="mediaStatusValidatorList">
-            <list value-type="com.expedia.content.media.processing.services.validator.MediaStatusValidator">
+            <list value-type="com.expedia.content.media.processing.services.validator.RequestMessageValidator">
                 <ref bean="mediaStatusTypeValidator"/>
             </list>
         </property>
-        <property name="filterActivityList">
+        <property name="ignoreActivityList">
             <list>
+                <value>MediaImport</value>
+                <value>DcpPickup</value>
+                <value>DerivativeCalculation</value>
+                <value>PreProcess</value>
+                <value>Derivatives</value>
+                <value>PostProcess</value>
                 <value>Archive</value>
                 <value>MediaUpload</value>
             </list>
+        </property>
+
+        <property name="lcmProcessLogDao" ref="lcmProcessLogDao">
         </property>
     </bean>
 
@@ -79,6 +82,9 @@
     </bean>
 
     <bean id="mediaStatusTypeValidator" class="com.expedia.content.media.processing.services.validator.MediaNamesValidator">
+    </bean>
+
+    <bean id="lcmProcessLogDao" class="com.expedia.content.media.processing.services.dao.LcmProcessLogDaoImpl">
     </bean>
 
     <bean id="dataSource"

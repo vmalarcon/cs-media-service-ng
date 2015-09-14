@@ -1,6 +1,6 @@
 package com.expedia.content.media.processing.services.util;
 
-import com.expedia.content.media.processing.pipleline.reporting.sql.MediaProcessLog;
+import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,21 +19,37 @@ public final class JSONUtil {
     private static final String JSON_TAG_TIME = "time";
     private static final String JSON_TAG_MEDIA_NAME = "mediaName";
     private static final String JSON_TAG_MEDIA_STATUS = "mediaStatuses";
-    private static final String JSON_TAG_STATUS_NOT_FOUND = "No record found for this media";
+    private static final String JSON_TAG_STATUS_NOT_FOUND = "NOT_FOUND";
     private static final Logger LOGGER = LoggerFactory.getLogger(JSONUtil.class);
 
     private JSONUtil() {
     }
 
-    public static Map buildMapFromJson(String jsonMessage) throws ImageStatusException {
+    /**
+     * convert json message to java map object
+     *
+     * @param jsonMessage
+     * @return Map
+     * @throws RequestMessageException happens when message is invalid json format.
+     */
+    public static Map buildMapFromJson(String jsonMessage) throws RequestMessageException {
         try {
             return OBJECT_MAPPER.readValue(jsonMessage, Map.class);
         } catch (IOException ex) {
             String errorMsg = MessageFormat.format("Error parsing/converting Json message: {0}", jsonMessage);
-            throw new ImageStatusException(errorMsg, ex);
+            throw new RequestMessageException(errorMsg, ex);
         }
     }
 
+    /**
+     * Generate the json response message.
+     *
+     * @param mapList        key is media file name, value is status list that get from LCM DB MediaProcessLog.
+     * @param fileNameList   media file name list from input json message
+     * @param mediaStatusMap activityType to status messsage mapping.
+     * @return
+     * @throws Exception happen when covert map to json error.
+     */
     public static String generateJsonResponse(Map<String, List<MediaProcessLog>> mapList, List<String> fileNameList, Map<String, String> mediaStatusMap)
             throws Exception {
         Map<String, Object> allMap = new HashMap<>();
@@ -45,13 +61,24 @@ public final class JSONUtil {
 
             List<MediaProcessLog> eachList = mapList.get(fileName);
             if (eachList != null && eachList.size() > 0) {
-                MediaProcessLog mediaProcessLog = eachList.get(eachList.size() - 1);
-                LOGGER.debug("status type from db:" + mediaProcessLog.getActivityType());
-                String mappingValue =
-                        mediaStatusMap.get(mediaProcessLog.getActivityType()) != null ? mediaStatusMap.get(mediaProcessLog.getActivityType()) :
-                                "Unrecognized status:" + mediaProcessLog.getActivityType();
-                eachEntryMap.put(JSON_TAG_STATUS, mappingValue);
-                eachEntryMap.put(JSON_TAG_TIME, mediaProcessLog.getActivityTime());
+                String mappingValue = null;
+                for (int i = eachList.size() - 1; i >= 0; i--) {
+                    MediaProcessLog mediaProcessLog = eachList.get(i);
+                    LOGGER.debug("status type from db:" + mediaProcessLog.getActivityType());
+                    mappingValue =
+                            mediaStatusMap.get(mediaProcessLog.getActivityType());
+                    if (mappingValue != null) {
+                        eachEntryMap.put(JSON_TAG_STATUS, mappingValue);
+                        eachEntryMap.put(JSON_TAG_TIME, mediaProcessLog.getActivityTime());
+                        break;
+                    } else {
+                        continue;
+                    }
+                }
+                if (mappingValue == null) {
+                    eachEntryMap.put(JSON_TAG_STATUS, JSON_TAG_STATUS_NOT_FOUND);
+                }
+
             } else {
                 eachEntryMap.put(JSON_TAG_STATUS, JSON_TAG_STATUS_NOT_FOUND);
             }
@@ -61,6 +88,13 @@ public final class JSONUtil {
         return mapper.writeValueAsString(allMap);
     }
 
+    /**
+     * convert all media status list to mediaFileName-statusList mapping.
+     *
+     * @param statusLogList all media status of all input media files, and get from LCM DB.
+     * @param mapList       key is media file name, value is status list that get from LCM DB MediaProcessLog.
+     * @param size          the input media file name list size.
+     */
     public static void divideListToMap(List<MediaProcessLog> statusLogList, Map<String, List<MediaProcessLog>> mapList, int size) {
         if (statusLogList != null && statusLogList.size() > 0) {
             List[] sublist = new ArrayList[size];

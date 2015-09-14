@@ -12,9 +12,9 @@ import java.util.Map;
  * MediaNamesValidator will check the input json message
  * include property 'mediaNames'
  * the value of mediaNames should be array
- * the number of mediaNames should not exceed default setting 50
+ * the number of mediaNames should not exceed default setting
  */
-public class MediaNamesValidator implements MediaStatusValidator {
+public class MediaNamesValidator implements RequestMessageValidator {
     private static final Logger LOGGER = LoggerFactory.getLogger(MediaNamesValidator.class);
     @Value("${medianame.maximum.count}")
     private int maximumRequestCount;
@@ -22,8 +22,8 @@ public class MediaNamesValidator implements MediaStatusValidator {
      * Validate the json is as expected.
      *
      * @param message to validate
-     * @return ValidationStatus contain two validation status, true-successful,
-     * false- validation fail , in false case, a validation message is set in ValidationStatus
+     * @return ValidationStatus contain the validation status, {@code true} when successful or
+     * {@code false} when the validation fails. When the validation fails a message is also set in the ValidationStatus.
      */
     @Override
     public ValidationStatus validate(String message) {

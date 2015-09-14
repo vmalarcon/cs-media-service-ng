@@ -6,14 +6,14 @@ import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.pipleline.reporting.Activity;
 import com.expedia.content.media.processing.pipleline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipleline.reporting.Reporting;
-import com.expedia.content.media.processing.pipleline.reporting.sql.MediaProcessLog;
+import com.expedia.content.media.processing.services.dao.LcmProcessLogDao;
+import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
-import com.expedia.content.media.processing.services.validator.MediaStatusValidator;
+import com.expedia.content.media.processing.services.validator.RequestMessageValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.expedia.content.metrics.aspects.annotations.Meter;
 import com.expedia.content.metrics.aspects.annotations.Timer;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -37,13 +37,10 @@ public class MediaServiceProcess {
     private final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker;
     private final Reporting reporting;
     private final Map<String, String> mediaStatusMap;
-    private List<MediaStatusValidator> mediaStatusValidatorList;
-    private List<String> filterActivityList;
+    private List<RequestMessageValidator> mediaStatusValidatorList;
+    private List<String> ignoreActivityList;
+    private LcmProcessLogDao lcmProcessLogDao;
 
-    /**
-     * @param validators     injected from spring configuration file
-     * @param rabbitTemplate jms queue template
-     */
     public MediaServiceProcess(List<MediaMessageValidator> validators, RabbitTemplate rabbitTemplate,
             @Qualifier("logActivityPicker") final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker, final Reporting reporting,
             final Map mediaStatusMap) {
@@ -54,21 +51,29 @@ public class MediaServiceProcess {
         this.mediaStatusMap = mediaStatusMap;
     }
 
-    public List<MediaStatusValidator> getMediaStatusValidatorList() {
+    public List<RequestMessageValidator> getMediaStatusValidatorList() {
         return mediaStatusValidatorList;
     }
 
     public void setMediaStatusValidatorList(
-            List<MediaStatusValidator> mediaStatusValidatorList) {
+            List<RequestMessageValidator> mediaStatusValidatorList) {
         this.mediaStatusValidatorList = mediaStatusValidatorList;
     }
 
-    public List<String> getFilterActivityList() {
-        return filterActivityList;
+    public List<String> getIgnoreActivityList() {
+        return ignoreActivityList;
     }
 
-    public void setFilterActivityList(List<String> filterActivityList) {
-        this.filterActivityList = filterActivityList;
+    public void setIgnoreActivityList(List<String> ignoreActivityList) {
+        this.ignoreActivityList = ignoreActivityList;
+    }
+
+    public LcmProcessLogDao getLcmProcessLogDao() {
+        return lcmProcessLogDao;
+    }
+
+    public void setLcmProcessLogDao(LcmProcessLogDao lcmProcessLogDao) {
+        this.lcmProcessLogDao = lcmProcessLogDao;
     }
 
     /**
@@ -118,20 +123,19 @@ public class MediaServiceProcess {
     }
 
     /**
-     * validate whether the message is valid
-     * required json property: mediaNames
-     * value type: mediaNames must be array.
+     * Validates the message.
+     * In the JSON message, mediaNames is required and it must contain an array of values
      *
      * @param message input json message
-     * @return ValidationStatus contain two validation status, true-successful,
-     * false- validation fail , in false case, a validation message is set in ValidationStatus
-     * @throws Exception
+     * @return ValidationStatus contain the validation status, {@code true} when successful or
+     * {@code false} when the validation fails. When the validation fails a message is also set in the ValidationStatus.
+     * @throws Exception when the message is not valid json format.
      */
     public ValidationStatus validateMediaStatus(String message) throws Exception {
         ValidationStatus validationStatus = new ValidationStatus();
         //in case, no validator defined, we make it true.
         validationStatus.setValid(true);
-        for (MediaStatusValidator validator : mediaStatusValidatorList) {
+        for (RequestMessageValidator validator : mediaStatusValidatorList) {
             validationStatus = validator.validate(message);
             if (!validationStatus.isValid()) {
                 return validationStatus;
@@ -163,8 +167,7 @@ public class MediaServiceProcess {
     @Timer(name = "getMediaStatusTimer")
     @RetryableMethod
     public String getMediaStatusList(List<String> fileNameList) throws Exception {
-        String fileNameAll = StringUtils.join(fileNameList, ";");
-        List<MediaProcessLog> statusLogList = reporting.findMediaStatus(fileNameAll);
+        List<MediaProcessLog> statusLogList = lcmProcessLogDao.findMediaStatus(fileNameList);
         Map<String, List<MediaProcessLog>> mapList = new HashMap<>();
         filterList(statusLogList);
         JSONUtil.divideListToMap(statusLogList, mapList, fileNameList.size());
@@ -172,14 +175,17 @@ public class MediaServiceProcess {
     }
 
     private void filterList(List<MediaProcessLog> statusLogList) {
-        for (Iterator<MediaProcessLog> iterator = statusLogList.iterator(); iterator.hasNext();) {
-            MediaProcessLog string = iterator.next();
-            for (String activity : filterActivityList) {
-                if (string.getActivityType().equalsIgnoreCase(activity)) {
-                    iterator.remove();
+        if (statusLogList != null) {
+            for (Iterator<MediaProcessLog> iterator = statusLogList.iterator(); iterator.hasNext();) {
+                MediaProcessLog string = iterator.next();
+                for (String activity : ignoreActivityList) {
+                    if (string.getActivityType().equalsIgnoreCase(activity)) {
+                        iterator.remove();
+                    }
                 }
             }
         }
+
     }
 
 }
