@@ -8,6 +8,7 @@ import com.expedia.content.media.processing.pipleline.reporting.LogActivityProce
 import com.expedia.content.media.processing.pipleline.reporting.Reporting;
 import com.expedia.content.media.processing.services.dao.LcmProcessLogDao;
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
+import com.expedia.content.media.processing.services.util.ActivityMapping;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
 import com.expedia.content.media.processing.services.validator.RequestMessageValidator;
@@ -36,19 +37,16 @@ public class MediaServiceProcess {
     private final RabbitTemplate rabbitTemplate;
     private final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker;
     private final Reporting reporting;
-    private final Map<String, String> mediaStatusMap;
     private List<RequestMessageValidator> mediaStatusValidatorList;
-    private List<String> ignoreActivityList;
+    private List<ActivityMapping> activityWhiteList;
     private LcmProcessLogDao lcmProcessLogDao;
 
     public MediaServiceProcess(List<MediaMessageValidator> validators, RabbitTemplate rabbitTemplate,
-            @Qualifier("logActivityPicker") final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker, final Reporting reporting,
-            final Map mediaStatusMap) {
+            @Qualifier("logActivityPicker") final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker, final Reporting reporting) {
         this.validators = validators;
         this.rabbitTemplate = rabbitTemplate;
         this.logActivityPicker = logActivityPicker;
         this.reporting = reporting;
-        this.mediaStatusMap = mediaStatusMap;
     }
 
     public List<RequestMessageValidator> getMediaStatusValidatorList() {
@@ -60,12 +58,12 @@ public class MediaServiceProcess {
         this.mediaStatusValidatorList = mediaStatusValidatorList;
     }
 
-    public List<String> getIgnoreActivityList() {
-        return ignoreActivityList;
+    public List<ActivityMapping> getActivityWhiteList() {
+        return activityWhiteList;
     }
 
-    public void setIgnoreActivityList(List<String> ignoreActivityList) {
-        this.ignoreActivityList = ignoreActivityList;
+    public void setActivityWhiteList(List<ActivityMapping> activityWhiteList) {
+        this.activityWhiteList = activityWhiteList;
     }
 
     public LcmProcessLogDao getLcmProcessLogDao() {
@@ -169,23 +167,9 @@ public class MediaServiceProcess {
     public String getMediaStatusList(List<String> fileNameList) throws Exception {
         List<MediaProcessLog> statusLogList = lcmProcessLogDao.findMediaStatus(fileNameList);
         Map<String, List<MediaProcessLog>> mapList = new HashMap<>();
-        filterList(statusLogList);
-        JSONUtil.divideListToMap(statusLogList, mapList, fileNameList.size());
-        return JSONUtil.generateJsonResponse(mapList, fileNameList, mediaStatusMap);
-    }
-
-    private void filterList(List<MediaProcessLog> statusLogList) {
-        if (statusLogList != null) {
-            for (Iterator<MediaProcessLog> iterator = statusLogList.iterator(); iterator.hasNext();) {
-                MediaProcessLog string = iterator.next();
-                for (String activity : ignoreActivityList) {
-                    if (string.getActivityType().equalsIgnoreCase(activity)) {
-                        iterator.remove();
-                    }
-                }
-            }
-        }
-
+        //filterList(statusLogList);
+        JSONUtil.divideStatusListToMap(statusLogList, mapList, fileNameList.size());
+        return JSONUtil.generateJsonResponse(mapList, fileNameList, activityWhiteList);
     }
 
 }

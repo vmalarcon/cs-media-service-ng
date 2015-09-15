@@ -1,18 +1,20 @@
 package com.expedia.content.media.processing.services.dao;
 
 /**
- * Represents the data retrieved from LCM of a MediaProcessLog.
+ * Represents the data retrieved from the media process log.
  */
 public class MediaProcessLog {
 
     private String activityTime;
     private String mediaFileName;
-    private String activityNameAndType;
+    private String activityType;
+    private String mediaType;
 
-    public MediaProcessLog(String activityTime, String mediaFileName, String activityNameAndType) {
+    public MediaProcessLog(String activityTime, String mediaFileName, String activityNameAndType, String mediaType) {
         this.activityTime = activityTime;
         this.mediaFileName = mediaFileName;
-        this.activityNameAndType = activityNameAndType;
+        this.activityType = activityNameAndType;
+        this.mediaType = mediaType;
     }
 
     public String getActivityTime() {
@@ -31,30 +33,28 @@ public class MediaProcessLog {
         this.mediaFileName = mediaFileName;
     }
 
-    public String getActivityNameAndType() {
-        return activityNameAndType;
-    }
-
-    public void setActivityNameAndType(String activityNameAndType) {
-        this.activityNameAndType = activityNameAndType;
-    }
-
     public String getActivityType() {
-        if (activityNameAndType != null) {
-            if (activityNameAndType.indexOf("/") >= 0) {
-                return activityNameAndType.substring(activityNameAndType.indexOf("/") + 1);
-            } else {
-                return activityNameAndType;
-            }
-        }
-        return null;
+        return activityType;
+    }
+
+    public void setActivityType(String activityType) {
+        this.activityType = activityType;
+    }
+
+    public String getMediaType() {
+        return mediaType;
+    }
+
+    public void setMediaType(String mediaType) {
+        this.mediaType = mediaType;
     }
 
     @Override public String toString() {
         return "MediaProcessLog{" +
                 "activityTime='" + activityTime + '\'' +
                 ", mediaFileName='" + mediaFileName + '\'' +
-                ", activityNameAndType='" + activityNameAndType + '\'' +
+                ", activityType='" + activityType + '\'' +
+                ", mediaType='" + mediaType + '\'' +
                 '}';
     }
 }

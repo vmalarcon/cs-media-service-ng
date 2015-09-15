@@ -37,7 +37,8 @@ public class SQLMediaLogSproc extends StoredProcedure {
             final String mediaFileName = resultSet.getString("mediaFileName");
             final String activityNameAndType = resultSet.getString("ActivityType");
             final String activityTime = resultSet.getString("ActivityTime");
-            return new MediaProcessLog(activityTime, mediaFileName, activityNameAndType);
+            final String mediaType = resultSet.getString("MediaType");
+            return new MediaProcessLog(activityTime, mediaFileName, activityNameAndType, mediaType);
         }
     }
 }

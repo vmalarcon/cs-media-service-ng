@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * LCM implementations of the Reporting interface.
+ * LCM implementations of process log DAO interface.
  */
 @Component
 public class LcmProcessLogDaoImpl implements LcmProcessLogDao {

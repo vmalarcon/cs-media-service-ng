@@ -9,6 +9,7 @@ import java.util.List;
 public interface LcmProcessLogDao {
 
     /**
+     * get the media image status from DB
      *
      * @param fileNameList media file name list.
      * @return the media status object

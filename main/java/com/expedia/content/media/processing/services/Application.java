@@ -42,6 +42,7 @@ public class Application {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 
+
     @Autowired
     private MediaServiceProcess mediaServiceProcess;
 
@@ -105,7 +106,7 @@ public class Application {
     @Timer(name = "mediaLatestStatusTimer")
     @RequestMapping(value = "/media/v1/lateststatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getMediaLatestStatus(@RequestBody final String message) throws Exception {
-        LOGGER.info("RECEIVED - mediaStatuses get message: [{}]", message);
+        LOGGER.info("RECEIVED REQUEST - message=/media/v1/lateststatus, image_message=[{}]", message);
         try {
             Map<String, Object> map = JSONUtil.buildMapFromJson(message);
             ValidationStatus validationStatus = mediaServiceProcess.validateMediaStatus(message);
@@ -113,9 +114,10 @@ public class Application {
                 return buildBadRequestResponse(validationStatus.getMessage());
             }
             String jsonResponse = mediaServiceProcess.getMediaStatusList((List<String>) map.get("mediaNames"));
+            LOGGER.info("RESPONSE - message=/media/v1/lateststatus, image_message=[{}]", jsonResponse);
             return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
         } catch (RequestMessageException ex) {
-            LOGGER.error("Error parsing Json message=[{}].", message, ex);
+            LOGGER.error("ERROR - message=/media/v1/lateststatus, image_message=[{}] .", message, ex);
             return buildBadRequestResponse(ex.getMessage());
         }
     }

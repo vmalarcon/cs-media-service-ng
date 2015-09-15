@@ -25,7 +25,7 @@ public class LcmProcessLogDaoImplTest {
         List<MediaProcessLog>
                 mediaLogStatuses = new ArrayList<MediaProcessLog>();
         MediaProcessLog
-                mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "LCM/Publish", "1037678_109010ice.jpg");
+                mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "Publish", "1037678_109010ice.jpg", "Lodging");
         mediaLogStatuses.add(mediaLogStatus);
         value.put(SQLMediaLogSproc.MEDIAS_RESULT_SET, mediaLogStatuses);
         when(mockMediaProcessLogSproc.execute(searchName)).thenReturn(value);
