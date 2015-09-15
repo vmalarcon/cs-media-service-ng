@@ -163,8 +163,8 @@ public class MediaServiceProcess {
      * @return json message than contain status and time
      * @throws Exception
      */
-    @Meter(name = "getMediaStatusCounter")
-    @Timer(name = "getMediaStatusTimer")
+    @Meter(name = "mediaStatusCounter")
+    @Timer(name = "mediaStatusTimer")
     @RetryableMethod
     public String getMediaStatusList(List<String> fileNameList) throws Exception {
         List<MediaProcessLog> statusLogList = lcmProcessLogDao.findMediaStatus(fileNameList);

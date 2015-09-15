@@ -88,7 +88,7 @@ public class Application {
      * @param validationMessage, failed message from validate.
      * @return A Bad Request response.
      */
-    @Counter(name = "acquireMessageBadRequestCounter")
+    @Counter(name = "badRequestCounter")
     public ResponseEntity<String> buildBadRequestResponse(String validationMessage) {
         return new ResponseEntity<>("Bad Request: " + validationMessage, HttpStatus.BAD_REQUEST);
     }
@@ -101,8 +101,8 @@ public class Application {
      * @return ResponseEntity is the standard spring mvn response object
      * @throws Exception
      */
-    @Meter(name = "getMediaLatestStatusCounter")
-    @Timer(name = "getMediaLatestStatusTimer")
+    @Meter(name = "mediaLatestStatusCounter")
+    @Timer(name = "mediaLatestStatusTimer")
     @RequestMapping(value = "/media/v1/lateststatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getMediaLatestStatus(@RequestBody final String message) throws Exception {
         LOGGER.info("RECEIVED - mediaStatuses get message: [{}]", message);
