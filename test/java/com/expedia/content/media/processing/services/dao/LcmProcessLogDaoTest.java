@@ -11,13 +11,13 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class LcmProcessLogDaoImplTest {
+public class LcmProcessLogDaoTest {
 
     @Test
     public void testMediaStatusFound() {
         String processName = "lcm-reporting-test";
         SQLMediaLogSproc mockMediaProcessLogSproc = mock(SQLMediaLogSproc.class);
-        LcmProcessLogDaoImpl lcmProcessLogDao = new LcmProcessLogDaoImpl(processName, mockMediaProcessLogSproc);
+        LcmProcessLogDao lcmProcessLogDao = new LcmProcessLogDao(processName, mockMediaProcessLogSproc);
         String searchName = "1037678_109010ice.jpg";
         List<String> fileList = new ArrayList<>();
         fileList.add(searchName);
@@ -37,7 +37,7 @@ public class LcmProcessLogDaoImplTest {
     public void testMediaStatusNotFound() {
         String processName = "lcm-reporting-test";
         SQLMediaLogSproc mockMediaProcessLogSproc = mock(SQLMediaLogSproc.class);
-        LcmProcessLogDaoImpl lcmProcessLogDao = new LcmProcessLogDaoImpl(processName, mockMediaProcessLogSproc);
+        LcmProcessLogDao lcmProcessLogDao = new LcmProcessLogDao(processName, mockMediaProcessLogSproc);
         String searchName = "1037678_109010ice.jpg";
         List<String> fileList = new ArrayList<>();
         fileList.add(searchName);

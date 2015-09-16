@@ -50,7 +50,7 @@ public final class JSONUtil {
      * @return
      * @throws RequestMessageException happen when covert map to json error.
      */
-    public static String generateJsonResponse(Map<String, List<MediaProcessLog>> mapList, List<String> fileNameList,
+    public static String generateJsonByProcessLogList(Map<String, List<MediaProcessLog>> mapList, List<String> fileNameList,
             List<ActivityMapping> activityMappingList)
             throws RequestMessageException {
         Map<String, Object> allMap = new HashMap<>();

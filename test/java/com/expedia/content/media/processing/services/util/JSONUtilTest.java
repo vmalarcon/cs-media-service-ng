@@ -44,7 +44,7 @@ public class JSONUtilTest {
         List<ActivityMapping> activityMappingList = new ArrayList<>();
         activityMappingList.add(activityMapping);
 
-        String response = JSONUtil.generateJsonResponse(mapList, fileNameList, activityMappingList);
+        String response = JSONUtil.generateJsonByProcessLogList(mapList, fileNameList, activityMappingList);
         assertTrue(expededJson.equals(response));
     }
 
@@ -69,7 +69,7 @@ public class JSONUtilTest {
         List<ActivityMapping> activityMappingList = new ArrayList<>();
         activityMappingList.add(activityMapping);
 
-        String response = JSONUtil.generateJsonResponse(mapList, fileNameList, activityMappingList);
+        String response = JSONUtil.generateJsonByProcessLogList(mapList, fileNameList, activityMappingList);
         assertTrue(expededJson.equals(response));
     }
 
@@ -96,7 +96,7 @@ public class JSONUtilTest {
         List<ActivityMapping> activityMappingList = new ArrayList<>();
         activityMappingList.add(activityMapping);
 
-        String response = JSONUtil.generateJsonResponse(mapList, fileNameList, activityMappingList);
+        String response = JSONUtil.generateJsonByProcessLogList(mapList, fileNameList, activityMappingList);
         assertTrue(expededJson.equals(response));
     }
 

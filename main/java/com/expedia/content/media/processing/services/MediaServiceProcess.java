@@ -6,7 +6,7 @@ import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.pipleline.reporting.Activity;
 import com.expedia.content.media.processing.pipleline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipleline.reporting.Reporting;
-import com.expedia.content.media.processing.services.dao.LcmProcessLogDao;
+import com.expedia.content.media.processing.services.dao.ProcessLogDao;
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
 import com.expedia.content.media.processing.services.util.JSONUtil;
@@ -39,7 +39,7 @@ public class MediaServiceProcess {
     private final Reporting reporting;
     private List<RequestMessageValidator> mediaStatusValidatorList;
     private List<ActivityMapping> activityWhiteList;
-    private LcmProcessLogDao lcmProcessLogDao;
+    private ProcessLogDao processLogDao;
 
     public MediaServiceProcess(List<MediaMessageValidator> validators, RabbitTemplate rabbitTemplate,
             @Qualifier("logActivityPicker") final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker, final Reporting reporting) {
@@ -66,12 +66,12 @@ public class MediaServiceProcess {
         this.activityWhiteList = activityWhiteList;
     }
 
-    public LcmProcessLogDao getLcmProcessLogDao() {
-        return lcmProcessLogDao;
+    public ProcessLogDao getProcessLogDao() {
+        return processLogDao;
     }
 
-    public void setLcmProcessLogDao(LcmProcessLogDao lcmProcessLogDao) {
-        this.lcmProcessLogDao = lcmProcessLogDao;
+    public void setProcessLogDao(ProcessLogDao processLogDao) {
+        this.processLogDao = processLogDao;
     }
 
     /**
@@ -165,11 +165,11 @@ public class MediaServiceProcess {
     @Timer(name = "mediaStatusTimer")
     @RetryableMethod
     public String getMediaStatusList(List<String> fileNameList) throws Exception {
-        List<MediaProcessLog> statusLogList = lcmProcessLogDao.findMediaStatus(fileNameList);
+        List<MediaProcessLog> statusLogList = processLogDao.findMediaStatus(fileNameList);
         Map<String, List<MediaProcessLog>> mapList = new HashMap<>();
         //filterList(statusLogList);
         JSONUtil.divideStatusListToMap(statusLogList, mapList, fileNameList.size());
-        return JSONUtil.generateJsonResponse(mapList, fileNameList, activityWhiteList);
+        return JSONUtil.generateJsonByProcessLogList(mapList, fileNameList, activityWhiteList);
     }
 
 }

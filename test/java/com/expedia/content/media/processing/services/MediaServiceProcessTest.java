@@ -7,7 +7,7 @@ import com.expedia.content.media.processing.pipleline.reporting.Activity;
 import com.expedia.content.media.processing.pipleline.reporting.LodgingLogActivityProcess;
 import com.expedia.content.media.processing.pipleline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipleline.reporting.Reporting;
-import com.expedia.content.media.processing.services.dao.LcmProcessLogDao;
+import com.expedia.content.media.processing.services.dao.ProcessLogDao;
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
 import com.expedia.content.media.processing.services.validator.ExpediaIdValidator;
@@ -40,7 +40,7 @@ public class MediaServiceProcessTest {
     @Mock
     private Reporting reporting;
     @Mock
-    private LcmProcessLogDao lcmProcessLogDao;
+    private ProcessLogDao lcmProcessLogDao;
 
     @BeforeClass
     public static void setUpClass() {
@@ -173,7 +173,7 @@ public class MediaServiceProcessTest {
 
         MediaServiceProcess mediaServiceProcess =
                 new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
-        mediaServiceProcess.setLcmProcessLogDao(lcmProcessLogDao);
+        mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
         mediaServiceProcess.setActivityWhiteList(whitelist);
         String response = mediaServiceProcess.getMediaStatusList(fileNameList);
         assertTrue(response.equals(jsonMessage));
@@ -199,7 +199,7 @@ public class MediaServiceProcessTest {
 
         MediaServiceProcess mediaServiceProcess =
                 new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
-        mediaServiceProcess.setLcmProcessLogDao(lcmProcessLogDao);
+        mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
 
         mediaServiceProcess.setActivityWhiteList(whitelist);
         String response = mediaServiceProcess.getMediaStatusList(fileNameList);
@@ -223,7 +223,7 @@ public class MediaServiceProcessTest {
 
         MediaServiceProcess mediaServiceProcess =
                 new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
-        mediaServiceProcess.setLcmProcessLogDao(lcmProcessLogDao);
+        mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
 
         mediaServiceProcess.setActivityWhiteList(whitelist);
         String response = mediaServiceProcess.getMediaStatusList(fileNameList);
@@ -250,7 +250,7 @@ public class MediaServiceProcessTest {
 
         MediaServiceProcess mediaServiceProcess =
                 new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
-        mediaServiceProcess.setLcmProcessLogDao(lcmProcessLogDao);
+        mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
 
         mediaServiceProcess.setActivityWhiteList(whitelist);
         String response = mediaServiceProcess.getMediaStatusList(fileNameList);
@@ -274,7 +274,7 @@ public class MediaServiceProcessTest {
 
         MediaServiceProcess mediaServiceProcess =
                 new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
-        mediaServiceProcess.setLcmProcessLogDao(lcmProcessLogDao);
+        mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
 
         mediaServiceProcess.setActivityWhiteList(whitelist);
         String response = mediaServiceProcess.getMediaStatusList(fileNameList);
@@ -299,7 +299,7 @@ public class MediaServiceProcessTest {
         when(lcmProcessLogDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
         MediaServiceProcess mediaServiceProcess =
                 new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
-        mediaServiceProcess.setLcmProcessLogDao(lcmProcessLogDao);
+        mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
 
         mediaServiceProcess.setActivityWhiteList(whitelist);
         String response = mediaServiceProcess.getMediaStatusList(fileNameList);

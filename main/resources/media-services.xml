@@ -46,8 +46,7 @@
                 <ref bean="dcpPickupActivity"/>
             </list>
         </property>
-
-        <property name="lcmProcessLogDao" ref="lcmProcessLogDao">
+        <property name="processLogDao" ref="processLogDao">
         </property>
     </bean>
 
@@ -105,7 +104,7 @@
     <bean id="mediaStatusTypeValidator" class="com.expedia.content.media.processing.services.validator.MediaNamesValidator">
     </bean>
 
-    <bean id="lcmProcessLogDao" class="com.expedia.content.media.processing.services.dao.LcmProcessLogDaoImpl">
+    <bean id="processLogDao" class="com.expedia.content.media.processing.services.dao.LcmProcessLogDao">
     </bean>
 
     <bean id="dataSource"
