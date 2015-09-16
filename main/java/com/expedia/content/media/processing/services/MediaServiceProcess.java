@@ -59,10 +59,10 @@ public class MediaServiceProcess {
         String jsonMessage = message.toJSONMessage();
         try {
             rabbitTemplate.convertAndSend(jsonMessage);
-            LOGGER.debug("send message to queue done: [{}]", jsonMessage);
+            LOGGER.debug("send message to queue done=[{}]", jsonMessage);
             logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED);
         } catch (Exception ex) {
-            LOGGER.error("Error publishing message=[{}]", jsonMessage, ex);
+            LOGGER.error("Error publishing message=[{}], exception={}", jsonMessage, ex);
             throw new RuntimeException("Error publishing message=[" + jsonMessage + "]", ex);
         }
     }
