@@ -20,17 +20,66 @@
     <bean id="mediaServiceProcess" class="com.expedia.content.media.processing.services.MediaServiceProcess">
         <constructor-arg>
             <list>
-                <ref bean="expediaValidator" />
-                <ref bean="categoryValidator" />
-                <ref bean="providerRequiredValidator" />
-                <ref bean="fileUrlRequiredValidator" />
-                <ref bean="imageTypeRequiredValidator" />
-                <ref bean="mediaProviderValidator" />
+                <ref bean="expediaValidator"/>
+                <ref bean="categoryValidator"/>
+                <ref bean="providerRequiredValidator"/>
+                <ref bean="fileUrlRequiredValidator"/>
+                <ref bean="imageTypeRequiredValidator"/>
+                <ref bean="mediaProviderValidator"/>
             </list>
         </constructor-arg>
-        <constructor-arg ref="filenamesRabbitTemplate" />
-        <constructor-arg ref="lcmReporting" />
-        <constructor-arg ref="logActivityPicker" />
+        <constructor-arg ref="filenamesRabbitTemplate"/>
+        <constructor-arg ref="lcmReporting"/>
+        <constructor-arg ref="logActivityPicker"/>
+
+        <property name="mediaStatusValidatorList">
+            <list value-type="com.expedia.content.media.processing.services.validator.RequestMessageValidator">
+                <ref bean="mediaStatusTypeValidator"/>
+            </list>
+        </property>
+        <property name="activityWhiteList">
+            <list>
+                <ref bean="receptionActivity"/>
+                <ref bean="derivativeCreationActivity"/>
+                <ref bean="rejectActivity"/>
+                <ref bean="publishActivity"/>
+                <ref bean="dcpPickupActivity"/>
+            </list>
+        </property>
+        <property name="processLogDao" ref="processLogDao">
+        </property>
+    </bean>
+
+    <bean id="receptionActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <!-- this will work -->
+        <property name="activityType" value="Reception"/>
+        <!-- this will *not* work -->
+        <property name="statusMessage" value="RECEIVED"/>
+        <property name="mediaType" value=".*"/>
+    </bean>
+
+    <bean id="derivativeCreationActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="DerivativeCreation"/>
+        <property name="statusMessage" value="DERIVATIVES_CREATED"/>
+        <property name="mediaType" value=".*"/>
+    </bean>
+
+    <bean id="rejectActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="Reject"/>
+        <property name="statusMessage" value="REJECTED"/>
+        <property name="mediaType" value=".*"/>
+    </bean>
+
+    <bean id="publishActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="Publish"/>
+        <property name="statusMessage" value="PUBLISHED"/>
+        <property name="mediaType" value=".*"/>
+    </bean>
+
+    <bean id="dcpPickupActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="DcpPickup"/>
+        <property name="statusMessage" value="RECEIVED"/>
+        <property name="mediaType" value="Cars"/>
     </bean>
 
     <bean id="expediaValidator" class="com.expedia.content.media.processing.services.validator.ExpediaIdValidator">
@@ -52,8 +101,14 @@
         <property name="fieldName" value="mediaProviderId" />
     </bean>
 
+    <bean id="mediaStatusTypeValidator" class="com.expedia.content.media.processing.services.validator.MediaNamesValidator">
+    </bean>
+
+    <bean id="processLogDao" class="com.expedia.content.media.processing.services.dao.LcmProcessLogDao">
+    </bean>
+
     <bean id="dataSource"
-        class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+          class="org.springframework.jdbc.datasource.DriverManagerDataSource">
         <property name="driverClassName" value="net.sourceforge.jtds.jdbc.Driver" />
         <property name="url" value="${datasource.url}" />
         <property name="username" value="${datasource.username}" />
