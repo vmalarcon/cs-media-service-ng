@@ -34,7 +34,7 @@ public final class ReflectionUtil {
             LOGGER.error("getFieldValue fail=[{}]", e);
             throw e;
         }
-        LOGGER.debug("getFiledValue for field={}, return value={}", fieldName, objectValue);
+        LOGGER.debug("getFiledValue for field={}, return value=[{}]", fieldName, objectValue);
         return objectValue;
     }
 }
