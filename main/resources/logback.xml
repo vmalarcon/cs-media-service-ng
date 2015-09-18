@@ -10,6 +10,7 @@
     </appender>
 
     <logger name="com.expedia.content.media" level="TRACE"/>
+    <logger name="org.springframework.security.web.access.ExceptionTranslationFilter" level="DEBUG"/>
     <logger name="org.springframework.aop" level="DEBUG" />
     <logger name="com.expedia.content.metrics" level="DEBUG"/>
     <logger name="org.springframework.amqp" level="DEBUG" />

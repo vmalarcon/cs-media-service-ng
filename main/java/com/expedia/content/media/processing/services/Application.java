@@ -2,6 +2,7 @@ package com.expedia.content.media.processing.services;
 
 import com.expedia.content.media.processing.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
+import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import com.expedia.content.media.processing.services.util.RequestMessageException;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
@@ -20,10 +21,8 @@ import org.springframework.context.annotation.ImportResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -41,7 +40,7 @@ import java.util.Map;
 public class Application {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
-
+    private static final String REQUESTID = "request-id";
 
     @Autowired
     private MediaServiceProcess mediaServiceProcess;
@@ -105,8 +104,9 @@ public class Application {
     @Meter(name = "mediaLatestStatusCounter")
     @Timer(name = "mediaLatestStatusTimer")
     @RequestMapping(value = "/media/v1/lateststatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity getMediaLatestStatus(@RequestBody final String message) throws Exception {
-        LOGGER.info("RECEIVED REQUEST - message=/media/v1/lateststatus, image_message=[{}]", message);
+    public ResponseEntity getMediaLatestStatus(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
+        LOGGER.info("RECEIVED REQUEST - url=" + MediaServiceUrl.MEDIASTATUS.getUrl() + ", image_message=[{}], request-id=[{}]", message,
+                headers.get(REQUESTID));
         try {
             Map<String, Object> map = JSONUtil.buildMapFromJson(message);
             ValidationStatus validationStatus = mediaServiceProcess.validateMediaStatus(message);
@@ -114,12 +114,16 @@ public class Application {
                 return buildBadRequestResponse(validationStatus.getMessage());
             }
             String jsonResponse = mediaServiceProcess.getMediaStatusList((List<String>) map.get("mediaNames"));
-            LOGGER.info("RESPONSE - message=/media/v1/lateststatus, image_message=[{}]", jsonResponse);
+            LOGGER.info("RESPONSE - url=" + MediaServiceUrl.MEDIASTATUS.getUrl() + ", image_message=[{}] request-id=[{}]", jsonResponse,
+                    headers.get(REQUESTID));
             return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
         } catch (RequestMessageException ex) {
-            LOGGER.error("ERROR - message=/media/v1/lateststatus, image_message=[{}] .", message, ex);
+            LOGGER.error("ERROR - url=" + MediaServiceUrl.MEDIASTATUS.getUrl() + ", image_message=[{}] .", message, ex);
             return buildBadRequestResponse(ex.getMessage());
         }
     }
+
+
+
 }
 
