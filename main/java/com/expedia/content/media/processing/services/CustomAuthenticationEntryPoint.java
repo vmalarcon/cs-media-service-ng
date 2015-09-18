@@ -13,19 +13,28 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
- * Customer Authentication class to intercept exception.
+ * Customer Authentication class to handle authentication exception.
  */
 @Component
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
     private static final Logger LOGGER = LoggerFactory.getLogger(CustomAuthenticationEntryPoint.class);
 
+    /**
+     * Builds an response when http Unauthorized exception happen.
+     * Note that the {@code @Counter} annotations introduce aspects from metrics-support
+     *
+     * @param request                http request
+     * @param response               http response
+     * @param autheticationException throws when request does not include valid username
+     */
     @Counter(name = "UnauthorizedRequestCounter")
     @Override
-    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException auth)
+    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException autheticationException)
             throws IOException, ServletException {
         response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                "Unauthorized.");
-        LOGGER.info("Unauthorized exception222");
-
+                autheticationException.getMessage());
+        String userName =
+                autheticationException.getAuthentication() != null ? autheticationException.getAuthentication().getPrincipal().toString() : "missed";
+        LOGGER.info("Unauthorized exception, authentication user in request is:" + userName);
     }
 }

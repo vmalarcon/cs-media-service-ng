@@ -11,6 +11,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.servlet.configuration.EnableWebMvcSecurity;
 
+/**
+ * spring security class, initialize Authenticated user from properties file and set different permission for webservice URL
+ */
 @Configuration
 @EnableWebMvcSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
@@ -42,6 +45,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
      * This section defines the security policy for the app.
      * /acquireMedia is permitted without authentication.
      * /media/v1/lateststatus is permitted with pre-defined users.
+     * Authentication error is handled in CustomAuthenticationEntryPoint
      * CSRF headers are disabled
      *
      * @param http
@@ -55,7 +59,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         http.httpBasic().and().authorizeRequests().
                 antMatchers(HttpMethod.POST, MediaServiceUrl.MEDIASTATUS.getUrl()).authenticated();
         http.csrf().disable();
+        //handle 401 case when Authentication header is missed
         http.exceptionHandling().authenticationEntryPoint(authenticationEntryPoint);
+        //handle 401 case when input user is wrong
+        http.httpBasic().authenticationEntryPoint(authenticationEntryPoint);
     }
 
 }
