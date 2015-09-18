@@ -18,6 +18,7 @@ public class MediaNamesValidator implements RequestMessageValidator {
     private static final Logger LOGGER = LoggerFactory.getLogger(MediaNamesValidator.class);
     @Value("${medianame.maximum.count}")
     private int maximumRequestCount;
+
     /**
      * Validate the json is as expected.
      *

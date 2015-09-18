@@ -6,8 +6,8 @@ import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.pipleline.reporting.Activity;
 import com.expedia.content.media.processing.pipleline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipleline.reporting.Reporting;
-import com.expedia.content.media.processing.services.dao.ProcessLogDao;
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
+import com.expedia.content.media.processing.services.dao.ProcessLogDao;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
@@ -23,7 +23,10 @@ import org.springframework.stereotype.Component;
 
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * MediaServiceProcess is called by main class

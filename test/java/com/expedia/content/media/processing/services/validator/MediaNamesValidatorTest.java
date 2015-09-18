@@ -9,6 +9,12 @@ import static org.junit.Assert.assertTrue;
 
 public class MediaNamesValidatorTest {
 
+    private static void setFieldValue(Object obj, String fieldName, Object value) throws NoSuchFieldException, IllegalAccessException {
+        Field field = obj.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(obj, value);
+    }
+
     @Test
     public void testMediaStatusMessageValid() throws Exception {
         String validJson = "{  \n"
@@ -53,12 +59,6 @@ public class MediaNamesValidatorTest {
         ValidationStatus validationStatus = mediaNamesValidator.validate(validJson);
         assertTrue(("messageNames count exceed the maximum 4").equals(validationStatus.getMessage()));
         assertFalse(validationStatus.isValid());
-    }
-
-    private static void setFieldValue(Object obj, String fieldName, Object value) throws NoSuchFieldException, IllegalAccessException {
-        Field field = obj.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(obj, value);
     }
 
     @Test
