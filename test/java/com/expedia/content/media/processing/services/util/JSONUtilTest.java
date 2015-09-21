@@ -49,6 +49,13 @@ public class JSONUtilTest {
     }
 
     @Test
+    public void testGenerateBadRequestResponse() throws Exception {
+        String res = JSONUtil.generateJsonForErrorResponse("bad request", "/testurl", 400, "field is required");
+        Map jsonMap = JSONUtil.buildMapFromJson(res);
+        assertTrue("bad request".equals(jsonMap.get("message")));
+    }
+
+    @Test
     public void testGenerateJsonResponseCar() throws Exception {
         String expededJson =
                 "{\"mediaStatuses\":[{\"mediaName\":\"test.jpg\",\"status\":\"RECEIVED\",\"time\":\"2014-07-11 16:25:06.0290552 -07:00\"}]}";

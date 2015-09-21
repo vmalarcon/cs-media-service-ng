@@ -93,6 +93,31 @@ public final class JSONUtil {
 
     }
 
+    /**
+     * generate json format error message
+     *
+     * @param message detail error message
+     * @param urlPath web service url
+     * @param status  http status
+     * @param error
+     * @return json format error message
+     */
+    public static String generateJsonForErrorResponse(String message, String urlPath, int status, String error) {
+        Map<String, Object> allMap = new TreeMap<>();
+        ObjectMapper mapper = new ObjectMapper();
+        allMap.put("path", urlPath);
+        allMap.put("message", message);
+        allMap.put("error", error);
+        allMap.put("status", status);
+        allMap.put("timestamp", new Date().getTime());
+        try {
+            return mapper.writeValueAsString(allMap);
+        } catch (IOException ex) {
+            String errorMsg = "Error writing map to json";
+            throw new RequestMessageException(errorMsg, ex);
+        }
+    }
+
     private static ActivityMapping getMappingFromList(List<ActivityMapping> activityMappingList, String activityType, String mediaType) {
         for (ActivityMapping activityMapping : activityMappingList) {
             if (activityMapping.getActivityType().equals(activityType) && mediaType.matches(activityMapping.getMediaType())) {
