@@ -27,14 +27,13 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
      * @param response               http response
      * @param autheticationException throws when request does not include valid username
      */
-    @Counter(name = "UnauthorizedRequestCounter")
+    @Counter(name = "unauthorizedRequestCounter")
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException autheticationException)
             throws IOException, ServletException {
-        response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
-                autheticationException.getMessage());
+        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, autheticationException.getMessage());
         String userName =
-                autheticationException.getAuthentication() != null ? autheticationException.getAuthentication().getPrincipal().toString() : "missed";
+                autheticationException.getAuthentication() != null ? autheticationException.getAuthentication().getPrincipal().toString() : "not provided";
         LOGGER.info("Unauthorized exception, authentication user in request is:" + userName);
     }
 }

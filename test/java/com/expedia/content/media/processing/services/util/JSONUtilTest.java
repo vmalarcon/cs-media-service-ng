@@ -54,6 +54,8 @@ public class JSONUtilTest {
         Map jsonMap = JSONUtil.buildMapFromJson(res);
         assertTrue("bad request".equals(jsonMap.get("message")));
         assertTrue("/testurl".equals(jsonMap.get("path")));
+        assertTrue(Integer.parseInt(jsonMap.get("status").toString()) == 400);
+        assertTrue("field is required".equals(jsonMap.get("error")));
 
     }
 

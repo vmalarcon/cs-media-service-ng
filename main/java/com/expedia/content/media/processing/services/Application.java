@@ -22,8 +22,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestHeader;
 import java.util.List;
 import java.util.Map;
 
@@ -41,6 +44,7 @@ public class Application {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
     private static final String REQUESTID = "request-id";
+    private static final int BAD_REQUEST_CODE = 400;
 
     @Autowired
     private MediaServiceProcess mediaServiceProcess;
@@ -90,7 +94,7 @@ public class Application {
      */
     @Counter(name = "badRequestCounter")
     public ResponseEntity<String> buildBadRequestResponse(String validationMessage, String url) {
-        String resMsg = JSONUtil.generateJsonForErrorResponse(validationMessage, url, 400, "Bad Request");
+        String resMsg = JSONUtil.generateJsonForErrorResponse(validationMessage, url, BAD_REQUEST_CODE, "Bad Request");
         return new ResponseEntity<>(resMsg, HttpStatus.BAD_REQUEST);
     }
 
@@ -123,8 +127,6 @@ public class Application {
             return buildBadRequestResponse(ex.getMessage(), MediaServiceUrl.MEDIASTATUS.getUrl().toString());
         }
     }
-
-
 
 }
 

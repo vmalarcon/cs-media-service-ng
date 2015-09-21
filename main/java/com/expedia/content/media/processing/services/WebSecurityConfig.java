@@ -23,8 +23,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private CustomAuthenticationEntryPoint authenticationEntryPoint;
 
-    @Value("${media.service.authenticated.users}")
-    private String permittedUser;
+    @Value("${media.service.authorized.users}")
+    private String authorizedUsers;
 
     /**
      * This section defines the user accounts which can be used for authentication as well as the roles each user has.
@@ -34,7 +34,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
      */
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        String[] arrayUser = StringUtils.split(permittedUser, ",");
+        String[] arrayUser = StringUtils.split(authorizedUsers, ",");
         for (int i = 0; i < arrayUser.length; i++) {
             auth.inMemoryAuthentication().
                     withUser(arrayUser[i]).password("").roles(ROLE);
@@ -43,8 +43,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     /**
      * This section defines the security policy for the app.
-     * /acquireMedia is permitted without authentication.
-     * /media/v1/lateststatus is permitted with pre-defined users.
      * Authentication error is handled in CustomAuthenticationEntryPoint
      * CSRF headers are disabled
      *
@@ -59,7 +57,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         http.httpBasic().and().authorizeRequests().
                 antMatchers(HttpMethod.POST, MediaServiceUrl.MEDIASTATUS.getUrl()).authenticated();
         http.csrf().disable();
-        //handle 401 case when Authentication header is missed
+        //handle 401 case when Authentication header is missing.
         http.exceptionHandling().authenticationEntryPoint(authenticationEntryPoint);
         //handle 401 case when input user is wrong
         http.httpBasic().authenticationEntryPoint(authenticationEntryPoint);

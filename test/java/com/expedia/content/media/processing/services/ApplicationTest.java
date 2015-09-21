@@ -21,16 +21,16 @@ import static org.junit.Assert.assertNotNull;
 @ContextConfiguration(classes = Application.class)
 public class ApplicationTest {
 
-    private static MultiValueMap<String, String> multiValueMap;
+    private static MultiValueMap<String, String> httpHeaders;
     @Autowired
     private Application application;
 
     @BeforeClass
     public static void init() {
-        multiValueMap = new HttpHeaders();
+        httpHeaders = new HttpHeaders();
         List<String> ids = new ArrayList<String>();
         ids.add("testid");
-        multiValueMap.put("request-id", ids);
+        httpHeaders.put("request-id", ids);
     }
 
     @Test
@@ -86,7 +86,7 @@ public class ApplicationTest {
                 + "   \"mediaNamesaa\":[\"1037678_109010ice.jpg\",\"1055797_1742165ice.jpg\"]\n"
                 + "}";
 
-        ResponseEntity<?> responseEntity = application.getMediaLatestStatus(jsonMessage, multiValueMap);
+        ResponseEntity<?> responseEntity = application.getMediaLatestStatus(jsonMessage, httpHeaders);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -96,7 +96,7 @@ public class ApplicationTest {
         String jsonMessage = "{  \n"
                 + "   \"mediaNames\":\"1037678_109010ice.jpg\",\"1055797_1742165ice.jpg\"]\n"
                 + "}";
-        ResponseEntity<?> responseEntity = application.getMediaLatestStatus(jsonMessage, multiValueMap);
+        ResponseEntity<?> responseEntity = application.getMediaLatestStatus(jsonMessage, httpHeaders);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

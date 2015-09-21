@@ -193,11 +193,11 @@ From the generated file, we can remove some JMX properties that are not related 
                 <metric attribute="Count" isCounter="false" name="Application.mediaLatestStatusTimer"/>
             </include>
         </publish>
-        <publish name="metrics:name=CustomAuthenticationEntryPoint.UnauthorizedRequestCounter">
+        <publish name="metrics:name=CustomAuthenticationEntryPoint.unauthorizedRequestCounter">
             <delay>30</delay>
             <unit>SECONDS</unit>
             <include>
-                <metric attribute="Count" isCounter="false" name="CustomAuthenticationEntryPoint.UnauthorizedRequestCounter"/>
+                <metric attribute="Count" isCounter="false" name="CustomAuthenticationEntryPoint.unauthorizedRequestCounter"/>
             </include>
         </publish>
         <publish name="metrics:name=LcmProcessLogDao.findMediaStatus">
