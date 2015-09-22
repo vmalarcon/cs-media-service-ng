@@ -49,6 +49,17 @@ public class JSONUtilTest {
     }
 
     @Test
+    public void testGenerateBadRequestResponse() throws Exception {
+        String res = JSONUtil.generateJsonForErrorResponse("bad request", "/testurl", 400, "field is required");
+        Map jsonMap = JSONUtil.buildMapFromJson(res);
+        assertTrue("bad request".equals(jsonMap.get("message")));
+        assertTrue("/testurl".equals(jsonMap.get("path")));
+        assertTrue(Integer.parseInt(jsonMap.get("status").toString()) == 400);
+        assertTrue("field is required".equals(jsonMap.get("error")));
+
+    }
+
+    @Test
     public void testGenerateJsonResponseCar() throws Exception {
         String expededJson =
                 "{\"mediaStatuses\":[{\"mediaName\":\"test.jpg\",\"status\":\"RECEIVED\",\"time\":\"2014-07-11 16:25:06.0290552 -07:00\"}]}";
@@ -105,11 +116,12 @@ public class JSONUtilTest {
         String expededJson =
                 "{\"mediaStatuses\":[{\"mediaName\":\"test.jpg\",\"status\":\"PUBLISHED\",\"time\":\"2014-07-11 16:25:06.0290552 -07:00\"}]}";
         MediaProcessLog mediaProcessLog1 = new MediaProcessLog("2014-07-11 16:24:06.0290552 -07:00", "test1.jpg", "Publish", "Lodging");
-        MediaProcessLog mediaProcessLog2 = new MediaProcessLog("2014-07-11 16:25:06.0290552 -07:00", "test1.jpg", "Publish", "Lodging");
+        MediaProcessLog mediaProcessLog2 = new MediaProcessLog("2014-07-11 16:24:07.0290552 -07:00", "tEst1.jpg", "Publish", "Lodging");
+        MediaProcessLog mediaProcessLog3 = new MediaProcessLog("2014-07-11 16:25:06.0290552 -07:00", "test1.jpg", "Publish", "Lodging");
 
-        MediaProcessLog mediaProcessLog3 = new MediaProcessLog("2014-07-11 16:26:06.0290552 -07:00", "test2.jpg", "Publish", "Lodging");
-        MediaProcessLog mediaProcessLog4 = new MediaProcessLog("2014-07-11 16:27:06.0290552 -07:00", "test2.jpg", "Publish", "Lodging");
-        MediaProcessLog mediaProcessLog5 = new MediaProcessLog("2014-07-11 16:28:06.0290552 -07:00", "test2.jpg", "Publish", "Lodging");
+        MediaProcessLog mediaProcessLog4 = new MediaProcessLog("2014-07-11 16:26:06.0290552 -07:00", "test2.jpg", "Publish", "Lodging");
+        MediaProcessLog mediaProcessLog5 = new MediaProcessLog("2014-07-11 16:27:06.0290552 -07:00", "test2.jpg", "Publish", "Lodging");
+        MediaProcessLog mediaProcessLog6 = new MediaProcessLog("2014-07-11 16:28:06.0290552 -07:00", "test2.jpg", "Publish", "Lodging");
 
         List<MediaProcessLog> statusLogList = new ArrayList<>();
         statusLogList.add(mediaProcessLog1);
@@ -117,12 +129,14 @@ public class JSONUtilTest {
         statusLogList.add(mediaProcessLog3);
         statusLogList.add(mediaProcessLog4);
         statusLogList.add(mediaProcessLog5);
+        statusLogList.add(mediaProcessLog6);
+
 
         Map<String, java.util.List<MediaProcessLog>> mapList = new HashMap<>();
         List<String> fileNameList = new ArrayList<>();
         fileNameList.add("test1.jpg");
         fileNameList.add("test2.jpg");
-        JSONUtil.divideStatusListToMap(statusLogList, mapList, statusLogList.size());
+        JSONUtil.divideStatusListToMap(statusLogList, mapList, fileNameList.size());
         assertTrue(("2014-07-11 16:24:06.0290552 -07:00").equals(mapList.get("test1.jpg").get(0).getActivityTime()));
         assertTrue(("2014-07-11 16:26:06.0290552 -07:00").equals(mapList.get("test2.jpg").get(0).getActivityTime()));
 

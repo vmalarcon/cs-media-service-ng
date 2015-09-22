@@ -193,40 +193,47 @@ From the generated file, we can remove some JMX properties that are not related 
                 <metric attribute="Count" isCounter="false" name="Application.mediaLatestStatusTimer"/>
             </include>
         </publish>
-        <publish name="metrics:name=LcmProcessLogDaoImpl.findMediaStatus">
+        <publish name="metrics:name=CustomAuthenticationEntryPoint.unauthorizedRequestCounter">
             <delay>30</delay>
             <unit>SECONDS</unit>
             <include>
-                <metric attribute="FifteenMinuteRate" isCounter="false" name="LcmProcessLogDaoImpl.findMediaStatus"/>
-                <metric attribute="FiveMinuteRate" isCounter="false" name="LcmProcessLogDaoImpl.findMediaStatus"/>
-                <metric attribute="MeanRate" isCounter="false" name="LcmProcessLogDaoImpl.findMediaStatus"/>
-                <metric attribute="OneMinuteRate" isCounter="false" name="LcmProcessLogDaoImpl.findMediaStatus"/>
-                <metric attribute="RateUnit" isCounter="false" name="LcmProcessLogDaoImpl.findMediaStatus"/>
-                <metric attribute="Count" isCounter="false" name="LcmProcessLogDaoImpl.findMediaStatus"/>
+                <metric attribute="Count" isCounter="false" name="CustomAuthenticationEntryPoint.unauthorizedRequestCounter"/>
             </include>
         </publish>
-        <publish name="metrics:name=LcmProcessLogDaoImpl.findMediaStatus.failure">
+        <publish name="metrics:name=LcmProcessLogDao.findMediaStatus">
             <delay>30</delay>
             <unit>SECONDS</unit>
             <include>
-                <metric attribute="FifteenMinuteRate" isCounter="false" name="LcmProcessLogDaoImpl.findMediaStatus.failure"/>
-                <metric attribute="FiveMinuteRate" isCounter="false" name="LcmProcessLogDaoImpl.findMediaStatus.failure"/>
-                <metric attribute="MeanRate" isCounter="false" name="LcmProcessLogDaoImpl.findMediaStatus.failure"/>
-                <metric attribute="OneMinuteRate" isCounter="false" name="LcmProcessLogDaoImpl.findMediaStatus.failure"/>
-                <metric attribute="RateUnit" isCounter="false" name="LcmProcessLogDaoImpl.findMediaStatus.failure"/>
-                <metric attribute="Count" isCounter="false" name="LcmProcessLogDaoImpl.findMediaStatus.failure"/>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="LcmProcessLogDao.findMediaStatus"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="LcmProcessLogDao.findMediaStatus"/>
+                <metric attribute="MeanRate" isCounter="false" name="LcmProcessLogDao.findMediaStatus"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="LcmProcessLogDao.findMediaStatus"/>
+                <metric attribute="RateUnit" isCounter="false" name="LcmProcessLogDao.findMediaStatus"/>
+                <metric attribute="Count" isCounter="false" name="LcmProcessLogDao.findMediaStatus"/>
             </include>
         </publish>
-        <publish name="metrics:name=LcmProcessLogDaoImpl.findMediaStatus.success">
+        <publish name="metrics:name=LcmProcessLogDao.findMediaStatus.failure">
             <delay>30</delay>
             <unit>SECONDS</unit>
             <include>
-                <metric attribute="FifteenMinuteRate" isCounter="false" name="LcmProcessLogDaoImpl.findMediaStatus.success"/>
-                <metric attribute="FiveMinuteRate" isCounter="false" name="LcmProcessLogDaoImpl.findMediaStatus.success"/>
-                <metric attribute="MeanRate" isCounter="false" name="LcmProcessLogDaoImpl.findMediaStatus.success"/>
-                <metric attribute="OneMinuteRate" isCounter="false" name="LcmProcessLogDaoImpl.findMediaStatus.success"/>
-                <metric attribute="RateUnit" isCounter="false" name="LcmProcessLogDaoImpl.findMediaStatus.success"/>
-                <metric attribute="Count" isCounter="false" name="LcmProcessLogDaoImpl.findMediaStatus.success"/>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="LcmProcessLogDao.findMediaStatus.failure"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="LcmProcessLogDao.findMediaStatus.failure"/>
+                <metric attribute="MeanRate" isCounter="false" name="LcmProcessLogDao.findMediaStatus.failure"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="LcmProcessLogDao.findMediaStatus.failure"/>
+                <metric attribute="RateUnit" isCounter="false" name="LcmProcessLogDao.findMediaStatus.failure"/>
+                <metric attribute="Count" isCounter="false" name="LcmProcessLogDao.findMediaStatus.failure"/>
+            </include>
+        </publish>
+        <publish name="metrics:name=LcmProcessLogDao.findMediaStatus.success">
+            <delay>30</delay>
+            <unit>SECONDS</unit>
+            <include>
+                <metric attribute="FifteenMinuteRate" isCounter="false" name="LcmProcessLogDao.findMediaStatus.success"/>
+                <metric attribute="FiveMinuteRate" isCounter="false" name="LcmProcessLogDao.findMediaStatus.success"/>
+                <metric attribute="MeanRate" isCounter="false" name="LcmProcessLogDao.findMediaStatus.success"/>
+                <metric attribute="OneMinuteRate" isCounter="false" name="LcmProcessLogDao.findMediaStatus.success"/>
+                <metric attribute="RateUnit" isCounter="false" name="LcmProcessLogDao.findMediaStatus.success"/>
+                <metric attribute="Count" isCounter="false" name="LcmProcessLogDao.findMediaStatus.success"/>
             </include>
         </publish>
 

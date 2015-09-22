@@ -2,6 +2,7 @@ package com.expedia.content.media.processing.services;
 
 import com.expedia.content.media.processing.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
+import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import com.expedia.content.media.processing.services.util.RequestMessageException;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
@@ -21,11 +22,12 @@ import org.springframework.context.annotation.ImportResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.RequestHeader;
 import java.util.List;
 import java.util.Map;
 
@@ -42,7 +44,9 @@ import java.util.Map;
 public class Application {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
-    
+    private static final String REQUESTID = "request-id";
+    private static final int BAD_REQUEST_CODE = 400;
+
     @Autowired
     private MediaServiceProcess mediaServiceProcess;
     
@@ -85,14 +89,14 @@ public class Application {
             ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
             ValidationStatus validationStatus = mediaServiceProcess.validateImage(imageMessage);
             if (!validationStatus.isValid()) {
-                return buildBadRequestResponse(validationStatus.getMessage());
+                return buildBadRequestResponse(validationStatus.getMessage(), MediaServiceUrl.ACQUIREMEDIA.getUrl().toString());
             }
             mediaServiceProcess.publishMsg(imageMessage);
             LOGGER.info("SUCCESS - message=/media/v1/add, image_message=[{}]", message);
             return new ResponseEntity<>("OK", HttpStatus.OK);
         } catch (IllegalStateException | ImageMessageException ex) {
             LOGGER.error("ERROR - message=/media/v1/add, image_message=[{}] .", message, ex);
-            return buildBadRequestResponse("JSON request format is invalid. Json message=" + message);
+            return buildBadRequestResponse("JSON request format is invalid. Json message=" + message, MediaServiceUrl.ACQUIREMEDIA.getUrl().toString());
         }
     }
     
@@ -100,27 +104,29 @@ public class Application {
      * Web service interface to get the latest media file process status.
      *
      * @param message JSON formatted message, "mediaNames", contains an array of media file names.
-     * @return ResponseEntity is the standard spring mvn response object
+     * @return ResponseEntity Standard spring response object.
      * @throws Exception Thrown if processing the message fails.
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Meter(name = "mediaLatestStatusCounter")
     @Timer(name = "mediaLatestStatusTimer")
     @RequestMapping(value = "/media/v1/lateststatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity getMediaLatestStatus(@RequestBody final String message) throws Exception {
-        LOGGER.info("RECEIVED REQUEST - message=/media/v1/lateststatus, image_message=[{}]", message);
+    public ResponseEntity getMediaLatestStatus(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
+        LOGGER.info("RECEIVED REQUEST - url=" + MediaServiceUrl.MEDIASTATUS.getUrl().toString() + ", image_message=[{}], request-id=[{}]", message,
+                headers.get(REQUESTID));
         try {
             Map<String, Object> map = JSONUtil.buildMapFromJson(message);
             ValidationStatus validationStatus = mediaServiceProcess.validateMediaStatus(message);
             if (!validationStatus.isValid()) {
-                return buildBadRequestResponse(validationStatus.getMessage());
+                return buildBadRequestResponse(validationStatus.getMessage(), MediaServiceUrl.MEDIASTATUS.getUrl().toString());
             }
             String jsonResponse = mediaServiceProcess.getMediaStatusList((List<String>) map.get("mediaNames"));
-            LOGGER.info("RESPONSE - message=/media/v1/lateststatus, image_message=[{}]", jsonResponse);
+            LOGGER.info("RESPONSE - url=" + MediaServiceUrl.MEDIASTATUS.getUrl(), toString() + ", image_message=[{}] request-id=[{}]", jsonResponse,
+                    headers.get(REQUESTID));
             return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
         } catch (RequestMessageException ex) {
-            LOGGER.error("ERROR - message=/media/v1/lateststatus, image_message=[{}] .", message, ex);
-            return buildBadRequestResponse(ex.getMessage());
+            LOGGER.error("ERROR - url=" + MediaServiceUrl.MEDIASTATUS.getUrl() + ", image_message=[{}] .", message, ex);
+            return buildBadRequestResponse(ex.getMessage(), MediaServiceUrl.MEDIASTATUS.getUrl().toString());
         }
     }
     
@@ -132,8 +138,9 @@ public class Application {
      * @return A Bad Request response.
      */
     @Counter(name = "badRequestCounter")
-    public ResponseEntity<String> buildBadRequestResponse(String validationMessage) {
-        return new ResponseEntity<>("Bad Request: " + validationMessage, HttpStatus.BAD_REQUEST);
+    public ResponseEntity<String> buildBadRequestResponse(String validationMessage, String url) {
+        String resMsg = JSONUtil.generateJsonForErrorResponse(validationMessage, url, BAD_REQUEST_CODE, "Bad Request");
+        return new ResponseEntity<>(resMsg, HttpStatus.BAD_REQUEST);
     }
     
 }
