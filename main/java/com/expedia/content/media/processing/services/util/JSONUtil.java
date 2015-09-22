@@ -145,7 +145,7 @@ public final class JSONUtil {
             String preName = statusLogList.get(0).getMediaFileName();
             mapList.put(preName, sublist[0]);
             for (MediaProcessLog mediaProcessLog : statusLogList) {
-                if (mediaProcessLog.getMediaFileName().equals(preName)) {
+                if (mediaProcessLog.getMediaFileName().equalsIgnoreCase(preName)) {
                     sublist[i].add(mediaProcessLog);
                 } else {
                     i++;
