@@ -43,6 +43,7 @@
                 <ref bean="rejectActivity"/>
                 <ref bean="publishActivity"/>
                 <ref bean="dcpPickupActivity"/>
+                <ref bean="carsDerivativeCreationActivity"/>
             </list>
         </property>
         <property name="processLogDao" ref="processLogDao">
@@ -60,7 +61,7 @@
     <bean id="derivativeCreationActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
         <property name="activityType" value="DerivativeCreation"/>
         <property name="statusMessage" value="DERIVATIVES_CREATED"/>
-        <property name="mediaType" value=".*"/>
+        <property name="mediaType" value="VirtualTour|Lodging"/>
     </bean>
 
     <bean id="rejectActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
@@ -78,6 +79,12 @@
     <bean id="dcpPickupActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
         <property name="activityType" value="DcpPickup"/>
         <property name="statusMessage" value="RECEIVED"/>
+        <property name="mediaType" value="Cars"/>
+    </bean>
+
+    <bean id="carsDerivativeCreationActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="DerivativeCreation"/>
+        <property name="statusMessage" value="PUBLISHED"/>
         <property name="mediaType" value="Cars"/>
     </bean>
 

@@ -39,10 +39,12 @@ public class MediaNamesValidator implements RequestMessageValidator {
             validationStatus.setMessage("messageNames value should be array.");
         } else {
             if (((List) object).size() <= 0) {
+                validationStatus.setValid(false);
                 validationStatus.setMessage("messageNames value is required.");
                 return validationStatus;
             }
             if (((List) object).size() > maximumRequestCount) {
+                validationStatus.setValid(false);
                 validationStatus.setMessage("messageNames count exceed the maximum " + maximumRequestCount);
                 return validationStatus;
             }

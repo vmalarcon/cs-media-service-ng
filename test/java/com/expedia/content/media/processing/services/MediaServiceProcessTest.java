@@ -54,7 +54,7 @@ public class MediaServiceProcessTest {
 
         ActivityMapping activityMapping2 = new ActivityMapping();
         activityMapping2.setActivityType("DerivativeCreation");
-        activityMapping2.setMediaType(".*");
+        activityMapping2.setMediaType("VirtualTour|Lodging");
         activityMapping2.setStatusMessage("DERIVATIVES_CREATED");
 
         ActivityMapping activityMapping3 = new ActivityMapping();
@@ -72,11 +72,18 @@ public class MediaServiceProcessTest {
         activityMapping5.setMediaType("Cars");
         activityMapping5.setStatusMessage("RECEIVED");
 
+        ActivityMapping activityMapping6 = new ActivityMapping();
+        activityMapping6.setActivityType("DerivativeCreation");
+        activityMapping6.setMediaType("Cars");
+        activityMapping6.setStatusMessage("PUBLISHED");
+
         whitelist.add(activityMapping1);
         whitelist.add(activityMapping2);
         whitelist.add(activityMapping3);
         whitelist.add(activityMapping4);
         whitelist.add(activityMapping5);
+        whitelist.add(activityMapping6);
+
 
     }
 
@@ -218,6 +225,30 @@ public class MediaServiceProcessTest {
 
         MediaProcessLog mediaLogStatus =
                 new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "DcpPickup", "Cars");
+        mediaLogStatuses.add(mediaLogStatus);
+        List<String> fileNameList = new ArrayList();
+        fileNameList.add("1037678_109010ice.jpg");
+        when(lcmProcessLogDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
+
+        MediaServiceProcess mediaServiceProcess =
+                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
+        mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
+
+        mediaServiceProcess.setActivityWhiteList(whitelist);
+        String response = mediaServiceProcess.getMediaStatusList(fileNameList);
+        assertTrue(response.equals(jsonMessage));
+    }
+
+    @Test
+    public void testGetMediaStatusCarDeriCreated() throws Exception {
+        String jsonMessage =
+                "{\"mediaStatuses\":[{\"mediaName\":\"1037678_109010ice.jpg\",\"status\":\"PUBLISHED\",\"time\":\"2014-07-29 10:08:12.6890000 -07:00\"}]}";
+        List<MediaMessageValidator> validators = mock(List.class);
+        ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
+        List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
+
+        MediaProcessLog mediaLogStatus =
+                new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "DerivativeCreation", "Cars");
         mediaLogStatuses.add(mediaLogStatus);
         List<String> fileNameList = new ArrayList();
         fileNameList.add("1037678_109010ice.jpg");
