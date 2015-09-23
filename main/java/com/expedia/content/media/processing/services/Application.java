@@ -2,9 +2,9 @@ package com.expedia.content.media.processing.services;
 
 import com.expedia.content.media.processing.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
+import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import com.expedia.content.media.processing.services.util.RequestMessageException;
-import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.expedia.content.metrics.aspects.EnableMonitoringAspects;
 import com.expedia.content.metrics.aspects.annotations.Counter;
@@ -22,11 +22,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.Map;
 
@@ -119,7 +116,7 @@ public class Application {
                 return buildBadRequestResponse(validationStatus.getMessage(), MediaServiceUrl.MEDIASTATUS.getUrl().toString());
             }
             String jsonResponse = mediaServiceProcess.getMediaStatusList((List<String>) map.get("mediaNames"));
-            LOGGER.info("RESPONSE - url=" + MediaServiceUrl.MEDIASTATUS.getUrl(), toString() + ", image_message=[{}] request-id=[{}]", jsonResponse,
+            LOGGER.info("RESPONSE - url={}", MediaServiceUrl.MEDIASTATUS.getUrl(), toString() + ", image_message=[{}], request-id=[{}]", jsonResponse,
                     headers.get(REQUESTID));
             return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
         } catch (RequestMessageException ex) {
