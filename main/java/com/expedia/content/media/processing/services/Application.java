@@ -120,7 +120,7 @@ public class Application {
                     headers.get(REQUESTID));
             return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
         } catch (RequestMessageException ex) {
-            LOGGER.error("ERROR - url=" + MediaServiceUrl.MEDIASTATUS.getUrl() + ", image_message=[{}] .", message, ex);
+            LOGGER.error("ERROR - url={}", MediaServiceUrl.MEDIASTATUS.getUrl() + ", image_message=[{}] .", message, ex);
             return buildBadRequestResponse(ex.getMessage(), MediaServiceUrl.MEDIASTATUS.getUrl().toString());
         }
     }
