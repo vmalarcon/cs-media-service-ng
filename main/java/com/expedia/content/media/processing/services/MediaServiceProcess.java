@@ -167,7 +167,6 @@ public class MediaServiceProcess {
     public String getMediaStatusList(List<String> fileNameList) throws Exception {
         List<MediaProcessLog> statusLogList = processLogDao.findMediaStatus(fileNameList);
         Map<String, List<MediaProcessLog>> mapList = new HashMap<>();
-        //filterList(statusLogList);
         JSONUtil.divideStatusListToMap(statusLogList, mapList, fileNameList.size());
         return JSONUtil.generateJsonByProcessLogList(mapList, fileNameList, activityWhiteList);
     }
