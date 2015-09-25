@@ -68,6 +68,7 @@ public class Application {
     public ResponseEntity<String> acquireMedia(@RequestBody final String message) throws Exception {
         LOGGER.info("RECEIVED - Processing message: [{}]", message);
         try {
+            mediaServiceProcess.validateTest(message);
             ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
             ValidationStatus validationStatus = mediaServiceProcess.validateImage(imageMessage);
             if (!validationStatus.isValid()) {

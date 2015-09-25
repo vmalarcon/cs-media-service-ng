@@ -10,6 +10,7 @@ import com.expedia.content.media.processing.services.dao.ProcessLogDao;
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
 import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.validator.MVELValidator;
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
 import com.expedia.content.media.processing.services.validator.RequestMessageValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
@@ -40,6 +41,7 @@ public class MediaServiceProcess {
     private List<RequestMessageValidator> mediaStatusValidatorList;
     private List<ActivityMapping> activityWhiteList;
     private ProcessLogDao processLogDao;
+    private MVELValidator mvelValidator;
 
     public MediaServiceProcess(List<MediaMessageValidator> validators, RabbitTemplate rabbitTemplate,
             @Qualifier("logActivityPicker") final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker, final Reporting reporting) {
@@ -56,6 +58,14 @@ public class MediaServiceProcess {
     public void setMediaStatusValidatorList(
             List<RequestMessageValidator> mediaStatusValidatorList) {
         this.mediaStatusValidatorList = mediaStatusValidatorList;
+    }
+
+    public MVELValidator getMvelValidator() {
+        return mvelValidator;
+    }
+
+    public void setMvelValidator(MVELValidator mvelValidator) {
+        this.mvelValidator = mvelValidator;
     }
 
     public List<ActivityMapping> getActivityWhiteList() {
@@ -118,6 +128,11 @@ public class MediaServiceProcess {
             }
         }
         return validationStatus;
+    }
+
+    public void validateTest(String message){
+        Map map = JSONUtil.buildMapFromJson(message);
+        mvelValidator.validate(map);
     }
 
     /**

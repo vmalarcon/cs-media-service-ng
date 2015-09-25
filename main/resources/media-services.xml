@@ -49,6 +49,20 @@
         </property>
         <property name="processLogDao" ref="processLogDao">
         </property>
+        <property name="mvelValidator" ref="mvelValidator">
+        </property>
+    </bean>
+
+    <bean id="mvelValidator" class="com.expedia.content.media.processing.services.validator.MVELValidator">
+      <property name="ruleMaps">
+          <map>
+              <entry key ="EPC">
+                  <list>
+                      <value>expediaId > 0?"valid":"expediaid is not number"</value>
+                  </list>
+              </entry>
+          </map>
+      </property>
     </bean>
 
     <bean id="receptionActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
