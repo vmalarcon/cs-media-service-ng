@@ -49,7 +49,14 @@
         </property>
         <property name="processLogDao" ref="processLogDao">
         </property>
-        <property name="mvelValidator" ref="mvelValidator">
+        <property name="mapValidatorList">
+            <map>
+                <entry key ="EPC">
+                    <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                        <ref bean="mvelValidator"/>
+                    </list>
+                </entry>
+            </map>
         </property>
     </bean>
 
@@ -58,7 +65,10 @@
           <map>
               <entry key ="EPC">
                   <list>
-                      <value>expediaId > 0?"valid":"expediaid is not number"</value>
+                      <value>expediaId > 0?"valid":"expediaid is not number."</value>
+                      <!-- required -->
+                      <value>categoryId .matches("[0-9]+")?"valid":"categoryId is not number"</value>
+                      <value>fileUrl.matches('.*http://.*|.*file:///.*')?"valid":"fileUrl format is not right."</value>
                   </list>
               </entry>
           </map>

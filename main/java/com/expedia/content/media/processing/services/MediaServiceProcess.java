@@ -10,10 +10,7 @@ import com.expedia.content.media.processing.services.dao.ProcessLogDao;
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
 import com.expedia.content.media.processing.services.util.JSONUtil;
-import com.expedia.content.media.processing.services.validator.MVELValidator;
-import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
-import com.expedia.content.media.processing.services.validator.RequestMessageValidator;
-import com.expedia.content.media.processing.services.validator.ValidationStatus;
+import com.expedia.content.media.processing.services.validator.*;
 import com.expedia.content.metrics.aspects.annotations.Meter;
 import com.expedia.content.metrics.aspects.annotations.Timer;
 import org.slf4j.Logger;
@@ -41,7 +38,7 @@ public class MediaServiceProcess {
     private List<RequestMessageValidator> mediaStatusValidatorList;
     private List<ActivityMapping> activityWhiteList;
     private ProcessLogDao processLogDao;
-    private MVELValidator mvelValidator;
+    private Map<String, List<MapMessageValidator>> mapValidatorList;
 
     public MediaServiceProcess(List<MediaMessageValidator> validators, RabbitTemplate rabbitTemplate,
             @Qualifier("logActivityPicker") final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker, final Reporting reporting) {
@@ -60,12 +57,13 @@ public class MediaServiceProcess {
         this.mediaStatusValidatorList = mediaStatusValidatorList;
     }
 
-    public MVELValidator getMvelValidator() {
-        return mvelValidator;
+    public Map<String, List<MapMessageValidator>> getMapValidatorList() {
+        return mapValidatorList;
     }
 
-    public void setMvelValidator(MVELValidator mvelValidator) {
-        this.mvelValidator = mvelValidator;
+    public void setMapValidatorList(
+            Map<String, List<MapMessageValidator>> mapValidatorList) {
+        this.mapValidatorList = mapValidatorList;
     }
 
     public List<ActivityMapping> getActivityWhiteList() {
@@ -130,9 +128,15 @@ public class MediaServiceProcess {
         return validationStatus;
     }
 
-    public void validateTest(String message){
-        Map map = JSONUtil.buildMapFromJson(message);
-        mvelValidator.validate(map);
+    public String validateTest(String message, String clientid) throws Exception {
+        List<Map<String, Object>> messageMapList = JSONUtil.buildMapListFromJson(message);
+        List<MapMessageValidator> validatorList = mapValidatorList.get(clientid);
+        List<Map<String, String>> messageList = null;
+        for (MapMessageValidator mapMessageValidator : validatorList) {
+            //todo merge the list
+            messageList = mapMessageValidator.validate(messageMapList);
+        }
+        return JSONUtil.convertListToString(messageList);
     }
 
     /**

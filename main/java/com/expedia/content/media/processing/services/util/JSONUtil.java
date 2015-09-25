@@ -41,6 +41,24 @@ public final class JSONUtil {
         }
     }
 
+    public static List<Map<String, Object>> buildMapListFromJson(String jsonMessage) throws RequestMessageException {
+        try {
+            return OBJECT_MAPPER.readValue(jsonMessage, List.class);
+        } catch (IOException ex) {
+            String errorMsg = MessageFormat.format("Error parsing/converting Json message: {0}", jsonMessage);
+            throw new RequestMessageException(errorMsg, ex);
+        }
+    }
+
+    public static String convertListToString(List<Map<String, String>> messageList) {
+        try {
+            return OBJECT_MAPPER.writeValueAsString(messageList);
+        } catch (IOException ex) {
+            String errorMsg = "Error writing map to json";
+            throw new RequestMessageException(errorMsg, ex);
+        }
+    }
+
     /**
      * Generate the json response message.
      *

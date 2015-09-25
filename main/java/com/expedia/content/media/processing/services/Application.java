@@ -68,7 +68,6 @@ public class Application {
     public ResponseEntity<String> acquireMedia(@RequestBody final String message) throws Exception {
         LOGGER.info("RECEIVED - Processing message: [{}]", message);
         try {
-            mediaServiceProcess.validateTest(message);
             ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
             ValidationStatus validationStatus = mediaServiceProcess.validateImage(imageMessage);
             if (!validationStatus.isValid()) {
@@ -123,6 +122,18 @@ public class Application {
             LOGGER.info("RESPONSE - url=" + MediaServiceUrl.MEDIASTATUS.getUrl(), toString() + ", image_message=[{}] request-id=[{}]", jsonResponse,
                     headers.get(REQUESTID));
             return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
+        } catch (RequestMessageException ex) {
+            LOGGER.error("ERROR - url=" + MediaServiceUrl.MEDIASTATUS.getUrl() + ", image_message=[{}] .", message, ex);
+            return buildBadRequestResponse(ex.getMessage(), MediaServiceUrl.MEDIASTATUS.getUrl().toString());
+        }
+    }
+
+    @RequestMapping(value = "/media/v1/validateMsg", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity testValidationMessage(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
+
+        try {
+            String json = mediaServiceProcess.validateTest(message, "EPC");
+            return new ResponseEntity<>(json, HttpStatus.OK);
         } catch (RequestMessageException ex) {
             LOGGER.error("ERROR - url=" + MediaServiceUrl.MEDIASTATUS.getUrl() + ", image_message=[{}] .", message, ex);
             return buildBadRequestResponse(ex.getMessage(), MediaServiceUrl.MEDIASTATUS.getUrl().toString());
