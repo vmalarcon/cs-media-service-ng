@@ -6,8 +6,8 @@ import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.pipleline.reporting.Activity;
 import com.expedia.content.media.processing.pipleline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipleline.reporting.Reporting;
-import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.expedia.content.media.processing.services.dao.ProcessLogDao;
+import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
@@ -23,10 +23,7 @@ import org.springframework.stereotype.Component;
 
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * MediaServiceProcess is called by main class
@@ -91,10 +88,10 @@ public class MediaServiceProcess {
         String jsonMessage = message.toJSONMessage();
         try {
             rabbitTemplate.convertAndSend(jsonMessage);
-            LOGGER.debug("send message to queue done=[{}]", jsonMessage);
+            LOGGER.debug("Sending message to queue done : JSONMessage=[{}]", jsonMessage);
             logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED);
         } catch (Exception ex) {
-            LOGGER.error("Error publishing message=[{}], exception=[{}]", jsonMessage, ex);
+            LOGGER.error("Error publishing : JSONMessage=[{}], error=[{}]", jsonMessage, ex);
             throw new RuntimeException("Error publishing message=[" + jsonMessage + "]", ex);
         }
     }
