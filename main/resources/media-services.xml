@@ -69,10 +69,11 @@
                       <value>imageMesage.domainData.domainDataFields.expediaId !=null ?"valid":"expediaid is required."</value>
 
                       <value>imageMesage.domainData.domainDataFields.categoryId !=null ?"valid":"categoryId is required."</value>
-                      <value>imageMesage.domainData.domainDataFields.categoryId.matches("[0-9]+")?"valid":"categoryId is not number"</value>
+                      <value>(imageMesage.domainData.domainDataName.equals('LCM')&amp;&amp;!imageMesage.domainData.domainDataFields.categoryId.matches("[0-9]+"))?"categoryId is not number.":"valid"</value>
 
                       <value>imageMesage.domainData.domainDataFields.mediaProviderId !=null ?"valid":"mediaProviderId is required."</value>
-                      <value>imageMesage.domainData.domainDataFields.mediaProviderId.matches("[0-9]+")?"valid":"mediaProviderId is not number"</value>
+                      <value>(imageMesage.domainData.domainDataName.equals('LCM')&amp;&amp;!imageMesage.domainData.domainDataFields.mediaProviderId.matches("[0-9]+"))?"mediaProviderId is not number.":"valid"</value>
+
 
                       <value>imageMesage.domainData.domainDataFields.mediaProviderId.matches("[0-9]+")?"valid":"mediaProviderId is not number"</value>
                       <value>imageMesage.fileName !=null ?"valid":"fileName is required."</value>

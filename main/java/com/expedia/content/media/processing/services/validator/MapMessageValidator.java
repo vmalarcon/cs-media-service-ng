@@ -17,7 +17,6 @@ public interface MapMessageValidator {
      * @return ValidationStatus contain the validation status, {@code true} when successful or
      * {@code false} when the validation fails. When the validation fails a message is also set in the ValidationStatus.
      */
-    List<Map<String, String>> validate(List<Map<String, Object>> messageMapList) throws Exception;
 
     List<Map<String, String>> validateImages(List<Image> messageMapList) throws Exception;
 

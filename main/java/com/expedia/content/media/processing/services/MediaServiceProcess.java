@@ -131,7 +131,6 @@ public class MediaServiceProcess {
 
     public String validateTest(String message, String clientid) throws Exception {
         ImageList imageList = JSONUtil.buildMessageListFromJson(message);
-        System.out.println(imageList);
         //List<Map<String, Object>> messageMapList = JSONUtil.buildMapListFromJson(message);
         //TODO
         List<MapMessageValidator> validatorList = mapValidatorList.get("EPC");

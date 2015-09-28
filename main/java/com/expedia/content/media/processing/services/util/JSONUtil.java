@@ -1,7 +1,6 @@
 package com.expedia.content.media.processing.services.util;
 
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
-import com.expedia.content.media.processing.services.util.json.Image;
 import com.expedia.content.media.processing.services.util.json.ImageList;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
