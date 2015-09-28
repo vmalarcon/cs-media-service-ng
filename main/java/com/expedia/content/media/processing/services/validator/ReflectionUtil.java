@@ -31,7 +31,7 @@ public final class ReflectionUtil {
                 objectValue = field.get(obj);
             }
         } catch (NoSuchFieldException e) {
-            LOGGER.error("getFieldValue failed : error=[{}]", e);
+            LOGGER.error("getFieldValue failed : error=[{}]", e.getMessage(), e);
             throw e;
         }
         LOGGER.debug("getFiledValue for field={}, return value=[{}]", fieldName, objectValue);

@@ -91,7 +91,7 @@ public class MediaServiceProcess {
             LOGGER.debug("Sending message to queue done : JSONMessage=[{}]", jsonMessage);
             logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED);
         } catch (Exception ex) {
-            LOGGER.error("Error publishing : JSONMessage=[{}], error=[{}]", jsonMessage, ex);
+            LOGGER.error("Error publishing : JSONMessage=[{}], error=[{}]", jsonMessage, ex.getMessage(), ex);
             throw new RuntimeException("Error publishing message=[" + jsonMessage + "]", ex);
         }
     }

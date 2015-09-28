@@ -77,10 +77,10 @@ public class Application {
             LOGGER.debug("processed successfully : message={}", message);
             return new ResponseEntity<>("OK", HttpStatus.OK);
         } catch (IllegalStateException ex) {
-            LOGGER.error("acquireMedia failed : JSONMessage=[{}]:", message, ex);
+            LOGGER.error("acquireMedia failed : JSONMessage=[{}]:", message, ex.getMessage(), ex);
             return buildBadRequestResponse("JSON request format is invalid. Json message=" + message, MediaServiceUrl.ACQUIREMEDIA.getUrl().toString());
         } catch (ImageMessageException ex) {
-            LOGGER.error("Error parsing JSONMessage : JSONMessage=[{}].", message, ex);
+            LOGGER.error("Error parsing JSONMessage : JSONMessage=[{}], error=[{}]", message, ex.getMessage(), ex);
             return buildBadRequestResponse(ex.getMessage(), MediaServiceUrl.ACQUIREMEDIA.getUrl().toString());
         }
     }
@@ -123,7 +123,7 @@ public class Application {
                     headers.get(REQUESTID));
             return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
         } catch (RequestMessageException ex) {
-            LOGGER.error("url=[{}]", MediaServiceUrl.MEDIASTATUS.getUrl() + ", imageMessage=[{}] .", message, ex);
+            LOGGER.error("url=[{}], imageMessage=[{}], error=[{}]", MediaServiceUrl.MEDIASTATUS.getUrl(), message, ex.getMessage(), ex);
             return buildBadRequestResponse(ex.getMessage(), MediaServiceUrl.MEDIASTATUS.getUrl().toString());
         }
     }
