@@ -130,7 +130,6 @@ public class Application {
 
     @RequestMapping(value = "/media/v1/validateMsg", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity testValidationMessage(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
-
         try {
             String json = mediaServiceProcess.validateTest(message, "EPC");
             return new ResponseEntity<>(json, HttpStatus.OK);

@@ -1,6 +1,8 @@
 package com.expedia.content.media.processing.services.util;
 
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
+import com.expedia.content.media.processing.services.util.json.Image;
+import com.expedia.content.media.processing.services.util.json.ImageList;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +46,15 @@ public final class JSONUtil {
     public static List<Map<String, Object>> buildMapListFromJson(String jsonMessage) throws RequestMessageException {
         try {
             return OBJECT_MAPPER.readValue(jsonMessage, List.class);
+        } catch (IOException ex) {
+            String errorMsg = MessageFormat.format("Error parsing/converting Json message: {0}", jsonMessage);
+            throw new RequestMessageException(errorMsg, ex);
+        }
+    }
+
+    public static ImageList buildMessageListFromJson(String jsonMessage) throws RequestMessageException {
+        try {
+            return OBJECT_MAPPER.readValue(jsonMessage, ImageList.class);
         } catch (IOException ex) {
             String errorMsg = MessageFormat.format("Error parsing/converting Json message: {0}", jsonMessage);
             throw new RequestMessageException(errorMsg, ex);

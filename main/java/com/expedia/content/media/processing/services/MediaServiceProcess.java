@@ -10,6 +10,7 @@ import com.expedia.content.media.processing.services.dao.ProcessLogDao;
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
 import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.util.json.ImageList;
 import com.expedia.content.media.processing.services.validator.*;
 import com.expedia.content.metrics.aspects.annotations.Meter;
 import com.expedia.content.metrics.aspects.annotations.Timer;
@@ -129,12 +130,17 @@ public class MediaServiceProcess {
     }
 
     public String validateTest(String message, String clientid) throws Exception {
-        List<Map<String, Object>> messageMapList = JSONUtil.buildMapListFromJson(message);
-        List<MapMessageValidator> validatorList = mapValidatorList.get(clientid);
+        ImageList imageList = JSONUtil.buildMessageListFromJson(message);
+        System.out.println(imageList);
+        //List<Map<String, Object>> messageMapList = JSONUtil.buildMapListFromJson(message);
+        //TODO
+        List<MapMessageValidator> validatorList = mapValidatorList.get("EPC");
         List<Map<String, String>> messageList = null;
         for (MapMessageValidator mapMessageValidator : validatorList) {
             //todo merge the list
-            messageList = mapMessageValidator.validate(messageMapList);
+         //   messageList = mapMessageValidator.validate(messageMapList);
+            messageList = mapMessageValidator.validateImages(imageList.getImages());
+
         }
         return JSONUtil.convertListToString(messageList);
     }

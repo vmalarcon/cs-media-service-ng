@@ -1,5 +1,7 @@
 package com.expedia.content.media.processing.services.validator;
 
+import com.expedia.content.media.processing.services.util.json.Image;
+
 import java.util.List;
 import java.util.Map;
 
@@ -16,4 +18,8 @@ public interface MapMessageValidator {
      * {@code false} when the validation fails. When the validation fails a message is also set in the ValidationStatus.
      */
     List<Map<String, String>> validate(List<Map<String, Object>> messageMapList) throws Exception;
+
+    List<Map<String, String>> validateImages(List<Image> messageMapList) throws Exception;
+
+
 }
