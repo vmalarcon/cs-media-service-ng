@@ -1,5 +1,8 @@
 package com.expedia.content.media.processing.services.validator;
 
+import com.expedia.content.media.processing.domain.ImageMessage;
+import com.expedia.content.media.processing.domain.OuterDomainData;
+
 import java.util.Map;
 
 /**
@@ -16,14 +19,27 @@ public abstract class OuterDomainSeekerValidator {
      * @param dataMap The data map to search.
      * @return The value of the field to validate. {@code null} if the value is not found.
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    protected Object seekOuterDomainFields(Map<String, Object> dataMap) {
+    protected Object seekOuterDomainFields(ImageMessage message) {
+        if (message.getOuterDomainDataList() != null) {
+            for (OuterDomainData domainData : message.getOuterDomainDataList()) {
+                Map<String, Object> dataMap = domainData.getDataMap();
+                return scanOuterDomainDataTree(dataMap);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * @param dataMap
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private Object scanOuterDomainDataTree(Map<String, Object> dataMap) {
         for (String key : dataMap.keySet()) {
             if (fieldName.equals(key)) {
                 return dataMap.get(key);
             } else {
                 if (dataMap.get(key) instanceof Map) {
-                    Object value = seekOuterDomainFields((Map) dataMap.get(key));
+                    Object value = scanOuterDomainDataTree((Map) dataMap.get(key));
                     if (value != null) {
                         return value;
                     }

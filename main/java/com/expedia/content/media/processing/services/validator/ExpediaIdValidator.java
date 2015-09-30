@@ -4,7 +4,6 @@ import com.expedia.content.media.processing.domain.ImageMessage;
 import com.expedia.content.media.processing.domain.ImageType;
 
 import java.text.MessageFormat;
-import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,17 +45,7 @@ public class ExpediaIdValidator extends NumericValidator {
      * @return The eid value if found. {@code null} if not found.
      */
     private Object findEidValue(ImageMessage image) {
-        Object eidValue = null;
-        if (image.getOuterDomainData() != null) {
-            Map<String, Object> dataMap = image.getOuterDomainData().getDataMap();
-            for (String key : dataMap.keySet()) {
-                if (key.equals(fieldName)) {
-                    eidValue = dataMap.get(key);
-                    break;
-                }
-            }
-        }
-        return eidValue;
+        return seekOuterDomainFields(image);
     }
 
     /**

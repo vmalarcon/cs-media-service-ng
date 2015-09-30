@@ -8,7 +8,9 @@ import com.expedia.content.media.processing.domain.ImageType;
 import com.expedia.content.media.processing.domain.OuterDomainData;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
@@ -39,8 +41,10 @@ public class RequiredValidatorTest {
         dataMap.put("abc", "hello");
         dataMap.put("def", "hello");
         OuterDomainData domainData = new OuterDomainData("LCM", dataMap);
+        List<OuterDomainData> domainDataList = new ArrayList<>();
+        domainDataList.add(domainData);
 
-        ImageMessage image = new ImageMessage.ImageMessageBuilder().imageType(ImageType.LODGING).outerDomainData(domainData).build();
+        ImageMessage image = new ImageMessage.ImageMessageBuilder().imageType(ImageType.LODGING).outerDomainDataList(domainDataList).build();
         RequiredValidator requiredValidator = new RequiredValidator();
         requiredValidator.setFieldName("abc");
         ValidationStatus validationStatus = requiredValidator.validate(image);
@@ -53,8 +57,10 @@ public class RequiredValidatorTest {
         dataMap.put("abc", "hello");
         dataMap.put("def", "hello");
         OuterDomainData domainData = new OuterDomainData("LCM", dataMap);
+        List<OuterDomainData> domainDataList = new ArrayList<>();
+        domainDataList.add(domainData);
 
-        ImageMessage image = new ImageMessage.ImageMessageBuilder().imageType(ImageType.LODGING).outerDomainData(domainData).build();
+        ImageMessage image = new ImageMessage.ImageMessageBuilder().imageType(ImageType.LODGING).outerDomainDataList(domainDataList).build();
         RequiredValidator requiredValidator = new RequiredValidator();
         requiredValidator.setFieldName("xyz");
         ValidationStatus validationStatus = requiredValidator.validate(image);

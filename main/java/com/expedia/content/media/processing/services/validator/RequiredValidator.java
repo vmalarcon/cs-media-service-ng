@@ -46,8 +46,8 @@ public class RequiredValidator extends OuterDomainSeekerValidator implements Med
         } catch (NoSuchFieldException | IllegalAccessException e) {
             LOGGER.info("Required field validation reflection call failed!", e);
         }
-        if ((fieldValue == null || StringUtils.isEmpty(fieldValue.toString())) && imageMessage.getOuterDomainData() != null) {
-            fieldValue = seekOuterDomainFields(imageMessage.getOuterDomainData().getDataMap());
+        if ((fieldValue == null || StringUtils.isEmpty(fieldValue.toString())) && imageMessage.getOuterDomainDataList() != null) {
+            fieldValue = seekOuterDomainFields(imageMessage);
         }
         if (fieldValue == null || StringUtils.isEmpty(fieldValue.toString())) {
             return false;
