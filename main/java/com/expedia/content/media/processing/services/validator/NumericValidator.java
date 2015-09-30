@@ -45,7 +45,7 @@ public class NumericValidator extends OuterDomainSeekerValidator implements Medi
         try {
             fieldValue = ReflectionUtil.getFieldValue(imageMessage, fieldName);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            LOGGER.info("Numeric field validation reflection call failed!", e);
+            LOGGER.info("Numeric field validation reflection call failed! error=[{}]", e.getMessage(), e);
         }
         if (fieldValue == null && imageMessage.getOuterDomainDataList() != null) {
             fieldValue = seekOuterDomainFields(imageMessage);

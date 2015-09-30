@@ -5,7 +5,7 @@ package com.expedia.content.media.processing.services.util;
  */
 public enum MediaServiceUrl {
     ACQUIRE_MEDIA("/acquireMedia"),
-    MEDIA_ADD("/media/v1/add"),
+    MEDIA_ADD("/media/v1/image"),
     MEDIA_STATUS("/media/v1/lateststatus");
 
     private String url;
