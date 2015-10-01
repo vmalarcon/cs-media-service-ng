@@ -22,7 +22,7 @@ public abstract class OuterDomainSeekerValidator {
     protected Object seekOuterDomainFields(ImageMessage message) {
         if (message.getOuterDomainDataList() != null) {
             for (OuterDomainData domainData : message.getOuterDomainDataList()) {
-                Map<String, Object> dataMap = domainData.getDataMap();
+                Map<String, Object> dataMap = domainData.getDomainFields();
                 return scanOuterDomainDataTree(dataMap);
             }
         }

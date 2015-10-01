@@ -44,7 +44,7 @@ public class ExpediaIdValidatorTest {
         String fieldName = "expediaId";
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put(fieldName, new Integer(expedia_test_id));
-        OuterDomainData domainData = new OuterDomainData("LCM", dataMap);
+        OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
         List<OuterDomainData> domainDataList = new ArrayList<>();
         domainDataList.add(domainData);
         
@@ -62,7 +62,7 @@ public class ExpediaIdValidatorTest {
         String fieldName = "expediaId";
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put(fieldName, "abcd");
-        OuterDomainData domainData = new OuterDomainData("LCM", dataMap);
+        OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
         List<OuterDomainData> domainDataList = new ArrayList<>();
         domainDataList.add(domainData);
         
@@ -80,7 +80,7 @@ public class ExpediaIdValidatorTest {
         String fieldName = "expediaId";
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put(fieldName, "abcd");
-        OuterDomainData domainData = new OuterDomainData("LCM", dataMap);
+        OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
         List<OuterDomainData> domainDataList = new ArrayList<>();
         domainDataList.add(domainData);
         
