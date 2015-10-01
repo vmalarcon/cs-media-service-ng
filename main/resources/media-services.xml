@@ -65,30 +65,29 @@
           <map>
               <entry key ="EPC">
                   <list>
-                      <value>(imageMesage.domainData.domainDataName.equals('LCM')&amp;&amp;!imageMesage.domainData.domainDataFields.expediaId.matches("[0-9]+"))?"expediaid is not number.":"valid"</value>
-                      <value>imageMesage.domainData.domainDataFields.expediaId !=null ?"valid":"expediaid is required."</value>
+                      <value>(domainData.domainDataName.equals('LCM')&amp;&amp;!domainData.domainDataFields.expediaId.matches("[0-9]+"))?"expediaid is not numeric.":"valid"</value>
+                      <value>domainData.domainDataFields.expediaId !=null ?"valid":"expediaid is required."</value>
 
-                      <value>imageMesage.domainData.domainDataFields.categoryId !=null ?"valid":"categoryId is required."</value>
-                      <value>(imageMesage.domainData.domainDataName.equals('LCM')&amp;&amp;!imageMesage.domainData.domainDataFields.categoryId.matches("[0-9]+"))?"categoryId is not number.":"valid"</value>
+                      <value>domainData.domainDataFields.categoryId !=null ?"valid":"categoryId is required."</value>
+                      <value>(domainData.domainDataName.equals('LCM')&amp;&amp;!domainData.domainDataFields.categoryId.matches("[0-9]+"))?"categoryId is not numeric.":"valid"</value>
 
-                      <value>imageMesage.domainData.domainDataFields.mediaProviderId !=null ?"valid":"mediaProviderId is required."</value>
-                      <value>(imageMesage.domainData.domainDataName.equals('LCM')&amp;&amp;!imageMesage.domainData.domainDataFields.mediaProviderId.matches("[0-9]+"))?"mediaProviderId is not number.":"valid"</value>
+                      <value>domainData.domainDataFields.mediaProviderId !=null ?"valid":"mediaProviderId is required."</value>
+                      <value>(domainData.domainDataName.equals('LCM')&amp;&amp;!domainData.domainDataFields.mediaProviderId.matches("[0-9]+"))?"mediaProviderId is not numeric.":"valid"</value>
 
-
-                      <value>imageMesage.domainData.domainDataFields.mediaProviderId.matches("[0-9]+")?"valid":"mediaProviderId is not number"</value>
+                      <value>domainData.domainDataFields.mediaProviderId.matches("[0-9]+")?"valid":"mediaProviderId is  not numeric."</value>
                       <value>imageMesage.fileName !=null ?"valid":"fileName is required."</value>
                       <value>imageMesage.imageType !=null ?"valid":"imageType is required."</value>
                       <value>imageMesage.imageType.matches('Lodging|Cars|VirtualTour') ?"valid":"imageType must be Lodging,VirtualTour or Cars."</value>
 
-                      <value>imageMesage.domainData.domainDataFields !=null ?"valid":"domainDataFields is required."</value>
+                      <value>domainData.domainDataFields !=null ?"valid":"domainDataFields is required."</value>
 
-                      <value>imageMesage.domainData.domainDataName !=null ?"valid":"domainDataName is required."</value>
-                      <value>imageMesage.domainData.domainDataName.matches('LCM|LCM1') ?"valid":"domainDataName must be LCM."</value>
+                      <value>domainData.domainDataName !=null ?"valid":"domainDataName is required."</value>
+                      <value>domainData.domainDataName.matches('LCM|LCM1') ?"valid":"domainDataName must be LCM."</value>
 
-                      <value>imageMesage.domainData.domainDataFields.propertyHero.matches('true|false') ?"valid":"propertyHero must be true or false."</value>
-                      <value>imageMesage.domainData.domainDataFields.roomHero.matches('true|false') ?"valid":"roomHero must be true or false."</value>
+                      <value>domainData.domainDataFields.propertyHero.matches('true|false') ?"valid":"propertyHero must be true or false."</value>
+                      <value>domainData.domainDataFields.roomHero.matches('true|false') ?"valid":"roomHero must be true or false."</value>
 
-                      <value>imageMesage.domainData.domainDataFields.roomId.matches("[0-9]+") ?"valid":"roomId must be numeric."</value>
+                      <value>domainData.domainDataFields.roomId.matches("[0-9]+") ?"valid":"roomId is not numeric."</value>
 
                       <value>imageMesage.fileUrl !=null ?"valid":"fileUrl is required."</value>
                       <value>imageMesage.fileUrl.matches('.*http://.*|.*file:///.*')?"valid":"fileUrl format is not right."</value>

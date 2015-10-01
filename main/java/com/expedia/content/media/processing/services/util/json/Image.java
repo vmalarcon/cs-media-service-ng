@@ -1,9 +1,12 @@
 
 package com.expedia.content.media.processing.services.util.json;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Generated;
+
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -14,10 +17,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Generated("org.jsonschema2pojo")
 @JsonPropertyOrder({
-    "fileUrl",
-    "fileName",
-    "imageType",
-    "domainData"
+        "fileUrl",
+        "fileName",
+        "imageType",
+        "domainData"
 })
 public class Image {
 
@@ -28,14 +31,12 @@ public class Image {
     @JsonProperty("imageType")
     private String imageType;
     @JsonProperty("domainData")
-    private DomainData domainData;
+    private List<DomainData> domainData = new ArrayList<>();
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
     /**
-     * 
-     * @return
-     *     The fileUrl
+     * @return The fileUrl
      */
     @JsonProperty("fileUrl")
     public String getFileUrl() {
@@ -43,9 +44,7 @@ public class Image {
     }
 
     /**
-     * 
-     * @param fileUrl
-     *     The fileUrl
+     * @param fileUrl The fileUrl
      */
     @JsonProperty("fileUrl")
     public void setFileUrl(String fileUrl) {
@@ -53,9 +52,7 @@ public class Image {
     }
 
     /**
-     * 
-     * @return
-     *     The fileName
+     * @return The fileName
      */
     @JsonProperty("fileName")
     public String getFileName() {
@@ -63,9 +60,7 @@ public class Image {
     }
 
     /**
-     * 
-     * @param fileName
-     *     The fileName
+     * @param fileName The fileName
      */
     @JsonProperty("fileName")
     public void setFileName(String fileName) {
@@ -73,9 +68,7 @@ public class Image {
     }
 
     /**
-     * 
-     * @return
-     *     The imageType
+     * @return The imageType
      */
     @JsonProperty("imageType")
     public String getImageType() {
@@ -83,9 +76,7 @@ public class Image {
     }
 
     /**
-     * 
-     * @param imageType
-     *     The imageType
+     * @param imageType The imageType
      */
     @JsonProperty("imageType")
     public void setImageType(String imageType) {
@@ -93,22 +84,18 @@ public class Image {
     }
 
     /**
-     * 
-     * @return
-     *     The domainData
+     * @return The domainData
      */
     @JsonProperty("domainData")
-    public DomainData getDomainData() {
+    public List<DomainData> getDomainData() {
         return domainData;
     }
 
     /**
-     * 
-     * @param domainData
-     *     The domainData
+     * @param domainData The domainData
      */
     @JsonProperty("domainData")
-    public void setDomainData(DomainData domainData) {
+    public void setDomainData(List<DomainData> domainData) {
         this.domainData = domainData;
     }
 
