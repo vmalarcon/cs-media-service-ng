@@ -1,14 +1,16 @@
 package com.expedia.content.media.processing.services.util;
 
+import static org.junit.Assert.assertTrue;
+
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
-import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
 public class JSONUtilTest {
 
@@ -146,10 +148,10 @@ public class JSONUtilTest {
         String expectedJson =
                 "[{\"fileName\":\"test1.jpg\",\"error\":\"soureceid is missed\"},{\"fileName2\":\"test2.jpg\",\"error\":\"expediaId is missed\"}]";
         List<Map<String, String>> messageList = new ArrayList<>();
-        Map<String, String> map1 = new HashMap<>();
+        Map<String, String> map1 = new LinkedHashMap<>();
         map1.put("fileName", "test1.jpg");
         map1.put("error", "soureceid is missed");
-        Map<String, String> map2 = new HashMap<>();
+        Map<String, String> map2 = new LinkedHashMap<>();
         map2.put("fileName2", "test2.jpg");
         map2.put("error", "expediaId is missed");
 
