@@ -1,0 +1,7 @@
+monitoringAgent:
+  statsd:
+    hostname: "10.0.16.40"
+
+
+test:
+   helloMsg: "Hello dev"

@@ -1,0 +1,37 @@
+swagger:
+    service:
+        version: "1.0"
+        title: ${project.name}
+        description: "A service that provides APIs for ..."
+        termsPath: ""
+        email: "team@expedia.com"
+        licenceType: ""
+        licencePath: "#"
+
+endpoints:
+  enabled: false
+  metrics:
+    enabled: true
+
+server:
+   tomcat:
+      basedir: ${application.home}
+      max-threads: 1
+      access-log-enabled: true
+
+monitoringAgent:
+  application:
+    name: ${project.name}
+    append:
+      process:
+        id: false
+  configuration:
+    disable:
+      default: false
+    urls: "classpath:platform/monitoring/yammer.xml"
+  statsd:
+    hostname: "statsd"
+    port: 8125
+
+test:
+   helloMsg: "Hello there"
