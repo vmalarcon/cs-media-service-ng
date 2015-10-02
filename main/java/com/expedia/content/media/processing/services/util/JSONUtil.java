@@ -7,8 +7,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.TreeMap;
+import java.util.LinkedHashMap;
 /**
  * Contains methods to process JSON requests and generate JSON responses.
  */
@@ -37,6 +42,21 @@ public final class JSONUtil {
             return OBJECT_MAPPER.readValue(jsonMessage, Map.class);
         } catch (IOException ex) {
             String errorMsg = MessageFormat.format("Error parsing/converting Json message: {0}", jsonMessage);
+            throw new RequestMessageException(errorMsg, ex);
+        }
+    }
+
+    /**
+     * convert the Map list to JSON string
+     *
+     * @param messageList map message with attribute fileName and error
+     * @return JSON string contains fileName and error description
+     */
+    public static String convertValidationErrors(List<Map<String, String>> messageList) {
+        try {
+            return OBJECT_MAPPER.writeValueAsString(messageList);
+        } catch (IOException ex) {
+            String errorMsg = "Error writing map to json";
             throw new RequestMessageException(errorMsg, ex);
         }
     }

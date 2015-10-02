@@ -17,13 +17,13 @@ public abstract class OuterDomainSeekerValidator {
      * Searches the outer domain fields for the field to validate. Called recursively to seek
      * through the entire depth of the map. 
      * 
-     * @param dataMap The data map to search.
+     * @param message The data map to search.
      * @return The value of the field to validate. {@code null} if the value is not found.
      */
     protected Object seekOuterDomainFields(ImageMessage message) {
         if (message.getOuterDomainDataList() != null) {
             for (OuterDomainData domainData : message.getOuterDomainDataList()) {
-                Map<String, Object> dataMap = domainData.getDomainFields();
+                Map<String, Object> dataMap = domainData.getDomainDataFields();
                 return scanOuterDomainDataTree(dataMap);
             }
         }

@@ -131,7 +131,6 @@ public class JSONUtilTest {
         statusLogList.add(mediaProcessLog5);
         statusLogList.add(mediaProcessLog6);
 
-
         Map<String, java.util.List<MediaProcessLog>> mapList = new HashMap<>();
         List<String> fileNameList = new ArrayList<>();
         fileNameList.add("test1.jpg");
@@ -140,5 +139,22 @@ public class JSONUtilTest {
         assertTrue(("2014-07-11 16:24:06.0290552 -07:00").equals(mapList.get("test1.jpg").get(0).getActivityTime()));
         assertTrue(("2014-07-11 16:26:06.0290552 -07:00").equals(mapList.get("test2.jpg").get(0).getActivityTime()));
 
+    }
+
+    @Test
+    public void testListToJsonString() throws Exception {
+        String expectedJson =
+                "[{\"fileName\":\"test1.jpg\",\"error\":\"soureceid is missed\"},{\"fileName2\":\"test2.jpg\",\"error\":\"expediaId is missed\"}]";
+        List<Map<String, String>> messageList = new ArrayList<>();
+        Map<String, String> map1 = new HashMap<>();
+        map1.put("fileName", "test1.jpg");
+        map1.put("error", "soureceid is missed");
+        Map<String, String> map2 = new HashMap<>();
+        map2.put("fileName2", "test2.jpg");
+        map2.put("error", "expediaId is missed");
+
+        messageList.add(map1);
+        messageList.add(map2);
+        assertTrue(expectedJson.equals(JSONUtil.convertValidationErrors(messageList)));
     }
 }
