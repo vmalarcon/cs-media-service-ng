@@ -64,8 +64,8 @@
           <map>
               <entry key ="EPC">
                   <list>
-                      <value>domainData.domainDataFields.expediaId !=null ?"valid":"expediaid is required."</value>
-                      <value>(domainData.domainDataName.equals('LCM')&amp;&amp;!domainData.domainDataFields.expediaId.matches("[0-9]+"))?"expediaid is not numeric.":"valid"</value>
+                      <value>domainData.domainDataId !=null ?"valid":"domainDataId is required."</value>
+                      <value>(domainData.domainDataName.equals('LCM')&amp;&amp;!domainData.domainDataId.matches("[0-9]+"))?"domainDataId is not numeric.":"valid"</value>
                       <value>domainData.domainDataFields.categoryId !=null ?"valid":"categoryId is required."</value>
                       <value>(domainData.domainDataName.equals('LCM')&amp;&amp;!domainData.domainDataFields.categoryId.matches("[0-9]+"))?"categoryId is not numeric.":"valid"</value>
                       <value>domainData.domainDataFields.mediaProviderId !=null ?"valid":"mediaProviderId is required."</value>

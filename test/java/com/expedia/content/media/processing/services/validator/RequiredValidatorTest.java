@@ -40,7 +40,7 @@ public class RequiredValidatorTest {
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put("abc", "hello");
         dataMap.put("def", "hello");
-        OuterDomainData domainData = new OuterDomainData("LCM", dataMap);
+        OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
         List<OuterDomainData> domainDataList = new ArrayList<>();
         domainDataList.add(domainData);
 
@@ -56,7 +56,7 @@ public class RequiredValidatorTest {
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put("abc", "hello");
         dataMap.put("def", "hello");
-        OuterDomainData domainData = new OuterDomainData("LCM", dataMap);
+        OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
         List<OuterDomainData> domainDataList = new ArrayList<>();
         domainDataList.add(domainData);
 

@@ -68,16 +68,17 @@ public class EPCMVELValidator implements MapMessageValidator {
 
     private void compareRulesWithMessageMap(StringBuffer errorMsg, List<String> ruleList, Map<String, Object> objectMap) {
         for (String rule : ruleList) {
-            String error = "";
+            String validationError = "";
             try {
                 if (!rule.contains(RULE_PREFIX)) {
-                    error = MVEL.eval(rule, objectMap).toString();
+                    validationError = MVEL.eval(rule, objectMap).toString();
+                    System.out.println("validationError" + validationError);
                 }
             } catch (Exception ex) {
                 LOGGER.error("rule compare exception:", ex);
             }
-            if (!error.contains("valid") && !"".equals(error)) {
-                errorMsg.append(error).append("\r\n");
+            if (!validationError.contains("valid") && !"".equals(validationError)) {
+                errorMsg.append(validationError).append("\r\n");
             }
         }
     }
@@ -97,7 +98,8 @@ public class EPCMVELValidator implements MapMessageValidator {
                 if (exceptionMsg.contains(ERROR_NOT_FOUND)) {
                     int parseLocation = exceptionMsg.indexOf(ERROR_NOT_FOUND);
                     if (parseLocation > 0) {
-                        validationError = exceptionMsg.substring(parseLocation + ERROR_NOT_FOUND.length(), exceptionMsg.indexOf(";")) + " is required.";
+                        validationError =
+                                exceptionMsg.substring(parseLocation + ERROR_NOT_FOUND.length() + 1, exceptionMsg.indexOf(";")) + " is required.";
                         validationError = "domainData[" + index + "].domainDataFields." + validationError;
                     }
                 }

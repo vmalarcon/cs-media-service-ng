@@ -30,6 +30,7 @@ public class EPCMVELValidatorTest {
                 + "      \"domainData\":[                                 \n"
                 + "        {\n"
                 + "          \"domainDataName\": \"LCM\",                    \n"
+                + "          \"domainDataId\": \"1234a\",                    \n"
                 + "          \"domainDataFields\": {                        \n"
                 + "            \"expediaId\": \"2001002a\",                  \n"
                 + "            \"categoryId\": \"801a\",                      \n"
@@ -49,7 +50,7 @@ public class EPCMVELValidatorTest {
 
         String errorMsg = errorList.get(0).get("error");
         assertTrue(errorList.size() == 1);
-        assertTrue(errorMsg.contains("expediaid is not numeric"));
+        assertTrue(errorMsg.contains("domainDataId is not numeric"));
         assertTrue(errorMsg.contains("categoryId is not numeric"));
         assertTrue(errorMsg.contains("roomId is not numeric"));
     }
@@ -62,6 +63,7 @@ public class EPCMVELValidatorTest {
                 + "      \"domainData\":[                                 \n"
                 + "        {\n"
                 + "          \"domainDataName\": \"LCM\",                    \n"
+                + "          \"domainDataId\": \"1234a\",                    \n"
                 + "          \"domainDataFields\": {                        \n"
                 + "            \"expediaId\": \"2001002a\",                  \n"
                 + "            \"categoryId\": \"801a\",                      \n"
@@ -78,14 +80,12 @@ public class EPCMVELValidatorTest {
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
-
         String errorMsg = errorList.get(0).get("error");
         assertTrue(errorList.size() == 1);
-        assertTrue(errorMsg.contains("expediaid is not numeric"));
+        assertTrue(errorMsg.contains("domainDataId is not numeric"));
         assertTrue(errorMsg.contains("categoryId is not numeric"));
         assertTrue(errorMsg.contains("roomId is not numeric"));
         assertTrue(errorMsg.contains("fileName is required."));
-
     }
 
     @Test
@@ -110,10 +110,7 @@ public class EPCMVELValidatorTest {
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
-
         String errorMsg = errorList.get(0).get("error");
         assertTrue(errorMsg.contains("categoryId is required"));
-
-
     }
 }
