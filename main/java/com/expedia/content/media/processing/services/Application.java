@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestHeader;
+
 import java.util.List;
 import java.util.Map;
 
@@ -42,18 +43,18 @@ import java.util.Map;
 @EnableAutoConfiguration
 @EnableMonitoringAspects
 public class Application {
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
     private static final String REQUESTID = "request-id";
     private static final int BAD_REQUEST_CODE = 400;
-    
+
     @Autowired
     private MediaServiceProcess mediaServiceProcess;
-    
+
     public static void main(final String[] args) {
         new SpringApplicationBuilder().showBanner(true).sources(Application.class).run(args);
     }
-    
+
     /**
      * web service interface to consume media message.
      * Note that the {@code @Meter} {@code @Timer} {@code @Retryable} annotations introduce aspects from metrics-support and spring-retry
@@ -71,7 +72,7 @@ public class Application {
     public ResponseEntity<String> acquireMedia(@RequestBody final String message) throws Exception {
         return mediaAdd(message, MediaServiceUrl.ACQUIRE_MEDIA);
     }
-    
+
     /**
      * Web service interface to push a media file into the media processing pipeline.
      *
@@ -86,9 +87,8 @@ public class Application {
     public ResponseEntity<String> mediaAdd(@RequestBody final String message) throws Exception {
         return mediaAdd(message, MediaServiceUrl.MEDIA_ADD);
     }
-    
+
     /**
-     * 
      * @param message
      * @param serviceUrl
      * @return
@@ -110,7 +110,7 @@ public class Application {
             return buildBadRequestResponse("JSON request format is invalid. Json message=" + message, serviceUrl.getUrl().toString());
         }
     }
-    
+
     /**
      * Web service interface to get the latest media file process status.
      *
@@ -140,7 +140,7 @@ public class Application {
             return buildBadRequestResponse(ex.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl().toString());
         }
     }
-    
+
     /**
      * Builds a Bad Request response for when the incoming message fails validation.
      * Note that the {@code @Meter} {@code @Timer} annotations introduce aspects from metrics-support
@@ -153,5 +153,16 @@ public class Application {
         String resMsg = JSONUtil.generateJsonForErrorResponse(validationMessage, url, BAD_REQUEST_CODE, "Bad Request");
         return new ResponseEntity<>(resMsg, HttpStatus.BAD_REQUEST);
     }
-    
+
+    @RequestMapping(value = "/media/v1/validateMsg", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity testValidationMessage(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
+        try {
+            String json = mediaServiceProcess.validateImageMessage(message, "EPC");
+            return new ResponseEntity<>(json, HttpStatus.OK);
+        } catch (RequestMessageException ex) {
+            LOGGER.error("ERROR - url=" + MediaServiceUrl.MEDIA_STATUS.getUrl() + ", image_message=[{}] .", message, ex);
+            return buildBadRequestResponse(ex.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl().toString());
+        }
+    }
+
 }

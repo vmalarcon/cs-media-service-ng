@@ -10,9 +10,7 @@ import com.expedia.content.media.processing.services.dao.ProcessLogDao;
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
 import com.expedia.content.media.processing.services.util.JSONUtil;
-import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
-import com.expedia.content.media.processing.services.validator.RequestMessageValidator;
-import com.expedia.content.media.processing.services.validator.ValidationStatus;
+import com.expedia.content.media.processing.services.validator.*;
 import com.expedia.content.metrics.aspects.annotations.Meter;
 import com.expedia.content.metrics.aspects.annotations.Timer;
 import org.slf4j.Logger;
@@ -23,7 +21,11 @@ import org.springframework.stereotype.Component;
 
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Date;
+import java.util.HashMap;
 
 /**
  * MediaServiceProcess is called by main class
@@ -40,6 +42,7 @@ public class MediaServiceProcess {
     private List<RequestMessageValidator> mediaStatusValidatorList;
     private List<ActivityMapping> activityWhiteList;
     private ProcessLogDao processLogDao;
+    private Map<String, List<MapMessageValidator>> mapValidatorList;
 
     public MediaServiceProcess(List<MediaMessageValidator> validators, RabbitTemplate rabbitTemplate,
             @Qualifier("logActivityPicker") final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker, final Reporting reporting) {
@@ -56,6 +59,15 @@ public class MediaServiceProcess {
     public void setMediaStatusValidatorList(
             List<RequestMessageValidator> mediaStatusValidatorList) {
         this.mediaStatusValidatorList = mediaStatusValidatorList;
+    }
+
+    public Map<String, List<MapMessageValidator>> getMapValidatorList() {
+        return mapValidatorList;
+    }
+
+    public void setMapValidatorList(
+            Map<String, List<MapMessageValidator>> mapValidatorList) {
+        this.mapValidatorList = mapValidatorList;
     }
 
     public List<ActivityMapping> getActivityWhiteList() {
@@ -118,6 +130,27 @@ public class MediaServiceProcess {
             }
         }
         return validationStatus;
+    }
+
+    /**
+     * Get validator list by different client, and do validation by rules and DAO validator (later)
+     * return the validation error list that combine all of the error result.
+     *
+     * @param message input json message
+     * @param user    web service user, can be "EPC"
+     * @return JSON string contains fileName and error description
+     * @throws Exception when message to ImageMessage and convert java list to json
+     */
+    public String validateImageMessage(String message, String user) throws Exception {
+        ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
+        List<ImageMessage> imageMessageList = new ArrayList<>();
+        imageMessageList.add(imageMessage);
+        List<MapMessageValidator> validatorList = mapValidatorList.get(user);
+        List<Map<String, String>> validationErrorList = null;
+        for (MapMessageValidator mapMessageValidator : validatorList) {
+            validationErrorList = mapMessageValidator.validateImages(imageMessageList);
+        }
+        return JSONUtil.convertValidationErrors(validationErrorList);
     }
 
     /**
