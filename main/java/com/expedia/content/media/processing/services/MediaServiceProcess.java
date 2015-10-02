@@ -92,10 +92,10 @@ public class MediaServiceProcess {
         String jsonMessage = message.toJSONMessage();
         try {
             rabbitTemplate.convertAndSend(jsonMessage);
-            LOGGER.debug("Sending message to queue done : JSONMessage=[{}]", jsonMessage);
+            LOGGER.debug("Sending message to queue done : message=[{}]", jsonMessage);
             logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED);
         } catch (Exception ex) {
-            LOGGER.error("Error publishing : JSONMessage=[{}], error=[{}]", jsonMessage, ex.getMessage(), ex);
+            LOGGER.error("Error publishing : message=[{}], error=[{}]", jsonMessage, ex.getMessage(), ex);
             throw new RuntimeException("Error publishing message=[" + jsonMessage + "]", ex);
         }
     }
@@ -171,7 +171,6 @@ public class MediaServiceProcess {
     public String getMediaStatusList(List<String> fileNameList) throws Exception {
         List<MediaProcessLog> statusLogList = processLogDao.findMediaStatus(fileNameList);
         Map<String, List<MediaProcessLog>> mapList = new HashMap<>();
-        //filterList(statusLogList);
         JSONUtil.divideStatusListToMap(statusLogList, mapList, fileNameList.size());
         return JSONUtil.generateJsonByProcessLogList(mapList, fileNameList, activityWhiteList);
     }
