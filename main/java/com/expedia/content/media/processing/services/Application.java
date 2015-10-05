@@ -93,6 +93,7 @@ public class Application {
     /**
      * Web service interface to push a media file into the media processing pipeline.
      * Validation will be done before message go through.
+     *
      * @param message
      * @param serviceUrl
      * @return ResponseEntity Standard spring response object.
@@ -158,6 +159,12 @@ public class Application {
     public ResponseEntity<String> buildBadRequestResponse(String validationMessage, String url) {
         String resMsg = JSONUtil.generateJsonForErrorResponse(validationMessage, url, BAD_REQUEST_CODE, "Bad Request");
         return new ResponseEntity<>(resMsg, HttpStatus.BAD_REQUEST);
+    }
+
+    @RequestMapping("/publish")
+    public void publish(@RequestBody String payload) {
+        LOGGER.debug("Publishing: {}", payload);
+        mediaServiceProcess.publish(payload);
     }
 
 }
