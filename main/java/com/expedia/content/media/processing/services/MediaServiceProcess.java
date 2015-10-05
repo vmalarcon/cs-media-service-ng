@@ -1,6 +1,5 @@
 package com.expedia.content.media.processing.services;
 
-import com.amazonaws.services.sqs.AmazonSQS;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.ImageTypeComponentPicker;
 import com.expedia.content.media.processing.pipeline.reporting.Activity;
@@ -32,10 +31,8 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.RequestBody;
 
 /**
  * MediaServiceProcess is called by main class
@@ -53,7 +50,6 @@ public class MediaServiceProcess {
     private List<ActivityMapping> activityWhiteList;
     private ProcessLogDao processLogDao;
     private Map<String, List<MapMessageValidator>> mapValidatorList;
-    private QueueMessagingTemplate messagingTemplate;
 
     @Value("${media.aws.queue.name}")
     private String awsQueue;
@@ -100,14 +96,14 @@ public class MediaServiceProcess {
         this.processLogDao = processLogDao;
     }
 
-    @Autowired
-    public void setSqsQueueSender(AmazonSQS amazonSqs) {
-        messagingTemplate = new QueueMessagingTemplate(amazonSqs);
-    }
-
-    public void publish(@RequestBody String payload) {
-        messagingTemplate.send(awsQueue, MessageBuilder.withPayload(payload).build());
-    }
+//    @Autowired
+//    public void setSqsQueueSender(AmazonSQS amazonSqs) {
+//        messagingTemplate = new QueueMessagingTemplate(amazonSqs);
+//    }
+//
+//    public void publish(@RequestBody String payload) {
+//        messagingTemplate.send(awsQueue, MessageBuilder.withPayload(payload).build());
+//    }
 
     /**
      * publish message to jms queue
