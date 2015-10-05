@@ -47,7 +47,7 @@ public final class JSONUtil {
     }
 
     /**
-     * convert the Map list to JSON string
+     * convert the imageMessage validation error list to JSON string
      *
      * @param messageList map message with attribute fileName and error
      * @return JSON string contains fileName and error description

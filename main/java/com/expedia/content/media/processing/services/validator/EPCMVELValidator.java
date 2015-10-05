@@ -14,7 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * validation ImageMessage list based on MVEL rule that defined in xml configuration
+ * validation {@code ImageMessage} list based on MVEL rule that defined in xml configuration
  */
 public class EPCMVELValidator implements MapMessageValidator {
     private static final Logger LOGGER = LoggerFactory.getLogger(EPCMVELValidator.class);
@@ -46,7 +46,7 @@ public class EPCMVELValidator implements MapMessageValidator {
         for (ImageMessage imageMesage : messageList) {
             StringBuffer errorMsg = new StringBuffer();
             messageMap.put("imageMesage", imageMesage);
-            //compare none domainData with rule
+            //compare ImageMessage (non outer domain) fields with rules
             compareRulesWithMessageMap(errorMsg, ruleList, messageMap);
             List<OuterDomainData> domainDataList = imageMesage.getOuterDomainDataList();
             int index = 0;
@@ -58,13 +58,17 @@ public class EPCMVELValidator implements MapMessageValidator {
                 }
             }
             if (errorMsg.length() > 0) {
-                Map<String, String> jsonMap = new TreeMap<>();
-                jsonMap.put("fileName", imageMesage.getFileName());
-                jsonMap.put("error", errorMsg.toString());
-                list.add(jsonMap);
+                putErrorMapToList(list, errorMsg, imageMesage);
             }
         }
         return list;
+    }
+
+    private void putErrorMapToList(List<Map<String, String>> list, StringBuffer errorMsg, ImageMessage imageMesage) {
+        Map<String, String> jsonMap = new TreeMap<>();
+        jsonMap.put("fileName", imageMesage.getFileName());
+        jsonMap.put("error", errorMsg.toString());
+        list.add(jsonMap);
     }
 
     private void compareRulesWithMessageMap(StringBuffer errorMsg, List<String> ruleList, Map<String, Object> objectMap) {
@@ -73,7 +77,6 @@ public class EPCMVELValidator implements MapMessageValidator {
             try {
                 if (!rule.contains(RULE_PREFIX)) {
                     validationError = MVEL.eval(rule, objectMap).toString();
-                    System.out.println("validationError" + validationError);
                 }
             } catch (Exception ex) {
                 LOGGER.error("rule compare exception:", ex);
@@ -96,19 +99,25 @@ public class EPCMVELValidator implements MapMessageValidator {
                 LOGGER.error("rule compare exception:", ex);
                 //not very good solution here, later we need to define a validation Object for domain field Map
                 String exceptionMsg = ex.getMessage();
-                if (exceptionMsg.contains(ERROR_NOT_FOUND)) {
-                    int parseLocation = exceptionMsg.indexOf(ERROR_NOT_FOUND);
-                    if (parseLocation > 0) {
-                        validationError =
-                                exceptionMsg.substring(parseLocation + ERROR_NOT_FOUND.length() + 1, exceptionMsg.indexOf(";")) + " is required.";
-                        validationError = "domainData[" + index + "].domainDataFields." + validationError;
-                    }
-                }
+                validationError = composeValidtionError(exceptionMsg, index);
             }
             if (!validationError.contains("valid") && !"".equals(validationError) && !errorMsg.toString().contains(validationError)) {
                 errorMsg.append(validationError).append("\r\n");
             }
         }
+    }
+
+    private String composeValidtionError(String exceptionMsg, int index) {
+        String validationError = "";
+        if (exceptionMsg.contains(ERROR_NOT_FOUND)) {
+            int parseLocation = exceptionMsg.indexOf(ERROR_NOT_FOUND);
+            if (parseLocation > 0) {
+                validationError =
+                        exceptionMsg.substring(parseLocation + ERROR_NOT_FOUND.length() + 1, exceptionMsg.indexOf(";")) + " is required.";
+                validationError = "domainData[" + index + "].domainDataFields." + validationError;
+            }
+        }
+        return validationError;
     }
 }
 
