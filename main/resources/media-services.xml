@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:property-placeholder location="classpath:media-services.properties"/>
+    <import resource="collector-rabbit.xml" />
+
+    <bean id="filenamesRabbitTemplate" class="org.springframework.amqp.rabbit.core.RabbitTemplate">
+        <property name="connectionFactory" ref="rabbitConnectionFactory"/>
+        <property name="queue" value="${collector.queue}" />
+        <property name="routingKey" value="${collector.queue}" />
+    </bean>
+
+    <!--can define multiple validator-->
+    <bean id="mediaServiceProcess" class="com.expedia.content.media.processing.services.MediaServiceProcess">
+        <constructor-arg>
+            <list>
+                <ref bean="expediaValidator"/>
+                <ref bean="categoryValidator"/>
+                <ref bean="providerRequiredValidator"/>
+                <ref bean="fileUrlRequiredValidator"/>
+                <ref bean="imageTypeRequiredValidator"/>
+                <ref bean="mediaProviderValidator"/>
+            </list>
+        </constructor-arg>
+        <constructor-arg ref="filenamesRabbitTemplate"/>
+        <constructor-arg ref="lcmReporting"/>
+        <constructor-arg ref="logActivityPicker"/>
+
+        <property name="mediaStatusValidatorList">
+            <list value-type="com.expedia.content.media.processing.services.validator.RequestMessageValidator">
+                <ref bean="mediaStatusTypeValidator"/>
+            </list>
+        </property>
+        <property name="activityWhiteList">
+            <list>
+                <ref bean="receptionActivity"/>
+                <ref bean="derivativeCreationActivity"/>
+                <ref bean="rejectActivity"/>
+                <ref bean="publishActivity"/>
+                <ref bean="dcpPickupActivity"/>
+                <ref bean="carsDerivativeCreationActivity"/>
+            </list>
+        </property>
+        <property name="processLogDao" ref="processLogDao">
+        </property>
+        <property name="mapValidatorList">
+            <map>
+                <entry key ="EPC">
+                    <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                        <ref bean="mvelValidator"/>
+                    </list>
+                </entry>
+            </map>
+        </property>
+    </bean>
+
+    <bean id="mvelValidator" class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
+      <property name="ruleMaps">
+          <map>
+              <entry key ="EPC">
+                  <list>
+                      <value>domainData.domainDataId !=null ?"valid":"domainDataId is required."</value>
+                      <value>(domainData.domainDataName.equals('LCM')&amp;&amp;!domainData.domainDataId.matches("[0-9]+"))?"domainDataId is not numeric.":"valid"</value>
+                      <value>domainData.domainDataFields.categoryId !=null ?"valid":"categoryId is required."</value>
+                      <value>(domainData.domainDataName.equals('LCM')&amp;&amp;!domainData.domainDataFields.categoryId.matches("[0-9]+"))?"categoryId is not numeric.":"valid"</value>
+                      <value>domainData.domainDataFields.mediaProviderId !=null ?"valid":"mediaProviderId is required."</value>
+                      <value>(domainData.domainDataName.equals('LCM')&amp;&amp;!domainData.domainDataFields.mediaProviderId.matches("1|2"))?"mediaProviderId should be 1 or 2.":"valid"</value>
+                      <value>domainData.domainDataFields.mediaProviderId.matches("[0-9]+")?"valid":"mediaProviderId is  not numeric."</value>
+                      <value>domainData.domainDataFields !=null ?"valid":"domainDataFields is required."</value>
+                      <value>domainData.domainDataName !=null ?"valid":"domainDataName is required."</value>
+                      <value>domainData.domainDataName.matches('LCM') ?"valid":"domainDataName must be LCM."</value>
+                      <value>domainData.domainDataFields.propertyHero.matches('true|false') ?"valid":"propertyHero must be true or false."</value>
+                      <value>domainData.domainDataFields.roomHero.matches('true|false') ?"valid":"roomHero must be true or false."</value>
+                      <value>domainData.domainDataFields.roomId.matches("[0-9]+") ?"valid":"roomId is not numeric."</value>
+                      <value>imageMesage.fileUrl !=null ?"valid":"fileUrl is required."</value>
+                      <!--already validated in parse message
+                      <value>imageMesage.fileUrl.toString().matches('.*http://.*|.*file:///.*')?"valid":"fileUrl is malformed."</value>
+                      -->
+                      <value>imageMesage.fileName !=null ?"valid":"fileName is required."</value>
+                      <value>imageMesage.imageType !=null ?"valid":"imageType is required."</value>
+                      <value>imageMesage.imageType.imageType.matches('Lodging|Cars|VirtualTour') ?"valid":"imageType must be Lodging,VirtualTour or Cars."</value>
+                  </list>
+              </entry>
+          </map>
+      </property>
+    </bean>
+
+    <bean id="receptionActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <!-- this will work -->
+        <property name="activityType" value="Reception"/>
+        <!-- this will *not* work -->
+        <property name="statusMessage" value="RECEIVED"/>
+        <property name="mediaType" value=".*"/>
+    </bean>
+
+    <bean id="derivativeCreationActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="DerivativeCreation"/>
+        <property name="statusMessage" value="DERIVATIVES_CREATED"/>
+        <property name="mediaType" value="VirtualTour|Lodging"/>
+    </bean>
+
+    <bean id="rejectActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="Reject"/>
+        <property name="statusMessage" value="REJECTED"/>
+        <property name="mediaType" value=".*"/>
+    </bean>
+
+    <bean id="publishActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="Publish"/>
+        <property name="statusMessage" value="PUBLISHED"/>
+        <property name="mediaType" value=".*"/>
+    </bean>
+
+    <bean id="dcpPickupActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="DcpPickup"/>
+        <property name="statusMessage" value="RECEIVED"/>
+        <property name="mediaType" value="Cars"/>
+    </bean>
+
+    <bean id="carsDerivativeCreationActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="DerivativeCreation"/>
+        <property name="statusMessage" value="PUBLISHED"/>
+        <property name="mediaType" value="Cars"/>
+    </bean>
+
+    <bean id="expediaValidator" class="com.expedia.content.media.processing.services.validator.ExpediaIdValidator">
+        <property name="fieldName" value="expediaId" />
+    </bean>
+    <bean id="providerRequiredValidator" class="com.expedia.content.media.processing.services.validator.RequiredValidator">
+        <property name="fieldName" value="mediaProviderId" />
+    </bean>
+    <bean id="fileUrlRequiredValidator" class="com.expedia.content.media.processing.services.validator.RequiredValidator">
+        <property name="fieldName" value="fileUrl" />
+    </bean>
+    <bean id="imageTypeRequiredValidator" class="com.expedia.content.media.processing.services.validator.RequiredValidator">
+        <property name="fieldName" value="imageType" />
+    </bean>
+    <bean id="categoryValidator" class="com.expedia.content.media.processing.services.validator.NumericValidator">
+        <property name="fieldName" value="categoryId" />
+    </bean>
+    <bean id="mediaProviderValidator" class="com.expedia.content.media.processing.services.validator.NumericValidator">
+        <property name="fieldName" value="mediaProviderId" />
+    </bean>
+
+    <bean id="mediaStatusTypeValidator"
+          class="com.expedia.content.media.processing.services.validator.MediaNamesValidator">
+    </bean>
+
+    <bean id="processLogDao" class="com.expedia.content.media.processing.services.dao.LcmProcessLogDao">
+    </bean>
+
+    <bean id="dataSource"
+          class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <property name="driverClassName" value="net.sourceforge.jtds.jdbc.Driver" />
+        <property name="url" value="${datasource.url}" />
+        <property name="username" value="${datasource.username}" />
+        <property name="password" value="${datasource.password}" />
+    </bean>
+
+    <bean id="lodgingLogActivityProcess" class="com.expedia.content.media.processing.pipeline.reporting.LodgingLogActivityProcess">
+        <constructor-arg value="${log.thread.pool.size}" />
+        <constructor-arg type="boolean" value="false"/>
+    </bean>
+
+    <bean id="carsLogActivityProcess" class="com.expedia.content.media.processing.pipeline.reporting.CarsLogActivityProcess">
+        <constructor-arg value="${log.thread.pool.size}" />
+    </bean>
+
+    <bean id="logActivityPicker" class="com.expedia.content.media.processing.pipeline.domain.ImageTypeComponentPicker">
+        <constructor-arg name="imageTypeComponentMap">
+            <map>
+                <entry key="VirtualTour" value-ref="lodgingLogActivityProcess" />
+                <entry key="Lodging" value-ref="lodgingLogActivityProcess" />
+                <entry key="Cars" value-ref="carsLogActivityProcess" />
+            </map>
+        </constructor-arg>
+    </bean>
+
+</beans>
