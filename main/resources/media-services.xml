@@ -73,12 +73,14 @@
                       <value>domainData.domainDataFields.mediaProviderId.matches("[0-9]+")?"valid":"mediaProviderId is  not numeric."</value>
                       <value>domainData.domainDataFields !=null ?"valid":"domainDataFields is required."</value>
                       <value>domainData.domainDataName !=null ?"valid":"domainDataName is required."</value>
-                      <value>domainData.domainDataName.matches('LCM|LCM1') ?"valid":"domainDataName must be LCM."</value>
+                      <value>domainData.domainDataName.matches('LCM') ?"valid":"domainDataName must be LCM."</value>
                       <value>domainData.domainDataFields.propertyHero.matches('true|false') ?"valid":"propertyHero must be true or false."</value>
                       <value>domainData.domainDataFields.roomHero.matches('true|false') ?"valid":"roomHero must be true or false."</value>
                       <value>domainData.domainDataFields.roomId.matches("[0-9]+") ?"valid":"roomId is not numeric."</value>
                       <value>imageMesage.fileUrl !=null ?"valid":"fileUrl is required."</value>
-                      <value>imageMesage.fileUrl.toString().matches('.*http://.*|.*file:///.*')?"valid":"fileUrl format is not right."</value>
+                      <!--already validated in parse message
+                      <value>imageMesage.fileUrl.toString().matches('.*http://.*|.*file:///.*')?"valid":"fileUrl is malformed."</value>
+                      -->
                       <value>imageMesage.fileName !=null ?"valid":"fileName is required."</value>
                       <value>imageMesage.imageType !=null ?"valid":"imageType is required."</value>
                       <value>imageMesage.imageType.imageType.matches('Lodging|Cars|VirtualTour') ?"valid":"imageType must be Lodging,VirtualTour or Cars."</value>

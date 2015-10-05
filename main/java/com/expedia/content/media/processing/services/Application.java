@@ -22,6 +22,8 @@ import org.springframework.context.annotation.ImportResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -83,24 +85,28 @@ public class Application {
      */
     @Meter(name = "addMessageCounter")
     @Timer(name = "addMessageTimer")
-    @RequestMapping(value = "/media/v1/add", method = RequestMethod.POST)
+    @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST)
     public ResponseEntity<String> mediaAdd(@RequestBody final String message) throws Exception {
         return mediaAdd(message, MediaServiceUrl.MEDIA_ADD);
     }
 
     /**
+     * Web service interface to push a media file into the media processing pipeline.
+     * Validation will be done before message go through.
      * @param message
      * @param serviceUrl
-     * @return
-     * @throws Exception
+     * @return ResponseEntity Standard spring response object.
+     * @throws Exception Thrown if processing the message fails.
      */
     private ResponseEntity<String> mediaAdd(final String message, final MediaServiceUrl serviceUrl) throws Exception {
-        LOGGER.info("RECEIVED REQUEST - message=" + serviceUrl.getUrl().toString() + ", JSONMessage=[{}]", message);
+        LOGGER.info("RECEIVED REQUEST - message=" + serviceUrl.getUrl().toString() + ", message=[{}]", message);
         try {
             ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
-            ValidationStatus validationStatus = mediaServiceProcess.validateImage(imageMessage);
-            if (!validationStatus.isValid()) {
-                return buildBadRequestResponse(validationStatus.getMessage(), serviceUrl.getUrl().toString());
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            String userName = auth.getName();
+            String json = mediaServiceProcess.validateImageMessage(message, userName);
+            if (!"[]".equals(json)) {
+                return buildBadRequestResponse(json, serviceUrl.getUrl().toString());
             }
             mediaServiceProcess.publishMsg(imageMessage);
             LOGGER.info("SUCCESS - messageName={}, JSONMessage=[{}]", serviceUrl.getUrl().toString(), message);
@@ -152,17 +158,6 @@ public class Application {
     public ResponseEntity<String> buildBadRequestResponse(String validationMessage, String url) {
         String resMsg = JSONUtil.generateJsonForErrorResponse(validationMessage, url, BAD_REQUEST_CODE, "Bad Request");
         return new ResponseEntity<>(resMsg, HttpStatus.BAD_REQUEST);
-    }
-
-    @RequestMapping(value = "/media/v1/validateMsg", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity testValidationMessage(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
-        try {
-            String json = mediaServiceProcess.validateImageMessage(message, "EPC");
-            return new ResponseEntity<>(json, HttpStatus.OK);
-        } catch (RequestMessageException ex) {
-            LOGGER.error("ERROR - url=" + MediaServiceUrl.MEDIA_STATUS.getUrl() + ", image_message=[{}] .", message, ex);
-            return buildBadRequestResponse(ex.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl().toString());
-        }
     }
 
 }
