@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * MPP media service application.
+ * MPP media service application .
  * This class has the main Spring configuration and also the bootstrap for the application.
  */
 @Configuration
