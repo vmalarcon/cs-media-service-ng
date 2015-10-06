@@ -40,7 +40,7 @@ import java.util.Map;
  */
 @Configuration
 @ComponentScan(basePackages = "com.expedia.content.media.processing")
-@ImportResource("classpath:media-services.xml")
+//@ImportResource("classpath:media-services.xml")
 @RestController
 @EnableAutoConfiguration
 @EnableMonitoringAspects
