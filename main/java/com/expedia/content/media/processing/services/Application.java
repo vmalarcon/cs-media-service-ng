@@ -164,7 +164,7 @@ public class Application {
     @RequestMapping("/publish")
     public void publish(@RequestBody String payload) {
         LOGGER.debug("Publishing: {}", payload);
-        //mediaServiceProcess.publish(payload);
+        mediaServiceProcess.publish(payload);
     }
 
 }
