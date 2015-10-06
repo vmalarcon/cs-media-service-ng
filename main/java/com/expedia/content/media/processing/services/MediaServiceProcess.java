@@ -109,6 +109,12 @@ public class MediaServiceProcess {
         messagingTemplate.send(awsQueue, MessageBuilder.withPayload(payload).build());
     }
 
+    public String receive() {
+        String payload = (String) messagingTemplate.receive(awsQueue).getPayload();
+        LOGGER.debug("Receiving: {}", payload);
+        return payload;
+    }
+
     /**
      * publish message to jms queue
      * Note that the {@code @Meter} {@code @Timer} {@code @RetryableMethod} annotations introduce aspects from metrics-support and spring-retry
@@ -122,7 +128,8 @@ public class MediaServiceProcess {
     public void publishMsg(ImageMessage message) {
         String jsonMessage = message.toJSONMessage();
         try {
-            rabbitTemplate.convertAndSend(jsonMessage);
+            //rabbitTemplate.convertAndSend(jsonMessage);
+            publish(jsonMessage);
             LOGGER.debug("Sending message to queue done : message=[{}]", jsonMessage);
             logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED);
         } catch (Exception ex) {

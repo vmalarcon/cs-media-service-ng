@@ -167,4 +167,11 @@ public class Application {
         mediaServiceProcess.publish(payload);
     }
 
+    @RequestMapping("/receive")
+    public String receive() {
+        String payload = (String) mediaServiceProcess.receive();
+        LOGGER.debug("Receiving: {}", payload);
+        return payload;
+    }
+
 }
