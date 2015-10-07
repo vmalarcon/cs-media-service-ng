@@ -111,7 +111,7 @@ public class MediaServiceProcess {
 
     public String receive() {
         String payload = (String) messagingTemplate.receive(awsQueue).getPayload();
-        LOGGER.debug("Receiving: {}", payload);
+        LOGGER.debug("Receiving msg: {}", payload);
         return payload;
     }
 
