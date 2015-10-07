@@ -11,7 +11,7 @@ import org.springframework.core.io.DefaultResourceLoader;
 
 @SpringBootApplication
 @ComponentScan(basePackages = "com.expedia")
-@ImportResource("classpath:media-services.xml")
+//@ImportResource("classpath:media-services.xml")
 @SuppressWarnings({"PMD.UseUtilityClass"})
 public class Starter extends SpringBootServletInitializer {
 	public static void main(String[] args) throws Exception {

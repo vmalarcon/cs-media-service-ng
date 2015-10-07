@@ -14,11 +14,15 @@ import com.expedia.content.metrics.aspects.annotations.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.ResourceBanner;
+import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.web.SpringBootServletInitializer;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -39,12 +43,12 @@ import java.util.Map;
  * This class has the main Spring configuration and also the bootstrap for the application.
  */
 @Configuration
-@ComponentScan(basePackages = "com.expedia.content.media.processing")
-//@ImportResource("classpath:media-services.xml")
+@ComponentScan(basePackages = "com.expedia")
+@ImportResource("classpath:media-services.xml")
 @RestController
 @EnableAutoConfiguration
 @EnableMonitoringAspects
-public class Application {
+public class Application extends SpringBootServletInitializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
     private static final String REQUESTID = "request-id";
@@ -53,8 +57,16 @@ public class Application {
     @Autowired
     private MediaServiceProcess mediaServiceProcess;
 
-    public static void main(final String[] args) {
-        new SpringApplicationBuilder().showBanner(true).sources(Application.class).run(args);
+//    public static void main(final String[] args) {
+//        new SpringApplicationBuilder().showBanner(true).sources(Application.class).run(args);
+//    }
+
+    public static void main(String[] args) throws Exception {
+        final SpringApplication application = new SpringApplicationBuilder()
+                .banner(new ResourceBanner(new DefaultResourceLoader().getResource("banner.txt")))
+                .child(Application.class)
+                .build();
+        application.run(args);
     }
 
     /**
