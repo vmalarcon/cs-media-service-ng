@@ -16,9 +16,8 @@
 
     <aws-context:context-credentials>
         <aws-context:instance-profile-credentials/>
-        <!--
-        <aws-context:simple-credentials access-key="${accessKey}"
-                                        secret-key="${secretKey}"/> -->
+        <!--<aws-context:simple-credentials access-key="AKIAJQWQAU5O4CCKTRCA"-->
+                                        <!--secret-key="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"/>-->
     </aws-context:context-credentials>
 
     <aws-messaging:annotation-driven-queue-listener wait-time-out="20" />
@@ -73,7 +72,11 @@
                 </entry>
             </map>
         </property>
+        <property name="messagingTemplate" ref="queueMessagingTemplate">
+        </property>
     </bean>
+
+    <aws-messaging:queue-messaging-template id="queueMessagingTemplate" />
 
     <bean id="mvelValidator" class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
       <property name="ruleMaps">

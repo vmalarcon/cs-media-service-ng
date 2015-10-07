@@ -43,7 +43,7 @@ import java.util.Map;
  * This class has the main Spring configuration and also the bootstrap for the application.
  */
 @Configuration
-@ComponentScan(basePackages = "com.expedia")
+@ComponentScan(basePackages = "com.expedia.content.media.processing")
 @ImportResource("classpath:media-services.xml")
 @RestController
 @EnableAutoConfiguration

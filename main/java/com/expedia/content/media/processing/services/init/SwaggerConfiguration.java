@@ -1,4 +1,4 @@
-package com.expedia.www.cs.media.init;
+package com.expedia.content.media.processing.services.init;
 
 import com.mangofactory.swagger.configuration.SpringSwaggerConfig;
 import com.mangofactory.swagger.plugin.EnableSwagger;
@@ -7,10 +7,9 @@ import com.wordnik.swagger.model.ApiInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 @EnableSwagger
-@Configuration
+//@Configuration
 public class SwaggerConfiguration {
 
     private SpringSwaggerConfig springSwaggerConfig;

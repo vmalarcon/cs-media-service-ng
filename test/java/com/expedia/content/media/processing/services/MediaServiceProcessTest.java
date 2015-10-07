@@ -37,6 +37,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MediaServiceProcessTest {
@@ -47,6 +48,8 @@ public class MediaServiceProcessTest {
     private Reporting reporting;
     @Mock
     private ProcessLogDao lcmProcessLogDao;
+    @Mock
+    private QueueMessagingTemplate queueMessagingTemplateMock;
 
     @BeforeClass
     public static void setUpClass() {
@@ -162,11 +165,13 @@ public class MediaServiceProcessTest {
         MediaServiceProcess mediaServiceProcess =
                 new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
         mediaServiceProcess.setActivityWhiteList(whitelist);
+        mediaServiceProcess.setMessagingTemplate(queueMessagingTemplateMock);
         ImageMessage imageMessageMock = mock(ImageMessage.class);
         when(imageMessageMock.getImageType()).thenReturn(ImageType.LODGING);
         when(imageMessageMock.getFileUrl()).thenReturn(new URL("http://media.com/img1.jpg"));
+        when(imageMessageMock.toJSONMessage()).thenReturn("test msg");
         mediaServiceProcess.publishMsg(imageMessageMock);
-        verify(rabbitTemplateMock, times(1)).convertAndSend(anyString());
+        verify(queueMessagingTemplateMock, times(1)).send(anyString(), any());
         verify(lodgingProcessMock, times(1))
                 .log(any(URL.class), anyString(), eq(Activity.MEDIA_MESSAGE_RECEIVED), any(Date.class), eq(reporting), eq(ImageType.LODGING));
     }

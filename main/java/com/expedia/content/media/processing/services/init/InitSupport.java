@@ -1,4 +1,4 @@
-package com.expedia.www.cs.media.init;
+package com.expedia.content.media.processing.services.init;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;

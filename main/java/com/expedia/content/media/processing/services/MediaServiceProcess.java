@@ -1,6 +1,5 @@
 package com.expedia.content.media.processing.services;
 
-import com.amazonaws.services.sqs.AmazonSQS;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.ImageTypeComponentPicker;
 import com.expedia.content.media.processing.pipeline.reporting.Activity;
@@ -29,7 +28,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
@@ -100,9 +98,8 @@ public class MediaServiceProcess {
         this.processLogDao = processLogDao;
     }
 
-    @Autowired
-    public void setSqsQueueSender(AmazonSQS amazonSqs) {
-        messagingTemplate = new QueueMessagingTemplate(amazonSqs);
+    public void setMessagingTemplate(QueueMessagingTemplate messagingTemplate) {
+        this.messagingTemplate = messagingTemplate;
     }
 
     public void publish(@RequestBody String payload) {

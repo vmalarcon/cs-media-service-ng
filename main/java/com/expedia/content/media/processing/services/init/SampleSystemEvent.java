@@ -1,4 +1,4 @@
-package com.expedia.www.cs.media.controller;
+package com.expedia.content.media.processing.services.init;
 
 import com.expedia.www.platform.diagnostics.systemevent.Event;
 
