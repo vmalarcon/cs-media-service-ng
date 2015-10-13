@@ -57,10 +57,6 @@ public class Application extends SpringBootServletInitializer {
     @Autowired
     private MediaServiceProcess mediaServiceProcess;
 
-//    public static void main(final String[] args) {
-//        new SpringApplicationBuilder().showBanner(true).sources(Application.class).run(args);
-//    }
-
     public static void main(String[] args) throws Exception {
         final SpringApplication application = new SpringApplicationBuilder()
                 .banner(new ResourceBanner(new DefaultResourceLoader().getResource("banner.txt")))
@@ -173,11 +169,6 @@ public class Application extends SpringBootServletInitializer {
         return new ResponseEntity<>(resMsg, HttpStatus.BAD_REQUEST);
     }
 
-    @RequestMapping("/publish")
-    public void publish(@RequestBody String payload) {
-        LOGGER.debug("Publishing: {}", payload);
-        mediaServiceProcess.publish(payload);
-    }
 
     @RequestMapping("/receive")
     public String receive() {

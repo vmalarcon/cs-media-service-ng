@@ -102,7 +102,7 @@ public class MediaServiceProcess {
         this.messagingTemplate = messagingTemplate;
     }
 
-    public void publish(@RequestBody String payload) {
+    private void publishToAWS(@RequestBody String payload) {
         messagingTemplate.send(awsQueue, MessageBuilder.withPayload(payload).build());
     }
 
@@ -125,8 +125,7 @@ public class MediaServiceProcess {
     public void publishMsg(ImageMessage message) {
         String jsonMessage = message.toJSONMessage();
         try {
-            //rabbitTemplate.convertAndSend(jsonMessage);
-            publish(jsonMessage);
+            publishToAWS(jsonMessage);
             LOGGER.debug("Sending message to queue done : message=[{}]", jsonMessage);
             logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED);
         } catch (Exception ex) {
@@ -212,9 +211,9 @@ public class MediaServiceProcess {
      * @param activity     The activity to log.
      */
     private void logActivity(ImageMessage imageMessage, Activity activity) throws URISyntaxException {
-        URL fileUrl = imageMessage.getFileUrl();
+        String fileUrl = imageMessage.getFileUrl();
         LogActivityProcess logActivityProcess = logActivityPicker.getImageTypeComponent(imageMessage.getImageType());
-        logActivityProcess.log(fileUrl, imageMessage.processingFileName(), activity, new Date(), reporting, imageMessage.getImageType());
+        logActivityProcess.log(fileUrl, imageMessage.getGuid(), activity, new Date(), reporting, imageMessage.getImageType());
     }
 
     /**

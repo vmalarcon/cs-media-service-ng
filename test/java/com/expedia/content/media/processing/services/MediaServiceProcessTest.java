@@ -168,12 +168,12 @@ public class MediaServiceProcessTest {
         mediaServiceProcess.setMessagingTemplate(queueMessagingTemplateMock);
         ImageMessage imageMessageMock = mock(ImageMessage.class);
         when(imageMessageMock.getImageType()).thenReturn(ImageType.LODGING);
-        when(imageMessageMock.getFileUrl()).thenReturn(new URL("http://media.com/img1.jpg"));
+        when(imageMessageMock.getFileUrl()).thenReturn(("http://media.com/img1.jpg"));
         when(imageMessageMock.toJSONMessage()).thenReturn("test msg");
         mediaServiceProcess.publishMsg(imageMessageMock);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), any());
         verify(lodgingProcessMock, times(1))
-                .log(any(URL.class), anyString(), eq(Activity.MEDIA_MESSAGE_RECEIVED), any(Date.class), eq(reporting), eq(ImageType.LODGING));
+                .log(any(String.class), anyString(), eq(Activity.MEDIA_MESSAGE_RECEIVED), any(Date.class), eq(reporting), eq(ImageType.LODGING));
     }
 
     @Test

@@ -19,7 +19,7 @@ public class RequiredValidatorTest {
     
     @Test
     public void testDomainFieldValuePresent() throws Exception {
-        ImageMessage image = new ImageMessage.ImageMessageBuilder().imageType(ImageType.LODGING).fileUrl(new URL("http://www.asdf.com")).build();
+        ImageMessage image = new ImageMessage.ImageMessageBuilder().imageType(ImageType.LODGING).fileUrl(("http://www.asdf.com")).build();
         RequiredValidator requiredValidator = new RequiredValidator();
         requiredValidator.setFieldName("fileUrl");
         ValidationStatus validationStatus = requiredValidator.validate(image);
