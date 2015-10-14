@@ -62,7 +62,6 @@ public class Application extends SpringBootServletInitializer {
     @Autowired
     private MediaServiceProcess mediaServiceProcess;
 
-
     public static void main(String[] args) throws Exception {
         final SpringApplication application = new SpringApplicationBuilder()
                 .banner(new ResourceBanner(new DefaultResourceLoader().getResource("banner.txt")))
@@ -85,8 +84,8 @@ public class Application extends SpringBootServletInitializer {
     @Timer(name = "acquireMessageTimer")
     @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST)
     @Deprecated
-    public ResponseEntity<String> acquireMedia(@RequestBody final String message) throws Exception {
-        return mediaAdd(message, MediaServiceUrl.ACQUIRE_MEDIA);
+    public ResponseEntity<String> acquireMedia(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
+        return mediaAdd(message, MediaServiceUrl.ACQUIRE_MEDIA, headers);
     }
 
     /**
@@ -100,8 +99,8 @@ public class Application extends SpringBootServletInitializer {
     @Meter(name = "addMessageCounter")
     @Timer(name = "addMessageTimer")
     @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST)
-    public ResponseEntity<String> mediaAdd(@RequestBody final String message) throws Exception {
-        return mediaAdd(message, MediaServiceUrl.MEDIA_ADD);
+    public ResponseEntity<String> mediaAdd(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
+        return mediaAdd(message, MediaServiceUrl.MEDIA_ADD, headers);
     }
 
     /**
@@ -113,8 +112,9 @@ public class Application extends SpringBootServletInitializer {
      * @return ResponseEntity Standard spring response object.
      * @throws Exception Thrown if processing the message fails.
      */
-    private ResponseEntity<String> mediaAdd(final String message, final MediaServiceUrl serviceUrl) throws Exception {
-        LOGGER.info("RECEIVED REQUEST - message=" + serviceUrl.getUrl().toString() + ", message=[{}]", message);
+    private ResponseEntity<String> mediaAdd(final String message, final MediaServiceUrl serviceUrl, @RequestHeader MultiValueMap<String, String> headers)
+            throws Exception {
+        LOGGER.info("RECEIVED REQUEST - message=" + serviceUrl.getUrl().toString() + ", message=[{}], requestId=[{}]", message, headers.get(REQUESTID));
         try {
             ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -124,7 +124,7 @@ public class Application extends SpringBootServletInitializer {
                 return buildBadRequestResponse(json, serviceUrl.getUrl().toString());
             }
             mediaServiceProcess.publishMsg(imageMessage);
-            LOGGER.info("SUCCESS - messageName={}, JSONMessage=[{}]", serviceUrl.getUrl().toString(), message);
+            LOGGER.info("SUCCESS - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl.getUrl().toString(), message, headers.get(REQUESTID));
             return new ResponseEntity<>("OK", HttpStatus.OK);
         } catch (IllegalStateException | ImageMessageException ex) {
             LOGGER.error("ERROR - messageName={}, JSONMessage=[{}] .", serviceUrl.getUrl().toString(), message, ex);
@@ -175,10 +175,8 @@ public class Application extends SpringBootServletInitializer {
         return new ResponseEntity<>(resMsg, HttpStatus.BAD_REQUEST);
     }
 
-
-    @RequestMapping("/receive")
-    public String receive() {
-        String payload = (String) mediaServiceProcess.receive();
+    private String receive() {
+        String payload = (String) mediaServiceProcess.receiveImageMessage();
         LOGGER.debug("Receiving: {}", payload);
         return payload;
     }

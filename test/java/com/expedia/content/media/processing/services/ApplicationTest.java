@@ -54,7 +54,7 @@ public class ApplicationTest {
                 "   \"callback\":\"http://multi.source.callback/callback\",\n" +
                 "   \"caption\":\"caption\"\n" +
                 "}";
-        ResponseEntity<?> responseEntity = application.acquireMedia(jsonMessage);
+        ResponseEntity<?> responseEntity = application.acquireMedia(jsonMessage,httpHeaders);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -75,7 +75,7 @@ public class ApplicationTest {
                 "   \"callback\":\"http://multi.source.callback/callback\",\n" +
                 "   \"caption\":\"caption\"\n" +
                 "}";
-        ResponseEntity<?> responseEntity = application.acquireMedia(jsonMessage);
+        ResponseEntity<?> responseEntity = application.acquireMedia(jsonMessage, httpHeaders);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

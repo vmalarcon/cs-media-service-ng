@@ -108,7 +108,12 @@ public class MediaServiceProcess {
         messagingTemplate.send(awsQueue, MessageBuilder.withPayload(payload).build());
     }
 
-    public String receive() {
+    /**
+     * get the message from mediaService queue.
+     *
+     * @return imageMessage
+     */
+    public String receiveImageMessage() {
         String payload = (String) messagingTemplate.receive(awsServcieQueue).getPayload();
         LOGGER.debug("Receiving msg: {}", payload);
         return payload;
