@@ -97,7 +97,7 @@
                       <value>domainData.domainDataFields.roomHero.matches('true|false') ?"valid":"roomHero must be true or false."</value>
                       <value>domainData.domainDataFields.roomId.matches("[0-9]+") ?"valid":"roomId is not numeric."</value>
                       <value>imageMesage.fileUrl !=null ?"valid":"fileUrl is required."</value>
-                      <value>imageMesage.fileUrl.toString().matches('.*http://.*|.*s3://.*|.*file:///.*')?"valid":"fileUrl is malformed."</value>
+                      <value>imageMesage.fileUrl.toString().matches('.*http://.*|.*https://.*|.*s3://.*|.*file:///.*')?"valid":"fileUrl is malformed."</value>
                       <value>imageMesage.fileName !=null ?"valid":"fileName is required."</value>
                       <value>imageMesage.imageType !=null ?"valid":"imageType is required."</value>
                       <value>imageMesage.imageType.imageType.matches('Lodging|Cars|VirtualTour') ?"valid":"imageType must be Lodging,VirtualTour or Cars."</value>
