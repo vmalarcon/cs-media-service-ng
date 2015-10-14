@@ -14,6 +14,7 @@ import com.expedia.content.metrics.aspects.annotations.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ResourceBanner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -26,6 +27,8 @@ import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.MultiValueMap;
@@ -48,14 +51,17 @@ import java.util.Map;
 @RestController
 @EnableAutoConfiguration
 @EnableMonitoringAspects
+@EnableScheduling
 public class Application extends SpringBootServletInitializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
     private static final String REQUESTID = "request-id";
     private static final int BAD_REQUEST_CODE = 400;
+    private static final int POLL_MSG_INTERVAL = 360000;
 
     @Autowired
     private MediaServiceProcess mediaServiceProcess;
+
 
     public static void main(String[] args) throws Exception {
         final SpringApplication application = new SpringApplicationBuilder()
@@ -89,7 +95,7 @@ public class Application extends SpringBootServletInitializer {
      * @param message JSON formated ImageMessage. fileUrl and expediaId are required.
      * @return ResponseEntity Standard spring response object.
      * @throws Exception Thrown if processing the message fails.
-     * @see com.expedia.content.media.processing.domain.ImageMessage
+     * @see com.expedia.content.media.processing.pipeline.domain.ImageMessage
      */
     @Meter(name = "addMessageCounter")
     @Timer(name = "addMessageTimer")
@@ -175,6 +181,18 @@ public class Application extends SpringBootServletInitializer {
         String payload = (String) mediaServiceProcess.receive();
         LOGGER.debug("Receiving: {}", payload);
         return payload;
+    }
+
+    //@Scheduled(fixedRate = POLL_MSG_INTERVAL)
+    public void pollSQSMessage() throws Exception {
+        String message = receive();
+        System.out.println("Received message: ");
+        try {
+            ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
+            mediaServiceProcess.publishMsg(imageMessage);
+        } catch (IllegalStateException | ImageMessageException ex) {
+            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}] .", message, ex);
+        }
     }
 
 }

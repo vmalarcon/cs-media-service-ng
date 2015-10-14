@@ -53,8 +53,10 @@ public class MediaServiceProcess {
     private Map<String, List<MapMessageValidator>> mapValidatorList;
     private QueueMessagingTemplate messagingTemplate;
 
-    @Value("${media.aws.queue.name}")
+    @Value("${media.aws.collector.queue.name}")
     private String awsQueue;
+    @Value("${media.aws.service.queue.name}")
+    private String awsServcieQueue;
 
     public MediaServiceProcess(List<MediaMessageValidator> validators, RabbitTemplate rabbitTemplate,
             @Qualifier("logActivityPicker") final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker, final Reporting reporting) {
@@ -107,7 +109,7 @@ public class MediaServiceProcess {
     }
 
     public String receive() {
-        String payload = (String) messagingTemplate.receive(awsQueue).getPayload();
+        String payload = (String) messagingTemplate.receive(awsServcieQueue).getPayload();
         LOGGER.debug("Receiving msg: {}", payload);
         return payload;
     }
