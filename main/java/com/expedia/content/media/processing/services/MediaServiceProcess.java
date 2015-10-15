@@ -18,7 +18,6 @@ import com.expedia.content.metrics.aspects.annotations.Meter;
 import com.expedia.content.metrics.aspects.annotations.Timer;
 
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -54,9 +53,7 @@ public class MediaServiceProcess {
     private QueueMessagingTemplate messagingTemplate;
 
     @Value("${media.aws.collector.queue.name}")
-    private String awsQueue;
-    @Value("${media.aws.service.queue.name}")
-    private String awsServcieQueue;
+    private String publishQueue;
 
     public MediaServiceProcess(List<MediaMessageValidator> validators, RabbitTemplate rabbitTemplate,
             @Qualifier("logActivityPicker") final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker, final Reporting reporting) {
@@ -104,20 +101,6 @@ public class MediaServiceProcess {
         this.messagingTemplate = messagingTemplate;
     }
 
-    private void publishToAWS(@RequestBody String payload) {
-        messagingTemplate.send(awsQueue, MessageBuilder.withPayload(payload).build());
-    }
-
-    /**
-     * get the message from mediaService queue.
-     *
-     * @return imageMessage
-     */
-    public String receiveImageMessage() {
-        String payload = (String) messagingTemplate.receive(awsServcieQueue).getPayload();
-        LOGGER.debug("Receiving msg: {}", payload);
-        return payload;
-    }
 
     /**
      * publish message to jms queue
@@ -132,7 +115,7 @@ public class MediaServiceProcess {
     public void publishMsg(ImageMessage message) {
         String jsonMessage = message.toJSONMessage();
         try {
-            publishToAWS(jsonMessage);
+            messagingTemplate.send(publishQueue, MessageBuilder.withPayload(jsonMessage).build());
             LOGGER.debug("Sending message to queue done : message=[{}]", jsonMessage);
             logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED);
         } catch (Exception ex) {

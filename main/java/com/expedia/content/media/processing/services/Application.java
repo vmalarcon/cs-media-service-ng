@@ -14,7 +14,6 @@ import com.expedia.content.metrics.aspects.annotations.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ResourceBanner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -27,8 +26,7 @@ import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.MultiValueMap;
@@ -51,13 +49,13 @@ import java.util.Map;
 @RestController
 @EnableAutoConfiguration
 @EnableMonitoringAspects
-@EnableScheduling
 public class Application extends SpringBootServletInitializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
     private static final String REQUESTID = "request-id";
     private static final int BAD_REQUEST_CODE = 400;
     private static final int POLL_MSG_INTERVAL = 360000;
+
 
     @Autowired
     private MediaServiceProcess mediaServiceProcess;
@@ -175,15 +173,10 @@ public class Application extends SpringBootServletInitializer {
         return new ResponseEntity<>(resMsg, HttpStatus.BAD_REQUEST);
     }
 
-    private String receive() {
-        String payload = (String) mediaServiceProcess.receiveImageMessage();
-        LOGGER.debug("Receiving: {}", payload);
-        return payload;
-    }
 
     //@Scheduled(fixedRate = POLL_MSG_INTERVAL)
     public void pollSQSMessage() throws Exception {
-        String message = receive();
+        String message = "";
         System.out.println("Received message: ");
         try {
             ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
@@ -192,5 +185,23 @@ public class Application extends SpringBootServletInitializer {
             LOGGER.error("ERROR - messageName={}, JSONMessage=[{}] .", message, ex);
         }
     }
+
+    /**
+     * listen for message from media service queue and publish to collector queue again.
+     * No validation happen here.
+     *
+     * @param message
+     */
+    @MessageMapping("${media.aws.service.queue.name}")
+    public void pollMessage(String message) {
+        LOGGER.debug("Receiving msg: {}", message);
+        try {
+            ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
+            mediaServiceProcess.publishMsg(imageMessage);
+        } catch (IllegalStateException | ImageMessageException ex) {
+            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}] .", message, ex);
+        }
+    }
+
 
 }
