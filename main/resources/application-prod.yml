@@ -3,5 +3,3 @@ server:
    tomcat:
       max-threads: 20
 
-test:
-   helloMsg: "Hello dear customer"

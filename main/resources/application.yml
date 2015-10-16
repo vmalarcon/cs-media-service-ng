@@ -2,9 +2,9 @@ swagger:
     service:
         version: "1.0"
         title: ${project.name}
-        description: "A service that provides APIs for ..."
+        description: "Media Service API"
         termsPath: ""
-        email: "team@expedia.com"
+        email: "phoenix@expedia.com"
         licenceType: ""
         licencePath: "#"
 
@@ -33,5 +33,3 @@ monitoringAgent:
     hostname: "statsd"
     port: 8125
 
-test:
-   helloMsg: "Hello there"

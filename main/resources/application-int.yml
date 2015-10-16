@@ -3,5 +3,3 @@ server:
    tomcat:
       max-threads: 10
 
-test:
-   helloMsg: "Hello internal user"
