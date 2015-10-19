@@ -202,7 +202,7 @@ public class MediaServiceProcess {
     private void logActivity(ImageMessage imageMessage, Activity activity) throws URISyntaxException {
         String fileUrl = imageMessage.getFileUrl();
         LogActivityProcess logActivityProcess = logActivityPicker.getImageTypeComponent(imageMessage.getImageType());
-        logActivityProcess.log(fileUrl, imageMessage.getGuid(), activity, new Date(), reporting, imageMessage.getImageType());
+        logActivityProcess.log(fileUrl, imageMessage.getMediaId(), activity, new Date(), reporting, imageMessage.getImageType());
     }
 
     /**
