@@ -5,6 +5,7 @@ import com.expedia.content.media.processing.pipeline.exception.ImageMessageExcep
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import com.expedia.content.media.processing.services.util.RequestMessageException;
 import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.validator.S3Validator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.expedia.content.metrics.aspects.EnableMonitoringAspects;
 import com.expedia.content.metrics.aspects.annotations.Counter;
@@ -120,6 +121,10 @@ public class Application extends SpringBootServletInitializer {
             String json = mediaServiceProcess.validateImageMessage(message, userName);
             if (!"[]".equals(json)) {
                 return buildBadRequestResponse(json, serviceUrl.getUrl().toString());
+            }
+            boolean fileExists = S3Validator.checkFileExists(imageMessage.getFileUrl());
+            if (fileExists == false) {
+                return buildBadRequestResponse("fileUrl does not exist in s3.", serviceUrl.getUrl().toString());
             }
             mediaServiceProcess.publishMsg(imageMessage);
             LOGGER.info("SUCCESS - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl.getUrl().toString(), message, headers.get(REQUESTID));
