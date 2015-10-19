@@ -1,20 +1,24 @@
 package com.expedia.content.media.processing.services.validator;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+
 
 public class S3Validator {
 
     private static final String S3_CMD = "aws s3 ls ";
 
     public static boolean checkFileExists(String fileUrs) {
-        String s = executeCommand(S3_CMD + fileUrs);
-        if (s != null && s.contains("testImage2.jpg")) {
-            return true;
+        if (fileUrs != null && fileUrs.contains("s3")) {
+            String s = executeCommand(S3_CMD + fileUrs);
+            if (s != null && s.contains(FilenameUtils.getBaseName(fileUrs))) {
+                return true;
+            }
+            return false;
         }
-        return false;
+        return true;
+
     }
 
     private static String executeCommand(String command) {
