@@ -115,12 +115,50 @@ public class MediaServiceProcess {
         String jsonMessage = message.toJSONMessage();
         try {
             messagingTemplate.send(publishQueue, MessageBuilder.withPayload(jsonMessage).build());
-            LOGGER.debug("Sending message to queue done : message=[{}]", jsonMessage);
+            LOGGER.info("Sending message to queue done : message=[{}] ", jsonMessage);
             logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED);
         } catch (Exception ex) {
             LOGGER.error("Error publishing : message=[{}], error=[{}]", jsonMessage, ex.getMessage(), ex);
             throw new RuntimeException("Error publishing message=[" + jsonMessage + "]", ex);
         }
+    }
+
+    public long publishRabbitMsg(boolean isRabbit) {
+        String jsonMessage = "test";
+        long time = 0;
+        Date date = new Date();
+        try {
+            if(isRabbit){
+                rabbitTemplate.convertAndSend(jsonMessage);
+            }else{
+                jsonMessage ="{  \n"
+                        + "   \"fileUrl\":\"https://i.imgur.com/0b4Ux4L.jpg\",\n"
+                        + "   \"fileName\":\"img1.jpg\",\n"
+                        + "   \"mediaId\":\"1da396d3-a796-4a26-9bae-07ce9f7d1ced\",\n"
+                        + "   \"imageType\":\"Lodging\",\n"
+                        + "   \"domainName\":\"LCM\",\n"
+                        + "   \"domainId\":\"154\",\n"
+                        + "   \"domainFields\":{  \n"
+                        + "      \"categoryId\":\"801\",\n"
+                        + "      \"mediaProviderId\":\"1\",\n"
+                        + "      \"propertyHero\":\"true\",\n"
+                        + "      \"caption\":\"image caption\",\n"
+                        + "      \"roomId\":\"1010101\",\n"
+                        + "      \"roomHero\":\"true\"\n"
+                        + "   }\n"
+                        + "}";
+                messagingTemplate.send(publishQueue, MessageBuilder.withPayload(jsonMessage).build());
+
+            }
+
+            Date date2 = new Date();
+            time = date2.getTime() - date.getTime();
+            LOGGER.debug("Sending message to queue done : message=[{}]", jsonMessage);
+        } catch (Exception ex) {
+            LOGGER.error("Error publishing : message=[{}], error=[{}]", jsonMessage, ex.getMessage(), ex);
+            throw new RuntimeException("Error publishing message=[" + jsonMessage + "]", ex);
+        }
+        return time;
     }
 
     /**

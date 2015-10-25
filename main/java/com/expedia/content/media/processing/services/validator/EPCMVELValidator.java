@@ -1,14 +1,12 @@
 package com.expedia.content.media.processing.services.validator;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.OuterDomainData;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
 import org.mvel2.MVEL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,20 +40,21 @@ public class EPCMVELValidator implements MapMessageValidator {
         List<Map<String, String>> list = new ArrayList<>();
         List<String> ruleList = ruleMaps.get(RULE_NAME);
         Map messageMap = new HashMap();
-        Map demainMap = new HashMap();
+        Map domainMap = new HashMap();
         for (ImageMessage imageMesage : messageList) {
             StringBuffer errorMsg = new StringBuffer();
             messageMap.put("imageMesage", imageMesage);
             //compare ImageMessage (non outer domain) fields with rules
             compareRulesWithMessageMap(errorMsg, ruleList, messageMap);
-            List<OuterDomainData> domainDataList = imageMesage.getOuterDomainDataList();
             int index = 0;
-            if (domainDataList != null) {
-                for (OuterDomainData domainData : domainDataList) {
-                    demainMap.put(RULE_PREFIX, domainData);
-                    compareRulesWithDomainMap(errorMsg, ruleList, demainMap, index);
-                    index++;
-                }
+            if (imageMesage.getOuterDomainData() != null) {
+                domainMap.put(RULE_PREFIX, imageMesage.getOuterDomainData());
+                //merge two map because rule
+                //imageMesage.imageType.imageType.equals('Lodging')&amp;&amp;!domainData.domainDataName.equals('LCM') ?"domainDataName must be LCM.":"valid"
+                messageMap.putAll(domainMap);
+                compareRulesWithDomainMap(errorMsg, ruleList, messageMap, index);
+                index++;
+
             }
             if (errorMsg.length() > 0) {
                 putErrorMapToList(list, errorMsg, imageMesage);

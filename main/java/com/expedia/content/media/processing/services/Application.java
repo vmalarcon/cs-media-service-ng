@@ -36,7 +36,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestHeader;
-
+import org.springframework.web.bind.annotation.RequestParam;
 import java.util.List;
 import java.util.Map;
 
@@ -179,17 +179,7 @@ public class Application extends SpringBootServletInitializer {
     }
 
 
-    //@Scheduled(fixedRate = POLL_MSG_INTERVAL)
-    public void pollSQSMessage() throws Exception {
-        String message = "";
-        System.out.println("Received message: ");
-        try {
-            ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
-            mediaServiceProcess.publishMsg(imageMessage);
-        } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}] .", message, ex);
-        }
-    }
+
 
     /**
      * listen for message from media service queue and publish to collector queue again.
@@ -208,5 +198,14 @@ public class Application extends SpringBootServletInitializer {
         }
     }
 
+    /**
+     * test rabbit mq performance
+     * @return
+     */
+    @RequestMapping(value = "/media/rabbitmq", method = RequestMethod.GET)
+    public ResponseEntity putRabbitMq(@RequestParam(value = "testRabbit", required = false) Boolean testRabbit) {
+        long timeUsed = mediaServiceProcess.publishRabbitMsg(testRabbit);
+        return new ResponseEntity<>("rabbitmq:" + timeUsed, HttpStatus.OK);
+    }
 
 }

@@ -61,9 +61,7 @@ public class NumericValidatorTest {
         dataMap.put("def", "hello");
         
         OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
-        List<OuterDomainData> domainDataList = new ArrayList<>();
-        domainDataList.add(domainData);
-        ImageMessage image = new ImageMessage.ImageMessageBuilder().outerDomainDataList(domainDataList).build();
+        ImageMessage image = new ImageMessage.ImageMessageBuilder().outerDomainData(domainData).build();
         
         NumericValidator validator = new NumericValidator();
         validator.setFieldName("superID");
@@ -79,9 +77,7 @@ public class NumericValidatorTest {
         dataMap.put(fieldName, new Integer(expedia_test_id));
         
         OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
-        List<OuterDomainData> domainDataList = new ArrayList<>();
-        domainDataList.add(domainData);
-        ImageMessage image = new ImageMessage.ImageMessageBuilder().outerDomainDataList(domainDataList).build();
+        ImageMessage image = new ImageMessage.ImageMessageBuilder().outerDomainData(domainData).build();
         
         NumericValidator validator = new NumericValidator();
         validator.setFieldName(fieldName);
@@ -102,9 +98,7 @@ public class NumericValidatorTest {
         dataMap2.put(fieldName, new Integer(expedia_test_id));
         
         OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
-        List<OuterDomainData> domainDataList = new ArrayList<>();
-        domainDataList.add(domainData);
-        ImageMessage image = new ImageMessage.ImageMessageBuilder().outerDomainDataList(domainDataList).build();
+        ImageMessage image = new ImageMessage.ImageMessageBuilder().outerDomainData(domainData).build();
         
         NumericValidator validator = new NumericValidator();
         validator.setFieldName(fieldName);
@@ -117,11 +111,9 @@ public class NumericValidatorTest {
         String fieldName = "expediaId";
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put(fieldName, "abcd");
-        
+
         OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
-        List<OuterDomainData> domainDataList = new ArrayList<>();
-        domainDataList.add(domainData);
-        ImageMessage image = new ImageMessage.ImageMessageBuilder().outerDomainDataList(domainDataList).build();
+        ImageMessage image = new ImageMessage.ImageMessageBuilder().outerDomainData(domainData).build();
         
         NumericValidator validator = new NumericValidator();
         validator.setFieldName(fieldName);

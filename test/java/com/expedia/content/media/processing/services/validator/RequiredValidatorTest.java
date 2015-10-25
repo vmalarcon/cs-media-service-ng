@@ -41,10 +41,7 @@ public class RequiredValidatorTest {
         dataMap.put("abc", "hello");
         dataMap.put("def", "hello");
         OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
-        List<OuterDomainData> domainDataList = new ArrayList<>();
-        domainDataList.add(domainData);
-
-        ImageMessage image = new ImageMessage.ImageMessageBuilder().imageType(ImageType.LODGING).outerDomainDataList(domainDataList).build();
+        ImageMessage image = new ImageMessage.ImageMessageBuilder().imageType(ImageType.LODGING).outerDomainData(domainData).build();
         RequiredValidator requiredValidator = new RequiredValidator();
         requiredValidator.setFieldName("abc");
         ValidationStatus validationStatus = requiredValidator.validate(image);
@@ -57,10 +54,7 @@ public class RequiredValidatorTest {
         dataMap.put("abc", "hello");
         dataMap.put("def", "hello");
         OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
-        List<OuterDomainData> domainDataList = new ArrayList<>();
-        domainDataList.add(domainData);
-
-        ImageMessage image = new ImageMessage.ImageMessageBuilder().imageType(ImageType.LODGING).outerDomainDataList(domainDataList).build();
+        ImageMessage image = new ImageMessage.ImageMessageBuilder().imageType(ImageType.LODGING).outerDomainData(domainData).build();
         RequiredValidator requiredValidator = new RequiredValidator();
         requiredValidator.setFieldName("xyz");
         ValidationStatus validationStatus = requiredValidator.validate(image);

@@ -21,11 +21,10 @@ public abstract class OuterDomainSeekerValidator {
      * @return The value of the field to validate. {@code null} if the value is not found.
      */
     protected Object seekOuterDomainFields(ImageMessage message) {
-        if (message.getOuterDomainDataList() != null) {
-            for (OuterDomainData domainData : message.getOuterDomainDataList()) {
-                Map<String, Object> dataMap = domainData.getDomainDataFields();
+        if (message.getOuterDomainData()!= null) {
+                Map<String, Object> dataMap = message.getOuterDomainData().getDomainDataFields();
                 return scanOuterDomainDataTree(dataMap);
-            }
+
         }
         return null;
     }

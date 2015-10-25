@@ -29,6 +29,8 @@
         <property name="queue" value="${collector.queue}" />
         <property name="routingKey" value="${collector.queue}" />
     </bean>
+    <bean id="retryableAspect" class="com.expedia.content.media.processing.pipeline.retry.RetryableAspect" factory-method="aspectOf" autowire="byType" />
+
 
     <!--can define multiple validator-->
     <bean id="mediaServiceProcess" class="com.expedia.content.media.processing.services.MediaServiceProcess">
@@ -85,14 +87,13 @@
                   <list>
                       <value>domainData.domainDataId !=null ?"valid":"domainDataId is required."</value>
                       <value>(domainData.domainDataName.equals('LCM')&amp;&amp;!domainData.domainDataId.matches("[0-9]+"))?"domainDataId is not numeric.":"valid"</value>
-                      <value>domainData.domainDataFields.categoryId !=null ?"valid":"categoryId is required."</value>
                       <value>(domainData.domainDataName.equals('LCM')&amp;&amp;!domainData.domainDataFields.categoryId.matches("[0-9]+"))?"categoryId is not numeric.":"valid"</value>
                       <value>domainData.domainDataFields.mediaProviderId !=null ?"valid":"mediaProviderId is required."</value>
                       <value>(domainData.domainDataName.equals('LCM')&amp;&amp;!domainData.domainDataFields.mediaProviderId.matches("1|2"))?"mediaProviderId should be 1 or 2.":"valid"</value>
-                      <value>domainData.domainDataFields.mediaProviderId.matches("[0-9]+")?"valid":"mediaProviderId is  not numeric."</value>
+                      <value>domainData.domainDataFields.mediaProviderId.matches("[0-9]+")?"valid":"mediaProviderId is not numeric."</value>
                       <value>domainData.domainDataFields !=null ?"valid":"domainDataFields is required."</value>
                       <value>domainData.domainDataName !=null ?"valid":"domainDataName is required."</value>
-                      <value>domainData.domainDataName.matches('LCM') ?"valid":"domainDataName must be LCM."</value>
+                      <value>imageMesage.imageType.imageType.equals('Lodging')&amp;&amp;!domainData.domainDataName.equals('LCM') ?"domainDataName must be LCM.":"valid"</value>
                       <value>domainData.domainDataFields.propertyHero.matches('true|false') ?"valid":"propertyHero must be true or false."</value>
                       <value>domainData.domainDataFields.roomHero.matches('true|false') ?"valid":"roomHero must be true or false."</value>
                       <value>domainData.domainDataFields.roomId.matches("[0-9]+") ?"valid":"roomId is not numeric."</value>
@@ -195,6 +196,49 @@
                 <entry key="Cars" value-ref="carsLogActivityProcess" />
             </map>
         </constructor-arg>
+    </bean>
+
+    <bean id="loggingRetryListener" class="com.expedia.content.media.processing.pipeline.retry.LoggingRetryListener" />
+
+    <bean id="retryTemplate" class="org.springframework.retry.support.RetryTemplate">
+        <property name="retryPolicy">
+            <bean class="org.springframework.retry.policy.ExceptionClassifierRetryPolicy">
+                <property name="policyMap">
+                    <map>
+                        <entry key="java.net.MalformedURLException">
+                            <bean class="org.springframework.retry.policy.NeverRetryPolicy" />
+                        </entry>
+                        <entry key="com.expedia.content.media.processing.pipeline.exception.ImageMessageException">
+                            <bean class="org.springframework.retry.policy.NeverRetryPolicy" />
+                        </entry>
+                        <entry key="java.net.URISyntaxException">
+                            <bean class="org.springframework.retry.policy.NeverRetryPolicy" />
+                        </entry>
+                        <entry key="java.nio.file.FileSystemNotFoundException">
+                            <bean class="org.springframework.retry.policy.NeverRetryPolicy" />
+                        </entry>
+                        <entry key="org.im4java.core.InfoException">
+                            <bean class="org.springframework.retry.policy.NeverRetryPolicy" />
+                        </entry>
+                        <entry key="java.lang.Exception">
+                            <bean class="org.springframework.retry.policy.SimpleRetryPolicy">
+                                <property name="maxAttempts" value="${retry.max.attempts}" />
+                            </bean>
+                        </entry>
+                    </map>
+                </property>
+            </bean>
+        </property>
+        <property name="backOffPolicy">
+            <bean class="org.springframework.retry.backoff.FixedBackOffPolicy">
+                <property name="backOffPeriod" value="${retry.interval.ms}" />
+            </bean>
+        </property>
+        <property name="listeners">
+            <list>
+                <ref bean="loggingRetryListener" />
+            </list>
+        </property>
     </bean>
 
 </beans>
