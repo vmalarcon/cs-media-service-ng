@@ -205,7 +205,7 @@ public class Application extends SpringBootServletInitializer {
     @RequestMapping(value = "/media/rabbitmq", method = RequestMethod.GET)
     public ResponseEntity putRabbitMq(@RequestParam(value = "testRabbit", required = false) Boolean testRabbit) {
         long timeUsed = mediaServiceProcess.publishRabbitMsg(testRabbit);
-        return new ResponseEntity<>("rabbitmq:" + timeUsed, HttpStatus.OK);
+        return new ResponseEntity<>("put msg to rabbitmq used time:" + timeUsed, HttpStatus.OK);
     }
 
 }
