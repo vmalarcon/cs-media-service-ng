@@ -88,8 +88,11 @@
                       <value>domainData.domainDataId !=null ?"valid":"domainDataId is required."</value>
                       <value>(domainData.domainDataName.equals('LCM')&amp;&amp;!domainData.domainDataId.matches("[0-9]+"))?"domainDataId is not numeric.":"valid"</value>
                       <value>(domainData.domainDataName.equals('LCM')&amp;&amp;!domainData.domainDataFields.categoryId.matches("[0-9]+"))?"categoryId is not numeric.":"valid"</value>
+                      <value>imageMesage.mediaId !=null ?"valid":"mediaId is required."</value>
+                      <!--
                       <value>domainData.domainDataFields.mediaProviderId !=null ?"valid":"mediaProviderId is required."</value>
                       <value>(domainData.domainDataName.equals('LCM')&amp;&amp;!domainData.domainDataFields.mediaProviderId.matches("1|2"))?"mediaProviderId should be 1 or 2.":"valid"</value>
+                      -->
                       <value>domainData.domainDataFields.mediaProviderId.matches("[0-9]+")?"valid":"mediaProviderId is not numeric."</value>
                       <value>domainData.domainDataFields !=null ?"valid":"domainDataFields is required."</value>
                       <value>domainData.domainDataName !=null ?"valid":"domainDataName is required."</value>

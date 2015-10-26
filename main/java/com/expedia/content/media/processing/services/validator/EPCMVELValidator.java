@@ -92,13 +92,16 @@ public class EPCMVELValidator implements MapMessageValidator {
             try {
                 if (rule.contains(RULE_PREFIX)) {
                     validationError = MVEL.eval(rule, objectMap).toString();
-                    validationError = "domainData[" + index + "].domainDataFields." + validationError;
+                    //validationError = "domainData[" + index + "].domainDataFields." + validationError;
+                    validationError = "domainDataFields." + validationError;
+
                 }
             } catch (Exception ex) {
-                LOGGER.error("rule compare exception:", ex);
+                LOGGER.warn("rule compare exception:", ex);
                 //not very good solution here, later we need to define a validation Object for domain field Map
-                String exceptionMsg = ex.getMessage();
-                validationError = composeValidtionError(exceptionMsg, index);
+                //now domainFields like domainData.domainDataFields.categoryId is not required any more
+               // String exceptionMsg = ex.getMessage();
+                //validationError = composeValidtionError(exceptionMsg, index);
             }
             if (!validationError.contains("valid") && !"".equals(validationError) && !errorMsg.toString().contains(validationError)) {
                 errorMsg.append(validationError).append("\r\n");
