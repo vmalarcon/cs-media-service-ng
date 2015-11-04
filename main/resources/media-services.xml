@@ -13,13 +13,6 @@
     <context:property-placeholder location="classpath:${EXPEDIA_ENVIRONMENT}.${AWS_REGION}.properties"/>
     <import resource="collector-rabbit.xml" />
 
-
-    <aws-context:context-credentials>
-        <aws-context:instance-profile-credentials/>
-        <!--<aws-context:simple-credentials access-key="AKIAJQWQAU5O4CCKTRCA"-->
-                                        <!--secret-key="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"/>-->
-    </aws-context:context-credentials>
-
     <aws-messaging:annotation-driven-queue-listener wait-time-out="20" />
 
     <aws-context:context-region region="${AWS_REGION}" />
@@ -85,26 +78,21 @@
           <map>
               <entry key ="EPC">
                   <list>
-                      <value>domainData.domainDataId !=null ?"valid":"domainDataId is required."</value>
-                      <value>(domainData.domainDataName.equals('LCM')&amp;&amp;!domainData.domainDataId.matches("[0-9]+"))?"domainDataId is not numeric.":"valid"</value>
-                      <value>(domainData.domainDataName.equals('LCM')&amp;&amp;!domainData.domainDataFields.categoryId.matches("[0-9]+"))?"categoryId is not numeric.":"valid"</value>
-                      <value>imageMesage.mediaId !=null ?"valid":"mediaId is required."</value>
-                      <!--
-                      <value>domainData.domainDataFields.mediaProviderId !=null ?"valid":"mediaProviderId is required."</value>
-                      <value>(domainData.domainDataName.equals('LCM')&amp;&amp;!domainData.domainDataFields.mediaProviderId.matches("1|2"))?"mediaProviderId should be 1 or 2.":"valid"</value>
-                      -->
-                      <value>domainData.domainDataFields.mediaProviderId.matches("[0-9]+")?"valid":"mediaProviderId is not numeric."</value>
-                      <value>domainData.domainDataFields !=null ?"valid":"domainDataFields is required."</value>
-                      <value>domainData.domainDataName !=null ?"valid":"domainDataName is required."</value>
-                      <value>imageMesage.imageType.imageType.equals('Lodging')&amp;&amp;!domainData.domainDataName.equals('LCM') ?"domainDataName must be LCM.":"valid"</value>
-                      <value>domainData.domainDataFields.propertyHero.matches('true|false') ?"valid":"propertyHero must be true or false."</value>
-                      <value>domainData.domainDataFields.roomHero.matches('true|false') ?"valid":"roomHero must be true or false."</value>
-                      <value>domainData.domainDataFields.roomId.matches("[0-9]+") ?"valid":"roomId is not numeric."</value>
-                      <value>imageMesage.fileUrl !=null ?"valid":"fileUrl is required."</value>
-                      <value>imageMesage.fileUrl.toString().matches('.*http://.*|.*https://.*|.*s3://.*|.*file:///.*')?"valid":"fileUrl is malformed."</value>
-                      <value>imageMesage.fileName !=null ?"valid":"fileName is required."</value>
-                      <value>imageMesage.imageType !=null ?"valid":"imageType is required."</value>
-                      <value>imageMesage.imageType.imageType.matches('Lodging|Cars|VirtualTour') ?"valid":"imageType must be Lodging,VirtualTour or Cars."</value>
+                      <value>domainData.domainDataId != null ? "valid" : "domainDataId is required."</value>
+                      <value>(domainData.domainDataName.equals('LCM') &amp;&amp; !domainData.domainDataId.matches("[0-9]+")) ? "domainDataId is not numeric." : "valid"</value>
+                      <value>(domainData.domainDataName.equals('LCM') &amp;&amp; domainData.domainDataFields != null &amp;&amp; domainData.domainDataFields.categoryId != null &amp;&amp; !domainData.domainDataFields.categoryId.matches("[0-9]+")) ? "categoryId is not numeric." : "valid"</value>
+                      <value>imageMessage.mediaId != null ? "valid": "mediaId is required."</value>
+                      <value>(domainData.domainDataFields != null &amp;&amp; domainData.domainDataFields.mediaProviderId != null &amp;&amp; !domainData.domainDataFields.mediaProviderId.matches("[0-9]+")) ? "mediaProviderId is not numeric." : "valid"</value>
+                      <value>domainData.domainDataName !=null ? "valid" : "domainDataName is required."</value>
+                      <value>imageMessage.imageType.imageType.equals('Lodging') &amp;&amp; !domainData.domainDataName.equals('LCM') ? "domainDataName must be LCM." : "valid"</value>
+                      <value>(domainData.domainDataFields != null &amp;&amp; domainData.domainDataFields.propertyHero != null &amp;&amp; !domainData.domainDataFields.propertyHero.matches('true|false')) ? "propertyHero must be true or false." : "valid"</value>
+                      <value>(domainData.domainDataFields != null &amp;&amp; domainData.domainDataFields.roomHero != null &amp;&amp; !domainData.domainDataFields.roomHero.matches('true|false')) ? "roomHero must be true or false." : "valid"</value>
+                      <value>(domainData.domainDataFields != null &amp;&amp; domainData.domainDataFields.roomId != null &amp;&amp; !domainData.domainDataFields.roomId.matches("[0-9]+")) ? "roomId is not numeric." : "valid"</value>
+                      <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
+                      <value>imageMessage.fileUrl.toString().matches('.*http://.*|.*https://.*|.*s3://.*|.*file:///.*') ? "valid" : "fileUrl is malformed."</value>
+                      <value>imageMessage.fileName != null ? "valid" : "fileName is required."</value>
+                      <value>imageMessage.imageType != null ? "valid" : "imageType is required."</value>
+                      <value>imageMessage.imageType.imageType.matches('Lodging|Cars|VirtualTour') ? "valid" : "imageType must be Lodging, VirtualTour or Cars."</value>
                   </list>
               </entry>
           </map>

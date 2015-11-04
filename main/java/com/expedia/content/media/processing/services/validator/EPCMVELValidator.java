@@ -41,23 +41,23 @@ public class EPCMVELValidator implements MapMessageValidator {
         List<String> ruleList = ruleMaps.get(RULE_NAME);
         Map messageMap = new HashMap();
         Map domainMap = new HashMap();
-        for (ImageMessage imageMesage : messageList) {
+        for (ImageMessage imageMessage : messageList) {
             StringBuffer errorMsg = new StringBuffer();
-            messageMap.put("imageMesage", imageMesage);
+            messageMap.put("imageMessage", imageMessage);
             //compare ImageMessage (non outer domain) fields with rules
             compareRulesWithMessageMap(errorMsg, ruleList, messageMap);
             int index = 0;
-            if (imageMesage.getOuterDomainData() != null) {
-                domainMap.put(RULE_PREFIX, imageMesage.getOuterDomainData());
+            if (imageMessage.getOuterDomainData() != null) {
+                domainMap.put(RULE_PREFIX, imageMessage.getOuterDomainData());
                 //merge two map because rule
-                //imageMesage.imageType.imageType.equals('Lodging')&amp;&amp;!domainData.domainDataName.equals('LCM') ?"domainDataName must be LCM.":"valid"
+                //imageMessage.imageType.imageType.equals('Lodging')&amp;&amp;!domainData.domainDataName.equals('LCM') ?"domainDataName must be LCM.":"valid"
                 messageMap.putAll(domainMap);
                 compareRulesWithDomainMap(errorMsg, ruleList, messageMap, index);
                 index++;
 
             }
             if (errorMsg.length() > 0) {
-                putErrorMapToList(list, errorMsg, imageMesage);
+                putErrorMapToList(list, errorMsg, imageMessage);
             }
         }
         return list;
