@@ -1,7 +1,6 @@
 package com.expedia.content.media.processing.services.validator;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.OuterDomainData;
 
 import java.util.Map;
 
@@ -22,7 +21,7 @@ public abstract class OuterDomainSeekerValidator {
      */
     protected Object seekOuterDomainFields(ImageMessage message) {
         if (message.getOuterDomainData()!= null) {
-                Map<String, Object> dataMap = message.getOuterDomainData().getDomainDataFields();
+                Map<String, Object> dataMap = message.getOuterDomainData().getDomainFields();
                 return scanOuterDomainDataTree(dataMap);
 
         }
@@ -34,6 +33,9 @@ public abstract class OuterDomainSeekerValidator {
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     private Object scanOuterDomainDataTree(Map<String, Object> dataMap) {
+        if (dataMap == null) {
+            return null;
+        }
         for (String key : dataMap.keySet()) {
             if (fieldName.equals(key)) {
                 return dataMap.get(key);

@@ -1,15 +1,13 @@
 package com.expedia.content.media.processing.services.validator;
 
+import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.OuterDomainData;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class NumericValidatorTest {
     
@@ -59,8 +57,8 @@ public class NumericValidatorTest {
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put("abc", "hello");
         dataMap.put("def", "hello");
-        
-        OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
+
+        OuterDomain domainData = new OuterDomain(Domain.LODGING, null, "1001", "1e1e", dataMap);
         ImageMessage image = new ImageMessage.ImageMessageBuilder().outerDomainData(domainData).build();
         
         NumericValidator validator = new NumericValidator();
@@ -71,12 +69,12 @@ public class NumericValidatorTest {
     
     @Test
     public void testValidationOuterDomainValueFoundValid() {
-        final int expedia_test_id = 23419;
+        final String expedia_test_id = "23419";
         String fieldName = "expediaId";
         Map<String, Object> dataMap = new HashMap<>();
-        dataMap.put(fieldName, new Integer(expedia_test_id));
-        
-        OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
+        dataMap.put(fieldName, expedia_test_id);
+
+        OuterDomain domainData = new OuterDomain(Domain.LODGING, null, "1001", "1e1e", dataMap);
         ImageMessage image = new ImageMessage.ImageMessageBuilder().outerDomainData(domainData).build();
         
         NumericValidator validator = new NumericValidator();
@@ -87,7 +85,7 @@ public class NumericValidatorTest {
     
     @Test
     public void testValidationOuterDomainValueFoundValidDeepMap() {
-        final int expedia_test_id = 23419;
+        final String expedia_test_id = "23419";
         String fieldName = "expediaId";
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put("abc", "hello");
@@ -96,8 +94,8 @@ public class NumericValidatorTest {
         dataMap.put("ghi", dataMap2);
         dataMap2.put("xyz", "hello");
         dataMap2.put(fieldName, new Integer(expedia_test_id));
-        
-        OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
+
+        OuterDomain domainData = new OuterDomain(Domain.LODGING, null, "1001", "1e1e", dataMap);
         ImageMessage image = new ImageMessage.ImageMessageBuilder().outerDomainData(domainData).build();
         
         NumericValidator validator = new NumericValidator();
@@ -112,7 +110,7 @@ public class NumericValidatorTest {
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put(fieldName, "abcd");
 
-        OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
+        OuterDomain domainData = new OuterDomain(Domain.LODGING, null, "1001", "1e1e", dataMap);
         ImageMessage image = new ImageMessage.ImageMessageBuilder().outerDomainData(domainData).build();
         
         NumericValidator validator = new NumericValidator();

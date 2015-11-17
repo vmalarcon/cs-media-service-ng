@@ -1,5 +1,31 @@
 package com.expedia.content.media.processing.services;
 
+import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
+import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
+import com.expedia.content.media.processing.pipeline.reporting.Reporting;
+import com.expedia.content.media.processing.services.dao.MediaProcessLog;
+import com.expedia.content.media.processing.services.dao.ProcessLogDao;
+import com.expedia.content.media.processing.services.util.ActivityMapping;
+import com.expedia.content.media.processing.services.validator.ExpediaIdValidator;
+import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
+import com.expedia.content.media.processing.services.validator.NumericValidator;
+import com.expedia.content.media.processing.services.validator.ValidationStatus;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -10,34 +36,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.ImageType;
-import com.expedia.content.media.processing.pipeline.domain.ImageTypeComponentPicker;
-import com.expedia.content.media.processing.pipeline.reporting.Activity;
-import com.expedia.content.media.processing.pipeline.reporting.LodgingLogActivityProcess;
-import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
-import com.expedia.content.media.processing.pipeline.reporting.Reporting;
-import com.expedia.content.media.processing.services.dao.MediaProcessLog;
-import com.expedia.content.media.processing.services.dao.ProcessLogDao;
-import com.expedia.content.media.processing.services.util.ActivityMapping;
-import com.expedia.content.media.processing.services.validator.ExpediaIdValidator;
-import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
-import com.expedia.content.media.processing.services.validator.NumericValidator;
-import com.expedia.content.media.processing.services.validator.ValidationStatus;
-
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MediaServiceProcessTest {
@@ -53,7 +51,6 @@ public class MediaServiceProcessTest {
 
     @BeforeClass
     public static void setUpClass() {
-
         ActivityMapping activityMapping1 = new ActivityMapping();
         activityMapping1.setActivityType("Reception");
         activityMapping1.setMediaType(".*");
@@ -90,34 +87,30 @@ public class MediaServiceProcessTest {
         whitelist.add(activityMapping4);
         whitelist.add(activityMapping5);
         whitelist.add(activityMapping6);
-
-
     }
 
     @Test
     public void testValidateImageSuccess() throws Exception {
-
         String jsonMessage = "{  \n" +
-                "   \"mediaProviderId\":\"1001\",\n" +
+                "   \"mediaId\":\"media-uuid\",\n" +
                 "   \"fileUrl\":\"http://images.com/dir1/img1.jpg\",\n" +
-                "   \"imageType\":\"Lodging\",\n" +
+                "   \"userId\":\"user-id\",\n" +
                 "   \"stagingKeyMap\":{  \n" +
                 "      \"externalId\":\"222\",\n" +
                 "      \"providerId\":\"300\",\n" +
                 "      \"sourceId\":\"99\"\n" +
                 "   },\n" +
-                "   \"expediaId\":2001002,\n" +
-                "   \"categoryId\":\"801\",\n" +
-                "   \"callback\":\"http://multi.source.callback/callback\",\n" +
-                "   \"caption\":\"caption\"\n" +
+                "   \"domain\": \"Lodging\",\n" +
+                "   \"domainId\":\"2001002\",\n" +
+                "   \"domainProvider\":\"domain-provider-id\"\n" +
                 "}";
         List<MediaMessageValidator> validators = new ArrayList<>();
         ExpediaIdValidator expediaIdValidator = new ExpediaIdValidator();
         expediaIdValidator.setFieldName("expediaId");
         validators.add(expediaIdValidator);
-        ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
+                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMessage);
         ValidationStatus validationStatus = mediaServiceProcess.validateImage(imageMessage);
         assertTrue(validationStatus.isValid());
@@ -125,17 +118,17 @@ public class MediaServiceProcessTest {
 
     @Test
     public void testValidateImageFail() throws Exception {
-
         String jsonMessage = "{  \n" +
-                "   \"mediaProviderId\":\"1001\",\n" +
+                "   \"mediaId\":\"media-uuid\",\n" +
                 "   \"fileUrl\":\"http://images.com/dir1/img1.jpg\",\n" +
-                "   \"imageType\":\"Lodging\",\n" +
+                "   \"userId\":\"user-id\",\n" +
                 "   \"stagingKeyMap\":{  \n" +
                 "      \"externalId\":\"222\",\n" +
                 "      \"providerId\":\"300\",\n" +
                 "      \"sourceId\":\"99\"\n" +
                 "   },\n" +
-                "   \"expediaId\":2001002,\n" +
+                "   \"domain\": \"Lodging\",\n" +
+                "   \"domainId\":\"2001002\",\n" +
                 "   \"categoryId\":\"NOT_NUMBER\",\n" +
                 "   \"callback\":\"http://multi.source.callback/callback\",\n" +
                 "   \"caption\":\"caption\"\n" +
@@ -148,9 +141,9 @@ public class MediaServiceProcessTest {
 
         validators.add(expediaIdValidator);
         validators.add(numericValidator);
-        ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
+                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMessage);
         ValidationStatus validationStatus = mediaServiceProcess.validateImage(imageMessage);
         assertFalse(validationStatus.isValid());
@@ -159,21 +152,25 @@ public class MediaServiceProcessTest {
     @Test
     public void testPublishMessage() throws Exception {
         List<MediaMessageValidator> validators = mock(List.class);
-        ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
-        LodgingLogActivityProcess lodgingProcessMock = mock(LodgingLogActivityProcess.class);
-        when(mockLogActivityPicker.getImageTypeComponent(ImageType.LODGING)).thenReturn(lodgingProcessMock);
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
+                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
         mediaServiceProcess.setActivityWhiteList(whitelist);
         mediaServiceProcess.setMessagingTemplate(queueMessagingTemplateMock);
         ImageMessage imageMessageMock = mock(ImageMessage.class);
-        when(imageMessageMock.getImageType()).thenReturn(ImageType.LODGING);
+        OuterDomain outerDomainMock = mock(OuterDomain.class);
+        when(imageMessageMock.getOuterDomainData()).thenReturn(outerDomainMock);
+        when(outerDomainMock.getDomain()).thenReturn(Domain.LODGING);
         when(imageMessageMock.getFileUrl()).thenReturn(("http://media.com/img1.jpg"));
         when(imageMessageMock.toJSONMessage()).thenReturn("test msg");
         mediaServiceProcess.publishMsg(imageMessageMock);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), any());
-        verify(lodgingProcessMock, times(1))
-                .log(any(String.class), anyString(), eq(Activity.MEDIA_MESSAGE_RECEIVED), any(Date.class), eq(reporting), eq(ImageType.LODGING));
+        ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
+        verify(mockLogActivityProcess, times(1))
+                .log(logEntryCaptor.capture(), eq(reporting));
+        LogEntry logEntry = logEntryCaptor.getValue();
+        assertEquals(Domain.LODGING, logEntry.getDomain());
+        assertEquals("http://media.com/img1.jpg", logEntry.getFileUrl());
     }
 
     @Test
@@ -181,7 +178,7 @@ public class MediaServiceProcessTest {
         String jsonMessage =
                 "{\"mediaStatuses\":[{\"mediaName\":\"1037678_109010ice.jpg\",\"status\":\"PUBLISHED\",\"time\":\"2014-07-29 10:08:12.6890000 -07:00\"}]}";
         List<MediaMessageValidator> validators = mock(List.class);
-        ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
         MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "Publish", "Lodging");
         mediaLogStatuses.add(mediaLogStatus);
@@ -190,7 +187,7 @@ public class MediaServiceProcessTest {
         when(lcmProcessLogDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
 
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
+                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
         mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
         mediaServiceProcess.setActivityWhiteList(whitelist);
         String response = mediaServiceProcess.getMediaStatusList(fileNameList);
@@ -202,7 +199,7 @@ public class MediaServiceProcessTest {
         String jsonMessage =
                 "{\"mediaStatuses\":[{\"mediaName\":\"1037678_109010ice.jpg\",\"status\":\"DERIVATIVES_CREATED\",\"time\":\"2014-07-29 10:08:12.6890000 -07:00\"}]}";
         List<MediaMessageValidator> validators = mock(List.class);
-        ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
         MediaProcessLog mediaLogStatusRece =
                 new MediaProcessLog("2014-07-29 10:06:12.6890000 -07:00", "1037678_109010ice.jpg", "Reception", "Lodging");
@@ -216,7 +213,7 @@ public class MediaServiceProcessTest {
         when(lcmProcessLogDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
 
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
+                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
         mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
 
         mediaServiceProcess.setActivityWhiteList(whitelist);
@@ -229,7 +226,7 @@ public class MediaServiceProcessTest {
         String jsonMessage =
                 "{\"mediaStatuses\":[{\"mediaName\":\"1037678_109010ice.jpg\",\"status\":\"RECEIVED\",\"time\":\"2014-07-29 10:08:12.6890000 -07:00\"}]}";
         List<MediaMessageValidator> validators = mock(List.class);
-        ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
 
         MediaProcessLog mediaLogStatus =
@@ -240,7 +237,7 @@ public class MediaServiceProcessTest {
         when(lcmProcessLogDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
 
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
+                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
         mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
 
         mediaServiceProcess.setActivityWhiteList(whitelist);
@@ -253,7 +250,7 @@ public class MediaServiceProcessTest {
         String jsonMessage =
                 "{\"mediaStatuses\":[{\"mediaName\":\"1037678_109010ice.jpg\",\"status\":\"PUBLISHED\",\"time\":\"2014-07-29 10:08:12.6890000 -07:00\"}]}";
         List<MediaMessageValidator> validators = mock(List.class);
-        ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
 
         MediaProcessLog mediaLogStatus =
@@ -264,7 +261,7 @@ public class MediaServiceProcessTest {
         when(lcmProcessLogDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
 
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
+                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
         mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
 
         mediaServiceProcess.setActivityWhiteList(whitelist);
@@ -277,7 +274,7 @@ public class MediaServiceProcessTest {
         String jsonMessage =
                 "{\"mediaStatuses\":[{\"mediaName\":\"1037678_109010ice.jpg\",\"status\":\"REJECTED\",\"time\":\"2014-07-29 10:08:12.6890000 -07:00\"}]}";
         List<MediaMessageValidator> validators = mock(List.class);
-        ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
         MediaProcessLog mediaLogStatusRece =
                 new MediaProcessLog("2014-07-29 10:06:12.6890000 -07:00", "1037678_109010ice.jpg", "Reception", "Lodging");
@@ -291,7 +288,7 @@ public class MediaServiceProcessTest {
         when(lcmProcessLogDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
 
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
+                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
         mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
 
         mediaServiceProcess.setActivityWhiteList(whitelist);
@@ -304,7 +301,7 @@ public class MediaServiceProcessTest {
         String jsonMessage =
                 "{\"mediaStatuses\":[{\"mediaName\":\"1037678_109010ice.jpg\",\"status\":\"NOT_FOUND\"}]}";
         List<MediaMessageValidator> validators = mock(List.class);
-        ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
         MediaProcessLog mediaLogStatus =
                 new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "mpp_collector/test", "Lodging");
@@ -315,7 +312,7 @@ public class MediaServiceProcessTest {
         when(lcmProcessLogDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
 
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
+                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
         mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
 
         mediaServiceProcess.setActivityWhiteList(whitelist);
@@ -328,7 +325,7 @@ public class MediaServiceProcessTest {
         String jsonMessage =
                 "{\"mediaStatuses\":[{\"mediaName\":\"1037678_109010ice.jpg\",\"status\":\"PUBLISHED\",\"time\":\"2014-07-29 10:08:12.6890000 -07:00\"}]}";
         List<MediaMessageValidator> validators = mock(List.class);
-        ImageTypeComponentPicker<LogActivityProcess> mockLogActivityPicker = mock(ImageTypeComponentPicker.class);
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<MediaProcessLog>();
         MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "Publish", "Lodging");
         MediaProcessLog mediaLogStatusArchive =
@@ -340,7 +337,7 @@ public class MediaServiceProcessTest {
         fileNameList.add("1037678_109010ice.jpg");
         when(lcmProcessLogDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityPicker, reporting);
+                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
         mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
 
         mediaServiceProcess.setActivityWhiteList(whitelist);

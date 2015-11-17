@@ -1,25 +1,22 @@
 package com.expedia.content.media.processing.services.validator;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
+import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.ImageType;
-import com.expedia.content.media.processing.pipeline.domain.OuterDomainData;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import org.junit.Test;
 
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class RequiredValidatorTest {
     
     @Test
     public void testDomainFieldValuePresent() throws Exception {
-        ImageMessage image = new ImageMessage.ImageMessageBuilder().imageType(ImageType.LODGING).fileUrl(("http://www.asdf.com")).build();
+        OuterDomain domainData = new OuterDomain(Domain.LODGING, null, null, null, null);
+        ImageMessage image = new ImageMessage.ImageMessageBuilder().outerDomainData(domainData).fileUrl(("http://www.asdf.com")).build();
         RequiredValidator requiredValidator = new RequiredValidator();
         requiredValidator.setFieldName("fileUrl");
         ValidationStatus validationStatus = requiredValidator.validate(image);
@@ -28,7 +25,8 @@ public class RequiredValidatorTest {
     
     @Test
     public void testDomainFieldValueNotPresent() {
-        ImageMessage image = new ImageMessage.ImageMessageBuilder().imageType(ImageType.LODGING).build();
+        OuterDomain domainData = new OuterDomain(Domain.LODGING, null, null, null, null);
+        ImageMessage image = new ImageMessage.ImageMessageBuilder().outerDomainData(domainData).build();
         RequiredValidator requiredValidator = new RequiredValidator();
         requiredValidator.setFieldName("fileUrl");
         ValidationStatus validationStatus = requiredValidator.validate(image);
@@ -40,8 +38,8 @@ public class RequiredValidatorTest {
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put("abc", "hello");
         dataMap.put("def", "hello");
-        OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
-        ImageMessage image = new ImageMessage.ImageMessageBuilder().imageType(ImageType.LODGING).outerDomainData(domainData).build();
+        OuterDomain domainData = new OuterDomain(Domain.LODGING, null, "1001", "1e1e", dataMap);
+        ImageMessage image = new ImageMessage.ImageMessageBuilder().outerDomainData(domainData).build();
         RequiredValidator requiredValidator = new RequiredValidator();
         requiredValidator.setFieldName("abc");
         ValidationStatus validationStatus = requiredValidator.validate(image);
@@ -53,12 +51,12 @@ public class RequiredValidatorTest {
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put("abc", "hello");
         dataMap.put("def", "hello");
-        OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
-        ImageMessage image = new ImageMessage.ImageMessageBuilder().imageType(ImageType.LODGING).outerDomainData(domainData).build();
+        OuterDomain domainData = new OuterDomain(Domain.LODGING, null, "1001", "1e1e", dataMap);
+        ImageMessage image = new ImageMessage.ImageMessageBuilder().outerDomainData(domainData).build();
         RequiredValidator requiredValidator = new RequiredValidator();
         requiredValidator.setFieldName("xyz");
         ValidationStatus validationStatus = requiredValidator.validate(image);
         assertFalse(validationStatus.isValid());
     }
-    
+
 }

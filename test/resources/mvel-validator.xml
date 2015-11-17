@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aws-context="http://www.springframework.org/schema/cloud/aws/context"
+       xmlns:aws-messaging="http://www.springframework.org/schema/cloud/aws/messaging"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                          http://www.springframework.org/schema/cloud/aws/context
+                          http://www.springframework.org/schema/cloud/aws/context/spring-cloud-aws-context-1.0.xsd
+                          http://www.springframework.org/schema/cloud/aws/messaging http://www.springframework.org/schema/cloud/aws/messaging/spring-cloud-aws-messaging-1.0.xsd
+                          http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+
+    <bean id="mvelValidator" class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
+      <property name="ruleMaps">
+          <map>
+              <entry key ="EPC">
+                  <list>
+                      <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
+                      <value>imageMessage.fileUrl.matches('.*http://.*|.*https://.*|.*s3://.*|.*file:///.*') ? "valid" : "fileUrl is malformed."</value>
+                      <value>imageMessage.fileName != null ? "valid" : "fileName is required."</value>
+                      <value>imageMessage.mediaId != null ? "valid": "mediaId is required."</value>
+                      <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
+                      <!--
+                      <value>(domainData != null &amp;&amp; !domainData.domain.toString.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
+                      -->
+                      <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
+                      <!--
+                      <value>(domainData.domain.toString.endsWith('Lodging') &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
+                      -->
+                      <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
+                      <!-- Waiting for media-commons/1.0.10
+                      <value>(domainData != null &amp;&amp; domainData.provider != null ? "valid" : "domainProvider is required."</value>
+                      -->
+                      <!--
+                      <value>domainData.domainId.matches("[0-9]+")</value>
+                      <value>(domainData.domain.toString().endsWith('Lodging') &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
+                      <value>(domainData.domain.equals('Lodging') &amp;&amp; domainData.domainFields != null &amp;&amp; domainData.domainFields.categoryId != null &amp;&amp; !domainData.domainFields.categoryId.matches("[0-9]+")) ? "categoryId is not numeric." : "valid"</value>
+                      <value>(domainData.domainFields != null &amp;&amp; domainData.domainFields.mediaProviderId != null &amp;&amp; !domainData.domainFields.mediaProviderId.matches("[0-9]+")) ? "mediaProviderId is not numeric." : "valid"</value>
+                      <value>(domainData.domainFields != null &amp;&amp; domainData.domainFields.propertyHero != null &amp;&amp; !domainData.domainFields.propertyHero.matches('true|false')) ? "propertyHero must be true or false." : "valid"</value>
+                      <value>(domainData.domainFields != null &amp;&amp; domainData.domainFields.roomHero != null &amp;&amp; !domainData.domainFields.roomHero.matches('true|false')) ? "roomHero must be true or false." : "valid"</value>
+                      <value>(domainData.domainFields != null &amp;&amp; domainData.domainFields.roomId != null &amp;&amp; !domainData.domainFields.roomId.matches("[0-9]+")) ? "roomId is not numeric." : "valid"</value>
+                      <value>(domainData.derivativeCategory != null &amp;&amp; !domainData.derivativeCategory.matches('VirtualTour')) ? "derivativeType is required." : "valid"</value>
+                      <value>(domainData.domain != null &amp;&amp; !domainData.domain.toString.matches('Lodging|Cars|VirtualTour')) ? "imageType must be Lodging, VirtualTour or Cars." : "valid"</value>
+                      -->
+                  </list>
+              </entry>
+          </map>
+      </property>
+    </bean>
+
+</beans>

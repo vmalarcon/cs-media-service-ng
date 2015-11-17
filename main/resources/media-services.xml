@@ -38,8 +38,8 @@
             </list>
         </constructor-arg>
         <constructor-arg ref="filenamesRabbitTemplate"/>
-        <constructor-arg ref="lcmReporting"/>
-        <constructor-arg ref="logActivityPicker"/>
+        <constructor-arg ref="threadedLogger"/>
+        <constructor-arg ref="compositeReporter"/>
 
         <property name="mediaStatusValidatorList">
             <list value-type="com.expedia.content.media.processing.services.validator.RequestMessageValidator">
@@ -56,8 +56,7 @@
                 <ref bean="carsDerivativeCreationActivity"/>
             </list>
         </property>
-        <property name="processLogDao" ref="processLogDao">
-        </property>
+        <property name="processLogDao" ref="processLogDao" />
         <property name="mapValidatorList">
             <map>
                 <entry key ="EPC">
@@ -78,21 +77,23 @@
           <map>
               <entry key ="EPC">
                   <list>
-                      <value>domainData.domainDataId != null ? "valid" : "domainDataId is required."</value>
-                      <value>(domainData.domainDataName.equals('LCM') &amp;&amp; !domainData.domainDataId.matches("[0-9]+")) ? "domainDataId is not numeric." : "valid"</value>
-                      <value>(domainData.domainDataName.equals('LCM') &amp;&amp; domainData.domainDataFields != null &amp;&amp; domainData.domainDataFields.categoryId != null &amp;&amp; !domainData.domainDataFields.categoryId.matches("[0-9]+")) ? "categoryId is not numeric." : "valid"</value>
-                      <value>imageMessage.mediaId != null ? "valid": "mediaId is required."</value>
-                      <value>(domainData.domainDataFields != null &amp;&amp; domainData.domainDataFields.mediaProviderId != null &amp;&amp; !domainData.domainDataFields.mediaProviderId.matches("[0-9]+")) ? "mediaProviderId is not numeric." : "valid"</value>
-                      <value>domainData.domainDataName !=null ? "valid" : "domainDataName is required."</value>
-                      <value>imageMessage.imageType.imageType.equals('Lodging') &amp;&amp; !domainData.domainDataName.equals('LCM') ? "domainDataName must be LCM." : "valid"</value>
-                      <value>(domainData.domainDataFields != null &amp;&amp; domainData.domainDataFields.propertyHero != null &amp;&amp; !domainData.domainDataFields.propertyHero.matches('true|false')) ? "propertyHero must be true or false." : "valid"</value>
-                      <value>(domainData.domainDataFields != null &amp;&amp; domainData.domainDataFields.roomHero != null &amp;&amp; !domainData.domainDataFields.roomHero.matches('true|false')) ? "roomHero must be true or false." : "valid"</value>
-                      <value>(domainData.domainDataFields != null &amp;&amp; domainData.domainDataFields.roomId != null &amp;&amp; !domainData.domainDataFields.roomId.matches("[0-9]+")) ? "roomId is not numeric." : "valid"</value>
                       <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
-                      <value>imageMessage.fileUrl.toString().matches('.*http://.*|.*https://.*|.*s3://.*|.*file:///.*') ? "valid" : "fileUrl is malformed."</value>
+                      <value>imageMessage.fileUrl.matches('.*http://.*|.*https://.*|.*s3://.*|.*file:///.*') ? "valid" : "fileUrl is malformed."</value>
                       <value>imageMessage.fileName != null ? "valid" : "fileName is required."</value>
-                      <value>imageMessage.imageType != null ? "valid" : "imageType is required."</value>
-                      <value>imageMessage.imageType.imageType.matches('Lodging|Cars|VirtualTour') ? "valid" : "imageType must be Lodging, VirtualTour or Cars."</value>
+                      <value>imageMessage.mediaId != null ? "valid": "mediaId is required."</value>
+                      <!--
+                      <value>(imageMessage.outerDomainData != null &amp;&amp; !imageMessage.domain.toString.matches('Lodging|Cars')) ? "domain must be Lodging." : "valid"</value>
+                      <value>domainData.domainId != null ? "valid" : "domainDataId is required."</value>
+                      <value>domainData.domain != null ? "valid" : "domain is required."</value>
+                      <value>(domainData.domain.equals('Lodging') &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
+                      <value>(domainData.domain.equals('Lodging') &amp;&amp; domainData.domainFields != null &amp;&amp; domainData.domainFields.categoryId != null &amp;&amp; !domainData.domainFields.categoryId.matches("[0-9]+")) ? "categoryId is not numeric." : "valid"</value>
+                      <value>(domainData.domainFields != null &amp;&amp; domainData.domainFields.mediaProviderId != null &amp;&amp; !domainData.domainFields.mediaProviderId.matches("[0-9]+")) ? "mediaProviderId is not numeric." : "valid"</value>
+                      <value>(domainData.domainFields != null &amp;&amp; domainData.domainFields.propertyHero != null &amp;&amp; !domainData.domainFields.propertyHero.matches('true|false')) ? "propertyHero must be true or false." : "valid"</value>
+                      <value>(domainData.domainFields != null &amp;&amp; domainData.domainFields.roomHero != null &amp;&amp; !domainData.domainFields.roomHero.matches('true|false')) ? "roomHero must be true or false." : "valid"</value>
+                      <value>(domainData.domainFields != null &amp;&amp; domainData.domainFields.roomId != null &amp;&amp; !domainData.domainFields.roomId.matches("[0-9]+")) ? "roomId is not numeric." : "valid"</value>
+                      <value>(domainData.derivativeCategory != null &amp;&amp; !domainData.derivativeCategory.matches('VirtualTour')) ? "derivativeType is required." : "valid"</value>
+                      <value>(domainData.domain != null &amp;&amp; !domainData.domain.toString.matches('Lodging|Cars|VirtualTour')) ? "imageType must be Lodging, VirtualTour or Cars." : "valid"</value>
+                      -->
                   </list>
               </entry>
           </map>
@@ -161,6 +162,10 @@
     </bean>
 
     <bean id="processLogDao" class="com.expedia.content.media.processing.services.dao.LcmProcessLogDao">
+        <constructor-arg name="processName" value="${processname}" />
+        <constructor-arg name="sqlMediaLogSproc">
+            <bean class="com.expedia.content.media.processing.services.dao.SQLMediaLogSproc" />
+        </constructor-arg>
     </bean>
 
     <bean id="dataSource"
@@ -171,24 +176,42 @@
         <property name="password" value="${datasource.password}" />
     </bean>
 
-    <bean id="lodgingLogActivityProcess" class="com.expedia.content.media.processing.pipeline.reporting.LodgingLogActivityProcess">
-        <constructor-arg value="${log.thread.pool.size}" />
+    <bean id="threadedLogger" class="com.expedia.content.media.processing.pipeline.reporting.ThreadLogActivityProcess">
+        <constructor-arg name="logThreadPoolSize" value="10" />
     </bean>
 
-    <bean id="carsLogActivityProcess" class="com.expedia.content.media.processing.pipeline.reporting.CarsLogActivityProcess">
-        <constructor-arg value="${log.thread.pool.size}" />
-    </bean>
-
-    <bean id="logActivityPicker" class="com.expedia.content.media.processing.pipeline.domain.ImageTypeComponentPicker">
-        <constructor-arg name="imageTypeComponentMap">
-            <map>
-                <entry key="VirtualTour" value-ref="lodgingLogActivityProcess" />
-                <entry key="Lodging" value-ref="lodgingLogActivityProcess" />
-                <entry key="Cars" value-ref="carsLogActivityProcess" />
-            </map>
+    <bean id="compositeReporter" class="com.expedia.content.media.processing.pipeline.reporting.CompositeReporting" primary="true">
+        <constructor-arg name="reports">
+            <list>
+                <ref bean="dynamoReporter" />
+                <ref bean="lcmReporter" />
+            </list>
         </constructor-arg>
     </bean>
 
+    <bean id="dynamoReporter" class="com.expedia.content.media.processing.pipeline.reporting.dynamo.DynamoReporting">
+        <constructor-arg name="dynamoMapper" ref="dynamoMapper" />
+        <constructor-arg name="appName" value="${processname}" />
+    </bean>
+
+    <bean id="amazonDynamoDB" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient">
+        <property name="endpoint" value="${aws.endPoint}" />
+    </bean>
+
+    <bean id="dynamoMapper"
+          class="com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper">
+        <constructor-arg name="dynamoDB" ref="amazonDynamoDB" />
+    </bean>
+
+    <bean id="lcmReporter" class="com.expedia.content.media.processing.pipeline.reporting.sql.LcmReporting">
+        <constructor-arg name="logEntryInsertProcedure" ref="lcmInsertSproc" />
+        <constructor-arg name="appName" value="${processname}" />
+    </bean>
+
+    <bean id="lcmInsertSproc" primary="true"
+          class="com.expedia.content.media.processing.pipeline.reporting.sql.SQLLogEntryInsertSproc" />
+
+    <!-- Retry -->
     <bean id="loggingRetryListener" class="com.expedia.content.media.processing.pipeline.retry.LoggingRetryListener" />
 
     <bean id="retryTemplate" class="org.springframework.retry.support.RetryTemplate">

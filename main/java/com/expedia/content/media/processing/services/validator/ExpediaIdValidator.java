@@ -1,12 +1,11 @@
 package com.expedia.content.media.processing.services.validator;
 
+import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.ImageType;
-
-import java.text.MessageFormat;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.text.MessageFormat;
 
 /**
  * ExpediaIdValidator will check whether expediaId is a number or is missing.
@@ -26,7 +25,7 @@ public class ExpediaIdValidator extends NumericValidator {
      */
     @Override
     public ValidationStatus validate(ImageMessage image) {
-        if ((ImageType.LODGING.equals(image.getImageType()) || ImageType.VT.equals(image.getImageType()))) {
+        if (image.getOuterDomainData().getDomain() == Domain.LODGING) {
             Object eidValue = findEidValue(image);
             if (eidValue == null && image.getExpediaId() == null) {
                 ValidationStatus validationStatus = buildFailedValidationStatus(image);
@@ -46,7 +45,7 @@ public class ExpediaIdValidator extends NumericValidator {
      * @return The eid value if found. {@code null} if not found.
      */
     private Object findEidValue(ImageMessage image) {
-        return seekOuterDomainFields(image);
+        return image.getOuterDomainData().getDomainId();
     }
 
     /**
@@ -59,7 +58,7 @@ public class ExpediaIdValidator extends NumericValidator {
         String errorMsg = "expediaId is required when imageType is {0}.";
         ValidationStatus validationStatus = new ValidationStatus();
         validationStatus.setValid(false);
-        errorMsg = MessageFormat.format(errorMsg, image.getImageType());
+        errorMsg = MessageFormat.format(errorMsg, image.getOuterDomainData().getDomain());
         validationStatus.setMessage(errorMsg);
         LOGGER.debug(errorMsg);
         return validationStatus;

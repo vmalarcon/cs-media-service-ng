@@ -1,9 +1,9 @@
 package com.expedia.content.media.processing.services;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.ImageTypeComponentPicker;
 import com.expedia.content.media.processing.pipeline.reporting.Activity;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
+import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
@@ -16,6 +16,13 @@ import com.expedia.content.media.processing.services.validator.RequestMessageVal
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.expedia.content.metrics.aspects.annotations.Meter;
 import com.expedia.content.metrics.aspects.annotations.Timer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.stereotype.Component;
 
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -23,15 +30,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
-import org.springframework.messaging.support.MessageBuilder;
-import org.springframework.stereotype.Component;
 
 /**
  * MediaServiceProcess is called by main class
@@ -43,7 +41,7 @@ public class MediaServiceProcess {
 
     private final List<MediaMessageValidator> validators;
     private final RabbitTemplate rabbitTemplate;
-    private final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker;
+    private final LogActivityProcess logActivityProcess;
     private final Reporting reporting;
     private List<RequestMessageValidator> mediaStatusValidatorList;
     private List<ActivityMapping> activityWhiteList;
@@ -55,10 +53,10 @@ public class MediaServiceProcess {
     private String publishQueue;
 
     public MediaServiceProcess(List<MediaMessageValidator> validators, RabbitTemplate rabbitTemplate,
-            @Qualifier("logActivityPicker") final ImageTypeComponentPicker<LogActivityProcess> logActivityPicker, final Reporting reporting) {
+            final LogActivityProcess logActivityProcess, final Reporting reporting) {
         this.validators = validators;
         this.rabbitTemplate = rabbitTemplate;
-        this.logActivityPicker = logActivityPicker;
+        this.logActivityProcess = logActivityProcess;
         this.reporting = reporting;
     }
 
@@ -238,9 +236,15 @@ public class MediaServiceProcess {
      * @param activity     The activity to log.
      */
     private void logActivity(ImageMessage imageMessage, Activity activity) throws URISyntaxException {
-        String fileUrl = imageMessage.getFileUrl();
-        LogActivityProcess logActivityProcess = logActivityPicker.getImageTypeComponent(imageMessage.getImageType());
-        logActivityProcess.log(fileUrl, imageMessage.getMediaId(), activity, new Date(), reporting, imageMessage.getImageType());
+        LogEntry logEntry = new LogEntry(
+                imageMessage.getFileUrl(),
+                imageMessage.getMediaId(),
+                activity,
+                new Date(),
+                imageMessage.getOuterDomainData().getDomain(),
+                imageMessage.getOuterDomainData().getDomainId(),
+                imageMessage.getOuterDomainData().getDerivativeCategory());
+        logActivityProcess.log(logEntry, reporting);
     }
 
     /**

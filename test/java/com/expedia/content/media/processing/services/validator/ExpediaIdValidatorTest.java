@@ -1,27 +1,29 @@
 package com.expedia.content.media.processing.services.validator;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
+import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.ImageType;
-import com.expedia.content.media.processing.pipeline.domain.OuterDomainData;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class ExpediaIdValidatorTest {
     
     @Test
     public void testValidationExpediaMessagePass() {
-        final int expedia_test_id = 23419;
+        final String expedia_test_id = "23419";
+        final OuterDomain outerDomain = new OuterDomain(Domain.LODGING, expedia_test_id, "1001", null, null);
         ImageMessage image =
-                new ImageMessage.ImageMessageBuilder().expediaId(expedia_test_id).categoryId("801").caption("caption").mediaProviderId("1001")
-                        .imageType(ImageType.LODGING).build();
+                new ImageMessage.ImageMessageBuilder()
+                        .expediaId(Integer.parseInt(expedia_test_id))
+                        .categoryId("801")
+                        .caption("caption")
+                        .mediaProviderId("1001")
+                        .outerDomainData(outerDomain).build();
         ExpediaIdValidator expediaIdValidator = new ExpediaIdValidator();
         expediaIdValidator.setFieldName("expediaId");
         ValidationStatus validationStatus = expediaIdValidator.validate(image);
@@ -30,8 +32,9 @@ public class ExpediaIdValidatorTest {
     
     @Test
     public void testValidationMessageWithoutExpediaIdFail() {
+        final OuterDomain outerDomain = new OuterDomain(Domain.LODGING, null, "1001", "801", null);
         ImageMessage image =
-                new ImageMessage.ImageMessageBuilder().categoryId("801").caption("caption").mediaProviderId("1001").imageType(ImageType.LODGING).build();
+                new ImageMessage.ImageMessageBuilder().categoryId("801").caption("caption").mediaProviderId("1001").outerDomainData(outerDomain).build();
         ExpediaIdValidator expediaIdValidator = new ExpediaIdValidator();
         expediaIdValidator.setFieldName("expediaId");
         ValidationStatus validationStatus = expediaIdValidator.validate(image);
@@ -40,15 +43,15 @@ public class ExpediaIdValidatorTest {
     
     @Test
     public void testValidationExpediaIdOuterDomainPass() {
-        final int expedia_test_id = 23419;
+        final String expedia_test_id = "23419";
         String fieldName = "expediaId";
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put(fieldName, new Integer(expedia_test_id));
-        OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
+        OuterDomain domainData = new OuterDomain(Domain.LODGING, expedia_test_id, "1001", "1e1e", dataMap);
 
         ImageMessage image =
                 new ImageMessage.ImageMessageBuilder().outerDomainData(domainData).categoryId("801").caption("caption").mediaProviderId("1001")
-                        .imageType(ImageType.LODGING).build();
+                        .outerDomainData(domainData).build();
         ExpediaIdValidator expediaIdValidator = new ExpediaIdValidator();
         expediaIdValidator.setFieldName("expediaId");
         ValidationStatus validationStatus = expediaIdValidator.validate(image);
@@ -60,11 +63,11 @@ public class ExpediaIdValidatorTest {
         String fieldName = "expediaId";
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put(fieldName, "abcd");
-        OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
+        OuterDomain domainData = new OuterDomain(Domain.LODGING, null, "1001", "1e1e", dataMap);
 
         ImageMessage image =
                 new ImageMessage.ImageMessageBuilder().outerDomainData(domainData).categoryId("801").caption("caption").mediaProviderId("1001")
-                        .imageType(ImageType.VT).build();
+                        .outerDomainData(domainData).build();
         ExpediaIdValidator expediaIdValidator = new ExpediaIdValidator();
         expediaIdValidator.setFieldName("expediaId");
         ValidationStatus validationStatus = expediaIdValidator.validate(image);
@@ -76,9 +79,9 @@ public class ExpediaIdValidatorTest {
         String fieldName = "expediaId";
         Map<String, Object> dataMap = new HashMap<>();
         dataMap.put(fieldName, "abcd");
-        OuterDomainData domainData = new OuterDomainData("LCM", "1e1e", dataMap);
+        OuterDomain domainData = new OuterDomain(Domain.CARS, "abcd", "1001", "1e1e", dataMap);
 
-        ImageMessage image = new ImageMessage.ImageMessageBuilder().outerDomainData(domainData).imageType(ImageType.CARS).build();
+        ImageMessage image = new ImageMessage.ImageMessageBuilder().outerDomainData(domainData).outerDomainData(domainData).build();
         ExpediaIdValidator expediaIdValidator = new ExpediaIdValidator();
         expediaIdValidator.setFieldName("expediaId");
         ValidationStatus validationStatus = expediaIdValidator.validate(image);
