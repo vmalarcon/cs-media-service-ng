@@ -25,7 +25,9 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = "classpath:mvel-validator.xml")
+// For faster tests, uncomment the following line
+//@ContextConfiguration(locations = "classpath:mvel-validator.xml")
+@ContextConfiguration(classes = Application.class)
 public class EPCMVELValidatorTest {
 
     @BeforeClass
@@ -141,7 +143,6 @@ public class EPCMVELValidatorTest {
         assertTrue(errorMsg, errorMsg.contains("domainId is required."));
     }
 
-    @Ignore
     @Test
     public void testMessageDomainIdNotNumeric() throws Exception {
         String jsonMsg =
@@ -150,10 +151,10 @@ public class EPCMVELValidatorTest {
                         "    \"fileName\": \"Something\", " +
                         "    \"mediaId\": \"media-uuid\", " +
                         "    \"domain\": \"Lodging\", " +
-                        "    \"domainId\": \"123a\" " +
+                        "    \"domainId\": \"123a\", " +
+                        "    \"userId\": \"user-id\"" +
                         " }";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
-        System.out.println(imageMessage.getOuterDomainData().getDomainId());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
@@ -179,9 +180,27 @@ public class EPCMVELValidatorTest {
         assertTrue(errorMsg, errorMsg.contains("userId is required."));
     }
 
-    @Ignore
     @Test
     public void testMessageDomainProviderRequired() throws Exception {
+        String jsonMsg =
+                "         { " +
+                        "    \"fileUrl\": \"http://well-formed-url/hello\"," +
+                        "    \"fileName\": \"Something\", " +
+                        "    \"mediaId\": \"media-uuid\", " +
+                        "    \"domain\": \"Lodging\", " +
+                        "    \"domainId\": \"123\", " +
+                        "    \"userId\": \"user-id\" " +
+                        " }";
+        ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        List<ImageMessage> imageMessageList = new ArrayList<>();
+        imageMessageList.add(imageMessage);
+        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
+        String errorMsg = errorList.get(0).get("error");
+        assertTrue(errorMsg, errorMsg.contains("domainProvider is required."));
+    }
+
+    @Test
+    public void testMessageValidMandatory() throws Exception {
         String jsonMsg =
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello\"," +
@@ -197,12 +216,11 @@ public class EPCMVELValidatorTest {
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
-        String errorMsg = errorList.get(0).get("error");
-        assertTrue(errorMsg, errorMsg.contains("domainProvider is required."));
+        assertEquals(0, errorList.size());
     }
 
     @Test
-    public void testMessageValid() throws Exception {
+    public void testMessageCategoryIdNumeric() throws Exception {
         String jsonMsg =
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello\"," +
@@ -211,12 +229,65 @@ public class EPCMVELValidatorTest {
                         "    \"domain\": \"Lodging\", " +
                         "    \"domainId\": \"123\", " +
                         "    \"userId\": \"user-id\", " +
-                        "    \"domainProvider\": \"test\" " +
+                        "    \"domainProvider\": \"test\", " +
+                        "    \"domainFields\": { " +
+                        "      \"category\": \"123a\" " +
+                        "    } " +
                         " }";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
-        assertEquals(0, errorList.size());
+        String errorMsg = errorList.get(0).get("error");
+        assertTrue(errorMsg, errorMsg.contains("category is not numeric."));
+    }
+
+    @Test
+    public void testMessagePropertyHeroNotBoolean() throws Exception {
+        String jsonMsg =
+                "         { " +
+                        "    \"fileUrl\": \"http://well-formed-url/hello\"," +
+                        "    \"fileName\": \"Something\", " +
+                        "    \"mediaId\": \"media-uuid\", " +
+                        "    \"domain\": \"Lodging\", " +
+                        "    \"domainId\": \"123\", " +
+                        "    \"userId\": \"user-id\", " +
+                        "    \"domainProvider\": \"test\", " +
+                        "    \"domainFields\": { " +
+                        "      \"category\": \"123\", " +
+                        "      \"roomHero\": \"hello\" " +
+                        "    } " +
+                        " }";
+        ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        List<ImageMessage> imageMessageList = new ArrayList<>();
+        imageMessageList.add(imageMessage);
+        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
+        String errorMsg = errorList.get(0).get("error");
+        assertTrue(errorMsg, errorMsg.contains("roomHero is not boolean."));
+    }
+
+    @Test
+    public void testMessageRoomsIsEmpty() throws Exception {
+        String jsonMsg =
+                "         { " +
+                        "    \"fileUrl\": \"http://well-formed-url/hello\"," +
+                        "    \"fileName\": \"Something\", " +
+                        "    \"mediaId\": \"media-uuid\", " +
+                        "    \"domain\": \"Lodging\", " +
+                        "    \"domainId\": \"123\", " +
+                        "    \"userId\": \"user-id\", " +
+                        "    \"domainProvider\": \"test\", " +
+                        "    \"domainFields\": { " +
+                        "      \"category\": \"123\", " +
+                        "      \"roomHero\": \"true\", " +
+                        "      \"rooms\": [ ]" +
+                        "    } " +
+                        " }";
+        ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        List<ImageMessage> imageMessageList = new ArrayList<>();
+        imageMessageList.add(imageMessage);
+        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
+        String errorMsg = errorList.get(0).get("error");
+        assertTrue(errorMsg, errorMsg.contains("rooms list is empty"));
     }
 }

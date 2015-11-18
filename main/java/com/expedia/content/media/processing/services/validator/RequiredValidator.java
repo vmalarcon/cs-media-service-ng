@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Base implementation of ImageMessage required field validation. Also verifies outer domain fields.
+ *
+ * @deprecated Use EPCMVELValidator instead
  */
 @Deprecated
 public class RequiredValidator extends OuterDomainSeekerValidator implements MediaMessageValidator {

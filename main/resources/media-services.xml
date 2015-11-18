@@ -78,22 +78,19 @@
               <entry key ="EPC">
                   <list>
                       <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
-                      <value>imageMessage.fileUrl.matches('.*http://.*|.*https://.*|.*s3://.*|.*file:///.*') ? "valid" : "fileUrl is malformed."</value>
+                      <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
                       <value>imageMessage.fileName != null ? "valid" : "fileName is required."</value>
                       <value>imageMessage.mediaId != null ? "valid": "mediaId is required."</value>
-                      <!--
-                      <value>(imageMessage.outerDomainData != null &amp;&amp; !imageMessage.domain.toString.matches('Lodging|Cars')) ? "domain must be Lodging." : "valid"</value>
-                      <value>domainData.domainId != null ? "valid" : "domainDataId is required."</value>
-                      <value>domainData.domain != null ? "valid" : "domain is required."</value>
-                      <value>(domainData.domain.equals('Lodging') &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
-                      <value>(domainData.domain.equals('Lodging') &amp;&amp; domainData.domainFields != null &amp;&amp; domainData.domainFields.categoryId != null &amp;&amp; !domainData.domainFields.categoryId.matches("[0-9]+")) ? "categoryId is not numeric." : "valid"</value>
-                      <value>(domainData.domainFields != null &amp;&amp; domainData.domainFields.mediaProviderId != null &amp;&amp; !domainData.domainFields.mediaProviderId.matches("[0-9]+")) ? "mediaProviderId is not numeric." : "valid"</value>
-                      <value>(domainData.domainFields != null &amp;&amp; domainData.domainFields.propertyHero != null &amp;&amp; !domainData.domainFields.propertyHero.matches('true|false')) ? "propertyHero must be true or false." : "valid"</value>
-                      <value>(domainData.domainFields != null &amp;&amp; domainData.domainFields.roomHero != null &amp;&amp; !domainData.domainFields.roomHero.matches('true|false')) ? "roomHero must be true or false." : "valid"</value>
-                      <value>(domainData.domainFields != null &amp;&amp; domainData.domainFields.roomId != null &amp;&amp; !domainData.domainFields.roomId.matches("[0-9]+")) ? "roomId is not numeric." : "valid"</value>
-                      <value>(domainData.derivativeCategory != null &amp;&amp; !domainData.derivativeCategory.matches('VirtualTour')) ? "derivativeType is required." : "valid"</value>
-                      <value>(domainData.domain != null &amp;&amp; !domainData.domain.toString.matches('Lodging|Cars|VirtualTour')) ? "imageType must be Lodging, VirtualTour or Cars." : "valid"</value>
-                      -->
+                      <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
+                      <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
+                      <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
+                      <value>(domainData.domain.domain.endsWith('Lodging') &amp;&amp; domainData.domainId != null &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
+                      <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
+                      <value>(domainData != null &amp;&amp; domainData.provider == null) ? "domainProvider is required." : "valid"</value>
+                      <value>(domainData.domain.domain.equals('Lodging') &amp;&amp; domainData.domainFields != null &amp;&amp; domainData.domainFields.containsKey("category") &amp;&amp; !domainData.domainFields.get("category").toString.matches("[0-9]+")) ? "category is not numeric." : "valid"</value>
+                      <value>(domainData.domain.domain.equals('Lodging') &amp;&amp; domainData.domainFields != null &amp;&amp; domainData.domainFields.containsKey("roomHero") &amp;&amp; !domainData.domainFields.get("roomHero").toString.matches("true|false")) ? "roomHero is not boolean." : "valid"</value>
+                      <value>(domainData.domain.domain.equals('Lodging') &amp;&amp; domainData.domainFields != null &amp;&amp; domainData.domainFields.containsKey("rooms") &amp;&amp; domainData.domainFields.get("rooms").isEmpty) ? "rooms list is empty" : "valid"</value>
+                      <!-- TODO: Rooms validations would go here. How do we traverse lists? -->
                   </list>
               </entry>
           </map>
