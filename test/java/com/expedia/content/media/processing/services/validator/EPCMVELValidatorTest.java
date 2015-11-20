@@ -26,8 +26,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 // For faster tests, uncomment the following line
-//@ContextConfiguration(locations = "classpath:mvel-validator.xml")
-@ContextConfiguration(classes = Application.class)
+@ContextConfiguration(locations = "classpath:mvel-validator.xml")
+//@ContextConfiguration(classes = Application.class)
 public class EPCMVELValidatorTest {
 
     @BeforeClass
@@ -59,6 +59,7 @@ public class EPCMVELValidatorTest {
     public void testMessageFileUrlMalformed() throws Exception {
         String jsonMsg = "{ \"fileUrl\": \"this is a malformed Url\" }";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        assertEquals("this is a malformed Url", imageMessage.getFileUrl());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
@@ -85,11 +86,12 @@ public class EPCMVELValidatorTest {
                         "    \"fileName\": \"Something\" " +
                         " }";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        assertEquals("Something", imageMessage.getFileName());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
         String errorMsg = errorList.get(0).get("error");
-        assertTrue(errorMsg.contains("mediaId is required"));
+        assertTrue(errorMsg.contains("mediaGuid is required"));
     }
 
     @Test
@@ -98,9 +100,10 @@ public class EPCMVELValidatorTest {
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello\"," +
                         "    \"fileName\": \"Something\", " +
-                        "    \"mediaId\": \"media-uuid\" " +
+                        "    \"mediaGuid\": \"media-uuid\" " +
                         " }";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        assertEquals("media-uuid", imageMessage.getMediaGuid());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
@@ -114,7 +117,7 @@ public class EPCMVELValidatorTest {
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello\"," +
                         "    \"fileName\": \"Something\", " +
-                        "    \"mediaId\": \"media-uuid\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
                         "    \"domain\": \"Invalid\" " +
                         " }";
         // Parsing will fail here while converting Domain
@@ -132,10 +135,11 @@ public class EPCMVELValidatorTest {
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello\"," +
                         "    \"fileName\": \"Something\", " +
-                        "    \"mediaId\": \"media-uuid\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
                         "    \"domain\": \"Lodging\" " +
                         " }";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        assertEquals(Domain.LODGING, imageMessage.getOuterDomainData().getDomain());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
@@ -149,12 +153,13 @@ public class EPCMVELValidatorTest {
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello\"," +
                         "    \"fileName\": \"Something\", " +
-                        "    \"mediaId\": \"media-uuid\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
                         "    \"domain\": \"Lodging\", " +
                         "    \"domainId\": \"123a\", " +
                         "    \"userId\": \"user-id\"" +
                         " }";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        assertEquals("user-id", imageMessage.getUserId());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
@@ -168,11 +173,12 @@ public class EPCMVELValidatorTest {
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello\"," +
                         "    \"fileName\": \"Something\", " +
-                        "    \"mediaId\": \"media-uuid\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
                         "    \"domain\": \"Lodging\", " +
                         "    \"domainId\": \"123\" " +
                         " }";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        assertEquals("123", imageMessage.getOuterDomainData().getDomainId());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
@@ -186,12 +192,13 @@ public class EPCMVELValidatorTest {
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello\"," +
                         "    \"fileName\": \"Something\", " +
-                        "    \"mediaId\": \"media-uuid\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
                         "    \"domain\": \"Lodging\", " +
                         "    \"domainId\": \"123\", " +
                         "    \"userId\": \"user-id\" " +
                         " }";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        assertEquals("user-id", imageMessage.getUserId());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
@@ -205,7 +212,7 @@ public class EPCMVELValidatorTest {
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello\"," +
                         "    \"fileName\": \"Something\", " +
-                        "    \"mediaId\": \"media-uuid\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
                         "    \"domain\": \"Lodging\", " +
                         "    \"domainId\": \"123\", " +
                         "    \"userId\": \"user-id\", " +
@@ -213,6 +220,8 @@ public class EPCMVELValidatorTest {
                         " }";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
         assertEquals("test", imageMessage.getOuterDomainData().getProvider());
+        assertEquals("test", imageMessage.getOuterDomainData().getProvider());
+        assertEquals("media-uuid", imageMessage.getMediaGuid());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
@@ -225,7 +234,7 @@ public class EPCMVELValidatorTest {
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello\"," +
                         "    \"fileName\": \"Something\", " +
-                        "    \"mediaId\": \"media-uuid\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
                         "    \"domain\": \"Lodging\", " +
                         "    \"domainId\": \"123\", " +
                         "    \"userId\": \"user-id\", " +
@@ -235,6 +244,7 @@ public class EPCMVELValidatorTest {
                         "    } " +
                         " }";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        assertEquals("123a", imageMessage.getOuterDomainData().getDomainFieldValue("category"));
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
@@ -248,7 +258,7 @@ public class EPCMVELValidatorTest {
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello\"," +
                         "    \"fileName\": \"Something\", " +
-                        "    \"mediaId\": \"media-uuid\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
                         "    \"domain\": \"Lodging\", " +
                         "    \"domainId\": \"123\", " +
                         "    \"userId\": \"user-id\", " +
@@ -259,6 +269,7 @@ public class EPCMVELValidatorTest {
                         "    } " +
                         " }";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        assertEquals("hello", imageMessage.getOuterDomainData().getDomainFieldValue("roomHero"));
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
@@ -272,7 +283,7 @@ public class EPCMVELValidatorTest {
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello\"," +
                         "    \"fileName\": \"Something\", " +
-                        "    \"mediaId\": \"media-uuid\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
                         "    \"domain\": \"Lodging\", " +
                         "    \"domainId\": \"123\", " +
                         "    \"userId\": \"user-id\", " +
@@ -284,6 +295,7 @@ public class EPCMVELValidatorTest {
                         "    } " +
                         " }";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        assertEquals(0, ((List) imageMessage.getOuterDomainData().getDomainFieldValue("rooms")).size());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);

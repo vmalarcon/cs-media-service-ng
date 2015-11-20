@@ -238,7 +238,7 @@ public class MediaServiceProcess {
     private void logActivity(ImageMessage imageMessage, Activity activity) throws URISyntaxException {
         LogEntry logEntry = new LogEntry(
                 imageMessage.getFileUrl(),
-                imageMessage.getMediaId(),
+                imageMessage.getMediaGuid(),
                 activity,
                 new Date(),
                 imageMessage.getOuterDomainData().getDomain(),

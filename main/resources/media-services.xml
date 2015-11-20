@@ -80,7 +80,7 @@
                       <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
                       <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
                       <value>imageMessage.fileName != null ? "valid" : "fileName is required."</value>
-                      <value>imageMessage.mediaId != null ? "valid": "mediaId is required."</value>
+                      <value>imageMessage.mediaGuid != null ? "valid": "mediaGuid is required."</value>
                       <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
                       <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
                       <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
