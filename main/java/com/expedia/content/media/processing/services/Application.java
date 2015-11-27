@@ -2,26 +2,24 @@ package com.expedia.content.media.processing.services;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
+import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import com.expedia.content.media.processing.services.util.RequestMessageException;
-import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.validator.S3Validator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
-import com.expedia.content.metrics.aspects.EnableMonitoringAspects;
-import com.expedia.content.metrics.aspects.annotations.Counter;
-import com.expedia.content.metrics.aspects.annotations.Meter;
-import com.expedia.content.metrics.aspects.annotations.Timer;
-
+import expedia.content.solutions.metrics.annotations.Counter;
+import expedia.content.solutions.metrics.annotations.Meter;
+import expedia.content.solutions.metrics.annotations.Timer;
+import expedia.content.solutions.metrics.spring.EnableMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ResourceBanner;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.web.SpringBootServletInitializer;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.http.HttpStatus;
@@ -44,12 +42,11 @@ import java.util.Map;
  * MPP media service application.
  * This class has the main Spring configuration and also the bootstrap for the application.
  */
-@Configuration
+@SpringBootApplication
+@EnableMetrics
 @ComponentScan(basePackages = "com.expedia.content.media.processing")
 @ImportResource("classpath:media-services.xml")
 @RestController
-@EnableAutoConfiguration
-@EnableMonitoringAspects
 public class Application extends SpringBootServletInitializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
