@@ -11,6 +11,7 @@
                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
 
     <context:property-placeholder location="classpath:${EXPEDIA_ENVIRONMENT}.${AWS_REGION}.properties"/>
+
     <import resource="collector-rabbit.xml" />
 
     <aws-messaging:annotation-driven-queue-listener wait-time-out="20" />
@@ -79,8 +80,6 @@
                   <list>
                       <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
                       <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
-                      <value>imageMessage.fileName != null ? "valid" : "fileName is required."</value>
-                      <value>imageMessage.mediaGuid != null ? "valid": "mediaGuid is required."</value>
                       <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
                       <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
                       <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
@@ -248,6 +247,15 @@
         <property name="listeners">
             <list>
                 <ref bean="loggingRetryListener" />
+            </list>
+        </property>
+    </bean>
+
+    <bean id="providerProperties"
+          class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+        <property name="locations">
+            <list>
+                <value>classpath*:provider-mapping.properties</value>
             </list>
         </property>
     </bean>

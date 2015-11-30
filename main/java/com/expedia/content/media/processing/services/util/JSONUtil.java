@@ -1,7 +1,10 @@
 package com.expedia.content.media.processing.services.util;
 
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.MessageConstants;
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rabbitmq.tools.json.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,6 +17,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.TreeMap;
 import java.util.LinkedHashMap;
+import java.util.Properties;
 /**
  * Contains methods to process JSON requests and generate JSON responses.
  */
@@ -40,6 +44,15 @@ public final class JSONUtil {
     public static Map buildMapFromJson(String jsonMessage) throws RequestMessageException {
         try {
             return OBJECT_MAPPER.readValue(jsonMessage, Map.class);
+        } catch (IOException ex) {
+            String errorMsg = MessageFormat.format("Error parsing/converting Json message: {0}", jsonMessage);
+            throw new RequestMessageException(errorMsg, ex);
+        }
+    }
+
+    public static List<Map> buildMapListFromJson(String jsonMessage) throws RequestMessageException {
+        try {
+            return OBJECT_MAPPER.readValue(jsonMessage, List.class);
         } catch (IOException ex) {
             String errorMsg = MessageFormat.format("Error parsing/converting Json message: {0}", jsonMessage);
             throw new RequestMessageException(errorMsg, ex);
@@ -175,6 +188,49 @@ public final class JSONUtil {
                 }
             }
         }
+    }
+
+    /**
+     * Builds the old JSON message of this image message.
+     *
+     * @return The ImageMessage as a JSON message.
+     */
+    public static String convertToCommonMessage(ImageMessage imageMessage, Map map,Properties providerProperties) {
+        Map<String, Object> mapMessage = new LinkedHashMap<>();
+        Map<String, Object> domainMapMessage = new LinkedHashMap<>();
+
+        if (imageMessage.getFileUrl() != null) {
+            mapMessage.put(MessageConstants.FILE_URL, imageMessage.getFileUrl());
+        }
+        if (map.get("imageType") != null) {
+            mapMessage.put("domain", map.get("imageType"));
+        }
+        if (imageMessage.getCallback() != null) {
+            mapMessage.put(MessageConstants.CALLBACK, imageMessage.getCallback().toString());
+        }
+        if (map.get("mediaGuid") != null) {
+            mapMessage.put(MessageConstants.MEDIA_ID, map.get("mediaGuid"));
+        }
+        if (imageMessage.getStagingKey() != null) {
+            mapMessage.put(MessageConstants.STAGING_KEY, imageMessage.getStagingKey());
+        }
+        if(imageMessage.getExpediaId()!=null){
+            mapMessage.put(MessageConstants.OUTER_DOMAIN_ID,imageMessage.getExpediaId().toString());
+        }
+        if (imageMessage.getCategoryId() != null) {
+            domainMapMessage.put("category",imageMessage.getCategoryId());
+            mapMessage.put(MessageConstants.OUTER_DOMAIN_FIELDS, domainMapMessage);
+        }
+        if (imageMessage.getCaption() != null) {
+            mapMessage.put(MessageConstants.CAPTION, imageMessage.getCaption());
+        }
+        if (imageMessage.getMediaProviderId()!=null) {
+            mapMessage.put(MessageConstants.OUTER_DOMAIN_PROVIDER,
+                    providerProperties.getProperty(imageMessage.getMediaProviderId()));
+        }
+        mapMessage.put(MessageConstants.USER_ID,
+                "MultipleSource");
+        return new JSONWriter().write(mapMessage);
     }
 
 }

@@ -2,9 +2,7 @@ package com.expedia.content.media.processing.services;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
-import com.expedia.content.media.processing.services.util.MediaServiceUrl;
-import com.expedia.content.media.processing.services.util.RequestMessageException;
-import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.util.*;
 import com.expedia.content.media.processing.services.validator.S3Validator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.expedia.content.metrics.aspects.EnableMonitoringAspects;
@@ -37,8 +35,12 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
 
 /**
  * MPP media service application.
@@ -57,9 +59,14 @@ public class Application extends SpringBootServletInitializer {
     private static final int BAD_REQUEST_CODE = 400;
     private static final int POLL_MSG_INTERVAL = 360000;
 
-
     @Autowired
     private MediaServiceProcess mediaServiceProcess;
+
+    @Resource(name = "providerProperties")
+    private Properties providerProperties;
+
+    @Autowired
+    RouterUtil routerUtil;
 
     public static void main(String[] args) throws Exception {
         final SpringApplication application = new SpringApplicationBuilder()
@@ -84,7 +91,51 @@ public class Application extends SpringBootServletInitializer {
     @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST)
     @Deprecated
     public ResponseEntity<String> acquireMedia(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
-        return mediaAdd(message, MediaServiceUrl.ACQUIRE_MEDIA, headers);
+        return acquireMedia(message, MediaServiceUrl.ACQUIRE_MEDIA, headers);
+    }
+
+    /**
+     * Web service interface to push a media file into the media processing pipeline.
+     * Validation will be done before message go through.
+     *
+     * @param message
+     * @param serviceUrl
+     * @return ResponseEntity Standard spring response object.
+     * @throws Exception Thrown if processing the message fails.
+     */
+    private ResponseEntity<String> acquireMedia(final String message, final MediaServiceUrl serviceUrl,
+            @RequestHeader MultiValueMap<String, String> headers)
+            throws Exception {
+        LOGGER.info("RECEIVED REQUEST - message=" + serviceUrl.getUrl().toString() + ", message=[{}], requestId=[{}]", message, headers.get(REQUESTID));
+        try {
+            ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
+            Map messageMap = JSONUtil.buildMapFromJson(message);
+            if (messageMap.get("mediaGuid") == null) {
+                final String guid = UUID.randomUUID().toString();
+                messageMap.put("mediaGuid", guid);
+            }
+            String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, providerProperties);
+            LOGGER.info("converted to - message common=[{}]", mediaCommonMessage);
+            ImageMessage imageMessageCommon = ImageMessage.parseJsonMessage(mediaCommonMessage);
+            boolean sendToAWS = routerUtil.routeAWSByPercentage();
+            LOGGER.debug("send to AWS {sendToAWS}"+sendToAWS);
+            String userName = "EPC";
+            String json = mediaServiceProcess.validateImageMessage(mediaCommonMessage, userName);
+            if (!"[]".equals(json)) {
+                return buildBadRequestResponse(json, serviceUrl.getUrl().toString());
+            }
+            //new mediaCommon Message.
+            if (sendToAWS) {
+                mediaServiceProcess.publishMsg(imageMessageCommon, mediaCommonMessage, false);
+            } else {
+                mediaServiceProcess.publishMsg(imageMessageCommon, message, true);
+            }
+            LOGGER.info("SUCCESS - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl.getUrl().toString(), message, headers.get(REQUESTID));
+            return new ResponseEntity<>("OK", HttpStatus.OK);
+        } catch (IllegalStateException | ImageMessageException ex) {
+            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}] .", serviceUrl.getUrl().toString(), message, ex);
+            return buildBadRequestResponse("JSON request format is invalid. Json message=" + message, serviceUrl.getUrl().toString());
+        }
     }
 
     /**
@@ -178,9 +229,6 @@ public class Application extends SpringBootServletInitializer {
         return new ResponseEntity<>(resMsg, HttpStatus.BAD_REQUEST);
     }
 
-
-
-
     /**
      * listen for message from media service queue and publish to collector queue again.
      * No validation happen here.
@@ -200,6 +248,7 @@ public class Application extends SpringBootServletInitializer {
 
     /**
      * test rabbit mq performance
+     *
      * @return
      */
     @RequestMapping(value = "/media/rabbitmq", method = RequestMethod.GET)

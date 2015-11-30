@@ -24,12 +24,9 @@ import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * MediaServiceProcess is called by main class
@@ -96,6 +93,32 @@ public class MediaServiceProcess {
 
     public void setMessagingTemplate(QueueMessagingTemplate messagingTemplate) {
         this.messagingTemplate = messagingTemplate;
+    }
+
+    /**
+     * publish message to jms queue
+     * Note that the {@code @Meter} {@code @Timer} {@code @RetryableMethod} annotations introduce aspects from metrics-support and spring-retry
+     * modules. The aspects should be applied in order, Metrics being outside (outer) and retry being inside (inner).
+     *
+     * @param message is the received json format message from main application
+     */
+    @Meter(name = "publishMessageCounter")
+    @Timer(name = "publishMessageTimer")
+    @RetryableMethod
+    public void publishMsg(ImageMessage message, String messageContent, boolean rabbitQ) {
+        try {
+            if (rabbitQ) {
+                rabbitTemplate.convertAndSend(messageContent);
+                LOGGER.info("Sending message to queue done : message=[{}] ", messageContent);
+            } else {
+                messagingTemplate.send(publishQueue, MessageBuilder.withPayload(messageContent).build());
+                LOGGER.info("Sending message to queue done : message=[{}] ", messageContent);
+            }
+            logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED);
+        } catch (Exception ex) {
+            LOGGER.error("Error publishing : message=[{}], error=[{}]", messageContent, ex.getMessage(), ex);
+            throw new RuntimeException("Error publishing message=[" + messageContent + "]", ex);
+        }
     }
 
 
