@@ -21,27 +21,28 @@ public class RouterUtil {
     DataManagerRestClient dataManagerRestClient;
     private static final Logger LOGGER = LoggerFactory.getLogger(RouterUtil.class);
 
-
     private static int cachePercentValue;
 
-    public static int getCachePercentValue() {
-        return cachePercentValue;
-    }
-
+    /**
+     * get the percentage configuration value from dynamoDB web service call,
+     * and compare the value the java random value to decide route to AWS queue or not.
+     *
+     * @return boolean indicate whether
+     */
     public boolean routeAWSByPercentage() {
         int ranNum = (int) (Math.random() * 100);
         int currentPercentValue = 0;
-        String mediaConfigResponse ="[]";
-        if(cachePercentValue!=0){
+        String mediaConfigResponse = "[]";
+        if (cachePercentValue != 0) {
             currentPercentValue = cachePercentValue;
-        }else{
-            try{
+        } else {
+            try {
                 mediaConfigResponse = dataManagerRestClient.invokeGetService();
-            }catch (RestClientException ex){
+            } catch (RestClientException ex) {
                 LOGGER.error("Error calling Data Manager Service exception", ex);
             }
             List<Map> configMap = JSONUtil.buildMapListFromJson(mediaConfigResponse);
-            if (configMap.size() > 0) {
+            if (configMap != null && configMap.size() > 0) {
                 String value = (String) configMap.get(0).get("propertyValue");
                 currentPercentValue = Integer.parseInt(value);
             } else {
@@ -49,7 +50,6 @@ public class RouterUtil {
                 currentPercentValue = percentage;
             }
         }
-
         if (ranNum < currentPercentValue) {
             return true;
         }
@@ -61,7 +61,6 @@ public class RouterUtil {
      */
     @Scheduled(fixedRate = 30000)
     public void refreshCacheValue() {
-        System.out.println("refresh value here");
         String mediaConfigResponse = dataManagerRestClient.invokeGetService();
         List<Map> configMap = JSONUtil.buildMapListFromJson(mediaConfigResponse);
         if (configMap.size() > 0) {

@@ -40,7 +40,6 @@ import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.UUID;
 
 /**
  * MPP media service application.
@@ -110,15 +109,13 @@ public class Application extends SpringBootServletInitializer {
         try {
             ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
             Map messageMap = JSONUtil.buildMapFromJson(message);
-            if (messageMap.get("mediaGuid") == null) {
-                final String guid = UUID.randomUUID().toString();
-                messageMap.put("mediaGuid", guid);
-            }
+            JSONUtil.addGuidToMap(messageMap);
             String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, providerProperties);
-            LOGGER.info("converted to - message common=[{}]", mediaCommonMessage);
+            LOGGER.info("converted to - common message =[{}]", mediaCommonMessage);
             ImageMessage imageMessageCommon = ImageMessage.parseJsonMessage(mediaCommonMessage);
             boolean sendToAWS = routerUtil.routeAWSByPercentage();
-            LOGGER.debug("send to AWS {sendToAWS}"+sendToAWS);
+            LOGGER.debug("send message to AWS {sendToAWS}", sendToAWS);
+            //reuse current validation logic
             String userName = "EPC";
             String json = mediaServiceProcess.validateImageMessage(mediaCommonMessage, userName);
             if (!"[]".equals(json)) {

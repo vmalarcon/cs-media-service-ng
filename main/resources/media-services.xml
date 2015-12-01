@@ -81,6 +81,7 @@
                       <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
                       <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
                       <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
+                      <value>imageMessage.mediaGuid != null ? "valid": "mediaGuid is required."</value>
                       <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
                       <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
                       <value>(domainData.domain.domain.endsWith('Lodging') &amp;&amp; domainData.domainId != null &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>

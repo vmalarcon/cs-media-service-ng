@@ -10,14 +10,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.TreeMap;
-import java.util.LinkedHashMap;
-import java.util.Properties;
+import java.util.*;
+
 /**
  * Contains methods to process JSON requests and generate JSON responses.
  */
@@ -187,6 +181,13 @@ public final class JSONUtil {
                     mapList.put(preName, sublist[i]);
                 }
             }
+        }
+    }
+
+    public static void addGuidToMap(Map messageMap) {
+        if (messageMap.get("mediaGuid") == null) {
+            final String guid = UUID.randomUUID().toString();
+            messageMap.put("mediaGuid", guid);
         }
     }
 

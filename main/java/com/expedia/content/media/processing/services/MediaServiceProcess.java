@@ -100,19 +100,21 @@ public class MediaServiceProcess {
      * Note that the {@code @Meter} {@code @Timer} {@code @RetryableMethod} annotations introduce aspects from metrics-support and spring-retry
      * modules. The aspects should be applied in order, Metrics being outside (outer) and retry being inside (inner).
      *
-     * @param message is the received json format message from main application
+     * @param message is ImageMessage converted from input json message
+     * @param messageContent is the received json format message from main application
+     * @param rabbitQ send to rabbitq or not.
      */
-    @Meter(name = "publishMessageCounter")
-    @Timer(name = "publishMessageTimer")
+    @Meter(name = "publishCommonMessageCounter")
+    @Timer(name = "publishCommonMessageTimer")
     @RetryableMethod
     public void publishMsg(ImageMessage message, String messageContent, boolean rabbitQ) {
         try {
             if (rabbitQ) {
                 rabbitTemplate.convertAndSend(messageContent);
-                LOGGER.info("Sending message to queue done : message=[{}] ", messageContent);
+                LOGGER.info("Sending message to rabbit queue done : message=[{}] ", messageContent);
             } else {
                 messagingTemplate.send(publishQueue, MessageBuilder.withPayload(messageContent).build());
-                LOGGER.info("Sending message to queue done : message=[{}] ", messageContent);
+                LOGGER.info("Sending message to sqs queue done : message=[{}] ", messageContent);
             }
             logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED);
         } catch (Exception ex) {
