@@ -2,6 +2,7 @@ package com.expedia.content.media.processing.services.util;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.MessageConstants;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.tools.json.JSONWriter;
@@ -10,7 +11,15 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.TreeMap;
+import java.util.LinkedHashMap;
+import java.util.Properties;
+import java.util.UUID;
 
 /**
  * Contains methods to process JSON requests and generate JSON responses.
@@ -216,7 +225,7 @@ public final class JSONUtil {
             mapMessage.put(MessageConstants.STAGING_KEY, imageMessage.getStagingKey());
         }
         if(imageMessage.getExpediaId()!=null){
-            mapMessage.put(MessageConstants.OUTER_DOMAIN_ID,imageMessage.getExpediaId().toString());
+            mapMessage.put(MessageConstants.OUTER_DOMAIN_ID, imageMessage.getExpediaId().toString());
         }
         if (imageMessage.getCategoryId() != null) {
             domainMapMessage.put("category",imageMessage.getCategoryId());
@@ -230,7 +239,7 @@ public final class JSONUtil {
                     providerProperties.getProperty(imageMessage.getMediaProviderId()));
         }
         mapMessage.put(MessageConstants.USER_ID,
-                "MultipleSource");
+                "MultiSource");
         return new JSONWriter().write(mapMessage);
     }
 

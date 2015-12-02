@@ -21,7 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class DataManagerRestClientTest {
+public class ConfigRestClientTest {
 
     @Mock
     private RestTemplate mockTemplate;
@@ -41,12 +41,17 @@ public class DataManagerRestClientTest {
     @Test
     public void testinvokeGetService() {
         when(mockTemplate.getRequestFactory()).thenReturn(mockRequestFactory);
-        final DataManagerRestClient client = new DataManagerRestClient("http://some:80/service","test", "route", 10000);
+        final ConfigRestClient client = new ConfigRestClient("http://some:80/service","test", 10000);
         client.setRestTemplate(mockTemplate);
         when(mockTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(HttpEntity.class), eq(String.class))).thenReturn(mockResponse);
-        when(mockResponse.getBody()).thenReturn("OK");
+        when(mockResponse.getBody()).thenReturn("[\n"
+                + "  {\n"
+                + "    \"environment\": \"test\",\n"
+                + "    \"propertyName\": \"route\",\n"
+                + "    \"propertyValue\": \"50\"\n"
+                + "  }]");
 
-        final String response = client.invokeGetService();
+        final String response = client.invokeGetService("route");
 
         verify(mockTemplate).exchange(uriArgumentCaptor.capture(), eq(HttpMethod.GET), httpEntityArgumentCaptor.capture(), eq(String.class));
         verify(mockRequestFactory).setConnectTimeout(10000);
@@ -54,18 +59,18 @@ public class DataManagerRestClientTest {
         final URI endPoint = uriArgumentCaptor.getValue();
 
         assertEquals(endPoint.toString(), "http://some:80/service?environment=test&propertyName=route");
-        assertEquals("OK", response);
+        assertEquals("50", response);
     }
 
     @Test
     public void testinvokePostService() {
         when(mockTemplate.getRequestFactory()).thenReturn(mockRequestFactory);
-        final DataManagerRestClient client = new DataManagerRestClient("http://some:80/service","test", "route", 10000);
+        final ConfigRestClient client = new ConfigRestClient("http://some:80/service","test", 10000);
         client.setRestTemplate(mockTemplate);
         when(mockTemplate.exchange(any(URI.class), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class))).thenReturn(mockResponse);
         when(mockResponse.getBody()).thenReturn("OK");
 
-        final String response = client.invokeCreateService("route");
+        final String response = client.createProperty("test","route");
 
         verify(mockTemplate).exchange(uriArgumentCaptor.capture(), eq(HttpMethod.POST), httpEntityArgumentCaptor.capture(), eq(String.class));
         verify(mockRequestFactory).setConnectTimeout(10000);

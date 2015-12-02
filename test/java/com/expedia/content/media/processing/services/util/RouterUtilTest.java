@@ -12,9 +12,9 @@ public class RouterUtilTest {
     public void testRouteReqByPercentage() {
         RouterUtil routerUtil = new RouterUtil();
         String mediaConfig = "[{\"environment\":\"stress\",\"propertyName\":\"route\",\"propertyValue\":\"20\"}]";
-        DataManagerRestClient mockDataManagerRestClient = mock(DataManagerRestClient.class);
-        when(mockDataManagerRestClient.invokeGetService()).thenReturn(mediaConfig);
-        routerUtil.setDataManagerRestClient(mockDataManagerRestClient);
+        ConfigRestClient mockConfigRestClient = mock(ConfigRestClient.class);
+        when(mockConfigRestClient.invokeGetService("route")).thenReturn(mediaConfig);
+        routerUtil.setConfigRestClient(mockConfigRestClient);
         routerUtil.setPercentage(5);
         routerUtil.routeAWSByPercentage();
         int counter = 0;
@@ -31,9 +31,9 @@ public class RouterUtilTest {
     public void testRouteReqByPercentage100() {
         RouterUtil routerUtil = new RouterUtil();
         String mediaConfig = "[{\"environment\":\"stress\",\"propertyName\":\"route\",\"propertyValue\":\"100\"}]";
-        DataManagerRestClient mockDataManagerRestClient = mock(DataManagerRestClient.class);
-        when(mockDataManagerRestClient.invokeGetService()).thenReturn(mediaConfig);
-        routerUtil.setDataManagerRestClient(mockDataManagerRestClient);
+        ConfigRestClient mockConfigRestClient = mock(ConfigRestClient.class);
+        when(mockConfigRestClient.invokeGetService("route")).thenReturn(mediaConfig);
+        routerUtil.setConfigRestClient(mockConfigRestClient);
         routerUtil.setPercentage(5);
         routerUtil.routeAWSByPercentage();
         int counter = 0;

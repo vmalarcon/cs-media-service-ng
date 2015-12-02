@@ -1,6 +1,5 @@
 package com.expedia.content.media.processing.services.util;
 
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,15 +21,17 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Client for Data manager sercice
+ * Resst Client for query Configuration service in data manager.
+ * now the web service interface exist in data manager, later may move to media service
  */
 @Component
-public class DataManagerRestClient {
+public class ConfigRestClient {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DataManagerRestClient.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigRestClient.class);
 
     private static final ObjectMapper JSON = new ObjectMapper();
 
@@ -41,23 +42,20 @@ public class DataManagerRestClient {
 
     private final URI uri;
     private final String environment;
-    private final String proptertyName;
     private final Integer timeout;
 
     /**
      * Main constructor for the client
      *
-     * @param url Service endpoint
+     * @param url         Service endpoint
      * @param environment
-     * @param proptertyName
-     * @param timeout Timeout for connection and response
+     * @param timeout     Timeout for connection and response
      */
     @Autowired
-    public DataManagerRestClient(@Value("${data.manager.endpoint}") String url,
-            @Value("${EXPEDIA_ENVIRONMENT}") String environment, @Value("${data.manager.propertyname}") String proptertyName,
+    public ConfigRestClient(@Value("${data.manager.endpoint}") String url,
+            @Value("${EXPEDIA_ENVIRONMENT}") String environment,
             @Value("${data.manager.timeout}") Integer timeout) {
         this.environment = environment;
-        this.proptertyName = proptertyName;
 
         try {
             this.uri = new URL(url).toURI();
@@ -68,17 +66,17 @@ public class DataManagerRestClient {
         configureRestTemplate();
     }
 
-
     /**
      * Invokes the service by taking a JSON string as the body of the request
      *
      * @return Response from the service as a JSON string
      */
-    public String invokeGetService() {
+    public String invokeGetService(String propertyName) {
+        String propertyValue = "";
         try {
             final HttpHeaders headers = new HttpHeaders();
             final HttpEntity<String> httpEntity = new HttpEntity<>("", headers);
-            String uriWithParm = uri.toString() + "?environment=" + environment + "&propertyName=" + proptertyName;
+            String uriWithParm = uri.toString() + "?environment=" + environment + "&propertyName=" + propertyName;
             URI dataManagerURL = null;
             try {
                 dataManagerURL = new URL(uriWithParm).toURI();
@@ -88,7 +86,11 @@ public class DataManagerRestClient {
             final ResponseEntity<String> response = restTemplate.exchange(dataManagerURL, HttpMethod.GET, httpEntity, String.class);
             final String responseBody = response.getBody();
             LOGGER.info("Receiving response from Data manger: request-id=[{}], responseBody=[{}]", CLIENT_ID, responseBody);
-            return responseBody;
+            List<Map> configMap = JSONUtil.buildMapListFromJson(responseBody);
+            if (configMap != null && configMap.size() > 0) {
+                propertyValue = (String) configMap.get(0).get("propertyValue");
+            }
+            return propertyValue;
         } catch (HttpClientErrorException e) {
             LOGGER.error("Received status=[{}] and error=[{}]", e.getStatusCode(), e.getResponseBodyAsString(), e);
             throw new RestClientException(e);
@@ -98,7 +100,7 @@ public class DataManagerRestClient {
         }
     }
 
-    private String generateJsonValue(String propertyValue) {
+    private String generateJsonValue(String propertyValue, String proptertyName) {
         try {
             Map mediaConfigMap = new HashMap<>();
             mediaConfigMap.put("environment", environment);
@@ -115,13 +117,14 @@ public class DataManagerRestClient {
 
     /**
      * invoke create servcie insert propertyValue to MediaConfig table.
+     *
      * @param propertyValue
      * @return
      */
-    public String invokeCreateService(String propertyValue) {
+    public String createProperty(String propertyName, String propertyValue) {
         try {
             final HttpHeaders headers = new HttpHeaders();
-            String json = generateJsonValue(propertyValue);
+            String json = generateJsonValue(propertyValue, propertyName);
             final HttpEntity<String> httpEntity = new HttpEntity<>(json, headers);
             final ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.POST, httpEntity, String.class);
             final String responseBody = response.getBody();
@@ -136,8 +139,6 @@ public class DataManagerRestClient {
         }
 
     }
-
-
 
     /**
      * Allows for the replacement of the default RestTemplate

@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services.util;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +19,9 @@ public class RouterUtil {
     @Value("${media.request.collector.v1.percentage}")
     private int percentage;
     @Autowired
-    DataManagerRestClient dataManagerRestClient;
+    ConfigRestClient configRestClient;
     private static final Logger LOGGER = LoggerFactory.getLogger(RouterUtil.class);
+    private static final String PROPERTYNAME = "route";
 
     private static int cachePercentValue;
 
@@ -32,21 +34,19 @@ public class RouterUtil {
     public boolean routeAWSByPercentage() {
         int ranNum = (int) (Math.random() * 100);
         int currentPercentValue = 0;
-        String mediaConfigResponse = "[]";
+        String propertyValue = "";
         if (cachePercentValue != 0) {
             currentPercentValue = cachePercentValue;
         } else {
             try {
-                mediaConfigResponse = dataManagerRestClient.invokeGetService();
+                propertyValue = configRestClient.invokeGetService(PROPERTYNAME);
             } catch (RestClientException ex) {
                 LOGGER.error("Error calling Data Manager Service exception", ex);
             }
-            List<Map> configMap = JSONUtil.buildMapListFromJson(mediaConfigResponse);
-            if (configMap != null && configMap.size() > 0) {
-                String value = (String) configMap.get(0).get("propertyValue");
-                currentPercentValue = Integer.parseInt(value);
+            if (!StringUtils.isEmpty(propertyValue)) {
+                currentPercentValue = Integer.parseInt(propertyValue);
             } else {
-                dataManagerRestClient.invokeCreateService(Integer.toString(percentage));
+                configRestClient.createProperty(PROPERTYNAME, Integer.toString(percentage));
                 currentPercentValue = percentage;
             }
         }
@@ -61,11 +61,10 @@ public class RouterUtil {
      */
     @Scheduled(fixedRate = 30000)
     public void refreshCacheValue() {
-        String mediaConfigResponse = dataManagerRestClient.invokeGetService();
-        List<Map> configMap = JSONUtil.buildMapListFromJson(mediaConfigResponse);
-        if (configMap.size() > 0) {
-            String value = (String) configMap.get(0).get("propertyValue");
-            cachePercentValue = Integer.parseInt(value);
+        String propertyValue = "";
+        propertyValue = configRestClient.invokeGetService(PROPERTYNAME);
+        if (!StringUtils.isEmpty(propertyValue)) {
+            cachePercentValue = Integer.parseInt(propertyValue);
         }
     }
 
@@ -73,7 +72,7 @@ public class RouterUtil {
         this.percentage = percentage;
     }
 
-    public void setDataManagerRestClient(DataManagerRestClient dataManagerRestClient) {
-        this.dataManagerRestClient = dataManagerRestClient;
+    public void setConfigRestClient(ConfigRestClient configRestClient) {
+        this.configRestClient = configRestClient;
     }
 }

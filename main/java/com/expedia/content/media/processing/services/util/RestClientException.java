@@ -3,7 +3,7 @@ package com.expedia.content.media.processing.services.util;
 /**
  * Generic wrapper for MediaServiceClient exceptions
  *
- * @see DataManagerRestClient
+ * @see ConfigRestClient
  */
 public class RestClientException extends RuntimeException {
     public RestClientException(String message) {

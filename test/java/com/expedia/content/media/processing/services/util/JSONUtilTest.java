@@ -175,7 +175,7 @@ public class JSONUtilTest {
                 + "}";
 
         String convert = "{\"fileUrl\":\"http:\\/\\/localhost:38081\\/office.jpg\","
-                + "\"domain\":\"Lodging\",\"callback\":\"http:\\/\\/multi.source.callback\\/callback\",\"stagingKey\":{\"externalId\":\"222\",\"providerId\":\"300\",\"sourceId\":\"99\"},\"domainId\":\"429\",\"domainFields\":{\"category\":\"801\"},\"caption\":\"caption\",\"domainProvider\":\"EPC Internal User\",\"userId\":\"MultipleSource\"}";
+                + "\"domain\":\"Lodging\",\"callback\":\"http:\\/\\/multi.source.callback\\/callback\",\"stagingKey\":{\"externalId\":\"222\",\"providerId\":\"300\",\"sourceId\":\"99\"},\"domainId\":\"429\",\"domainFields\":{\"category\":\"801\"},\"caption\":\"caption\",\"domainProvider\":\"EPC Internal User\",\"userId\":\"MultiSource\"}";
 
         ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
         Map messageMap = JSONUtil.buildMapFromJson(message);
