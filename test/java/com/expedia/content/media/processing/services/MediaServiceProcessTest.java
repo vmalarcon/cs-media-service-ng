@@ -162,6 +162,7 @@ public class MediaServiceProcessTest {
         when(imageMessageMock.getOuterDomainData()).thenReturn(outerDomainMock);
         when(outerDomainMock.getDomain()).thenReturn(Domain.LODGING);
         when(imageMessageMock.getFileUrl()).thenReturn(("http://media.com/img1.jpg"));
+        when(imageMessageMock.getFileName()).thenReturn("img1.jpg");
         when(imageMessageMock.toJSONMessage()).thenReturn("test msg");
         mediaServiceProcess.publishMsg(imageMessageMock);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), any());
@@ -170,7 +171,7 @@ public class MediaServiceProcessTest {
                 .log(logEntryCaptor.capture(), eq(reporting));
         LogEntry logEntry = logEntryCaptor.getValue();
         assertEquals(Domain.LODGING, logEntry.getDomain());
-        assertEquals("http://media.com/img1.jpg", logEntry.getFileUrl());
+        assertEquals("img1.jpg", logEntry.getFileName());
     }
 
     @Test
