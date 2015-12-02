@@ -240,6 +240,8 @@ public final class JSONUtil {
         }
         mapMessage.put(MessageConstants.USER_ID,
                 "MultiSource");
+        mapMessage.put(MessageConstants.CLIENT_ID,
+                "MultiSource");
         return new JSONWriter().write(mapMessage);
     }
 
