@@ -14,8 +14,8 @@ import com.expedia.content.media.processing.services.validator.MapMessageValidat
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
 import com.expedia.content.media.processing.services.validator.RequestMessageValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
-import com.expedia.content.metrics.aspects.annotations.Meter;
-import com.expedia.content.metrics.aspects.annotations.Timer;
+import expedia.content.solutions.metrics.annotations.Meter;
+import expedia.content.solutions.metrics.annotations.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -262,7 +262,7 @@ public class MediaServiceProcess {
      */
     private void logActivity(ImageMessage imageMessage, Activity activity) throws URISyntaxException {
         LogEntry logEntry = new LogEntry(
-                imageMessage.getFileUrl(),
+                imageMessage.getFileName(),
                 imageMessage.getMediaGuid(),
                 activity,
                 new Date(),

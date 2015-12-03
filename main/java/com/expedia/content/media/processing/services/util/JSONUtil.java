@@ -6,6 +6,7 @@ import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.tools.json.JSONWriter;
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -211,6 +212,15 @@ public final class JSONUtil {
 
         if (imageMessage.getFileUrl() != null) {
             mapMessage.put(MessageConstants.FILE_URL, imageMessage.getFileUrl());
+        }
+        if (imageMessage.getFileName() != null) {
+            mapMessage.put(MessageConstants.FILE_NAME, imageMessage.getFileName());
+        } else {
+            String fileName = "";
+            if(imageMessage.getFileUrl() != null){
+                fileName = FilenameUtils.getBaseName(imageMessage.getFileUrl())+".jpg";
+            }
+            mapMessage.put(MessageConstants.FILE_NAME, fileName);
         }
         if (map.get("imageType") != null) {
             mapMessage.put("domain", map.get("imageType"));

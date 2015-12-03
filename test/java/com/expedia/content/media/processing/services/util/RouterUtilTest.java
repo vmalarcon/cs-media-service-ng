@@ -11,7 +11,7 @@ public class RouterUtilTest {
     @Test
     public void testRouteReqByPercentage() {
         RouterUtil routerUtil = new RouterUtil();
-        String mediaConfig = "[{\"environment\":\"stress\",\"propertyName\":\"route\",\"propertyValue\":\"20\"}]";
+        String mediaConfig = "20";
         ConfigRestClient mockConfigRestClient = mock(ConfigRestClient.class);
         when(mockConfigRestClient.invokeGetService("route")).thenReturn(mediaConfig);
         routerUtil.setConfigRestClient(mockConfigRestClient);
@@ -30,7 +30,7 @@ public class RouterUtilTest {
     @Test
     public void testRouteReqByPercentage100() {
         RouterUtil routerUtil = new RouterUtil();
-        String mediaConfig = "[{\"environment\":\"stress\",\"propertyName\":\"route\",\"propertyValue\":\"100\"}]";
+        String mediaConfig = "100";
         ConfigRestClient mockConfigRestClient = mock(ConfigRestClient.class);
         when(mockConfigRestClient.invokeGetService("route")).thenReturn(mediaConfig);
         routerUtil.setConfigRestClient(mockConfigRestClient);

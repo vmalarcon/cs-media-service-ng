@@ -5,21 +5,19 @@ import com.expedia.content.media.processing.pipeline.exception.ImageMessageExcep
 import com.expedia.content.media.processing.services.util.*;
 import com.expedia.content.media.processing.services.validator.S3Validator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
-import com.expedia.content.metrics.aspects.EnableMonitoringAspects;
-import com.expedia.content.metrics.aspects.annotations.Counter;
-import com.expedia.content.metrics.aspects.annotations.Meter;
-import com.expedia.content.metrics.aspects.annotations.Timer;
-
+import expedia.content.solutions.metrics.annotations.Counter;
+import expedia.content.solutions.metrics.annotations.Meter;
+import expedia.content.solutions.metrics.annotations.Timer;
+import expedia.content.solutions.metrics.spring.EnableMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ResourceBanner;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.web.SpringBootServletInitializer;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.http.HttpStatus;
@@ -45,12 +43,11 @@ import java.util.Properties;
  * MPP media service application.
  * This class has the main Spring configuration and also the bootstrap for the application.
  */
-@Configuration
+@SpringBootApplication
 @ComponentScan(basePackages = "com.expedia.content.media.processing")
 @ImportResource("classpath:media-services.xml")
 @RestController
-@EnableAutoConfiguration
-@EnableMonitoringAspects
+@EnableMetrics
 public class Application extends SpringBootServletInitializer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
@@ -58,9 +55,9 @@ public class Application extends SpringBootServletInitializer {
     private static final int BAD_REQUEST_CODE = 400;
     private static final int POLL_MSG_INTERVAL = 360000;
 
+
     @Autowired
     private MediaServiceProcess mediaServiceProcess;
-
     @Resource(name = "providerProperties")
     private Properties providerProperties;
 
@@ -83,12 +80,10 @@ public class Application extends SpringBootServletInitializer {
      * @param message is json format media message,fileUrl and expedia is required.
      * @return ResponseEntity Standard spring response object.
      * @throws Exception Thrown if processing the message fails.
-     * @deprecated Replaced by {@code mediaAdd(String message)} method.
      */
     @Meter(name = "acquireMessageCounter")
     @Timer(name = "acquireMessageTimer")
     @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST)
-    @Deprecated
     public ResponseEntity<String> acquireMedia(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
         return acquireMedia(message, MediaServiceUrl.ACQUIRE_MEDIA, headers);
     }
@@ -234,7 +229,7 @@ public class Application extends SpringBootServletInitializer {
      */
     @MessageMapping("${media.aws.service.queue.name}")
     public void pollMessage(String message) {
-        LOGGER.debug("Receiving msg: {}", message);
+        LOGGER.info("Receiving msg: {}", message);
         try {
             ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
             mediaServiceProcess.publishMsg(imageMessage);
