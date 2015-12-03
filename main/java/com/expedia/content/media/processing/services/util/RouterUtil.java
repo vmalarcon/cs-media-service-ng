@@ -9,9 +9,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
-
 @Component
 @EnableScheduling
 public class RouterUtil {
@@ -19,7 +16,7 @@ public class RouterUtil {
     @Value("${media.request.collector.v1.percentage}")
     private int percentage;
     @Autowired
-    ConfigRestClient configRestClient;
+    RestClient restClient;
     private static final Logger LOGGER = LoggerFactory.getLogger(RouterUtil.class);
     private static final String PROPERTYNAME = "route";
 
@@ -39,14 +36,14 @@ public class RouterUtil {
             currentPercentValue = cachePercentValue;
         } else {
             try {
-                propertyValue = configRestClient.invokeGetService(PROPERTYNAME);
+                propertyValue = restClient.invokeGetService(PROPERTYNAME);
             } catch (RestClientException ex) {
                 LOGGER.error("Error calling Data Manager Service exception", ex);
             }
             if (!StringUtils.isEmpty(propertyValue)) {
                 currentPercentValue = Integer.parseInt(propertyValue);
             } else {
-                configRestClient.createProperty(PROPERTYNAME, Integer.toString(percentage));
+                restClient.createProperty(PROPERTYNAME, Integer.toString(percentage));
                 currentPercentValue = percentage;
             }
         }
@@ -62,7 +59,7 @@ public class RouterUtil {
     @Scheduled(fixedRate = 30000)
     public void refreshCacheValue() {
         String propertyValue = "";
-        propertyValue = configRestClient.invokeGetService(PROPERTYNAME);
+        propertyValue = restClient.invokeGetService(PROPERTYNAME);
         if (!StringUtils.isEmpty(propertyValue)) {
             cachePercentValue = Integer.parseInt(propertyValue);
         }
@@ -72,7 +69,7 @@ public class RouterUtil {
         this.percentage = percentage;
     }
 
-    public void setConfigRestClient(ConfigRestClient configRestClient) {
-        this.configRestClient = configRestClient;
+    public void setRestClient(RestClient restClient) {
+        this.restClient = restClient;
     }
 }

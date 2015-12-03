@@ -21,7 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ConfigRestClientTest {
+public class RestClientTest {
 
     @Mock
     private RestTemplate mockTemplate;
@@ -39,9 +39,9 @@ public class ConfigRestClientTest {
     private ArgumentCaptor<HttpEntity<String>> httpEntityArgumentCaptor;
 
     @Test
-    public void testinvokeGetService() {
+    public void testInvokeGetService() {
         when(mockTemplate.getRequestFactory()).thenReturn(mockRequestFactory);
-        final ConfigRestClient client = new ConfigRestClient("http://some:80/service","test", 10000);
+        final RestClient client = new RestClient("http://some:80/service","test", 10000);
         client.setRestTemplate(mockTemplate);
         when(mockTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(HttpEntity.class), eq(String.class))).thenReturn(mockResponse);
         when(mockResponse.getBody()).thenReturn("[\n"
@@ -63,14 +63,32 @@ public class ConfigRestClientTest {
     }
 
     @Test
-    public void testinvokePostService() {
+         public void testInvokePostService() {
         when(mockTemplate.getRequestFactory()).thenReturn(mockRequestFactory);
-        final ConfigRestClient client = new ConfigRestClient("http://some:80/service","test", 10000);
+        final RestClient client = new RestClient("http://some:80/service","test", 10000);
         client.setRestTemplate(mockTemplate);
         when(mockTemplate.exchange(any(URI.class), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class))).thenReturn(mockResponse);
         when(mockResponse.getBody()).thenReturn("OK");
 
         final String response = client.createProperty("test","route");
+
+        verify(mockTemplate).exchange(uriArgumentCaptor.capture(), eq(HttpMethod.POST), httpEntityArgumentCaptor.capture(), eq(String.class));
+        verify(mockRequestFactory).setConnectTimeout(10000);
+        verify(mockRequestFactory).setConnectTimeout(10000);
+        final URI endPoint = uriArgumentCaptor.getValue();
+
+        assertEquals("OK", response);
+    }
+
+    @Test
+    public void testInvokeMeidaService() throws Exception{
+        when(mockTemplate.getRequestFactory()).thenReturn(mockRequestFactory);
+        final RestClient client = new RestClient("http://some:80/service","test", 10000);
+        client.setRestTemplate(mockTemplate);
+        when(mockTemplate.exchange(any(URI.class), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class))).thenReturn(mockResponse);
+        when(mockResponse.getBody()).thenReturn("OK");
+
+        final String response = client.callMediaService("test");
 
         verify(mockTemplate).exchange(uriArgumentCaptor.capture(), eq(HttpMethod.POST), httpEntityArgumentCaptor.capture(), eq(String.class));
         verify(mockRequestFactory).setConnectTimeout(10000);

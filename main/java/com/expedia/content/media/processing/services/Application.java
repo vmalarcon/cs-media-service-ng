@@ -64,6 +64,9 @@ public class Application extends SpringBootServletInitializer {
     @Autowired
     RouterUtil routerUtil;
 
+    @Autowired
+    RestClient mediaServiceClient;
+
     public static void main(String[] args) throws Exception {
         final SpringApplication application = new SpringApplicationBuilder()
                 .banner(new ResourceBanner(new DefaultResourceLoader().getResource("banner.txt")))
@@ -110,20 +113,24 @@ public class Application extends SpringBootServletInitializer {
             ImageMessage imageMessageCommon = ImageMessage.parseJsonMessage(mediaCommonMessage);
             boolean sendToAWS = routerUtil.routeAWSByPercentage();
             LOGGER.debug("send message to AWS {sendToAWS}", sendToAWS);
-            //reuse current validation logic
-            String userName = "EPC";
-            String json = mediaServiceProcess.validateImageMessage(mediaCommonMessage, userName);
-            if (!"[]".equals(json)) {
-                return buildBadRequestResponse(json, serviceUrl.getUrl().toString());
-            }
             //new mediaCommon Message.
             if (sendToAWS) {
-                mediaServiceProcess.publishMsg(imageMessageCommon, mediaCommonMessage, false);
+                //reuse current validation logic
+                String userName = "EPC";
+                String json = mediaServiceProcess.validateImageMessage(mediaCommonMessage, userName);
+                if (!"[]".equals(json)) {
+                    return buildBadRequestResponse(json, serviceUrl.getUrl().toString());
+                }
+                mediaServiceProcess.publishMsg(imageMessageCommon, mediaCommonMessage);
+                LOGGER.info("SUCCESS - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl.getUrl().toString(), message,
+                        headers.get(REQUESTID));
+                return new ResponseEntity<>("OK,message sent to AWS queue successfully.", HttpStatus.OK);
             } else {
-                mediaServiceProcess.publishMsg(imageMessageCommon, message, true);
+                String response = mediaServiceClient.callMediaService(message);
+                LOGGER.info("SUCCESS send message to media service  - message=[{}], response=[{}]", message, response);
+                return new ResponseEntity<>("OK,message sent to mpp media service successfully.", HttpStatus.OK);
             }
-            LOGGER.info("SUCCESS - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl.getUrl().toString(), message, headers.get(REQUESTID));
-            return new ResponseEntity<>("OK", HttpStatus.OK);
+
         } catch (IllegalStateException | ImageMessageException ex) {
             LOGGER.error("ERROR - messageName={}, JSONMessage=[{}] .", serviceUrl.getUrl().toString(), message, ex);
             return buildBadRequestResponse("JSON request format is invalid. Json message=" + message, serviceUrl.getUrl().toString());

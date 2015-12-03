@@ -3,8 +3,6 @@ package com.expedia.content.media.processing.services.util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -25,13 +23,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Resst Client for query Configuration service in data manager.
+ * Rest Client for query Configuration service in data manager.
  * now the web service interface exist in data manager, later may move to media service
  */
 @Component
-public class ConfigRestClient {
+public class RestClient {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigRestClient.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RestClient.class);
 
     private static final ObjectMapper JSON = new ObjectMapper();
 
@@ -51,10 +49,10 @@ public class ConfigRestClient {
      * @param environment
      * @param timeout     Timeout for connection and response
      */
-    @Autowired
-    public ConfigRestClient(@Value("${data.manager.endpoint}") String url,
-            @Value("${EXPEDIA_ENVIRONMENT}") String environment,
-            @Value("${data.manager.timeout}") Integer timeout) {
+
+    public RestClient(String url,
+            String environment,
+            Integer timeout) {
         this.environment = environment;
 
         try {
@@ -116,7 +114,7 @@ public class ConfigRestClient {
     }
 
     /**
-     * invoke create servcie insert propertyValue to MediaConfig table.
+     * invoke create service insert propertyValue to MediaConfig table.
      *
      * @param propertyValue
      * @return
@@ -136,6 +134,31 @@ public class ConfigRestClient {
         } catch (Exception e) {
             LOGGER.error("Error calling MediaServices: request-id=[{}]", CLIENT_ID, e);
             return e.getMessage();
+        }
+
+    }
+
+
+    /**
+     * invoke media service acquire media method.
+     *
+     * @param message json format imageMessage
+     * @return
+     */
+    public String callMediaService(String message) throws Exception{
+        try {
+            final HttpHeaders headers = new HttpHeaders();
+            final HttpEntity<String> httpEntity = new HttpEntity<>(message, headers);
+            final ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.POST, httpEntity, String.class);
+            final String responseBody = response.getBody();
+            LOGGER.info("Receiving response from media service: request-id=[{}], responseBody=[{}]", CLIENT_ID, responseBody);
+            return responseBody;
+        } catch (HttpClientErrorException e) {
+            LOGGER.error("Received status=[{}] and error=[{}]", e.getStatusCode(), e.getResponseBodyAsString(), e);
+            throw e;
+        } catch (Exception e) {
+            LOGGER.error("Error calling MediaServices: request-id=[{}]", CLIENT_ID, e);
+            throw e;
         }
 
     }

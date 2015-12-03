@@ -208,6 +208,20 @@
     <bean id="lcmInsertSproc" primary="true"
           class="com.expedia.content.media.processing.pipeline.reporting.sql.SQLLogEntryInsertSproc" />
 
+    <bean id="restClient"
+          class="com.expedia.content.media.processing.services.util.RestClient">
+        <constructor-arg name="url" value="${data.manager.endpoint}" />
+        <constructor-arg name="environment" value="${EXPEDIA_ENVIRONMENT}" />
+        <constructor-arg name="timeout" value="${data.manager.timeout}" />
+    </bean>
+
+    <bean id="mediaServiceClient"
+          class="com.expedia.content.media.processing.services.util.RestClient">
+        <constructor-arg name="url" value="${mpp.media.service.endpoint}" />
+        <constructor-arg name="environment" value="${EXPEDIA_ENVIRONMENT}" />
+        <constructor-arg name="timeout" value="${mpp.media.service.timeout}" />
+    </bean>
+
     <!-- Retry -->
     <bean id="loggingRetryListener" class="com.expedia.content.media.processing.pipeline.retry.LoggingRetryListener" />
 

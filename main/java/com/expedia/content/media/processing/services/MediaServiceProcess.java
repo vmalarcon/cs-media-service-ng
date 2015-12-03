@@ -102,20 +102,14 @@ public class MediaServiceProcess {
      *
      * @param message is ImageMessage converted from input json message
      * @param messageContent is the received json format message from main application
-     * @param rabbitQ send to rabbitq or not.
      */
     @Meter(name = "publishCommonMessageCounter")
     @Timer(name = "publishCommonMessageTimer")
     @RetryableMethod
-    public void publishMsg(ImageMessage message, String messageContent, boolean rabbitQ) {
+    public void publishMsg(ImageMessage message, String messageContent) {
         try {
-            if (rabbitQ) {
-                rabbitTemplate.convertAndSend(messageContent);
-                LOGGER.info("Sending message to rabbit queue done : message=[{}] ", messageContent);
-            } else {
-                messagingTemplate.send(publishQueue, MessageBuilder.withPayload(messageContent).build());
-                LOGGER.info("Sending message to sqs queue done : message=[{}] ", messageContent);
-            }
+            messagingTemplate.send(publishQueue, MessageBuilder.withPayload(messageContent).build());
+            LOGGER.info("Sending message to sqs queue done : message=[{}] ", messageContent);
             logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED);
         } catch (Exception ex) {
             LOGGER.error("Error publishing : message=[{}], error=[{}]", messageContent, ex.getMessage(), ex);
