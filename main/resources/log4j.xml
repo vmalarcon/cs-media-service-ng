@@ -32,12 +32,12 @@
     </appender>
 
     <appender name="prodAppender" class="org.apache.log4j.AsyncAppender">
-        <param name="threshold" value="ERROR" />
+        <param name="threshold" value="INFO" />
         <appender-ref ref="fileAppender"/>
     </appender>
 
     <appender name="stressAppender" class="org.apache.log4j.AsyncAppender">
-        <param name="threshold" value="ERROR" />
+        <param name="threshold" value="INFO" />
         <appender-ref ref="fileAppender"/>
     </appender>
 
