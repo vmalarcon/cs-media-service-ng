@@ -219,11 +219,7 @@ public final class JSONUtil {
         } else {
             String fileName = "";
             if (imageMessage.getFileUrl() != null) {
-                if (imageMessage.getFileUrl().endsWith("/")) {
-                    fileName = FilenameUtils.getBaseName(StringUtils.chop(imageMessage.getFileUrl())) + ".jpg";
-                } else {
-                    fileName = FilenameUtils.getBaseName(imageMessage.getFileUrl()) + ".jpg";
-                }
+                fileName = FilenameUtils.getBaseName(imageMessage.getFileUrl()) + ".jpg";
             }
             mapMessage.put(MessageConstants.FILE_NAME, fileName);
         }
