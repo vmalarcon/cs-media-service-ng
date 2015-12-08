@@ -7,6 +7,7 @@ import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.tools.json.JSONWriter;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -217,8 +218,12 @@ public final class JSONUtil {
             mapMessage.put(MessageConstants.FILE_NAME, imageMessage.getFileName());
         } else {
             String fileName = "";
-            if(imageMessage.getFileUrl() != null){
-                fileName = FilenameUtils.getBaseName(imageMessage.getFileUrl())+".jpg";
+            if (imageMessage.getFileUrl() != null) {
+                if (imageMessage.getFileUrl().endsWith("/")) {
+                    fileName = FilenameUtils.getBaseName(StringUtils.chop(imageMessage.getFileUrl())) + ".jpg";
+                } else {
+                    fileName = FilenameUtils.getBaseName(imageMessage.getFileUrl()) + ".jpg";
+                }
             }
             mapMessage.put(MessageConstants.FILE_NAME, fileName);
         }

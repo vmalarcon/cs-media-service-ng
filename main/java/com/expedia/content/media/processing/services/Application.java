@@ -122,7 +122,7 @@ public class Application extends SpringBootServletInitializer {
                     return buildBadRequestResponse(json, serviceUrl.getUrl().toString());
                 }
                 mediaServiceProcess.publishMsg(imageMessageCommon, mediaCommonMessage);
-                LOGGER.info("SUCCESS - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl.getUrl().toString(), message,
+                LOGGER.info("SUCCESS - send message to AWS media service  - message=[{}], requestId=[{}]", mediaCommonMessage,
                         headers.get(REQUESTID));
                 return new ResponseEntity<>("OK,message sent to AWS queue successfully.", HttpStatus.OK);
             } else {
