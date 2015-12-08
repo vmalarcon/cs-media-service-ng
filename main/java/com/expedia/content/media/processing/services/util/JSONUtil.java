@@ -233,6 +233,10 @@ public final class JSONUtil {
         if (imageMessage.getCallback() != null) {
             mapMessage.put(MessageConstants.CALLBACK, imageMessage.getCallback().toString());
         }
+        //set default to true if "active" is not set.
+        if (map.get("active") == null) {
+            mapMessage.put(MessageConstants.ACTIVE, "true");
+        }
         if (map.get("mediaGuid") != null) {
             mapMessage.put(MessageConstants.MEDIA_ID, map.get("mediaGuid"));
         }
