@@ -82,15 +82,14 @@ public final class JSONUtil {
     /**
      * Generate the json response message.
      *
-     * @param mapList             key is media file name, value is status list that get from DB MediaProcessLog.
-     * @param fileNameList        media file name list from input json message
+     * @param mapList key is media file name, value is status list that get from DB MediaProcessLog.
+     * @param fileNameList media file name list from input json message
      * @param activityMappingList activityType to status messsage mapping.
      * @return
      * @throws RequestMessageException happen when covert map to json error.
      */
     public static String generateJsonByProcessLogList(Map<String, List<MediaProcessLog>> mapList, List<String> fileNameList,
-            List<ActivityMapping> activityMappingList)
-            throws RequestMessageException {
+                                                      List<ActivityMapping> activityMappingList) throws RequestMessageException {
         Map<String, Object> allMap = new HashMap<>();
         ObjectMapper mapper = new ObjectMapper();
         List mediaStatusList = new ArrayList();
@@ -136,7 +135,7 @@ public final class JSONUtil {
      *
      * @param message detail error message
      * @param urlPath web service url
-     * @param status  http status
+     * @param status http status
      * @param error
      * @return json format error message
      */
@@ -169,8 +168,8 @@ public final class JSONUtil {
      * convert all media status list to mediaFileName-statusList mapping.
      *
      * @param statusLogList all media status of all input media files, and get from LCM DB.
-     * @param mapList       key is media file name, value is status list that get from LCM DB MediaProcessLog.
-     * @param size          the input media file name list size.
+     * @param mapList key is media file name, value is status list that get from LCM DB MediaProcessLog.
+     * @param size the input media file name list size.
      */
     public static void divideStatusListToMap(List<MediaProcessLog> statusLogList, Map<String, List<MediaProcessLog>> mapList, int size) {
         if (statusLogList != null && statusLogList.size() > 0) {
@@ -207,7 +206,7 @@ public final class JSONUtil {
      *
      * @return The ImageMessage as a JSON message.
      */
-    public static String convertToCommonMessage(ImageMessage imageMessage, Map map,Properties providerProperties) {
+    public static String convertToCommonMessage(ImageMessage imageMessage, Map map, Properties providerProperties) {
         Map<String, Object> mapMessage = new LinkedHashMap<>();
         Map<String, Object> domainMapMessage = new LinkedHashMap<>();
 
@@ -219,7 +218,8 @@ public final class JSONUtil {
         } else {
             String fileName = "";
             if (imageMessage.getFileUrl() != null) {
-                fileName = FilenameUtils.getBaseName(imageMessage.getFileUrl()) + ".jpg";
+                fileName = imageMessage.getExpediaId() + "_" + ((imageMessage.getMediaProviderId() == null) ? "" : imageMessage.getMediaProviderId() + "_")
+                        + FilenameUtils.getBaseName(imageMessage.getFileUrl()) + ".jpg";
             }
             mapMessage.put(MessageConstants.FILE_NAME, fileName);
         }
@@ -229,7 +229,7 @@ public final class JSONUtil {
         if (imageMessage.getCallback() != null) {
             mapMessage.put(MessageConstants.CALLBACK, imageMessage.getCallback().toString());
         }
-        //set default to true if "active" is not set.
+        // set default to true if "active" is not set.
         if (map.get("active") == null) {
             mapMessage.put(MessageConstants.ACTIVE, "true");
         }
@@ -239,24 +239,21 @@ public final class JSONUtil {
         if (imageMessage.getStagingKey() != null) {
             mapMessage.put(MessageConstants.STAGING_KEY, imageMessage.getStagingKey());
         }
-        if(imageMessage.getExpediaId()!=null){
+        if (imageMessage.getExpediaId() != null) {
             mapMessage.put(MessageConstants.OUTER_DOMAIN_ID, imageMessage.getExpediaId().toString());
         }
         if (imageMessage.getCategoryId() != null) {
-            domainMapMessage.put("category",imageMessage.getCategoryId());
+            domainMapMessage.put("category", imageMessage.getCategoryId());
             mapMessage.put(MessageConstants.OUTER_DOMAIN_FIELDS, domainMapMessage);
         }
         if (imageMessage.getCaption() != null) {
             mapMessage.put(MessageConstants.CAPTION, imageMessage.getCaption());
         }
-        if (imageMessage.getMediaProviderId()!=null) {
-            mapMessage.put(MessageConstants.OUTER_DOMAIN_PROVIDER,
-                    providerProperties.getProperty(imageMessage.getMediaProviderId()));
+        if (imageMessage.getMediaProviderId() != null) {
+            mapMessage.put(MessageConstants.OUTER_DOMAIN_PROVIDER, providerProperties.getProperty(imageMessage.getMediaProviderId()));
         }
-        mapMessage.put(MessageConstants.USER_ID,
-                "MultiSource");
-        mapMessage.put(MessageConstants.CLIENT_ID,
-                "MultiSource");
+        mapMessage.put(MessageConstants.USER_ID, "MultiSource");
+        mapMessage.put(MessageConstants.CLIENT_ID, "MultiSource");
         return new JSONWriter().write(mapMessage);
     }
 

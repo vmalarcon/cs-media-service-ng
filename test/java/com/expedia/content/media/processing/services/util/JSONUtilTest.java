@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services.util;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
@@ -174,7 +175,7 @@ public class JSONUtilTest {
                 + "   \"caption\":\"caption\"\n"
                 + "}";
 
-        String convert = "{\"fileUrl\":\"http:\\/\\/localhost:38081\\/office.jpg\",\"fileName\":\"office.jpg\",\"domain\":\"Lodging\",\"callback\":\"http:\\/\\/multi.source.callback\\/callback\",\"active\":\"true\",\"stagingKey\":{\"externalId\":\"222\",\"providerId\":\"300\",\"sourceId\":\"99\"},\"domainId\":\"429\",\"domainFields\":{\"category\":\"801\"},\"caption\":\"caption\",\"domainProvider\":\"EPC Internal User\",\"userId\":\"MultiSource\",\"clientId\":\"MultiSource\"}";
+        String convert = "{\"fileUrl\":\"http:\\/\\/localhost:38081\\/office.jpg\",\"fileName\":\"429_1_office.jpg\",\"domain\":\"Lodging\",\"callback\":\"http:\\/\\/multi.source.callback\\/callback\",\"active\":\"true\",\"stagingKey\":{\"externalId\":\"222\",\"providerId\":\"300\",\"sourceId\":\"99\"},\"domainId\":\"429\",\"domainFields\":{\"category\":\"801\"},\"caption\":\"caption\",\"domainProvider\":\"EPC Internal User\",\"userId\":\"MultiSource\",\"clientId\":\"MultiSource\"}";
 
         ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
         Map messageMap = JSONUtil.buildMapFromJson(message);
@@ -182,6 +183,6 @@ public class JSONUtilTest {
         properties.put("1","EPC Internal User");
 
         String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, properties);
-        assertTrue(mediaCommonMessage.equals(convert));
+        assertEquals(convert, mediaCommonMessage);
     }
 }

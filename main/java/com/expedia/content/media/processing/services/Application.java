@@ -53,7 +53,6 @@ public class Application extends SpringBootServletInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
     private static final String REQUESTID = "request-id";
     private static final int BAD_REQUEST_CODE = 400;
-    private static final int POLL_MSG_INTERVAL = 360000;
 
 
     @Autowired
@@ -172,10 +171,14 @@ public class Application extends SpringBootServletInitializer {
             if (!"[]".equals(json)) {
                 return buildBadRequestResponse(json, serviceUrl.getUrl().toString());
             }
+            //TODO Fix this to not throw a bad request if the URL does not start with the S3 protocol or throw bad request when 404 on HTTP
             boolean fileExists = S3Validator.checkFileExists(imageMessage.getFileUrl());
             if (fileExists == false) {
                 return buildBadRequestResponse("fileUrl does not exist in s3.", serviceUrl.getUrl().toString());
             }
+            /* TODO Change fileName in image message to be built with a hash of the url except when the client is multisource. 
+             * Multisource will have to use the eid and provider id still until the filename keys are replaced in the fingerprint table.
+             */
             mediaServiceProcess.publishMsg(imageMessage);
             LOGGER.info("SUCCESS - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl.getUrl().toString(), message, headers.get(REQUESTID));
             return new ResponseEntity<>("OK", HttpStatus.OK);
@@ -243,17 +246,6 @@ public class Application extends SpringBootServletInitializer {
         } catch (IllegalStateException | ImageMessageException ex) {
             LOGGER.error("ERROR - messageName={}, JSONMessage=[{}] .", message, ex);
         }
-    }
-
-    /**
-     * test rabbit mq performance
-     *
-     * @return
-     */
-    @RequestMapping(value = "/media/rabbitmq", method = RequestMethod.GET)
-    public ResponseEntity putRabbitMq(@RequestParam(value = "testRabbit", required = false) Boolean testRabbit) {
-        long timeUsed = mediaServiceProcess.publishRabbitMsg(testRabbit);
-        return new ResponseEntity<>("put msg to rabbitmq used time:" + timeUsed, HttpStatus.OK);
     }
 
 }
