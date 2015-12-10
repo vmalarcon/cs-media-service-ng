@@ -79,7 +79,7 @@ public class EPCMVELValidatorTest {
     }
 
     @Test
-    public void testMessageMediaIdRequired() throws Exception {
+    public void testMessageMediaIdMissedAndWrongFileExtension() throws Exception {
         String jsonMsg =
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello\"," +
@@ -91,6 +91,7 @@ public class EPCMVELValidatorTest {
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
         String errorMsg = errorList.get(0).get("error");
+        assertTrue(errorMsg.contains("fileUrl extension is malformed"));
         assertTrue(errorMsg.contains("mediaGuid is required"));
     }
 
@@ -210,7 +211,7 @@ public class EPCMVELValidatorTest {
     public void testMessageValidMandatory() throws Exception {
         String jsonMsg =
                 "         { " +
-                        "    \"fileUrl\": \"http://well-formed-url/hello\"," +
+                        "    \"fileUrl\": \"http://well-formed-url/hello.jpg\"," +
                         "    \"fileName\": \"Something\", " +
                         "    \"mediaGuid\": \"media-uuid\", " +
                         "    \"domain\": \"Lodging\", " +

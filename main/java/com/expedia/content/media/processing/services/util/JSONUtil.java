@@ -218,7 +218,7 @@ public final class JSONUtil {
         } else {
             String fileName = "";
             if (imageMessage.getFileUrl() != null) {
-                fileName = imageMessage.getExpediaId() + "_" + ((imageMessage.getMediaProviderId() == null) ? "" : imageMessage.getMediaProviderId() + "_")
+                fileName = ((imageMessage.getExpediaId() == null) ? "" : imageMessage.getExpediaId() + "_") + ((imageMessage.getMediaProviderId() == null) ? "" : imageMessage.getMediaProviderId() + "_")
                         + FilenameUtils.getBaseName(imageMessage.getFileUrl()) + ".jpg";
             }
             mapMessage.put(MessageConstants.FILE_NAME, fileName);

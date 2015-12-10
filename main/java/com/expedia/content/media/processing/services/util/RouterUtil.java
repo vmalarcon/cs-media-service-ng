@@ -54,9 +54,9 @@ public class RouterUtil {
     }
 
     /**
-     * refresh the value to memory every 30 second.
+     * refresh the value to memory every 300 second.
      */
-    @Scheduled(fixedRate = 30000)
+    @Scheduled(fixedRate = 300000)
     public void refreshCacheValue() {
         String propertyValue = "";
         propertyValue = restClient.invokeGetService(PROPERTYNAME);
