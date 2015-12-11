@@ -20,7 +20,7 @@ public class RouterUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(RouterUtil.class);
     private static final String PROPERTYNAME = "route";
 
-    private static int cachePercentValue;
+    private static Integer cachePercentValue;
 
     /**
      * get the percentage configuration value from dynamoDB web service call,
@@ -32,7 +32,7 @@ public class RouterUtil {
         int ranNum = (int) (Math.random() * 100);
         int currentPercentValue = 0;
         String propertyValue = "";
-        if (cachePercentValue != 0) {
+        if (cachePercentValue != null) {
             currentPercentValue = cachePercentValue;
         } else {
             try {
