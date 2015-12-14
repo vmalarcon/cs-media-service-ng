@@ -185,4 +185,33 @@ public class JSONUtilTest {
         String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, properties);
         assertEquals(convert, mediaCommonMessage);
     }
+    @Test
+    public void testConvertToCommonMessageActiveTrue() throws Exception {
+        String message = "{ \n"
+                + "   \"mediaProviderId\":\"1\",\n"
+                + "     \"fileUrl\":\"http://localhost:38081/office.jpg\",\n"
+                + "   \"imageType\":\"Lodging\",\n"
+                + "   \"stagingKey\":{ \n"
+                + "      \"externalId\":\"222\",\n"
+                + "      \"providerId\":\"300\",\n"
+                + "      \"sourceId\":\"99\"\n"
+                + "   },\n"
+                + "   \"active\":\"true\",\n"
+                + "   \"expediaId\":429,\n"
+                + "   \"categoryId\":\"801\",\n"
+                + "   \"callback\":\"http://multi.source.callback/callback\",\n"
+                + "   \"caption\":\"caption\"\n"
+                + "}";
+
+        String convert = "{\"fileUrl\":\"http:\\/\\/localhost:38081\\/office.jpg\",\"fileName\":\"429_1_office.jpg\",\"domain\":\"Lodging\",\"callback\":\"http:\\/\\/multi.source.callback\\/callback\",\"active\":\"true\",\"stagingKey\":{\"externalId\":\"222\",\"providerId\":\"300\",\"sourceId\":\"99\"},\"domainId\":\"429\",\"domainFields\":{\"category\":\"801\"},\"caption\":\"caption\",\"domainProvider\":\"EPC Internal User\",\"userId\":\"MultiSource\",\"clientId\":\"MultiSource\"}";
+
+        ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
+        Map messageMap = JSONUtil.buildMapFromJson(message);
+        Properties properties = new Properties();
+        properties.put("1","EPC Internal User");
+
+        String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, properties);
+        assertEquals(convert, mediaCommonMessage);
+    }
+
 }

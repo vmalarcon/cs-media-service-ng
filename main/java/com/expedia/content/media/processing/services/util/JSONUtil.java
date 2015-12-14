@@ -232,6 +232,8 @@ public final class JSONUtil {
         // set default to true if "active" is not set.
         if (map.get("active") == null) {
             mapMessage.put(MessageConstants.ACTIVE, "true");
+        } else {
+            mapMessage.put(MessageConstants.ACTIVE, map.get("active"));
         }
         if (map.get("mediaGuid") != null) {
             mapMessage.put(MessageConstants.MEDIA_ID, map.get("mediaGuid"));
