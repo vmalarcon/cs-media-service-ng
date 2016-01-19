@@ -38,6 +38,7 @@ import javax.annotation.Resource;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 
 /**
  * MPP media service application.
@@ -176,10 +177,15 @@ public class Application extends SpringBootServletInitializer {
             if (fileExists == false) {
                 return buildBadRequestResponse("fileUrl does not exist in s3.", serviceUrl.getUrl().toString());
             }
+            final String guid = UUID.randomUUID().toString();
+            ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
+
+            imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
+            ImageMessage imageMessageNew = imageMessageBuilder.clientId(userName).mediaGuid(guid).requestId(String.valueOf(headers.get(REQUESTID))).build();
             /* TODO Change fileName in image message to be built with a hash of the url except when the client is multisource. 
              * Multisource will have to use the eid and provider id still until the filename keys are replaced in the fingerprint table.
              */
-            mediaServiceProcess.publishMsg(imageMessage);
+            mediaServiceProcess.publishMsg(imageMessageNew);
             LOGGER.info("SUCCESS - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl.getUrl().toString(), message, headers.get(REQUESTID));
             return new ResponseEntity<>("OK", HttpStatus.OK);
         } catch (IllegalStateException | ImageMessageException ex) {

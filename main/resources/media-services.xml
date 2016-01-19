@@ -65,6 +65,11 @@
                         <ref bean="mvelValidator"/>
                     </list>
                 </entry>
+                <entry key ="Media Cloud Router">
+                    <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                        <ref bean="mediaRouterValidator"/>
+                    </list>
+                </entry>
             </map>
         </property>
         <property name="messagingTemplate" ref="queueMessagingTemplate">
@@ -74,6 +79,7 @@
     <aws-messaging:queue-messaging-template id="queueMessagingTemplate" />
 
     <bean id="mvelValidator" class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
+      <property name="ruleName" value="EPC" />
       <property name="ruleMaps">
           <map>
               <entry key ="EPC">
@@ -96,6 +102,31 @@
               </entry>
           </map>
       </property>
+    </bean>
+
+    <bean id="mediaRouterValidator" class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
+        <property name="ruleName" value="Media Cloud Router" />
+        <property name="ruleMaps">
+            <map>
+                <entry key ="Media Cloud Router">
+                    <list>
+                        <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
+                        <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
+                        <value>(imageMessage.fileUrl != null &amp;&amp; (!imageMessage.fileUrl.endsWith(".jpg") &amp;&amp;!imageMessage.fileUrl.endsWith(".jpeg") &amp;&amp;!imageMessage.fileUrl.endsWith(".png")&amp;&amp;!imageMessage.fileUrl.endsWith(".bmp")&amp;&amp;!imageMessage.fileUrl.endsWith(".gif"))) ? "fileUrl extension is malformed." : "valid"</value>
+                        <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
+                        <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
+                        <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
+                        <value>(domainData.domain.domain.endsWith('Lodging') &amp;&amp; domainData.domainId != null &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
+                        <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
+                        <value>(domainData != null &amp;&amp; domainData.provider == null) ? "domainProvider is required." : "valid"</value>
+                        <value>(domainData.domain.domain.equals('Lodging') &amp;&amp; domainData.domainFields != null &amp;&amp; domainData.domainFields.containsKey("category") &amp;&amp; !domainData.domainFields.get("category").toString.matches("[0-9]+")) ? "category is not numeric." : "valid"</value>
+                        <value>(domainData.domain.domain.equals('Lodging') &amp;&amp; domainData.domainFields != null &amp;&amp; domainData.domainFields.containsKey("roomHero") &amp;&amp; !domainData.domainFields.get("roomHero").toString.matches("true|false")) ? "roomHero is not boolean." : "valid"</value>
+                        <value>(domainData.domain.domain.equals('Lodging') &amp;&amp; domainData.domainFields != null &amp;&amp; domainData.domainFields.containsKey("rooms") &amp;&amp; domainData.domainFields.get("rooms").isEmpty) ? "rooms list is empty" : "valid"</value>
+                        <!-- TODO: Rooms validations would go here. How do we traverse lists? -->
+                    </list>
+                </entry>
+            </map>
+        </property>
     </bean>
 
     <bean id="receptionActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">

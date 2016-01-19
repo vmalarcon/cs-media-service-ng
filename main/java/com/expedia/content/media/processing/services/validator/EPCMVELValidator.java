@@ -16,9 +16,17 @@ import org.slf4j.LoggerFactory;
  */
 public class EPCMVELValidator implements MapMessageValidator {
     private static final Logger LOGGER = LoggerFactory.getLogger(EPCMVELValidator.class);
-    private static final String RULE_NAME = "EPC";
+    private String ruleName = "";
     private static final String RULE_PREFIX = "domainData";
     private static final String ERROR_NOT_FOUND = "could not access:";
+
+    public String getRuleName() {
+        return ruleName;
+    }
+
+    public void setRuleName(String ruleName) {
+        this.ruleName = ruleName;
+    }
 
     private Map<String, List<String>> ruleMaps;
 
@@ -38,7 +46,7 @@ public class EPCMVELValidator implements MapMessageValidator {
      */
     public List<Map<String, String>> validateImages(List<ImageMessage> messageList) {
         List<Map<String, String>> list = new ArrayList<>();
-        List<String> ruleList = ruleMaps.get(RULE_NAME);
+        List<String> ruleList = ruleMaps.get(ruleName);
         Map messageMap = new HashMap();
         Map domainMap = new HashMap();
         for (ImageMessage imageMessage : messageList) {
