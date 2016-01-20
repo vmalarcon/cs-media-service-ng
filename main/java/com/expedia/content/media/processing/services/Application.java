@@ -100,8 +100,7 @@ public class Application extends SpringBootServletInitializer {
      * @return ResponseEntity Standard spring response object.
      * @throws Exception Thrown if processing the message fails.
      */
-    private ResponseEntity<String> acquireMedia(final String message, final MediaServiceUrl serviceUrl,
-            @RequestHeader MultiValueMap<String, String> headers)
+    private ResponseEntity<String> acquireMedia(final String message, final MediaServiceUrl serviceUrl, @RequestHeader MultiValueMap<String, String> headers)
             throws Exception {
         LOGGER.info("RECEIVED REQUEST - message=" + serviceUrl.getUrl().toString() + ", message=[{}], requestId=[{}]", message, headers.get(REQUESTID));
         try {
@@ -174,7 +173,7 @@ public class Application extends SpringBootServletInitializer {
             }
             //TODO Fix this to not throw a bad request if the URL does not start with the S3 protocol or throw bad request when 404 on HTTP
             boolean fileExists = S3Validator.checkFileExists(imageMessage.getFileUrl());
-            if (fileExists == false) {
+            if (!fileExists) {
                 return buildBadRequestResponse("fileUrl does not exist in s3.", serviceUrl.getUrl().toString());
             }
             final String guid = UUID.randomUUID().toString();
