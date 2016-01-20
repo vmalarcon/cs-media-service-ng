@@ -181,7 +181,7 @@ public class Application extends SpringBootServletInitializer {
             ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
 
             imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
-            ImageMessage imageMessageNew = imageMessageBuilder.clientId(userName).mediaGuid(guid).requestId(String.valueOf(headers.get(REQUESTID))).build();
+            ImageMessage imageMessageNew = imageMessageBuilder.clientId(userName).mediaGuid(guid).caption("").requestId(String.valueOf(headers.get(REQUESTID))).build();
             /* TODO Change fileName in image message to be built with a hash of the url except when the client is multisource. 
              * Multisource will have to use the eid and provider id still until the filename keys are replaced in the fingerprint table.
              */
