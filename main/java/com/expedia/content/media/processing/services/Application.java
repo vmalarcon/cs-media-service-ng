@@ -12,6 +12,7 @@ import expedia.content.solutions.metrics.spring.EnableMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ResourceBanner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -32,7 +33,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -60,6 +60,9 @@ public class Application extends SpringBootServletInitializer {
     private MediaServiceProcess mediaServiceProcess;
     @Resource(name = "providerProperties")
     private Properties providerProperties;
+
+    @Value("${media.router.providers}")
+    private String providerRouters;
 
     @Autowired
     RouterUtil routerUtil;
@@ -110,8 +113,9 @@ public class Application extends SpringBootServletInitializer {
             String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, providerProperties);
             LOGGER.info("converted to - common message =[{}]", mediaCommonMessage);
             ImageMessage imageMessageCommon = ImageMessage.parseJsonMessage(mediaCommonMessage);
-            boolean sendToAWS = routerUtil.routeAWSByPercentage();
-            LOGGER.debug("send message to AWS {sendToAWS}", sendToAWS);
+            String routeName = getRouteNameByProvider(imageMessageCommon);
+            boolean sendToAWS = routerUtil.routeAWSByPercentage(routeName);
+            LOGGER.debug("send message to AWS {}", sendToAWS);
             //new mediaCommon Message.
             if (sendToAWS) {
                 //reuse current validation logic
@@ -134,6 +138,15 @@ public class Application extends SpringBootServletInitializer {
             LOGGER.error("ERROR - messageName={}, JSONMessage=[{}] .", serviceUrl.getUrl().toString(), message, ex);
             return buildBadRequestResponse("JSON request format is invalid. Json message=" + message, serviceUrl.getUrl().toString());
         }
+    }
+
+    private String getRouteNameByProvider(ImageMessage imageMessage) {
+        if (imageMessage.getOuterDomainData() != null) {
+            if (providerRouters.contains(imageMessage.getOuterDomainData().getProvider())) {
+                return imageMessage.getOuterDomainData().getProvider();
+            }
+        }
+        return RouterUtil.DEFAULT_ROUTER_NAME;
     }
 
     /**
