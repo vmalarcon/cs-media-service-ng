@@ -10,41 +10,36 @@ import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class S3Validator {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3Validator.class);
 
     private static final String S3_PREFIX = "s3://";
-
-    private static final String S3_CMD = "aws s3 ls ";
 
     public static boolean checkFileExists(String fileUrl) {
         boolean exist = false;
         try {
             String bucketName = getBucketName(fileUrl);
             String objectName = getObjectName(fileUrl);
-
             AmazonS3 s3Client = new AmazonS3Client(new ProfileCredentialsProvider());
             S3Object object = s3Client.getObject(
                     new GetObjectRequest(bucketName, objectName));
-            if(object !=null){
-                exist =true;
+            if (object != null) {
+                exist = true;
             }
         } catch (AmazonServiceException e) {
-            LOGGER.error("s3 key query exception",e);
+            LOGGER.error("s3 key query exception", e);
         }
         return exist;
     }
 
-    private static String getBucketName (String fileUrl){
+    private static String getBucketName(String fileUrl) {
         String bucketName = fileUrl.substring(S3_PREFIX.length());
-        return bucketName.substring(0,bucketName.indexOf("/"));
+        return bucketName.substring(0, bucketName.indexOf("/"));
     }
 
-    private static String getObjectName (String fileUrl){
+    private static String getObjectName(String fileUrl) {
         String bucketName = fileUrl.substring(S3_PREFIX.length());
-        return bucketName.substring(bucketName.indexOf("/")+1);
+        return bucketName.substring(bucketName.indexOf("/") + 1);
     }
-
 
 }
