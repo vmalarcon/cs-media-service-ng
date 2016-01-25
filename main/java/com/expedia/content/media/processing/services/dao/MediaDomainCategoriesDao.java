@@ -20,6 +20,16 @@ public class MediaDomainCategoriesDao {
         this.sproc = sproc;
     }
 
+    /**
+     * Using the Result Sets of SQLMediaDomainCategoriesSproc this Method groups the results by Category ID and then
+     * populates each Category with Localized Names and SubCategories
+     * @see Category, LocalizedName, SubCategory, SQLMediaDomainCategoriesSproc
+     *
+     * @param domain        The Domain to query
+     * @param localeId      The Localization Id to query by
+     * @return List of Category Objects
+     * @throws Exception
+     */
     public List<Category> getMediaCategoriesWithSubCategories(String domain, String localeId) throws Exception {
         if (!"lodging".equals(domain)) {
             throw new DomainNotFoundException("Domain Not Found");
@@ -41,6 +51,14 @@ public class MediaDomainCategoriesDao {
         return categoriesList;
     }
 
+    /**
+     * Builds a List of SubCategory Objects by CategoryId
+     * @see SubCategory
+     *
+     * @param categoryId        The CategoryID of which the SubCategories belong
+     * @param subCategoryMap    A HashMap of subCategories grouped by CategoryId
+     * @return List of SubCategory Objects
+     */
     private List<SubCategory> getSubCategoryList(Integer categoryId, Map<Integer, List<MediaSubCategory>> subCategoryMap) {
         Map<Integer, List<MediaSubCategory>> innerSubCategoryMap = subCategoryMap.get(categoryId).stream()
                 .collect(Collectors.groupingBy(subCategory -> Integer.parseInt(subCategory.getMediaSubCategoryID())));

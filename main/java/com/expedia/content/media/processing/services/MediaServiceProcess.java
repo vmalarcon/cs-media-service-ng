@@ -254,7 +254,7 @@ public class MediaServiceProcess {
      * query LCM DB to get the media file status.
      *
      * @param fileNameList
-     * @return json message than contain status and time
+     * @return json message that contain status and time
      * @throws Exception
      */
     @Meter(name = "mediaStatusCounter")
@@ -271,8 +271,8 @@ public class MediaServiceProcess {
      * query LCM DB to get the Categories of a Domain
      *
      * @param domain    The domain to query
-     * @param localeId  The localization of a domain to query
-     * @return
+     * @param localeId  The localization Id to query by
+     * @return  json message of Categories for the specified Domain and LocaleId
      * @throws Exception
      */
     public String getDomainCategories(String domain, String localeId) throws Exception {

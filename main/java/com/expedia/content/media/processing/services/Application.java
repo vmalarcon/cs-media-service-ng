@@ -117,7 +117,7 @@ public class Application extends SpringBootServletInitializer {
      */
     private ResponseEntity<String> acquireMedia(final String message, final MediaServiceUrl serviceUrl, @RequestHeader MultiValueMap<String, String> headers)
             throws Exception {
-        LOGGER.info("RECEIVED REQUEST - message=" + serviceUrl.getUrl().toString() + ", message=[{}], requestId=[{}]", message, headers.get(REQUESTID));
+        LOGGER.info("RECEIVED REQUEST - message=" + serviceUrl.getUrl() + ", message=[{}], requestId=[{}]", message, headers.get(REQUESTID));
         try {
             ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
             Map messageMap = JSONUtil.buildMapFromJson(message);
@@ -133,7 +133,7 @@ public class Application extends SpringBootServletInitializer {
                 String userName = "EPC";
                 String json = mediaServiceProcess.validateImageMessage(mediaCommonMessage, userName);
                 if (!"[]".equals(json)) {
-                    return buildErrorCodeResponse(json, serviceUrl.getUrl().toString(), BAD_REQUEST_CODE);
+                    return buildErrorCodeResponse(json, serviceUrl.getUrl(), BAD_REQUEST_CODE);
                 }
                 mediaServiceProcess.publishMsg(imageMessageCommon, mediaCommonMessage);
                 LOGGER.info("SUCCESS - send message to AWS media service  - message=[{}], requestId=[{}]", mediaCommonMessage,
@@ -146,8 +146,8 @@ public class Application extends SpringBootServletInitializer {
             }
 
         } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}], requestId=[{}] .", serviceUrl.getUrl().toString(), message, ex, headers.get(REQUESTID));
-            return buildErrorCodeResponse("JSON request format is invalid. Json message=" + message, serviceUrl.getUrl().toString(), BAD_REQUEST_CODE);
+            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}], requestId=[{}] .", serviceUrl.getUrl(), message, ex, headers.get(REQUESTID));
+            return buildErrorCodeResponse("JSON request format is invalid. Json message=" + message, serviceUrl.getUrl(), BAD_REQUEST_CODE);
         }
     }
 
@@ -177,20 +177,20 @@ public class Application extends SpringBootServletInitializer {
      */
     private ResponseEntity<String> mediaAdd(final String message, final MediaServiceUrl serviceUrl, @RequestHeader MultiValueMap<String, String> headers)
             throws Exception {
-        LOGGER.info("RECEIVED REQUEST - message=" + serviceUrl.getUrl().toString() + ", message=[{}], requestId=[{}]", message, headers.get(REQUESTID));
+        LOGGER.info("RECEIVED REQUEST - message=" + serviceUrl.getUrl() + ", message=[{}], requestId=[{}]", message, headers.get(REQUESTID));
         try {
             ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             String userName = auth.getName();
             String json = mediaServiceProcess.validateImageMessage(message, userName);
             if (!"[]".equals(json)) {
-                return buildErrorCodeResponse(json, serviceUrl.getUrl().toString(), BAD_REQUEST_CODE);
+                return buildErrorCodeResponse(json, serviceUrl.getUrl(), BAD_REQUEST_CODE);
             }
             //TODO Fix this to not throw a bad request if the URL does not start with the S3 protocol or throw bad request when 404 on HTTP
             boolean fileExists = S3Validator.checkFileExists(imageMessage.getFileUrl());
             if (!fileExists) {
                 LOGGER.info("Response bad request 'fileUrl does not exist in s3' for -message=[{}]", message);
-                return buildErrorCodeResponse("fileUrl does not exist in s3.", serviceUrl.getUrl().toString(), BAD_REQUEST_CODE);
+                return buildErrorCodeResponse("fileUrl does not exist in s3.", serviceUrl.getUrl(), BAD_REQUEST_CODE);
             }
             final String guid = UUID.randomUUID().toString();
             ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
@@ -207,11 +207,11 @@ public class Application extends SpringBootServletInitializer {
              * Multisource will have to use the eid and provider id still until the filename keys are replaced in the fingerprint table.
              */
             mediaServiceProcess.publishMsg(imageMessageNew);
-            LOGGER.info("SUCCESS - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl.getUrl().toString(), message, headers.get(REQUESTID));
+            LOGGER.info("SUCCESS - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl.getUrl(), message, headers.get(REQUESTID));
             return new ResponseEntity<>("OK", HttpStatus.OK);
         } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}], requestId=[{}].", serviceUrl.getUrl().toString(), message, ex, headers.get(REQUESTID));
-            return buildErrorCodeResponse("JSON request format is invalid. Json message=" + message, serviceUrl.getUrl().toString(), BAD_REQUEST_CODE);
+            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}], requestId=[{}].", serviceUrl.getUrl(), message, ex, headers.get(REQUESTID));
+            return buildErrorCodeResponse("JSON request format is invalid. Json message=" + message, serviceUrl.getUrl(), BAD_REQUEST_CODE);
         }
     }
 
@@ -227,13 +227,13 @@ public class Application extends SpringBootServletInitializer {
     @Timer(name = "mediaLatestStatusTimer")
     @RequestMapping(value = "/media/v1/lateststatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getMediaLatestStatus(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
-        LOGGER.info("RECEIVED REQUEST - url= [{}]" + MediaServiceUrl.MEDIA_STATUS.getUrl().toString() + ", imageMessage=[{}], requestId=[{}]", message,
+        LOGGER.info("RECEIVED REQUEST - url= [{}]" + MediaServiceUrl.MEDIA_STATUS.getUrl() + ", imageMessage=[{}], requestId=[{}]", message,
                 headers.get(REQUESTID));
         try {
             Map<String, Object> map = JSONUtil.buildMapFromJson(message);
             ValidationStatus validationStatus = mediaServiceProcess.validateMediaStatus(message);
             if (!validationStatus.isValid()) {
-                return buildErrorCodeResponse(validationStatus.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl().toString(), BAD_REQUEST_CODE);
+                return buildErrorCodeResponse(validationStatus.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl(), BAD_REQUEST_CODE);
             }
             String jsonResponse = mediaServiceProcess.getMediaStatusList((List<String>) map.get("mediaNames"));
             LOGGER.info("RESPONSE - url=[{}]", MediaServiceUrl.MEDIA_STATUS.getUrl(), toString() + ", imageMessage=[{}], requestId=[{}]", jsonResponse,
@@ -242,16 +242,16 @@ public class Application extends SpringBootServletInitializer {
         } catch (RequestMessageException ex) {
             LOGGER.error("ERROR - url=[{}], imageMessage=[{}], error=[{}], requestId=[{}]",
                     MediaServiceUrl.MEDIA_STATUS.getUrl(), message, ex.getMessage(), ex, headers.get(REQUESTID));
-            return buildErrorCodeResponse(ex.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl().toString(), BAD_REQUEST_CODE);
+            return buildErrorCodeResponse(ex.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl(), BAD_REQUEST_CODE);
         }
     }
 
     /**
-     * Builds a Bad Request response for when the incoming message fails validation.
+     * Builds a response for when the incoming message fails validation.
      * Note that the {@code @Meter} {@code @Timer} annotations introduce aspects from metrics-support
      *
-     * @param validationMessage, failed message from validate.
-     * @param errorCode          error code thrown
+     * @param validationMessage     failed message from validate.
+     * @param errorCode             error code thrown
      * @return A error status response.
      */
     @Counter(name = "badRequestCounter")
@@ -267,7 +267,6 @@ public class Application extends SpringBootServletInitializer {
      * @param domainName associated domain.
      * @param localeId   Localization.
      * @return returns a JSON response for domain categories request.
-     * @throws Exception
      */
     @RequestMapping(value = "/media/v1/domaincategories/{domainName}", method = RequestMethod.GET)
     public ResponseEntity<String> domainCategories(
