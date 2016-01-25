@@ -16,7 +16,6 @@
 
     <aws-messaging:annotation-driven-queue-listener wait-time-out="20" />
 
-    <aws-context:context-resource-loader region="${AWS_REGION}" />
     <aws-context:context-region region="${AWS_REGION}" />
 
     <bean id="filenamesRabbitTemplate" class="org.springframework.amqp.rabbit.core.RabbitTemplate">

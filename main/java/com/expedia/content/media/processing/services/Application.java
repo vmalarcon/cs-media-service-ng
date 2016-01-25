@@ -64,8 +64,6 @@ public class Application extends SpringBootServletInitializer {
     @Autowired
     RouterUtil routerUtil;
 
-    @Autowired
-    S3Validator s3Validator;
 
     @Autowired
     RestClient mediaServiceClient;
@@ -175,7 +173,7 @@ public class Application extends SpringBootServletInitializer {
                 return buildBadRequestResponse(json, serviceUrl.getUrl().toString());
             }
             //TODO Fix this to not throw a bad request if the URL does not start with the S3 protocol or throw bad request when 404 on HTTP
-            boolean fileExists = s3Validator.checkFileExists(imageMessage.getFileUrl());
+            boolean fileExists = S3Validator.checkFileExists(imageMessage.getFileUrl());
             if (!fileExists) {
                 LOGGER.info("Response bad request 'fileUrl does not exist in s3' for -message=[{}]", message);
                 return buildBadRequestResponse("fileUrl does not exist in s3.", serviceUrl.getUrl().toString());

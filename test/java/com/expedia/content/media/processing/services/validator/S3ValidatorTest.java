@@ -7,9 +7,9 @@ import static org.junit.Assert.assertTrue;
 
 public class S3ValidatorTest {
 
-    //@Test
+    @Test
     public void testS3ValidationFalse() {
-        //boolean fileExist = S3Validator.checkFileExists("s3://ewe-cs-media-test/source/testImage3344.jpg");
-        //assertTrue(fileExist == false);
+        boolean fileExist = S3Validator.checkFileExists("s3://ewe-cs-media-test/source/testImage3344.jpg");
+        assertTrue(fileExist == false);
     }
 }
