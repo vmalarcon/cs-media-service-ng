@@ -189,6 +189,7 @@ public class Application extends SpringBootServletInitializer {
             //TODO Fix this to not throw a bad request if the URL does not start with the S3 protocol or throw bad request when 404 on HTTP
             boolean fileExists = S3Validator.checkFileExists(imageMessage.getFileUrl());
             if (!fileExists) {
+                LOGGER.info("Response bad request 'fileUrl does not exist in s3' for -message=[{}]", message);
                 return buildBadRequestResponse("fileUrl does not exist in s3.", serviceUrl.getUrl().toString());
             }
             final String guid = UUID.randomUUID().toString();
