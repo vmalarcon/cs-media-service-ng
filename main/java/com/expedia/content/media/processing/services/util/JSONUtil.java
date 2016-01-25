@@ -1,33 +1,32 @@
 package com.expedia.content.media.processing.services.util;
 
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.MessageConstants;
-import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
-import com.expedia.content.media.processing.services.dao.MediaProcessLog;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rabbitmq.tools.json.JSONWriter;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.TreeMap;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import java.util.TreeMap;
 import java.util.UUID;
+
+import org.apache.commons.io.FilenameUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.MessageConstants;
+import com.expedia.content.media.processing.services.dao.MediaProcessLog;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rabbitmq.tools.json.JSONWriter;
 
 /**
  * Contains methods to process JSON requests and generate JSON responses.
  */
 public final class JSONUtil {
-
+    
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final String JSON_TAG_STATUS = "status";
     private static final String JSON_TAG_TIME = "time";
@@ -35,10 +34,10 @@ public final class JSONUtil {
     private static final String JSON_TAG_MEDIA_STATUS = "mediaStatuses";
     private static final String JSON_TAG_STATUS_NOT_FOUND = "NOT_FOUND";
     private static final Logger LOGGER = LoggerFactory.getLogger(JSONUtil.class);
-
+    
     private JSONUtil() {
     }
-
+    
     /**
      * Converts json message to java map object
      *
@@ -54,7 +53,7 @@ public final class JSONUtil {
             throw new RequestMessageException(errorMsg, ex);
         }
     }
-
+    
     public static List<Map> buildMapListFromJson(String jsonMessage) throws RequestMessageException {
         try {
             return OBJECT_MAPPER.readValue(jsonMessage, List.class);
@@ -63,7 +62,7 @@ public final class JSONUtil {
             throw new RequestMessageException(errorMsg, ex);
         }
     }
-
+    
     /**
      * convert the imageMessage validation error list to JSON string
      *
@@ -78,7 +77,7 @@ public final class JSONUtil {
             throw new RequestMessageException(errorMsg, ex);
         }
     }
-
+    
     /**
      * Generate the json response message.
      *
@@ -89,14 +88,14 @@ public final class JSONUtil {
      * @throws RequestMessageException happen when covert map to json error.
      */
     public static String generateJsonByProcessLogList(Map<String, List<MediaProcessLog>> mapList, List<String> fileNameList,
-                                                      List<ActivityMapping> activityMappingList) throws RequestMessageException {
+            List<ActivityMapping> activityMappingList) throws RequestMessageException {
         Map<String, Object> allMap = new HashMap<>();
         ObjectMapper mapper = new ObjectMapper();
         List mediaStatusList = new ArrayList();
         for (String fileName : fileNameList) {
             Map<String, Object> eachEntryMap = new LinkedHashMap<>();
             eachEntryMap.put(JSON_TAG_MEDIA_NAME, fileName);
-
+            
             List<MediaProcessLog> eachList = mapList.get(fileName);
             if (eachList != null && eachList.size() > 0) {
                 ActivityMapping activityMapping = null;
@@ -114,7 +113,7 @@ public final class JSONUtil {
                 if (activityMapping == null) {
                     eachEntryMap.put(JSON_TAG_STATUS, JSON_TAG_STATUS_NOT_FOUND);
                 }
-
+                
             } else {
                 eachEntryMap.put(JSON_TAG_STATUS, JSON_TAG_STATUS_NOT_FOUND);
             }
@@ -127,9 +126,9 @@ public final class JSONUtil {
             String errorMsg = "Error writing map to json";
             throw new RequestMessageException(errorMsg, ex);
         }
-
+        
     }
-
+    
     /**
      * generate json format error message
      *
@@ -154,7 +153,7 @@ public final class JSONUtil {
             throw new RequestMessageException(errorMsg, ex);
         }
     }
-
+    
     private static ActivityMapping getMappingFromList(List<ActivityMapping> activityMappingList, String activityType, String mediaType) {
         for (ActivityMapping activityMapping : activityMappingList) {
             if (activityMapping.getActivityType().equals(activityType) && mediaType.matches(activityMapping.getMediaType())) {
@@ -163,7 +162,7 @@ public final class JSONUtil {
         }
         return null;
     }
-
+    
     /**
      * convert all media status list to mediaFileName-statusList mapping.
      *
@@ -193,36 +192,42 @@ public final class JSONUtil {
             }
         }
     }
-
+    
     public static void addGuidToMap(Map messageMap) {
         if (messageMap.get("mediaGuid") == null) {
             final String guid = UUID.randomUUID().toString();
             messageMap.put("mediaGuid", guid);
         }
     }
-
+    
     /**
      * Builds the old JSON message of this image message.
      *
      * @return The ImageMessage as a JSON message.
      */
     public static String convertToCommonMessage(ImageMessage imageMessage, Map map, Properties providerProperties) {
-        Map<String, Object> mapMessage = new LinkedHashMap<>();
-        Map<String, Object> domainMapMessage = new LinkedHashMap<>();
-
+        final Map<String, Object> mapMessage = new LinkedHashMap<>();
+        final Map<String, Object> domainMapMessage = new LinkedHashMap<>();
+        
         if (imageMessage.getFileUrl() != null) {
             mapMessage.put(MessageConstants.FILE_URL, imageMessage.getFileUrl());
         }
-        if (imageMessage.getFileName() != null) {
-            mapMessage.put(MessageConstants.FILE_NAME, imageMessage.getFileName());
-        } else {
+        if (imageMessage.getFileName() == null) {
             String fileName = "";
             if (imageMessage.getFileUrl() != null) {
-                fileName = ((imageMessage.getExpediaId() == null) ? "" : imageMessage.getExpediaId() + "_") + ((imageMessage.getMediaProviderId() == null) ? "" : imageMessage.getMediaProviderId() + "_")
-                        + FilenameUtils.getBaseName(imageMessage.getFileUrl()) + ".jpg";
+                if (alreadyContainsExpediaId(imageMessage)) {
+                    fileName = FilenameUtils.getBaseName(imageMessage.getFileUrl()) + ".jpg";
+                } else {
+                    fileName = ((imageMessage.getExpediaId() == null) ? "" : imageMessage.getExpediaId() + "_")
+                            + ((imageMessage.getMediaProviderId() == null) ? "" : imageMessage.getMediaProviderId() + "_")
+                            + FilenameUtils.getBaseName(imageMessage.getFileUrl()) + ".jpg";
+                }
             }
             mapMessage.put(MessageConstants.FILE_NAME, fileName);
+        } else {
+            mapMessage.put(MessageConstants.FILE_NAME, imageMessage.getFileName());
         }
+        
         if (map.get("imageType") != null) {
             mapMessage.put("domain", map.get("imageType"));
         }
@@ -258,5 +263,18 @@ public final class JSONUtil {
         mapMessage.put(MessageConstants.CLIENT_ID, "MultiSource");
         return new JSONWriter().write(mapMessage);
     }
-
+    
+    /**
+     * Check if the provided filename contains the expediaId or not.
+     * 
+     * @param imageMessage provided imageMessage
+     * @return true if the filename already contains the ExpediaId or false if not.
+     */
+    private static boolean alreadyContainsExpediaId(ImageMessage imageMessage) {
+        final String fileName = FilenameUtils.getBaseName(imageMessage.getFileUrl());
+        if (!fileName.isEmpty()) {
+            return fileName.startsWith(imageMessage.getExpediaId().toString());
+        }
+        return false;
+    }
 }
