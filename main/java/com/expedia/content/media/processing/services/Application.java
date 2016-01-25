@@ -274,24 +274,6 @@ public class Application extends SpringBootServletInitializer {
         return new ResponseEntity<>(resMsg, HTTP_STATUS_MAP.get(errorCode));
     }
 
-
-    /**
-     * listen for message from media service queue and publish to collector queue again.
-     * No validation happen here.
-     *
-     * @param message
-     */
-    @MessageMapping("${media.aws.service.queue.name}")
-    public void pollMessage(String message) {
-        LOGGER.info("Receiving msg: {}", message);
-        try {
-            ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
-            mediaServiceProcess.publishMsg(imageMessage);
-        } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}] .", message, ex);
-        }
-    }
-
     /**
      * Image response for Media domain categories service.
      *
