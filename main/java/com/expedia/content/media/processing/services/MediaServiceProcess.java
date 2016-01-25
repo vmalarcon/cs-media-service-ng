@@ -7,6 +7,7 @@ import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.services.dao.Category;
+import com.expedia.content.media.processing.services.dao.DomainNotFoundException;
 import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.expedia.content.media.processing.services.dao.ProcessLogDao;
@@ -273,9 +274,9 @@ public class MediaServiceProcess {
      * @param domain    The domain to query
      * @param localeId  The localization Id to query by
      * @return  json message of Categories for the specified Domain and LocaleId
-     * @throws Exception
+     * @throws DomainNotFoundException
      */
-    public String getDomainCategories(String domain, String localeId) throws Exception {
+    public String getDomainCategories(String domain, String localeId) throws DomainNotFoundException {
         List<Category> domainCategories = mediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
         return JSONUtil.generateJsonByCategoryList(domainCategories, domain);
     }

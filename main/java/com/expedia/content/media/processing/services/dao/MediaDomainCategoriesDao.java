@@ -28,9 +28,10 @@ public class MediaDomainCategoriesDao {
      * @param domain        The Domain to query
      * @param localeId      The Localization Id to query by
      * @return List of Category Objects
-     * @throws Exception
+     * @throws DomainNotFoundException
      */
-    public List<Category> getMediaCategoriesWithSubCategories(String domain, String localeId) throws Exception {
+    @SuppressWarnings("unchecked")
+    public List<Category> getMediaCategoriesWithSubCategories(String domain, String localeId) throws DomainNotFoundException {
         if (!"lodging".equals(domain)) {
             throw new DomainNotFoundException("Domain Not Found");
         }
