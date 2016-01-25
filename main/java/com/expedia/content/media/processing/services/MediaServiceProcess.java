@@ -6,6 +6,8 @@ import com.expedia.content.media.processing.pipeline.reporting.LogActivityProces
 import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
+import com.expedia.content.media.processing.services.dao.Category;
+import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.expedia.content.media.processing.services.dao.ProcessLogDao;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
@@ -46,6 +48,7 @@ public class MediaServiceProcess {
     private List<RequestMessageValidator> mediaStatusValidatorList;
     private List<ActivityMapping> activityWhiteList;
     private ProcessLogDao processLogDao;
+    private MediaDomainCategoriesDao mediaDomainCategoriesDao;
     private Map<String, List<MapMessageValidator>> mapValidatorList;
     private QueueMessagingTemplate messagingTemplate;
 
@@ -92,6 +95,14 @@ public class MediaServiceProcess {
 
     public void setProcessLogDao(ProcessLogDao processLogDao) {
         this.processLogDao = processLogDao;
+    }
+
+    public MediaDomainCategoriesDao getMediaDomainCategoriesDao() {
+        return mediaDomainCategoriesDao;
+    }
+
+    public void setMediaDomainCategoriesDao(MediaDomainCategoriesDao mediaDomainCategoriesDao) {
+        this.mediaDomainCategoriesDao = mediaDomainCategoriesDao;
     }
 
     public void setMessagingTemplate(QueueMessagingTemplate messagingTemplate) {
@@ -213,6 +224,14 @@ public class MediaServiceProcess {
         return validationStatus;
     }
 
+    public String validateDomainCategoriesRequest(String user) {
+        List<MapMessageValidator> validatorList = mapValidatorList.get(user);
+        if (validatorList == null) {
+            return "User is not authorized.";
+        }
+        return "OK";
+    }
+
     /**
      * Logs a completed activity and its time. and exepdiaId is appended before the file name
      *
@@ -246,6 +265,19 @@ public class MediaServiceProcess {
         Map<String, List<MediaProcessLog>> mapList = new HashMap<>();
         JSONUtil.divideStatusListToMap(statusLogList, mapList, fileNameList.size());
         return JSONUtil.generateJsonByProcessLogList(mapList, fileNameList, activityWhiteList);
+    }
+
+    /**
+     * query LCM DB to get the Categories of a Domain
+     *
+     * @param domain    The domain to query
+     * @param localeId  The localization of a domain to query
+     * @return
+     * @throws Exception
+     */
+    public String getDomainCategories(String domain, String localeId) throws Exception {
+        List<Category> domainCategories = mediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
+        return JSONUtil.generateJsonByCategoryList(domainCategories, domain);
     }
 
 }

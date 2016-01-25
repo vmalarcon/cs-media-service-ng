@@ -1,0 +1,51 @@
+package com.expedia.content.media.processing.services.dao;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.assertNotEquals;
+import static org.mockito.Mockito.when;
+
+@RunWith(MockitoJUnitRunner.class)
+public class MediaDomainCategoriesDaoTest {
+
+    @Mock
+    private SQLMediaDomainCategoriesSproc mockSQLMediaDomainCategoriesSproc;
+
+    @Mock
+    private Map<String, Object> mockResults;
+
+
+    @Test
+    public void testDomainFound() throws Exception {
+        String domain = "lodging";
+        String localeId = "1033";
+        List<MediaCategory> mockMediaCategories = new ArrayList<>();
+        mockMediaCategories.add(new MediaCategory("3", "1033", "Primary Image"));
+        mockMediaCategories.add(new MediaCategory("4", "1033", "Lobby"));
+        List<MediaSubCategory> mockMediaSubCategories = new ArrayList<>();
+        mockMediaSubCategories.add(new MediaSubCategory("3", "3", "1033", "Featured Image"));
+        mockMediaSubCategories.add(new MediaSubCategory("4", "10000", "1033", "Interior Entrance"));
+        mockMediaSubCategories.add(new MediaSubCategory("4", "10001", "1033", "Lobby"));
+        MediaDomainCategoriesDao mediaDomainCategoriesDao = new MediaDomainCategoriesDao(mockSQLMediaDomainCategoriesSproc);
+        when(mockSQLMediaDomainCategoriesSproc.execute(localeId)).thenReturn(mockResults);
+        when(mockResults.get(SQLMediaDomainCategoriesSproc.MEDIA_CATEGORY_RESULT_SET)).thenReturn(mockMediaCategories);
+        when(mockResults.get(SQLMediaDomainCategoriesSproc.MEDIA_SUB_CATEGORY_RESULT_SET)).thenReturn(mockMediaSubCategories);
+        List<Category> categories = mediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
+        assertNotEquals(categories, null);
+    }
+
+    @Test(expected = DomainNotFoundException.class)
+    public void testDomainNotFound() throws Exception {
+        String domain = "cats";
+        String localeId = "1033";
+        MediaDomainCategoriesDao mediaDomainCategoriesDao = new MediaDomainCategoriesDao(mockSQLMediaDomainCategoriesSproc);
+        mediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
+    }
+}

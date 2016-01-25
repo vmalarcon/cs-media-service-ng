@@ -58,6 +58,7 @@
             </list>
         </property>
         <property name="processLogDao" ref="processLogDao" />
+        <property name="mediaDomainCategoriesDao" ref="mediaDomainCategoriesDao"/>
         <property name="mapValidatorList">
             <map>
                 <entry key ="EPC">
@@ -189,6 +190,12 @@
         <constructor-arg name="processName" value="${processname}" />
         <constructor-arg name="sqlMediaLogSproc">
             <bean class="com.expedia.content.media.processing.services.dao.SQLMediaLogSproc" />
+        </constructor-arg>
+    </bean>
+
+    <bean id="mediaDomainCategoriesDao" class="com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao">
+        <constructor-arg name="sproc">
+            <bean class="com.expedia.content.media.processing.services.dao.SQLMediaDomainCategoriesSproc" />
         </constructor-arg>
     </bean>
 

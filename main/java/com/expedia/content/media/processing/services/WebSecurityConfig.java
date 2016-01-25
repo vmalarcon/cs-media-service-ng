@@ -58,7 +58,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         http.authorizeRequests().antMatchers("/", MediaServiceUrl.ACQUIRE_MEDIA.getUrl()).permitAll();
         http.httpBasic().and().authorizeRequests().
                 antMatchers(HttpMethod.POST, MediaServiceUrl.MEDIA_STATUS.getUrl()).authenticated().
-                antMatchers(HttpMethod.POST, MediaServiceUrl.MEDIA_ADD.getUrl()).authenticated();
+                antMatchers(HttpMethod.POST, MediaServiceUrl.MEDIA_ADD.getUrl()).authenticated().
+                antMatchers(HttpMethod.GET, MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl()).authenticated();
         http.csrf().disable();
         //handle 401 case when Authentication header is missing.
         http.exceptionHandling().authenticationEntryPoint(authenticationEntryPoint);

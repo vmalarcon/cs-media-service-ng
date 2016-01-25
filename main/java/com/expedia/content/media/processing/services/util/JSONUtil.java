@@ -2,12 +2,11 @@ package com.expedia.content.media.processing.services.util;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.MessageConstants;
-import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import com.expedia.content.media.processing.services.dao.Category;
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.tools.json.JSONWriter;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +33,7 @@ public final class JSONUtil {
     private static final String JSON_TAG_MEDIA_NAME = "mediaName";
     private static final String JSON_TAG_MEDIA_STATUS = "mediaStatuses";
     private static final String JSON_TAG_STATUS_NOT_FOUND = "NOT_FOUND";
+    private static final String JSON_TAG_DOMAIN = "domain";
     private static final Logger LOGGER = LoggerFactory.getLogger(JSONUtil.class);
 
     private JSONUtil() {
@@ -73,6 +73,25 @@ public final class JSONUtil {
     public static String convertValidationErrors(List<Map<String, String>> messageList) {
         try {
             return OBJECT_MAPPER.writeValueAsString(messageList);
+        } catch (IOException ex) {
+            String errorMsg = "Error writing map to json";
+            throw new RequestMessageException(errorMsg, ex);
+        }
+    }
+
+    /**
+     * Generate the json response message.
+     *
+     * @param categories    a List of Categories with their Sub-Categories
+     * @param domain        The domain of the categories
+     * @return
+     */
+    public static String generateJsonByCategoryList(List<Category> categories, String domain) {
+        try {
+            Map<String, Object> allMap = new HashMap<>();
+            allMap.put(JSON_TAG_DOMAIN, domain);
+            allMap.put("categories", categories);
+            return OBJECT_MAPPER.writeValueAsString(allMap);
         } catch (IOException ex) {
             String errorMsg = "Error writing map to json";
             throw new RequestMessageException(errorMsg, ex);

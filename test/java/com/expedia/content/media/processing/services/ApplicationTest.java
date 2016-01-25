@@ -3,6 +3,9 @@ package com.expedia.content.media.processing.services;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.http.HttpHeaders;
@@ -22,8 +25,9 @@ import static org.junit.Assert.assertNotNull;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
 public class ApplicationTest {
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationTest.class);
     private static MultiValueMap<String, String> httpHeaders;
+
     @Autowired
     private Application application;
     static {
@@ -109,5 +113,4 @@ public class ApplicationTest {
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
-
 }
