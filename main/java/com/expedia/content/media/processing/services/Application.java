@@ -67,6 +67,7 @@ public class Application extends SpringBootServletInitializer {
     @Autowired
     RouterUtil routerUtil;
 
+
     @Autowired
     RestClient mediaServiceClient;
 
@@ -187,6 +188,7 @@ public class Application extends SpringBootServletInitializer {
             //TODO Fix this to not throw a bad request if the URL does not start with the S3 protocol or throw bad request when 404 on HTTP
             boolean fileExists = S3Validator.checkFileExists(imageMessage.getFileUrl());
             if (!fileExists) {
+                LOGGER.info("Response bad request 'fileUrl does not exist in s3' for -message=[{}]", message);
                 return buildBadRequestResponse("fileUrl does not exist in s3.", serviceUrl.getUrl().toString());
             }
             final String guid = UUID.randomUUID().toString();
@@ -255,21 +257,6 @@ public class Application extends SpringBootServletInitializer {
         return new ResponseEntity<>(resMsg, HttpStatus.BAD_REQUEST);
     }
 
-    /**
-     * listen for message from media service queue and publish to collector queue again.
-     * No validation happen here.
-     *
-     * @param message
-     */
-    @MessageMapping("${media.aws.service.queue.name}")
-    public void pollMessage(String message) {
-        LOGGER.info("Receiving msg: {}", message);
-        try {
-            ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
-            mediaServiceProcess.publishMsg(imageMessage);
-        } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}] .", message, ex);
-        }
-    }
+
 
 }

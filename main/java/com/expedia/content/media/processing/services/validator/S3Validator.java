@@ -1,37 +1,45 @@
 package com.expedia.content.media.processing.services.validator;
 
-import org.apache.commons.io.FilenameUtils;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
 import org.apache.commons.io.IOUtils;
-
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class S3Validator {
+    private static final Logger LOGGER = LoggerFactory.getLogger(S3Validator.class);
 
-    private static final String S3_CMD = "aws s3 ls ";
+    private static final String S3_PREFIX = "s3://";
 
-    public static boolean checkFileExists(String fileUrs) {
-        if (fileUrs != null && fileUrs.contains("s3")) {
-            String s = executeCommand(S3_CMD + fileUrs);
-            if (s != null && s.contains(FilenameUtils.getBaseName(fileUrs))) {
-                return true;
+    public static boolean checkFileExists(String fileUrl) {
+        boolean exist = false;
+        try {
+            String bucketName = getBucketName(fileUrl);
+            String objectName = getObjectName(fileUrl);
+            AmazonS3 s3Client = new AmazonS3Client();
+            S3Object object = s3Client.getObject(
+                    new GetObjectRequest(bucketName, objectName));
+            if (object != null) {
+                exist = true;
             }
-            return false;
+        } catch (AmazonServiceException e) {
+            LOGGER.error("s3 key query exception", e);
         }
-        return true;
-
+        return exist;
     }
 
-    private static String executeCommand(String command) {
-        String result = "";
-        Process process;
-        try {
-            process = Runtime.getRuntime().exec(command);
-            process.waitFor();
-            result = IOUtils.toString(process.getInputStream());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return result;
+    private static String getBucketName(String fileUrl) {
+        String bucketName = fileUrl.substring(S3_PREFIX.length());
+        return bucketName.substring(0, bucketName.indexOf("/"));
+    }
+
+    private static String getObjectName(String fileUrl) {
+        String bucketName = fileUrl.substring(S3_PREFIX.length());
+        return bucketName.substring(bucketName.indexOf("/") + 1);
     }
 
 }
