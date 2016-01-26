@@ -18,7 +18,6 @@ public class EPCMVELValidator implements MapMessageValidator {
     private static final Logger LOGGER = LoggerFactory.getLogger(EPCMVELValidator.class);
     private String clientRule = "";
     private static final String RULE_PREFIX = "domainData";
-    private static final String ERROR_NOT_FOUND = "could not access:";
 
     public String getClientRule() {
         return clientRule;
@@ -44,25 +43,23 @@ public class EPCMVELValidator implements MapMessageValidator {
      * @param messageList ImageMessage list
      * @return JSON string contains fileName and error description
      */
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public List<Map<String, String>> validateImages(List<ImageMessage> messageList) {
-        List<Map<String, String>> list = new ArrayList<>();
-        List<String> ruleList = ruleMaps.get(clientRule);
-        Map messageMap = new HashMap();
-        Map domainMap = new HashMap();
-        for (ImageMessage imageMessage : messageList) {
-            StringBuffer errorMsg = new StringBuffer();
+        final List<Map<String, String>> list = new ArrayList<>();
+        final List<String> ruleList = ruleMaps.get(clientRule);
+        final Map messageMap = new HashMap();
+        final Map domainMap = new HashMap();
+        for (final ImageMessage imageMessage : messageList) {
+            final StringBuffer errorMsg = new StringBuffer();
             messageMap.put("imageMessage", imageMessage);
             //compare ImageMessage (non outer domain) fields with rules
             compareRulesWithMessageMap(errorMsg, ruleList, messageMap);
-            int index = 0;
             if (imageMessage.getOuterDomainData() != null) {
                 domainMap.put(RULE_PREFIX, imageMessage.getOuterDomainData());
                 //merge two map because rule
                 //imageMessage.imageType.imageType.equals('Lodging')&amp;&amp;!domainData.domainDataName.equals('LCM') ?"domainDataName must be LCM.":"valid"
                 messageMap.putAll(domainMap);
-                compareRulesWithDomainMap(errorMsg, ruleList, messageMap, index);
-                index++;
-
+                compareRulesWithDomainMap(errorMsg, ruleList, messageMap);
             }
             if (errorMsg.length() > 0) {
                 putErrorMapToList(list, errorMsg, imageMessage);
@@ -72,14 +69,14 @@ public class EPCMVELValidator implements MapMessageValidator {
     }
 
     private void putErrorMapToList(List<Map<String, String>> list, StringBuffer errorMsg, ImageMessage imageMesage) {
-        Map<String, String> jsonMap = new TreeMap<>();
+        final Map<String, String> jsonMap = new TreeMap<>();
         jsonMap.put("fileName", imageMesage.getFileName());
         jsonMap.put("error", errorMsg.toString());
         list.add(jsonMap);
     }
 
     private void compareRulesWithMessageMap(StringBuffer errorMsg, List<String> ruleList, Map<String, Object> objectMap) {
-        for (String rule : ruleList) {
+        for (final String rule : ruleList) {
             String validationError = "";
             try {
                 if (!rule.contains(RULE_PREFIX)) {
@@ -94,14 +91,12 @@ public class EPCMVELValidator implements MapMessageValidator {
         }
     }
 
-    private void compareRulesWithDomainMap(StringBuffer errorMsg, List<String> ruleList, Map<String, Object> objectMap, int index) {
-        for (String rule : ruleList) {
+    private void compareRulesWithDomainMap(StringBuffer errorMsg, List<String> ruleList, Map<String, Object> objectMap) {
+        for (final String rule : ruleList) {
             String validationError = "";
             try {
                 if (rule.contains(RULE_PREFIX)) {
-                    validationError = MVEL.eval(rule, objectMap).toString();
-                    //validationError = "domainData[" + index + "].domainDataFields." + validationError;
-                    validationError = "domainDataFields." + validationError;
+                    validationError = "domainDataFields." + MVEL.eval(rule, objectMap).toString();
 
                 }
             } catch (Exception ex) {
@@ -117,18 +112,6 @@ public class EPCMVELValidator implements MapMessageValidator {
         }
     }
 
-    private String composeValidtionError(String exceptionMsg, int index) {
-        String validationError = "";
-        if (exceptionMsg.contains(ERROR_NOT_FOUND)) {
-            int parseLocation = exceptionMsg.indexOf(ERROR_NOT_FOUND);
-            if (parseLocation > 0) {
-                validationError =
-                        exceptionMsg.substring(parseLocation + ERROR_NOT_FOUND.length() + 1, exceptionMsg.indexOf(";")) + " is required.";
-                validationError = "domainData[" + index + "].domainDataFields." + validationError;
-            }
-        }
-        return validationError;
-    }
 }
 
 

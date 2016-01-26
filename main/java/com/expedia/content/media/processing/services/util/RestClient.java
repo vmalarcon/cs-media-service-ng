@@ -1,6 +1,14 @@
 package com.expedia.content.media.processing.services.util;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
@@ -12,15 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Rest Client for query Configuration service in data manager.
@@ -30,11 +30,8 @@ import java.util.Map;
 public class RestClient {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RestClient.class);
-
     private static final ObjectMapper JSON = new ObjectMapper();
-
     private static final String CLIENT_ID = "MediaServices";
-    private static final Charset ENCODING_CHARSET = Charset.forName("UTF-8");
 
     private RestTemplate restTemplate = new RestTemplate();
 
@@ -72,20 +69,20 @@ public class RestClient {
     public String invokeGetService(String propertyName) {
         String propertyValue = "";
         try {
-            final HttpHeaders headers = new HttpHeaders();
-            final HttpEntity<String> httpEntity = new HttpEntity<>("", headers);
-            String uriWithParm = uri.toString() + "?environment=" + environment + "&propertyName=" + propertyName;
+            final String uriWithParm = uri.toString() + "?environment=" + environment + "&propertyName=" + propertyName;
             URI dataManagerURL = null;
             try {
                 dataManagerURL = new URL(uriWithParm).toURI();
             } catch (MalformedURLException | URISyntaxException e) {
                 throw new RestClientException("Invalid URL: " + uriWithParm, e);
             }
+            final HttpHeaders headers = new HttpHeaders();
+            final HttpEntity<String> httpEntity = new HttpEntity<>("", headers);
             final ResponseEntity<String> response = restTemplate.exchange(dataManagerURL, HttpMethod.GET, httpEntity, String.class);
             final String responseBody = response.getBody();
             LOGGER.info("Receiving response from Data manger: request-id=[{}], responseBody=[{}]", CLIENT_ID, responseBody);
-            List<Map> configMap = JSONUtil.buildMapListFromJson(responseBody);
-            if (configMap != null && configMap.size() > 0) {
+            final List<Map> configMap = JSONUtil.buildMapListFromJson(responseBody);
+            if (configMap != null && !configMap.isEmpty()) {
                 propertyValue = (String) configMap.get(0).get("propertyValue");
             }
             return propertyValue;
@@ -100,14 +97,14 @@ public class RestClient {
 
     private String generateJsonValue(String propertyValue, String proptertyName) {
         try {
-            Map mediaConfigMap = new HashMap<>();
+            final Map mediaConfigMap = new HashMap<>();
             mediaConfigMap.put("environment", environment);
             mediaConfigMap.put("propertyName", proptertyName);
             mediaConfigMap.put("propertyValue", propertyValue);
 
             return JSON.writeValueAsString(mediaConfigMap);
         } catch (IOException ex) {
-            String errorMsg = "Error writing map to json";
+            final String errorMsg = "Error writing map to json";
             throw new RequestMessageException(errorMsg, ex);
         }
 
@@ -122,7 +119,7 @@ public class RestClient {
     public String createProperty(String propertyName, String propertyValue) {
         try {
             final HttpHeaders headers = new HttpHeaders();
-            String json = generateJsonValue(propertyValue, propertyName);
+            final String json = generateJsonValue(propertyValue, propertyName);
             final HttpEntity<String> httpEntity = new HttpEntity<>(json, headers);
             final ResponseEntity<String> response = restTemplate.exchange(uri, HttpMethod.POST, httpEntity, String.class);
             final String responseBody = response.getBody();

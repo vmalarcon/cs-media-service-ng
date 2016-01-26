@@ -29,28 +29,25 @@ public class RouterUtil {
      * @return boolean indicate whether
      */
     public boolean routeAWSByPercentage() {
-        int ranNum = (int) (Math.random() * 100);
+        final int ranNum = (int) (Math.random() * 100);
         int currentPercentValue = 0;
         String propertyValue = "";
-        if (cachePercentValue != null) {
-            currentPercentValue = cachePercentValue;
-        } else {
+        if (cachePercentValue == null) {
             try {
                 propertyValue = restClient.invokeGetService(PROPERTYNAME);
             } catch (RestClientException ex) {
                 LOGGER.error("Error calling Data Manager Service exception", ex);
             }
-            if (!StringUtils.isEmpty(propertyValue)) {
-                currentPercentValue = Integer.parseInt(propertyValue);
-            } else {
+            if (StringUtils.isEmpty(propertyValue)) {
                 restClient.createProperty(PROPERTYNAME, Integer.toString(percentage));
                 currentPercentValue = percentage;
+            } else {
+                currentPercentValue = Integer.parseInt(propertyValue);
             }
+        } else {
+            currentPercentValue = cachePercentValue;
         }
-        if (ranNum < currentPercentValue) {
-            return true;
-        }
-        return false;
+        return (ranNum < currentPercentValue);
     }
 
     /**

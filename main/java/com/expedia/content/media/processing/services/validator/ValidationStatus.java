@@ -4,6 +4,7 @@ package com.expedia.content.media.processing.services.validator;
  * This class contain validation result, true means validation successful.
  * false means validation fail, for validation fail, the message will be set to specify with property failure.
  */
+@SuppressWarnings({"PMD.AvoidFieldNameMatchingMethodName"})
 public class ValidationStatus {
 
     private boolean isValid;

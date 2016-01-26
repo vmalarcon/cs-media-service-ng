@@ -1,5 +1,19 @@
 package com.expedia.content.media.processing.services;
 
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.stereotype.Component;
+
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.reporting.Activity;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
@@ -14,22 +28,9 @@ import com.expedia.content.media.processing.services.validator.MapMessageValidat
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
 import com.expedia.content.media.processing.services.validator.RequestMessageValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
+
 import expedia.content.solutions.metrics.annotations.Meter;
 import expedia.content.solutions.metrics.annotations.Timer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
-import org.springframework.messaging.support.MessageBuilder;
-import org.springframework.stereotype.Component;
-
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * MediaServiceProcess is called by main class
@@ -40,7 +41,6 @@ public class MediaServiceProcess {
     private static final Logger LOGGER = LoggerFactory.getLogger(MediaServiceProcess.class);
 
     private final List<MediaMessageValidator> validators;
-    private final RabbitTemplate rabbitTemplate;
     private final LogActivityProcess logActivityProcess;
     private final Reporting reporting;
     private List<RequestMessageValidator> mediaStatusValidatorList;
@@ -52,10 +52,8 @@ public class MediaServiceProcess {
     @Value("${media.aws.collector.queue.name}")
     private String publishQueue;
 
-    public MediaServiceProcess(List<MediaMessageValidator> validators, RabbitTemplate rabbitTemplate,
-            final LogActivityProcess logActivityProcess, final Reporting reporting) {
+    public MediaServiceProcess(final List<MediaMessageValidator> validators, final LogActivityProcess logActivityProcess, final Reporting reporting) {
         this.validators = validators;
-        this.rabbitTemplate = rabbitTemplate;
         this.logActivityProcess = logActivityProcess;
         this.reporting = reporting;
     }
@@ -64,8 +62,7 @@ public class MediaServiceProcess {
         return mediaStatusValidatorList;
     }
 
-    public void setMediaStatusValidatorList(
-            List<RequestMessageValidator> mediaStatusValidatorList) {
+    public void setMediaStatusValidatorList(List<RequestMessageValidator> mediaStatusValidatorList) {
         this.mediaStatusValidatorList = mediaStatusValidatorList;
     }
 
@@ -73,8 +70,7 @@ public class MediaServiceProcess {
         return mapValidatorList;
     }
 
-    public void setMapValidatorList(
-            Map<String, List<MapMessageValidator>> mapValidatorList) {
+    public void setMapValidatorList(Map<String, List<MapMessageValidator>> mapValidatorList) {
         this.mapValidatorList = mapValidatorList;
     }
 
@@ -120,7 +116,6 @@ public class MediaServiceProcess {
         }
     }
 
-
     /**
      * publish message to jms queue
      * Note that the {@code @Meter} {@code @Timer} {@code @RetryableMethod} annotations introduce aspects from metrics-support and spring-retry
@@ -131,8 +126,8 @@ public class MediaServiceProcess {
     @Meter(name = "publishMessageCounter")
     @Timer(name = "publishMessageTimer")
     @RetryableMethod
-    public void publishMsg(ImageMessage message) {
-        String jsonMessage = message.toJSONMessage();
+    public void publishMsg(final ImageMessage message) {
+        final String jsonMessage = message.toJSONMessage();
         try {
             messagingTemplate.send(publishQueue, MessageBuilder.withPayload(jsonMessage).build());
             LOGGER.info("Sending message to queue done : message=[{}] ", jsonMessage);
@@ -151,14 +146,14 @@ public class MediaServiceProcess {
      *
      * @param imageMessage is the received json format message from main application
      * @return ValidationStatus contain two validation status, true-successful,
-     * false- validation fail , in false case, a validation message is set in ValidationStatus
+     *         false- validation fail , in false case, a validation message is set in ValidationStatus
      * @throws Exception in case like jms connection is down
      */
-    public ValidationStatus validateImage(ImageMessage imageMessage) throws Exception {
+    public ValidationStatus validateImage(final ImageMessage imageMessage) throws Exception {
         ValidationStatus validationStatus = new ValidationStatus();
-        //in case, no validator defined, we make it true.
+        // in case, no validator defined, we make it true.
         validationStatus.setValid(true);
-        for (MediaMessageValidator validator : validators) {
+        for (final MediaMessageValidator validator : validators) {
             validationStatus = validator.validate(imageMessage);
             if (!validationStatus.isValid()) {
                 return validationStatus;
@@ -172,20 +167,20 @@ public class MediaServiceProcess {
      * return the validation error list that combine all of the error result.
      *
      * @param message input json message
-     * @param user    web service user, can be "EPC"
+     * @param user web service user, can be "EPC"
      * @return JSON string contains fileName and error description
      * @throws Exception when message to ImageMessage and convert java list to json
      */
-    public String validateImageMessage(String message, String user) throws Exception {
-        ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
-        List<ImageMessage> imageMessageList = new ArrayList<>();
+    public String validateImageMessage(final String message, final String user) throws Exception {
+        final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
+        final List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<MapMessageValidator> validatorList = mapValidatorList.get(user);
+        final List<MapMessageValidator> validatorList = mapValidatorList.get(user);
         if (validatorList == null) {
             return "User is not authorized.";
         }
         List<Map<String, String>> validationErrorList = null;
-        for (MapMessageValidator mapMessageValidator : validatorList) {
+        for (final MapMessageValidator mapMessageValidator : validatorList) {
             validationErrorList = mapMessageValidator.validateImages(imageMessageList);
         }
         return JSONUtil.convertValidationErrors(validationErrorList);
@@ -197,14 +192,14 @@ public class MediaServiceProcess {
      *
      * @param message input json message
      * @return ValidationStatus contain the validation status, {@code true} when successful or
-     * {@code false} when the validation fails. When the validation fails a message is also set in the ValidationStatus.
+     *         {@code false} when the validation fails. When the validation fails a message is also set in the ValidationStatus.
      * @throws Exception when the message is not valid json format.
      */
-    public ValidationStatus validateMediaStatus(String message) throws Exception {
+    public ValidationStatus validateMediaStatus(final String message) throws Exception {
         ValidationStatus validationStatus = new ValidationStatus();
-        //in case, no validator defined, we make it true.
+        // in case, no validator defined, we make it true.
         validationStatus.setValid(true);
-        for (RequestMessageValidator validator : mediaStatusValidatorList) {
+        for (final RequestMessageValidator validator : mediaStatusValidatorList) {
             validationStatus = validator.validate(message);
             if (!validationStatus.isValid()) {
                 return validationStatus;
@@ -217,17 +212,12 @@ public class MediaServiceProcess {
      * Logs a completed activity and its time. and exepdiaId is appended before the file name
      *
      * @param imageMessage The imageMessage of the file being processed.
-     * @param activity     The activity to log.
+     * @param activity The activity to log.
      */
-    private void logActivity(ImageMessage imageMessage, Activity activity) throws URISyntaxException {
-        LogEntry logEntry = new LogEntry(
-                imageMessage.getFileName(),
-                imageMessage.getMediaGuid(),
-                activity,
-                new Date(),
-                imageMessage.getOuterDomainData().getDomain(),
-                imageMessage.getOuterDomainData().getDomainId(),
-                imageMessage.getOuterDomainData().getDerivativeCategory());
+    private void logActivity(final ImageMessage imageMessage, final Activity activity) throws URISyntaxException {
+        final LogEntry logEntry =
+                new LogEntry(imageMessage.getFileName(), imageMessage.getMediaGuid(), activity, new Date(), imageMessage.getOuterDomainData().getDomain(),
+                             imageMessage.getOuterDomainData().getDomainId(), imageMessage.getOuterDomainData().getDerivativeCategory());
         logActivityProcess.log(logEntry, reporting);
     }
 
@@ -241,9 +231,9 @@ public class MediaServiceProcess {
     @Meter(name = "mediaStatusCounter")
     @Timer(name = "mediaStatusTimer")
     @RetryableMethod
-    public String getMediaStatusList(List<String> fileNameList) throws Exception {
-        List<MediaProcessLog> statusLogList = processLogDao.findMediaStatus(fileNameList);
-        Map<String, List<MediaProcessLog>> mapList = new HashMap<>();
+    public String getMediaStatusList(final List<String> fileNameList) throws Exception {
+        final List<MediaProcessLog> statusLogList = processLogDao.findMediaStatus(fileNameList);
+        final Map<String, List<MediaProcessLog>> mapList = new HashMap<>();
         JSONUtil.divideStatusListToMap(statusLogList, mapList, fileNameList.size());
         return JSONUtil.generateJsonByProcessLogList(mapList, fileNameList, activityWhiteList);
     }

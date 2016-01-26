@@ -1,14 +1,12 @@
 package com.expedia.content.media.processing.services;
 
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
-import com.expedia.content.media.processing.services.util.*;
-import com.expedia.content.media.processing.services.validator.S3Validator;
-import com.expedia.content.media.processing.services.validator.ValidationStatus;
-import expedia.content.solutions.metrics.annotations.Counter;
-import expedia.content.solutions.metrics.annotations.Meter;
-import expedia.content.solutions.metrics.annotations.Timer;
-import expedia.content.solutions.metrics.spring.EnableMetrics;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
+
+import javax.annotation.Resource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,22 +21,29 @@ import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
 
-import javax.annotation.Resource;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.UUID;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
+import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.util.MediaServiceUrl;
+import com.expedia.content.media.processing.services.util.RequestMessageException;
+import com.expedia.content.media.processing.services.util.RestClient;
+import com.expedia.content.media.processing.services.util.RouterUtil;
+import com.expedia.content.media.processing.services.validator.S3Validator;
+import com.expedia.content.media.processing.services.validator.ValidationStatus;
+
+import expedia.content.solutions.metrics.annotations.Counter;
+import expedia.content.solutions.metrics.annotations.Meter;
+import expedia.content.solutions.metrics.annotations.Timer;
+import expedia.content.solutions.metrics.spring.EnableMetrics;
 
 /**
  * MPP media service application.
@@ -100,23 +105,24 @@ public class Application extends SpringBootServletInitializer {
      * @return ResponseEntity Standard spring response object.
      * @throws Exception Thrown if processing the message fails.
      */
+    @SuppressWarnings("rawtypes")
     private ResponseEntity<String> acquireMedia(final String message, final MediaServiceUrl serviceUrl, @RequestHeader MultiValueMap<String, String> headers)
             throws Exception {
         LOGGER.info("RECEIVED REQUEST - message=" + serviceUrl.getUrl().toString() + ", message=[{}], requestId=[{}]", message, headers.get(REQUESTID));
         try {
-            ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
-            Map messageMap = JSONUtil.buildMapFromJson(message);
+            final ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
+            final Map messageMap = JSONUtil.buildMapFromJson(message);
             JSONUtil.addGuidToMap(messageMap);
-            String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, providerProperties);
+            final String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, providerProperties);
             LOGGER.info("converted to - common message =[{}]", mediaCommonMessage);
-            ImageMessage imageMessageCommon = ImageMessage.parseJsonMessage(mediaCommonMessage);
-            boolean sendToAWS = routerUtil.routeAWSByPercentage();
+            final ImageMessage imageMessageCommon = ImageMessage.parseJsonMessage(mediaCommonMessage);
+            final boolean sendToAWS = routerUtil.routeAWSByPercentage();
             LOGGER.debug("send message to AWS {sendToAWS}", sendToAWS);
             //new mediaCommon Message.
             if (sendToAWS) {
                 //reuse current validation logic
-                String userName = "EPC";
-                String json = mediaServiceProcess.validateImageMessage(mediaCommonMessage, userName);
+                final String userName = "EPC";
+                final String json = mediaServiceProcess.validateImageMessage(mediaCommonMessage, userName);
                 if (!"[]".equals(json)) {
                     return buildBadRequestResponse(json, serviceUrl.getUrl().toString());
                 }
@@ -125,7 +131,7 @@ public class Application extends SpringBootServletInitializer {
                         headers.get(REQUESTID));
                 return new ResponseEntity<>("OK,message sent to AWS queue successfully.", HttpStatus.OK);
             } else {
-                String response = mediaServiceClient.callMediaService(message);
+                final String response = mediaServiceClient.callMediaService(message);
                 LOGGER.info("SUCCESS send message to media service  - message=[{}], response=[{}]", message, response);
                 return new ResponseEntity<>("OK,message sent to mpp media service successfully.", HttpStatus.OK);
             }
@@ -164,15 +170,15 @@ public class Application extends SpringBootServletInitializer {
             throws Exception {
         LOGGER.info("RECEIVED REQUEST - message=" + serviceUrl.getUrl().toString() + ", message=[{}], requestId=[{}]", message, headers.get(REQUESTID));
         try {
-            ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String userName = auth.getName();
-            String json = mediaServiceProcess.validateImageMessage(message, userName);
+            final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            final String userName = auth.getName();
+            final String json = mediaServiceProcess.validateImageMessage(message, userName);
             if (!"[]".equals(json)) {
                 return buildBadRequestResponse(json, serviceUrl.getUrl().toString());
             }
+            final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
             //TODO Fix this to not throw a bad request if the URL does not start with the S3 protocol or throw bad request when 404 on HTTP
-            boolean fileExists = S3Validator.checkFileExists(imageMessage.getFileUrl());
+            final boolean fileExists = S3Validator.checkFileExists(imageMessage.getFileUrl());
             if (!fileExists) {
                 LOGGER.info("Response bad request 'fileUrl does not exist in s3' for -message=[{}]", message);
                 return buildBadRequestResponse("fileUrl does not exist in s3.", serviceUrl.getUrl().toString());
@@ -187,7 +193,7 @@ public class Application extends SpringBootServletInitializer {
             if (imageMessage.getMediaGuid() == null) {
                 imageMessageBuilder.mediaGuid(guid);
             }
-            ImageMessage imageMessageNew = imageMessageBuilder.clientId(userName).requestId(String.valueOf(headers.get(REQUESTID))).build();
+            final ImageMessage imageMessageNew = imageMessageBuilder.clientId(userName).requestId(String.valueOf(headers.get(REQUESTID))).build();
             /* TODO Change fileName in image message to be built with a hash of the url except when the client is multisource. 
              * Multisource will have to use the eid and provider id still until the filename keys are replaced in the fingerprint table.
              */
@@ -215,12 +221,12 @@ public class Application extends SpringBootServletInitializer {
         LOGGER.info("RECEIVED REQUEST - url= [{}]" + MediaServiceUrl.MEDIA_STATUS.getUrl().toString() + ", imageMessage=[{}], requestId=[{}]", message,
                 headers.get(REQUESTID));
         try {
-            Map<String, Object> map = JSONUtil.buildMapFromJson(message);
-            ValidationStatus validationStatus = mediaServiceProcess.validateMediaStatus(message);
+            final ValidationStatus validationStatus = mediaServiceProcess.validateMediaStatus(message);
             if (!validationStatus.isValid()) {
                 return buildBadRequestResponse(validationStatus.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl().toString());
             }
-            String jsonResponse = mediaServiceProcess.getMediaStatusList((List<String>) map.get("mediaNames"));
+            final Map<String, Object> map = JSONUtil.buildMapFromJson(message);
+            final String jsonResponse = mediaServiceProcess.getMediaStatusList((List<String>) map.get("mediaNames"));
             LOGGER.info("RESPONSE - url=[{}]", MediaServiceUrl.MEDIA_STATUS.getUrl(), toString() + ", imageMessage=[{}], requestId=[{}]", jsonResponse,
                     headers.get(REQUESTID));
             return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
@@ -239,7 +245,7 @@ public class Application extends SpringBootServletInitializer {
      */
     @Counter(name = "badRequestCounter")
     public ResponseEntity<String> buildBadRequestResponse(String validationMessage, String url) {
-        String resMsg = JSONUtil.generateJsonForErrorResponse(validationMessage, url, BAD_REQUEST_CODE, "Bad Request");
+        final String resMsg = JSONUtil.generateJsonForErrorResponse(validationMessage, url, BAD_REQUEST_CODE, "Bad Request");
         return new ResponseEntity<>(resMsg, HttpStatus.BAD_REQUEST);
     }
 

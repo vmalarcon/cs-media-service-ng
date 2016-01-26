@@ -1,5 +1,28 @@
 package com.expedia.content.media.processing.services;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
+
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
@@ -13,35 +36,10 @@ import com.expedia.content.media.processing.services.validator.ExpediaIdValidato
 import com.expedia.content.media.processing.services.validator.MediaMessageValidator;
 import com.expedia.content.media.processing.services.validator.NumericValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MediaServiceProcessTest {
     private static List<ActivityMapping> whitelist = new ArrayList<>();
-    @Mock
-    private RabbitTemplate rabbitTemplateMock;
     @Mock
     private Reporting reporting;
     @Mock
@@ -110,7 +108,7 @@ public class MediaServiceProcessTest {
         validators.add(expediaIdValidator);
         LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
+                new MediaServiceProcess(validators, mockLogActivityProcess, reporting);
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMessage);
         ValidationStatus validationStatus = mediaServiceProcess.validateImage(imageMessage);
         assertTrue(validationStatus.isValid());
@@ -143,7 +141,7 @@ public class MediaServiceProcessTest {
         validators.add(numericValidator);
         LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
+                new MediaServiceProcess(validators, mockLogActivityProcess, reporting);
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMessage);
         ValidationStatus validationStatus = mediaServiceProcess.validateImage(imageMessage);
         assertFalse(validationStatus.isValid());
@@ -154,7 +152,7 @@ public class MediaServiceProcessTest {
         List<MediaMessageValidator> validators = mock(List.class);
         LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
+                new MediaServiceProcess(validators, mockLogActivityProcess, reporting);
         mediaServiceProcess.setActivityWhiteList(whitelist);
         mediaServiceProcess.setMessagingTemplate(queueMessagingTemplateMock);
         ImageMessage imageMessageMock = mock(ImageMessage.class);
@@ -188,7 +186,7 @@ public class MediaServiceProcessTest {
         when(lcmProcessLogDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
 
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
+                new MediaServiceProcess(validators, mockLogActivityProcess, reporting);
         mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
         mediaServiceProcess.setActivityWhiteList(whitelist);
         String response = mediaServiceProcess.getMediaStatusList(fileNameList);
@@ -214,7 +212,7 @@ public class MediaServiceProcessTest {
         when(lcmProcessLogDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
 
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
+                new MediaServiceProcess(validators, mockLogActivityProcess, reporting);
         mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
 
         mediaServiceProcess.setActivityWhiteList(whitelist);
@@ -238,7 +236,7 @@ public class MediaServiceProcessTest {
         when(lcmProcessLogDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
 
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
+                new MediaServiceProcess(validators, mockLogActivityProcess, reporting);
         mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
 
         mediaServiceProcess.setActivityWhiteList(whitelist);
@@ -262,7 +260,7 @@ public class MediaServiceProcessTest {
         when(lcmProcessLogDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
 
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
+                new MediaServiceProcess(validators, mockLogActivityProcess, reporting);
         mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
 
         mediaServiceProcess.setActivityWhiteList(whitelist);
@@ -289,7 +287,7 @@ public class MediaServiceProcessTest {
         when(lcmProcessLogDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
 
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
+                new MediaServiceProcess(validators, mockLogActivityProcess, reporting);
         mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
 
         mediaServiceProcess.setActivityWhiteList(whitelist);
@@ -313,7 +311,7 @@ public class MediaServiceProcessTest {
         when(lcmProcessLogDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
 
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
+                new MediaServiceProcess(validators, mockLogActivityProcess, reporting);
         mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
 
         mediaServiceProcess.setActivityWhiteList(whitelist);
@@ -338,7 +336,7 @@ public class MediaServiceProcessTest {
         fileNameList.add("1037678_109010ice.jpg");
         when(lcmProcessLogDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
         MediaServiceProcess mediaServiceProcess =
-                new MediaServiceProcess(validators, rabbitTemplateMock, mockLogActivityProcess, reporting);
+                new MediaServiceProcess(validators, mockLogActivityProcess, reporting);
         mediaServiceProcess.setProcessLogDao(lcmProcessLogDao);
 
         mediaServiceProcess.setActivityWhiteList(whitelist);
