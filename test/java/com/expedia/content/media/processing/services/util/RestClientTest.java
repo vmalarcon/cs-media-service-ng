@@ -13,6 +13,7 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
@@ -60,6 +61,44 @@ public class RestClientTest {
 
         assertEquals(endPoint.toString(), "http://some:80/service?environment=test&propertyName=route");
         assertEquals("50", response);
+    }
+
+    @Test
+    public void testInitRouterValue() {
+        when(mockTemplate.getRequestFactory()).thenReturn(mockRequestFactory);
+        final RestClient client = new RestClient("http://some:80/service","test", 10000);
+        client.setRestTemplate(mockTemplate);
+        when(mockTemplate.exchange(any(URI.class), eq(HttpMethod.GET), any(HttpEntity.class), eq(String.class))).thenReturn(mockResponse);
+        when(mockResponse.getBody()).thenReturn("[\n"
+                + "  {\n"
+                + "    \"environment\": \"test\",\n"
+                + "    \"propertyName\": \"Orbitz\",\n"
+                + "    \"propertyValue\": \"100\"\n"
+                + "  },\n"
+                + "  {\n"
+                + "    \"environment\": \"test\",\n"
+                + "    \"propertyName\": \"ORB\",\n"
+                + "    \"propertyValue\": \"90\"\n"
+                + "  },\n"
+                + "  {\n"
+                + "    \"environment\": \"test\",\n"
+                + "    \"propertyName\": \"route\",\n"
+                + "    \"propertyValue\": \"50\"\n"
+                + "  }\n"
+                + "]");
+
+        HashMap<String, Integer> routerValueMap = new HashMap<>();
+        client.initRouterValue(routerValueMap);
+
+        verify(mockTemplate).exchange(uriArgumentCaptor.capture(), eq(HttpMethod.GET), httpEntityArgumentCaptor.capture(), eq(String.class));
+        verify(mockRequestFactory).setConnectTimeout(10000);
+        verify(mockRequestFactory).setConnectTimeout(10000);
+        final URI endPoint = uriArgumentCaptor.getValue();
+
+        assertEquals(endPoint.toString(), "http://some:80/service?environment=test");
+        assertEquals(100, routerValueMap.get("Orbitz").intValue());
+        assertEquals(90, routerValueMap.get("ORB").intValue());
+        assertEquals(50, routerValueMap.get("route").intValue());
     }
 
     @Test

@@ -20,7 +20,7 @@ public class S3Validator {
         try {
             String bucketName = getBucketName(fileUrl);
             String objectName = getObjectName(fileUrl);
-            AmazonS3 s3Client = new AmazonS3Client(new ProfileCredentialsProvider());
+            AmazonS3 s3Client = new AmazonS3Client();
             S3Object object = s3Client.getObject(
                     new GetObjectRequest(bucketName, objectName));
             if (object != null) {

@@ -4,7 +4,6 @@ import org.junit.Test;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.junit.Assert.assertTrue;
 
 public class RouterUtilTest {
 
@@ -16,16 +15,14 @@ public class RouterUtilTest {
         when(mockRestClient.invokeGetService("route")).thenReturn(mediaConfig);
         routerUtil.setRestClient(mockRestClient);
         routerUtil.setPercentage(5);
-        routerUtil.routeAWSByPercentage();
+        routerUtil.routeAWSByPercentage(RouterUtil.DEFAULT_ROUTER_NAME);
         int counter = 0;
         for (int i = 0; i < 10000; i++) {
-            boolean awsRoute = routerUtil.routeAWSByPercentage();
+            boolean awsRoute = routerUtil.routeAWSByPercentage(RouterUtil.DEFAULT_ROUTER_NAME);
             if (awsRoute == true) {
                 counter++;
             }
         }
-        System.out.println("counter:" + counter);
-        //assertTrue(counter > 1800 && counter < 2200);
     }
 
     @Test
@@ -36,15 +33,13 @@ public class RouterUtilTest {
         when(mockRestClient.invokeGetService("route")).thenReturn(mediaConfig);
         routerUtil.setRestClient(mockRestClient);
         routerUtil.setPercentage(5);
-        routerUtil.routeAWSByPercentage();
+        routerUtil.routeAWSByPercentage(RouterUtil.DEFAULT_ROUTER_NAME);
         int counter = 0;
         for (int i = 0; i < 100; i++) {
-            boolean awsRoute = routerUtil.routeAWSByPercentage();
+            boolean awsRoute = routerUtil.routeAWSByPercentage(RouterUtil.DEFAULT_ROUTER_NAME);
             if (awsRoute == true) {
                 counter++;
             }
         }
-        System.out.println("counter:" + counter);
-        //assertTrue(counter == 100);
     }
 }
