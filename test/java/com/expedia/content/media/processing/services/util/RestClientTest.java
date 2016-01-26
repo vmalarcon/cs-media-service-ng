@@ -77,6 +77,11 @@ public class RestClientTest {
                 + "  },\n"
                 + "  {\n"
                 + "    \"environment\": \"test\",\n"
+                + "    \"propertyName\": \"ORB\",\n"
+                + "    \"propertyValue\": \"90\"\n"
+                + "  },\n"
+                + "  {\n"
+                + "    \"environment\": \"test\",\n"
                 + "    \"propertyName\": \"route\",\n"
                 + "    \"propertyValue\": \"50\"\n"
                 + "  }\n"
@@ -92,6 +97,7 @@ public class RestClientTest {
 
         assertEquals(endPoint.toString(), "http://some:80/service?environment=test");
         assertEquals(100, routerValueMap.get("Orbitz").intValue());
+        assertEquals(90, routerValueMap.get("ORB").intValue());
         assertEquals(50, routerValueMap.get("route").intValue());
     }
 

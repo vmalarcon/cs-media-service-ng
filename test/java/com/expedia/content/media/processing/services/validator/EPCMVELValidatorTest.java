@@ -6,15 +6,13 @@ import static org.junit.Assert.assertTrue;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
-import com.expedia.content.media.processing.services.Application;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.reflect.FieldUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -39,6 +37,10 @@ public class EPCMVELValidatorTest {
     @Autowired
     EPCMVELValidator mvelValidator;
 
+    @Before
+    public void setUPValidator() throws Exception{
+        FieldUtils.writeField(mvelValidator, "clientRule", "EPC", true);
+    }
     @Test
     public void testLoadContext() {
         assertNotNull(mvelValidator);
