@@ -63,6 +63,7 @@ public class RestClient {
 
     /**
      * Invokes the service by taking a JSON string as the body of the request
+     * @param propertyName default value "route", can be provider name.
      *
      * @return Response from the service as a JSON string
      */
@@ -70,18 +71,7 @@ public class RestClient {
         String propertyValue = "";
         try {
             final String uriWithParm = uri.toString() + "?environment=" + environment + "&propertyName=" + propertyName;
-            URI dataManagerURL = null;
-            try {
-                dataManagerURL = new URL(uriWithParm).toURI();
-            } catch (MalformedURLException | URISyntaxException e) {
-                throw new RestClientException("Invalid URL: " + uriWithParm, e);
-            }
-            final HttpHeaders headers = new HttpHeaders();
-            final HttpEntity<String> httpEntity = new HttpEntity<>("", headers);
-            final ResponseEntity<String> response = restTemplate.exchange(dataManagerURL, HttpMethod.GET, httpEntity, String.class);
-            final String responseBody = response.getBody();
-            LOGGER.info("Receiving response from Data manger: request-id=[{}], responseBody=[{}]", CLIENT_ID, responseBody);
-            final List<Map> configMap = JSONUtil.buildMapListFromJson(responseBody);
+            final List<Map> configMap = initConfigMap(uriWithParm);
             if (configMap != null && !configMap.isEmpty()) {
                 propertyValue = (String) configMap.get(0).get("propertyValue");
             }
@@ -92,6 +82,43 @@ public class RestClient {
         } catch (Exception e) {
             LOGGER.error("Error calling Data Manager Service: request-id=[{}]", CLIENT_ID, e);
             throw new RestClientException(e);
+        }
+    }
+
+    private List<Map> initConfigMap(final String uriWithParm) {
+        URI dataManagerURL = null;
+        try {
+            dataManagerURL = new URL(uriWithParm).toURI();
+        } catch (MalformedURLException | URISyntaxException e) {
+            throw new RestClientException("Invalid URL: " + uriWithParm, e);
+        }
+        final HttpHeaders headers = new HttpHeaders();
+        final HttpEntity<String> httpEntity = new HttpEntity<>("", headers);
+        final ResponseEntity<String> response = restTemplate.exchange(dataManagerURL, HttpMethod.GET, httpEntity, String.class);
+        final String responseBody = response.getBody();
+        LOGGER.info("Receiving response from Data manger: request-id=[{}], responseBody=[{}]", CLIENT_ID, responseBody);
+        return JSONUtil.buildMapListFromJson(responseBody);
+    }
+
+    /**
+     * Invokes the service to init route configuration
+     * @param routerValueMap store router name and value.
+     *
+     * @return Response from the service as a JSON string
+     */
+    public void initRouterValue(Map<String, Integer> routerValueMap) {
+        try {
+            final String uriWithParm = uri.toString() + "?environment=" + environment;
+            final List<Map> configMap = initConfigMap(uriWithParm);
+            if (configMap != null && !configMap.isEmpty()) {
+                configMap.forEach(item -> {
+                    routerValueMap.put((String) item.get("propertyName"), Integer.valueOf((String) item.get("propertyValue")));
+                });
+            }
+        } catch (HttpClientErrorException e) {
+            LOGGER.error("Received status=[{}] and error=[{}]", e.getStatusCode(), e.getResponseBodyAsString(), e);
+        } catch (Exception e) {
+            LOGGER.error("Error calling Data Manager Service: request-id=[{}]", CLIENT_ID, e);
         }
     }
 

@@ -1,5 +1,8 @@
 package com.expedia.content.media.processing.services.util;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,12 +18,13 @@ public class RouterUtil {
 
     @Value("${media.request.collector.v1.percentage}")
     private int percentage;
+
     @Autowired
     RestClient restClient;
     private static final Logger LOGGER = LoggerFactory.getLogger(RouterUtil.class);
-    private static final String PROPERTYNAME = "route";
+    public static final String DEFAULT_ROUTER_NAME = "route";
 
-    private static Integer cachePercentValue;
+    private static Map<String, Integer> routerValueMap = new HashMap<>();
 
     /**
      * get the percentage configuration value from dynamoDB web service call,
@@ -28,24 +32,24 @@ public class RouterUtil {
      *
      * @return boolean indicate whether
      */
-    public boolean routeAWSByPercentage() {
+    public boolean routeAWSByPercentage(String routerName) {
         final int ranNum = (int) (Math.random() * 100);
-        int currentPercentValue = 0;
+        int currentPercentValue;
         String propertyValue = "";
-        if (cachePercentValue == null) {
+        if (routerValueMap.get(routerName) == null) {
             try {
-                propertyValue = restClient.invokeGetService(PROPERTYNAME);
+                propertyValue = restClient.invokeGetService(routerName);
             } catch (RestClientException ex) {
                 LOGGER.error("Error calling Data Manager Service exception", ex);
             }
             if (StringUtils.isEmpty(propertyValue)) {
-                restClient.createProperty(PROPERTYNAME, Integer.toString(percentage));
+                restClient.createProperty(routerName, Integer.toString(percentage));
                 currentPercentValue = percentage;
             } else {
                 currentPercentValue = Integer.parseInt(propertyValue);
             }
         } else {
-            currentPercentValue = cachePercentValue;
+            currentPercentValue = routerValueMap.get(routerName);
         }
         return (ranNum < currentPercentValue);
     }
@@ -55,11 +59,7 @@ public class RouterUtil {
      */
     @Scheduled(fixedRate = 300000)
     public void refreshCacheValue() {
-        String propertyValue = "";
-        propertyValue = restClient.invokeGetService(PROPERTYNAME);
-        if (!StringUtils.isEmpty(propertyValue)) {
-            cachePercentValue = Integer.parseInt(propertyValue);
-        }
+        restClient.initRouterValue(routerValueMap);
     }
 
     public void setPercentage(int percentage) {

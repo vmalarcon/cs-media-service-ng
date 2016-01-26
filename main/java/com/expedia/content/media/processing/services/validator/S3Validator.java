@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
@@ -32,7 +31,7 @@ public class S3Validator {
         try {
             final String bucketName = getBucketName(fileUrl);
             final String objectName = getObjectName(fileUrl);
-            final AmazonS3 s3Client = new AmazonS3Client(new ProfileCredentialsProvider());
+            final AmazonS3 s3Client = new AmazonS3Client();
             final S3Object object = s3Client.getObject(new GetObjectRequest(bucketName, objectName));
             if (object != null) {
                 exist = true;

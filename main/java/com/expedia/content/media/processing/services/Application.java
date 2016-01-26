@@ -10,6 +10,7 @@ import javax.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ResourceBanner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -66,8 +67,12 @@ public class Application extends SpringBootServletInitializer {
     @Resource(name = "providerProperties")
     private Properties providerProperties;
 
+    @Value("${media.router.providers}")
+    private String providerRouters;
+
     @Autowired
     RouterUtil routerUtil;
+
 
     @Autowired
     RestClient mediaServiceClient;
@@ -116,8 +121,9 @@ public class Application extends SpringBootServletInitializer {
             final String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, providerProperties);
             LOGGER.info("converted to - common message =[{}]", mediaCommonMessage);
             final ImageMessage imageMessageCommon = ImageMessage.parseJsonMessage(mediaCommonMessage);
-            final boolean sendToAWS = routerUtil.routeAWSByPercentage();
-            LOGGER.debug("send message to AWS {sendToAWS}", sendToAWS);
+            final String routeName = getRouteNameByProvider(imageMessageCommon);
+            final boolean sendToAWS = routerUtil.routeAWSByPercentage(routeName);
+            LOGGER.debug("send message to AWS {}", sendToAWS);
             //new mediaCommon Message.
             if (sendToAWS) {
                 //reuse current validation logic
@@ -140,6 +146,15 @@ public class Application extends SpringBootServletInitializer {
             LOGGER.error("ERROR - messageName={}, JSONMessage=[{}] .", serviceUrl.getUrl().toString(), message, ex);
             return buildBadRequestResponse("JSON request format is invalid. Json message=" + message, serviceUrl.getUrl().toString());
         }
+    }
+
+    private String getRouteNameByProvider(ImageMessage imageMessage) {
+        if (imageMessage.getOuterDomainData() != null) {
+            if (providerRouters.contains(imageMessage.getOuterDomainData().getProvider())) {
+                return imageMessage.getOuterDomainData().getProvider();
+            }
+        }
+        return RouterUtil.DEFAULT_ROUTER_NAME;
     }
 
     /**
