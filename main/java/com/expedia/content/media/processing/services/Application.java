@@ -24,7 +24,6 @@ import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.MultiValueMap;
@@ -58,18 +57,17 @@ public class Application extends SpringBootServletInitializer {
 
     @Autowired
     private MediaServiceProcess mediaServiceProcess;
+    @Autowired
+    private RouterUtil routerUtil;
+    @Autowired
+    private RestClient mediaServiceClient;
     @Resource(name = "providerProperties")
     private Properties providerProperties;
 
     @Value("${media.router.providers}")
     private String providerRouters;
 
-    @Autowired
-    RouterUtil routerUtil;
 
-
-    @Autowired
-    RestClient mediaServiceClient;
 
     public static void main(String[] args) throws Exception {
         final SpringApplication application = new SpringApplicationBuilder()
@@ -131,7 +129,7 @@ public class Application extends SpringBootServletInitializer {
                 return new ResponseEntity<>("OK,message sent to AWS queue successfully.", HttpStatus.OK);
             } else {
                 String response = mediaServiceClient.callMediaService(message);
-                LOGGER.info("SUCCESS send message to media service  - message=[{}], response=[{}]", message, response);
+                LOGGER.info("SUCCESS send message to media service  - message=[{}], response=[{}], requestId=[{}]", message, response, headers.get(REQUESTID));
                 return new ResponseEntity<>("OK,message sent to mpp media service successfully.", HttpStatus.OK);
             }
 
@@ -209,7 +207,7 @@ public class Application extends SpringBootServletInitializer {
             LOGGER.info("SUCCESS - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl.getUrl().toString(), message, headers.get(REQUESTID));
             return new ResponseEntity<>("OK", HttpStatus.OK);
         } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}] .", serviceUrl.getUrl().toString(), message, ex);
+            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}], requestId=[{}] .", serviceUrl.getUrl().toString(), message, ex, headers.get(REQUESTID));
             return buildBadRequestResponse("JSON request format is invalid. Json message=" + message, serviceUrl.getUrl().toString());
         }
     }
@@ -239,7 +237,7 @@ public class Application extends SpringBootServletInitializer {
                     headers.get(REQUESTID));
             return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
         } catch (RequestMessageException ex) {
-            LOGGER.error("ERROR - url=[{}], imageMessage=[{}], error=[{}]", MediaServiceUrl.MEDIA_STATUS.getUrl(), message, ex.getMessage(), ex);
+            LOGGER.error("ERROR - url=[{}], imageMessage=[{}], error=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_STATUS.getUrl(), message, ex.getMessage(), ex, headers.get(REQUESTID));
             return buildBadRequestResponse(ex.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl().toString());
         }
     }
