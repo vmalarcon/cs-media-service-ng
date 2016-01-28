@@ -116,6 +116,7 @@ public class MediaServiceProcess {
      */
     @Meter(name = "publishCommonMessageCounter")
     @Timer(name = "publishCommonMessageTimer")
+    @SuppressWarnings("rawtypes")
     @RetryableMethod
     public void publishMsg(ImageMessage message, String messageContent) {
         try {
@@ -137,6 +138,7 @@ public class MediaServiceProcess {
      */
     @Meter(name = "publishMessageCounter")
     @Timer(name = "publishMessageTimer")
+    @SuppressWarnings("rawtypes")
     @RetryableMethod
     public void publishMsg(final ImageMessage message) {
         final String jsonMessage = message.toJSONMessage();

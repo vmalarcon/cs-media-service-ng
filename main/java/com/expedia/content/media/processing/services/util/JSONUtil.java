@@ -12,6 +12,7 @@ import java.util.Properties;
 import java.util.TreeMap;
 import java.util.UUID;
 
+import com.expedia.content.media.processing.services.dao.Category;
 import org.apache.commons.io.FilenameUtils;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
@@ -32,6 +33,9 @@ public final class JSONUtil {
     private static final String JSON_TAG_MEDIA_NAME = "mediaName";
     private static final String JSON_TAG_MEDIA_STATUS = "mediaStatuses";
     private static final String JSON_TAG_STATUS_NOT_FOUND = "NOT_FOUND";
+    private static final String JSON_TAG_DOMAIN = "domain";
+    private static final String ERROR_WRITING_MAP = "Error writing map to json";
+    private static final String MEDIA_GUID = "mediaGuid";
 
     private JSONUtil() {
     }
@@ -71,7 +75,26 @@ public final class JSONUtil {
         try {
             return OBJECT_MAPPER.writeValueAsString(messageList);
         } catch (IOException ex) {
-            final String errorMsg = "Error writing map to json";
+            final String errorMsg = ERROR_WRITING_MAP;
+            throw new RequestMessageException(errorMsg, ex);
+        }
+    }
+
+    /**
+     * Generate the json response message.
+     *
+     * @param categories    a List of Categories with their Sub-Categories
+     * @param domain        The domain of the categories
+     * @return
+     */
+    public static String generateJsonByCategoryList(List<Category> categories, String domain) {
+        try {
+            Map<String, Object> allMap = new HashMap<>();
+            allMap.put(JSON_TAG_DOMAIN, domain);
+            allMap.put("categories", categories);
+            return OBJECT_MAPPER.writeValueAsString(allMap);
+        } catch (IOException ex) {
+            String errorMsg = ERROR_WRITING_MAP;
             throw new RequestMessageException(errorMsg, ex);
         }
     }
@@ -121,7 +144,7 @@ public final class JSONUtil {
         try {
             return mapper.writeValueAsString(allMap);
         } catch (IOException ex) {
-            final String errorMsg = "Error writing map to json";
+            final String errorMsg = ERROR_WRITING_MAP;
             throw new RequestMessageException(errorMsg, ex);
         }
 
@@ -147,7 +170,7 @@ public final class JSONUtil {
         try {
             return mapper.writeValueAsString(allMap);
         } catch (IOException ex) {
-            final String errorMsg = "Error writing map to json";
+            final String errorMsg = ERROR_WRITING_MAP;
             throw new RequestMessageException(errorMsg, ex);
         }
     }
@@ -192,9 +215,9 @@ public final class JSONUtil {
     }
 
     public static void addGuidToMap(Map messageMap) {
-        if (messageMap.get("mediaGuid") == null) {
+        if (messageMap.get(MEDIA_GUID) == null) {
             final String guid = UUID.randomUUID().toString();
-            messageMap.put("mediaGuid", guid);
+            messageMap.put(MEDIA_GUID, guid);
         }
     }
 
@@ -215,8 +238,8 @@ public final class JSONUtil {
         } else {
             String fileName = "";
             if (imageMessage.getFileUrl() != null) {
-                fileName = ((imageMessage.getExpediaId() == null) ? "" : imageMessage.getExpediaId() + "_") + ((imageMessage.getMediaProviderId() == null) ? "" : imageMessage.getMediaProviderId() + "_")
-                        + FilenameUtils.getBaseName(imageMessage.getFileUrl()) + ".jpg";
+                fileName = ((imageMessage.getExpediaId() == null) ? "" : imageMessage.getExpediaId() + "_") + ((imageMessage.getMediaProviderId() == null) ? "" :
+                        imageMessage.getMediaProviderId() + "_") + FilenameUtils.getBaseName(imageMessage.getFileUrl()) + ".jpg";
             }
             mapMessage.put(MessageConstants.FILE_NAME, fileName);
         }
@@ -232,8 +255,8 @@ public final class JSONUtil {
         } else {
             mapMessage.put(MessageConstants.ACTIVE, map.get("active"));
         }
-        if (map.get("mediaGuid") != null) {
-            mapMessage.put(MessageConstants.MEDIA_ID, map.get("mediaGuid"));
+        if (map.get(MEDIA_GUID) != null) {
+            mapMessage.put(MessageConstants.MEDIA_ID, map.get(MEDIA_GUID));
         }
         if (imageMessage.getStagingKey() != null) {
             mapMessage.put(MessageConstants.STAGING_KEY, imageMessage.getStagingKey());

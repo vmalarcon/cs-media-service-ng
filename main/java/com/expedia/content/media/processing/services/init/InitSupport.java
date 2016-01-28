@@ -42,7 +42,7 @@ public class InitSupport implements ServletContextAware {
         agentConfig.setHostName(HOST_NAME, versionProvider.get());
         return agentConfig;
     }
-    
+    @SuppressWarnings("SignatureDeclareThrowsException")
     @Bean(initMethod = "start")
     public MonitoringAgent monitoringAgent(MonitoringAgentConfig monitoringAgentConfig) throws Exception {
         return new MonitoringAgent(monitoringAgentConfig.getMonitoringAgent());

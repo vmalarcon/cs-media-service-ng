@@ -140,12 +140,8 @@ public class Application extends SpringBootServletInitializer {
     }
 
     private String getRouteNameByProvider(ImageMessage imageMessage) {
-        if (imageMessage.getOuterDomainData() != null) {
-            if (providerRouters.contains(imageMessage.getOuterDomainData().getProvider())) {
-                return imageMessage.getOuterDomainData().getProvider();
-            }
-        }
-        return RouterUtil.DEFAULT_ROUTER_NAME;
+        return (imageMessage.getOuterDomainData() != null && providerRouters.contains(imageMessage.getOuterDomainData().getProvider())) ?
+                imageMessage.getOuterDomainData().getProvider() : RouterUtil.DEFAULT_ROUTER_NAME;
     }
 
     /**
