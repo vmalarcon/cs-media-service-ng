@@ -75,8 +75,7 @@ public final class JSONUtil {
         try {
             return OBJECT_MAPPER.writeValueAsString(messageList);
         } catch (IOException ex) {
-            final String errorMsg = ERROR_WRITING_MAP;
-            throw new RequestMessageException(errorMsg, ex);
+            throw new RequestMessageException(ERROR_WRITING_MAP, ex);
         }
     }
 
@@ -89,13 +88,12 @@ public final class JSONUtil {
      */
     public static String generateJsonByCategoryList(List<Category> categories, String domain) {
         try {
-            Map<String, Object> allMap = new HashMap<>();
+            final Map<String, Object> allMap = new HashMap<>();
             allMap.put(JSON_TAG_DOMAIN, domain);
             allMap.put("categories", categories);
             return OBJECT_MAPPER.writeValueAsString(allMap);
         } catch (IOException ex) {
-            String errorMsg = ERROR_WRITING_MAP;
-            throw new RequestMessageException(errorMsg, ex);
+            throw new RequestMessageException(ERROR_WRITING_MAP, ex);
         }
     }
 
@@ -144,8 +142,7 @@ public final class JSONUtil {
         try {
             return mapper.writeValueAsString(allMap);
         } catch (IOException ex) {
-            final String errorMsg = ERROR_WRITING_MAP;
-            throw new RequestMessageException(errorMsg, ex);
+            throw new RequestMessageException(ERROR_WRITING_MAP, ex);
         }
 
     }
@@ -170,8 +167,7 @@ public final class JSONUtil {
         try {
             return mapper.writeValueAsString(allMap);
         } catch (IOException ex) {
-            final String errorMsg = ERROR_WRITING_MAP;
-            throw new RequestMessageException(errorMsg, ex);
+            throw new RequestMessageException(ERROR_WRITING_MAP, ex);
         }
     }
 

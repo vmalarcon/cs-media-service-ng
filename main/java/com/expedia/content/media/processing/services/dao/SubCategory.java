@@ -6,8 +6,8 @@ import java.util.List;
  * Represents the Sub Category of a Category
  */
 public class SubCategory {
-    private String subCategoryId;
-    private List<LocalizedName> subCategoryName;
+    private final String subCategoryId;
+    private final List<LocalizedName> subCategoryName;
 
     public SubCategory(String subCategoryId, List<LocalizedName> subCategoryName) {
         this.subCategoryId = subCategoryId;

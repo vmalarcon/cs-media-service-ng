@@ -17,5 +17,6 @@ public interface MediaMessageValidator {
      * @return ValidationStatus contain two validation status, true-successful,
      * false- validation fail , in false case, a validation message is included in ValidationStatus
      */
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     ValidationStatus validate(ImageMessage imageMessage) throws Exception;
 }

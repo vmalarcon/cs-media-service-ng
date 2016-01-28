@@ -3,9 +3,10 @@ package com.expedia.content.media.processing.services.dao;
 /**
  * Represents the Localized Name of a Category
  */
+@SuppressWarnings("PMD.AvoidFieldNameMatchingTypeName")
 public class LocalizedName {
-    private String localizedName;
-    private String localeId;
+    private final String localizedName;
+    private final String localeId;
 
     public LocalizedName(String localizedName, String localeId) {
         this.localizedName = localizedName;

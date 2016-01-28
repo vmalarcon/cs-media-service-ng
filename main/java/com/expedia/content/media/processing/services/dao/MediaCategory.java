@@ -4,9 +4,9 @@ package com.expedia.content.media.processing.services.dao;
  * Represents the MediaCategory from the MediaCategoryLoc Table
  */
 public class MediaCategory {
-    private String mediaCategoryID;
-    private String langID;
-    private String mediaCategoryName;
+    private final String mediaCategoryID;
+    private final String langID;
+    private final String mediaCategoryName;
 
     public MediaCategory(String mediaCategoryID, String langID, String mediaCategoryName) {
         this.mediaCategoryID = mediaCategoryID;

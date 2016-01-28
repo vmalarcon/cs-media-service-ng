@@ -38,6 +38,7 @@ import expedia.content.solutions.metrics.annotations.Timer;
 /**
  * MediaServiceProcess is called by main class
  */
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 @Component
 public class MediaServiceProcess {
 
@@ -116,7 +117,7 @@ public class MediaServiceProcess {
      */
     @Meter(name = "publishCommonMessageCounter")
     @Timer(name = "publishCommonMessageTimer")
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     @RetryableMethod
     public void publishMsg(ImageMessage message, String messageContent) {
         try {
@@ -138,7 +139,7 @@ public class MediaServiceProcess {
      */
     @Meter(name = "publishMessageCounter")
     @Timer(name = "publishMessageTimer")
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     @RetryableMethod
     public void publishMsg(final ImageMessage message) {
         final String jsonMessage = message.toJSONMessage();
@@ -163,6 +164,7 @@ public class MediaServiceProcess {
      *         false- validation fail , in false case, a validation message is set in ValidationStatus
      * @throws Exception in case like jms connection is down
      */
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     public ValidationStatus validateImage(final ImageMessage imageMessage) throws Exception {
         ValidationStatus validationStatus = new ValidationStatus();
         // in case, no validator defined, we make it true.
@@ -185,6 +187,7 @@ public class MediaServiceProcess {
      * @return JSON string contains fileName and error description
      * @throws Exception when message to ImageMessage and convert java list to json
      */
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     public String validateImageMessage(final String message, final String user) throws Exception {
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
         final List<ImageMessage> imageMessageList = new ArrayList<>();
@@ -209,6 +212,7 @@ public class MediaServiceProcess {
      *         {@code false} when the validation fails. When the validation fails a message is also set in the ValidationStatus.
      * @throws Exception when the message is not valid json format.
      */
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     public ValidationStatus validateMediaStatus(final String message) throws Exception {
         ValidationStatus validationStatus = new ValidationStatus();
         // in case, no validator defined, we make it true.
@@ -223,7 +227,7 @@ public class MediaServiceProcess {
     }
 
     public String validateDomainCategoriesRequest(String user) {
-        List<MapMessageValidator> validatorList = mapValidatorList.get(user);
+        final List<MapMessageValidator> validatorList = mapValidatorList.get(user);
         if (validatorList == null) {
             return "User is not authorized.";
         }
@@ -252,6 +256,7 @@ public class MediaServiceProcess {
      */
     @Meter(name = "mediaStatusCounter")
     @Timer(name = "mediaStatusTimer")
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     @RetryableMethod
     public String getMediaStatusList(final List<String> fileNameList) throws Exception {
         final List<MediaProcessLog> statusLogList = processLogDao.findMediaStatus(fileNameList);
@@ -269,7 +274,7 @@ public class MediaServiceProcess {
      * @throws DomainNotFoundException
      */
     public String getDomainCategories(String domain, String localeId) throws DomainNotFoundException {
-        List<Category> domainCategories = mediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
+        final List<Category> domainCategories = mediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
         return JSONUtil.generateJsonByCategoryList(domainCategories, domain);
     }
 

@@ -6,9 +6,9 @@ import java.util.List;
  * Represents a Domain Category
  */
 public class Category {
-    private String categoryId;
-    private List<LocalizedName> categoryName;
-    private List<SubCategory> subcategories;
+    private final String categoryId;
+    private final List<LocalizedName> categoryName;
+    private final List<SubCategory> subcategories;
 
     public Category(String categoryId, List<LocalizedName> categoryName, List<SubCategory> subcategories) {
         this.categoryId = categoryId;

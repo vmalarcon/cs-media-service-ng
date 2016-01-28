@@ -13,5 +13,6 @@ public interface RequestMessageValidator {
      * @return ValidationStatus contain the validation status, {@code true} when successful or
      * {@code false} when the validation fails. When the validation fails a message is also set in the ValidationStatus.
      */
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     ValidationStatus validate(String message) throws Exception;
 }

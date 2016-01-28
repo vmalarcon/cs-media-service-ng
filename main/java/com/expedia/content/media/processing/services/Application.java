@@ -2,7 +2,11 @@ package com.expedia.content.media.processing.services;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
-import com.expedia.content.media.processing.services.util.*;
+import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.util.MediaServiceUrl;
+import com.expedia.content.media.processing.services.util.RequestMessageException;
+import com.expedia.content.media.processing.services.util.RestClient;
+import com.expedia.content.media.processing.services.util.RouterUtil;
 import com.expedia.content.media.processing.services.validator.S3Validator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import expedia.content.solutions.metrics.annotations.Counter;
@@ -46,6 +50,7 @@ import java.util.UUID;
 @SpringBootApplication
 @ComponentScan(basePackages = "com.expedia.content.media.processing")
 @ImportResource("classpath:media-services.xml")
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 @RestController
 @EnableMetrics
 public class Application extends SpringBootServletInitializer {
@@ -68,7 +73,7 @@ public class Application extends SpringBootServletInitializer {
     private String providerRouters;
 
 
-
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     public static void main(String[] args) throws Exception {
         final SpringApplication application = new SpringApplicationBuilder()
                 .banner(new ResourceBanner(new DefaultResourceLoader().getResource("banner.txt")))
@@ -88,6 +93,7 @@ public class Application extends SpringBootServletInitializer {
      */
     @Meter(name = "acquireMessageCounter")
     @Timer(name = "acquireMessageTimer")
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST)
     public ResponseEntity<String> acquireMedia(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
         return acquireMedia(message, MediaServiceUrl.ACQUIRE_MEDIA, headers);
@@ -102,40 +108,41 @@ public class Application extends SpringBootServletInitializer {
      * @return ResponseEntity Standard spring response object.
      * @throws Exception Thrown if processing the message fails.
      */
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     private ResponseEntity<String> acquireMedia(final String message, final MediaServiceUrl serviceUrl, @RequestHeader MultiValueMap<String, String> headers)
             throws Exception {
-        LOGGER.info("RECEIVED REQUEST - message=" + serviceUrl.getUrl().toString() + ", message=[{}], requestId=[{}]", message, headers.get(REQUESTID));
+        LOGGER.info("RECEIVED REQUEST - message=" + serviceUrl.getUrl() + ", message=[{}], requestId=[{}]", message, headers.get(REQUESTID));
         try {
-            ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
-            Map messageMap = JSONUtil.buildMapFromJson(message);
+            final ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
+            final Map messageMap = JSONUtil.buildMapFromJson(message);
             JSONUtil.addGuidToMap(messageMap);
-            String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, providerProperties);
+            final String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, providerProperties);
             LOGGER.info("converted to - common message =[{}]", mediaCommonMessage);
-            ImageMessage imageMessageCommon = ImageMessage.parseJsonMessage(mediaCommonMessage);
-            String routeName = getRouteNameByProvider(imageMessageCommon);
-            boolean sendToAWS = routerUtil.routeAWSByPercentage(routeName);
+            final ImageMessage imageMessageCommon = ImageMessage.parseJsonMessage(mediaCommonMessage);
+            final String routeName = getRouteNameByProvider(imageMessageCommon);
+            final boolean sendToAWS = routerUtil.routeAWSByPercentage(routeName);
             LOGGER.debug("send message to AWS {}", sendToAWS);
             //new mediaCommon Message.
             if (sendToAWS) {
                 //reuse current validation logic
-                String userName = "EPC";
-                String json = mediaServiceProcess.validateImageMessage(mediaCommonMessage, userName);
+                final String userName = "EPC";
+                final String json = mediaServiceProcess.validateImageMessage(mediaCommonMessage, userName);
                 if (!"[]".equals(json)) {
-                    return buildBadRequestResponse(json, serviceUrl.getUrl().toString());
+                    return buildBadRequestResponse(json, serviceUrl.getUrl());
                 }
                 mediaServiceProcess.publishMsg(imageMessageCommon, mediaCommonMessage);
                 LOGGER.info("SUCCESS - send message to AWS media service  - message=[{}], requestId=[{}]", mediaCommonMessage,
                         headers.get(REQUESTID));
                 return new ResponseEntity<>("OK,message sent to AWS queue successfully.", HttpStatus.OK);
             } else {
-                String response = mediaServiceClient.callMediaService(message);
+                final String response = mediaServiceClient.callMediaService(message);
                 LOGGER.info("SUCCESS send message to media service  - message=[{}], response=[{}], requestId=[{}]", message, response, headers.get(REQUESTID));
                 return new ResponseEntity<>("OK,message sent to mpp media service successfully.", HttpStatus.OK);
             }
 
         } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}] .", serviceUrl.getUrl().toString(), message, ex);
-            return buildBadRequestResponse("JSON request format is invalid. Json message=" + message, serviceUrl.getUrl().toString());
+            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}] .", serviceUrl.getUrl(), message, ex);
+            return buildBadRequestResponse("JSON request format is invalid. Json message=" + message, serviceUrl.getUrl());
         }
     }
 
@@ -154,6 +161,7 @@ public class Application extends SpringBootServletInitializer {
      */
     @Meter(name = "addMessageCounter")
     @Timer(name = "addMessageTimer")
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST)
     public ResponseEntity<String> mediaAdd(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
         return mediaAdd(message, MediaServiceUrl.MEDIA_ADD, headers);
@@ -168,22 +176,23 @@ public class Application extends SpringBootServletInitializer {
      * @return ResponseEntity Standard spring response object.
      * @throws Exception Thrown if processing the message fails.
      */
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     private ResponseEntity<String> mediaAdd(final String message, final MediaServiceUrl serviceUrl, @RequestHeader MultiValueMap<String, String> headers)
             throws Exception {
-        LOGGER.info("RECEIVED REQUEST - message=" + serviceUrl.getUrl().toString() + ", message=[{}], requestId=[{}]", message, headers.get(REQUESTID));
+        LOGGER.info("RECEIVED REQUEST - message=" + serviceUrl.getUrl() + ", message=[{}], requestId=[{}]", message, headers.get(REQUESTID));
         try {
-            ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String userName = auth.getName();
-            String json = mediaServiceProcess.validateImageMessage(message, userName);
+            final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            final String userName = auth.getName();
+            final String json = mediaServiceProcess.validateImageMessage(message, userName);
             if (!"[]".equals(json)) {
-                return buildBadRequestResponse(json, serviceUrl.getUrl().toString());
+                return buildBadRequestResponse(json, serviceUrl.getUrl());
             }
             //TODO Fix this to not throw a bad request if the URL does not start with the S3 protocol or throw bad request when 404 on HTTP
-            boolean fileExists = S3Validator.checkFileExists(imageMessage.getFileUrl());
+            final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
+            final boolean fileExists = S3Validator.checkFileExists(imageMessage.getFileUrl());
             if (!fileExists) {
                 LOGGER.info("Response bad request 'fileUrl does not exist in s3' for -message=[{}]", message);
-                return buildBadRequestResponse("fileUrl does not exist in s3.", serviceUrl.getUrl().toString());
+                return buildBadRequestResponse("fileUrl does not exist in s3.", serviceUrl.getUrl());
             }
             final String guid = UUID.randomUUID().toString();
             ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
@@ -195,16 +204,16 @@ public class Application extends SpringBootServletInitializer {
             if (imageMessage.getMediaGuid() == null) {
                 imageMessageBuilder.mediaGuid(guid);
             }
-            ImageMessage imageMessageNew = imageMessageBuilder.clientId(userName).requestId(String.valueOf(headers.get(REQUESTID))).build();
+            final ImageMessage imageMessageNew = imageMessageBuilder.clientId(userName).requestId(String.valueOf(headers.get(REQUESTID))).build();
             /* TODO Change fileName in image message to be built with a hash of the url except when the client is multisource. 
              * Multisource will have to use the eid and provider id still until the filename keys are replaced in the fingerprint table.
              */
             mediaServiceProcess.publishMsg(imageMessageNew);
-            LOGGER.info("SUCCESS - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl.getUrl().toString(), message, headers.get(REQUESTID));
+            LOGGER.info("SUCCESS - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl.getUrl(), message, headers.get(REQUESTID));
             return new ResponseEntity<>("OK", HttpStatus.OK);
         } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}], requestId=[{}] .", serviceUrl.getUrl().toString(), message, ex, headers.get(REQUESTID));
-            return buildBadRequestResponse("JSON request format is invalid. Json message=" + message, serviceUrl.getUrl().toString());
+            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}], requestId=[{}] .", serviceUrl.getUrl(), message, ex, headers.get(REQUESTID));
+            return buildBadRequestResponse("JSON request format is invalid. Json message=" + message, serviceUrl.getUrl());
         }
     }
 
@@ -215,26 +224,27 @@ public class Application extends SpringBootServletInitializer {
      * @return ResponseEntity Standard spring response object.
      * @throws Exception Thrown if processing the message fails.
      */
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({"rawtypes", "unchecked", "PMD.SignatureDeclareThrowsException"})
     @Meter(name = "mediaLatestStatusCounter")
     @Timer(name = "mediaLatestStatusTimer")
     @RequestMapping(value = "/media/v1/lateststatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity getMediaLatestStatus(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
-        LOGGER.info("RECEIVED REQUEST - url= [{}]" + MediaServiceUrl.MEDIA_STATUS.getUrl().toString() + ", imageMessage=[{}], requestId=[{}]", message,
+        LOGGER.info("RECEIVED REQUEST - url= [{}]" + MediaServiceUrl.MEDIA_STATUS.getUrl() + ", imageMessage=[{}], requestId=[{}]", message,
                 headers.get(REQUESTID));
         try {
-            Map<String, Object> map = JSONUtil.buildMapFromJson(message);
-            ValidationStatus validationStatus = mediaServiceProcess.validateMediaStatus(message);
+            final ValidationStatus validationStatus = mediaServiceProcess.validateMediaStatus(message);
             if (!validationStatus.isValid()) {
-                return buildBadRequestResponse(validationStatus.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl().toString());
+                return buildBadRequestResponse(validationStatus.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl());
             }
-            String jsonResponse = mediaServiceProcess.getMediaStatusList((List<String>) map.get("mediaNames"));
+            final Map<String, Object> map = JSONUtil.buildMapFromJson(message);
+            final String jsonResponse = mediaServiceProcess.getMediaStatusList((List<String>) map.get("mediaNames"));
             LOGGER.info("RESPONSE - url=[{}]", MediaServiceUrl.MEDIA_STATUS.getUrl(), toString() + ", imageMessage=[{}], requestId=[{}]", jsonResponse,
                     headers.get(REQUESTID));
             return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
         } catch (RequestMessageException ex) {
-            LOGGER.error("ERROR - url=[{}], imageMessage=[{}], error=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_STATUS.getUrl(), message, ex.getMessage(), ex, headers.get(REQUESTID));
-            return buildBadRequestResponse(ex.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl().toString());
+            LOGGER.error("ERROR - url=[{}], imageMessage=[{}], error=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_STATUS.getUrl(), message,
+                    ex.getMessage(), ex, headers.get(REQUESTID));
+            return buildBadRequestResponse(ex.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl());
         }
     }
 
@@ -247,7 +257,7 @@ public class Application extends SpringBootServletInitializer {
      */
     @Counter(name = "badRequestCounter")
     public ResponseEntity<String> buildBadRequestResponse(String validationMessage, String url) {
-        String resMsg = JSONUtil.generateJsonForErrorResponse(validationMessage, url, BAD_REQUEST_CODE, "Bad Request");
+        final String resMsg = JSONUtil.generateJsonForErrorResponse(validationMessage, url, BAD_REQUEST_CODE, "Bad Request");
         return new ResponseEntity<>(resMsg, HttpStatus.BAD_REQUEST);
     }
 

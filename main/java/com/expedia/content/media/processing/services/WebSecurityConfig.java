@@ -34,6 +34,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
      * @see org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter#configure
      * (org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder)
      */
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         final String[] arrayUser = StringUtils.split(authorizedUsers, ",");
@@ -53,6 +54,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
      * @see org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter#configure
      * (org.springframework.security.config.annotation.web.builders.HttpSecurity)
      */
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.authorizeRequests().antMatchers("/", MediaServiceUrl.ACQUIRE_MEDIA.getUrl()).permitAll();
