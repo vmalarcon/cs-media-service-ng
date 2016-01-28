@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.MessageConstants;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.tools.json.JSONWriter;
@@ -155,7 +156,7 @@ public final class JSONUtil {
     }
     
     private static ActivityMapping getMappingFromList(List<ActivityMapping> activityMappingList, String activityType, String mediaType) {
-        for (ActivityMapping activityMapping : activityMappingList) {
+        for (final ActivityMapping activityMapping : activityMappingList) {
             if (activityMapping.getActivityType().equals(activityType) && mediaType.matches(activityMapping.getMediaType())) {
                 return activityMapping;
             }
@@ -174,13 +175,13 @@ public final class JSONUtil {
         if (statusLogList != null && statusLogList.size() > 0) {
             List[] sublist = new ArrayList[size];
             for (int k = 0; k < size; k++) {
-                List<MediaProcessLog> eachNameList = new ArrayList<>();
+                final List<MediaProcessLog> eachNameList = new ArrayList<>();
                 sublist[k] = eachNameList;
             }
             int i = 0;
             String preName = statusLogList.get(0).getMediaFileName();
             mapList.put(preName, sublist[0]);
-            for (MediaProcessLog mediaProcessLog : statusLogList) {
+            for (final MediaProcessLog mediaProcessLog : statusLogList) {
                 if (mediaProcessLog.getMediaFileName().equalsIgnoreCase(preName)) {
                     sublist[i].add(mediaProcessLog);
                 } else {
@@ -272,9 +273,7 @@ public final class JSONUtil {
      */
     private static boolean alreadyContainsExpediaId(ImageMessage imageMessage) {
         final String fileName = FilenameUtils.getBaseName(imageMessage.getFileUrl());
-        if (!fileName.isEmpty()) {
-            return fileName.startsWith(imageMessage.getExpediaId().toString());
-        }
-        return false;
+        final OuterDomain domain = imageMessage.getOuterDomainData();
+        return (fileName.isEmpty())?false:(domain==null)?false:fileName.startsWith(domain.getDomainId());
     }
 }
