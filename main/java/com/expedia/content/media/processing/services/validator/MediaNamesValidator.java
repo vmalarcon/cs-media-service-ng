@@ -1,12 +1,11 @@
 package com.expedia.content.media.processing.services.validator;
 
-import com.expedia.content.media.processing.services.util.JSONUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Value;
+
+import com.expedia.content.media.processing.services.util.JSONUtil;
 
 /**
  * MediaNamesValidator will check the input json message
@@ -14,8 +13,8 @@ import java.util.Map;
  * the value of mediaNames should be array
  * the number of mediaNames should not exceed default setting
  */
+@SuppressWarnings({"PMD.ConfusingTernary"})
 public class MediaNamesValidator implements RequestMessageValidator {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MediaNamesValidator.class);
     @Value("${medianame.maximum.count}")
     private int maximumRequestCount;
     /**
@@ -25,11 +24,12 @@ public class MediaNamesValidator implements RequestMessageValidator {
      * @return ValidationStatus contain the validation status, {@code true} when successful or
      * {@code false} when the validation fails. When the validation fails a message is also set in the ValidationStatus.
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public ValidationStatus validate(String message) {
-        ValidationStatus validationStatus = new ValidationStatus();
-        Map<String, Object> map = JSONUtil.buildMapFromJson(message);
-        Object object = map.get("mediaNames");
+        final ValidationStatus validationStatus = new ValidationStatus();
+        final Map<String, Object> map = JSONUtil.buildMapFromJson(message);
+        final Object object = map.get("mediaNames");
         if (object == null) {
             validationStatus.setValid(false);
             validationStatus.setMessage("message does not contain property 'messageNames'.");
@@ -37,7 +37,7 @@ public class MediaNamesValidator implements RequestMessageValidator {
             validationStatus.setValid(false);
             validationStatus.setMessage("messageNames value should be array.");
         } else {
-            if (((List) object).size() <= 0) {
+            if (((List) object).isEmpty()) {
                 validationStatus.setValid(false);
                 validationStatus.setMessage("messageNames value is required.");
                 return validationStatus;

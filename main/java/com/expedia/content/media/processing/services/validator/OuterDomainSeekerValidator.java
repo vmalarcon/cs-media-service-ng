@@ -10,21 +10,22 @@ import java.util.Map;
  * @deprecated Use EPCMVELValidator instead
  */
 @Deprecated
+@SuppressWarnings({"PMD.AbstractClassWithoutAbstractMethod"})
 public abstract class OuterDomainSeekerValidator {
-    
+
     protected String fieldName;
 
     /**
      * Searches the outer domain fields for the field to validate. Called recursively to seek
-     * through the entire depth of the map. 
+     * through the entire depth of the map.
      * 
      * @param message The data map to search.
      * @return The value of the field to validate. {@code null} if the value is not found.
      */
     protected Object seekOuterDomainFields(ImageMessage message) {
-        if (message.getOuterDomainData()!= null) {
-                Map<String, Object> dataMap = message.getOuterDomainData().getDomainFields();
-                return scanOuterDomainDataTree(dataMap);
+        if (message.getOuterDomainData() != null) {
+            final Map<String, Object> dataMap = message.getOuterDomainData().getDomainFields();
+            return scanOuterDomainDataTree(dataMap);
 
         }
         return null;
@@ -38,12 +39,12 @@ public abstract class OuterDomainSeekerValidator {
         if (dataMap == null) {
             return null;
         }
-        for (String key : dataMap.keySet()) {
+        for (final String key : dataMap.keySet()) {
             if (fieldName.equals(key)) {
                 return dataMap.get(key);
             } else {
                 if (dataMap.get(key) instanceof Map) {
-                    Object value = scanOuterDomainDataTree((Map) dataMap.get(key));
+                    final Object value = scanOuterDomainDataTree((Map) dataMap.get(key));
                     if (value != null) {
                         return value;
                     }
@@ -52,13 +53,13 @@ public abstract class OuterDomainSeekerValidator {
         }
         return null;
     }
-    
+
     public String getFieldName() {
         return fieldName;
     }
-    
+
     public void setFieldName(String fieldName) {
         this.fieldName = fieldName;
     }
-    
+
 }

@@ -28,14 +28,13 @@ public class ExpediaIdValidator extends NumericValidator {
     @Override
     public ValidationStatus validate(ImageMessage image) {
         if (image.getOuterDomainData().getDomain() == Domain.LODGING) {
-            Object eidValue = findEidValue(image);
+            final Object eidValue = findEidValue(image);
             if (eidValue == null && image.getExpediaId() == null) {
-                ValidationStatus validationStatus = buildFailedValidationStatus(image);
-                return validationStatus;
+                return buildFailedValidationStatus(image);
             }
             return super.validate(image);
         }
-        ValidationStatus validationStatus = new ValidationStatus();
+        final ValidationStatus validationStatus = new ValidationStatus();
         validationStatus.setValid(true);
         return validationStatus;
     }
@@ -58,7 +57,7 @@ public class ExpediaIdValidator extends NumericValidator {
      */
     private ValidationStatus buildFailedValidationStatus(ImageMessage image) {
         String errorMsg = "expediaId is required when imageType is {0}.";
-        ValidationStatus validationStatus = new ValidationStatus();
+        final ValidationStatus validationStatus = new ValidationStatus();
         validationStatus.setValid(false);
         errorMsg = MessageFormat.format(errorMsg, image.getOuterDomainData().getDomain());
         validationStatus.setMessage(errorMsg);

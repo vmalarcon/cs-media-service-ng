@@ -15,9 +15,8 @@ public class LcmProcessLogDaoTest {
 
     @Test
     public void testMediaStatusFound() {
-        String processName = "lcm-reporting-test";
         SQLMediaLogSproc mockMediaProcessLogSproc = mock(SQLMediaLogSproc.class);
-        LcmProcessLogDao lcmProcessLogDao = new LcmProcessLogDao(processName, mockMediaProcessLogSproc);
+        LcmProcessLogDao lcmProcessLogDao = new LcmProcessLogDao(mockMediaProcessLogSproc);
         String searchName = "1037678_109010ice.jpg";
         List<String> fileList = new ArrayList<>();
         fileList.add(searchName);
@@ -35,9 +34,8 @@ public class LcmProcessLogDaoTest {
 
     @Test
     public void testMediaStatusNotFound() {
-        String processName = "lcm-reporting-test";
         SQLMediaLogSproc mockMediaProcessLogSproc = mock(SQLMediaLogSproc.class);
-        LcmProcessLogDao lcmProcessLogDao = new LcmProcessLogDao(processName, mockMediaProcessLogSproc);
+        LcmProcessLogDao lcmProcessLogDao = new LcmProcessLogDao(mockMediaProcessLogSproc);
         String searchName = "1037678_109010ice.jpg";
         List<String> fileList = new ArrayList<>();
         fileList.add(searchName);
