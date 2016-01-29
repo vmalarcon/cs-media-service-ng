@@ -293,9 +293,6 @@ public class Application extends SpringBootServletInitializer {
             LOGGER.error("ERROR - JSONMessage=[{}], requestId=[{}]", e, headers.get(REQUESTID));
             return buildErrorCodeResponse("Requested resource with ID " + domainName + " was not found.",
                     MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + domainName + localePath, NOT_FOUND_CODE);
-        } catch (Exception e) {
-            LOGGER.error("ERROR - JSONMessage=[{}], requestId=[{}]", e, headers.get(REQUESTID));
-            return buildErrorCodeResponse(e.getMessage(), MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + domainName + localePath, BAD_REQUEST_CODE);
         }
     }
 

@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
@@ -141,7 +142,7 @@ public final class JSONUtil {
     public static String generateJsonByCategoryList(List<Category> categories, String domain) {
         try {
             final Map<String, Object> allMap = new HashMap<>();
-            allMap.put(JSON_TAG_DOMAIN, domain);
+            allMap.put(JSON_TAG_DOMAIN, domain.toLowerCase(Locale.US));
             allMap.put("categories", categories);
             return OBJECT_MAPPER.writeValueAsString(allMap);
         } catch (IOException ex) {
