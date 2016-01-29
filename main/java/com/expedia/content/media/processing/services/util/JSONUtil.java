@@ -133,12 +133,12 @@ public final class JSONUtil {
     }
 
     /**
-     +     * Generate the json response message.
-     +     *
-     +     * @param categories    a List of Categories with their Sub-Categories
-     +     * @param domain        The domain of the categories
-     +     * @return
-     +     */
+     * Generate the json response message.
+     *
+     * @param categories    a List of Categories with their Sub-Categories
+     * @param domain        The domain of the categories
+     * @return json format Domain Categories
+     */
     public static String generateJsonByCategoryList(List<Category> categories, String domain) {
         try {
             final Map<String, Object> allMap = new HashMap<>();

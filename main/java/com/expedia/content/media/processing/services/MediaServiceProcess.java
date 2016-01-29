@@ -226,6 +226,12 @@ public class MediaServiceProcess {
         return validationStatus;
     }
 
+    /**
+     * Validates a user from the request
+     *
+     * @param user the username from the request
+     * @return a message of whether the user is authorized or not.
+     */
     public String validateDomainCategoriesRequest(String user) {
         final List<MapMessageValidator> validatorList = mapValidatorList.get(user);
         if (validatorList == null) {
