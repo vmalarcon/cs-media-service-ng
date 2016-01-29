@@ -312,7 +312,4 @@ public class Application extends SpringBootServletInitializer {
         String resMsg = JSONUtil.generateJsonForErrorResponse(validationMessage, url, errorCode, HTTP_STATUS_MAP.get(errorCode).getReasonPhrase());
         return new ResponseEntity<>(resMsg, HTTP_STATUS_MAP.get(errorCode));
     }
-
-
-
 }
