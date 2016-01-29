@@ -12,11 +12,11 @@ import java.util.Properties;
 import java.util.TreeMap;
 import java.util.UUID;
 
-import com.expedia.content.media.processing.services.dao.Category;
 import org.apache.commons.io.FilenameUtils;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.MessageConstants;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.tools.json.JSONWriter;
@@ -24,22 +24,20 @@ import com.rabbitmq.tools.json.JSONWriter;
 /**
  * Contains methods to process JSON requests and generate JSON responses.
  */
-@SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.ModifiedCyclomaticComplexity", "PMD.StdCyclomaticComplexity", "PMD.ConfusingTernary", "PMD.NPathComplexity"})
+@SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.ModifiedCyclomaticComplexity", "PMD.StdCyclomaticComplexity", "PMD.ConfusingTernary",
+        "PMD.NPathComplexity"})
 public final class JSONUtil {
-
+    
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final String JSON_TAG_STATUS = "status";
     private static final String JSON_TAG_TIME = "time";
     private static final String JSON_TAG_MEDIA_NAME = "mediaName";
     private static final String JSON_TAG_MEDIA_STATUS = "mediaStatuses";
     private static final String JSON_TAG_STATUS_NOT_FOUND = "NOT_FOUND";
-    private static final String JSON_TAG_DOMAIN = "domain";
-    private static final String ERROR_WRITING_MAP = "Error writing map to json";
-    private static final String MEDIA_GUID = "mediaGuid";
-
+    
     private JSONUtil() {
     }
-
+    
     /**
      * Converts json message to java map object
      *
@@ -55,7 +53,7 @@ public final class JSONUtil {
             throw new RequestMessageException(errorMsg, ex);
         }
     }
-
+    
     public static List<Map> buildMapListFromJson(String jsonMessage) throws RequestMessageException {
         try {
             return OBJECT_MAPPER.readValue(jsonMessage, List.class);
@@ -64,7 +62,7 @@ public final class JSONUtil {
             throw new RequestMessageException(errorMsg, ex);
         }
     }
-
+    
     /**
      * convert the imageMessage validation error list to JSON string
      *
@@ -75,28 +73,11 @@ public final class JSONUtil {
         try {
             return OBJECT_MAPPER.writeValueAsString(messageList);
         } catch (IOException ex) {
-            throw new RequestMessageException(ERROR_WRITING_MAP, ex);
+            final String errorMsg = "Error writing map to json";
+            throw new RequestMessageException(errorMsg, ex);
         }
     }
-
-    /**
-     * Generate the json response message.
-     *
-     * @param categories    a List of Categories with their Sub-Categories
-     * @param domain        The domain of the categories
-     * @return
-     */
-    public static String generateJsonByCategoryList(List<Category> categories, String domain) {
-        try {
-            final Map<String, Object> allMap = new HashMap<>();
-            allMap.put(JSON_TAG_DOMAIN, domain);
-            allMap.put("categories", categories);
-            return OBJECT_MAPPER.writeValueAsString(allMap);
-        } catch (IOException ex) {
-            throw new RequestMessageException(ERROR_WRITING_MAP, ex);
-        }
-    }
-
+    
     /**
      * Generate the json response message.
      *
@@ -107,14 +88,14 @@ public final class JSONUtil {
      * @throws RequestMessageException happen when covert map to json error.
      */
     public static String generateJsonByProcessLogList(Map<String, List<MediaProcessLog>> mapList, List<String> fileNameList,
-                                                      List<ActivityMapping> activityMappingList) throws RequestMessageException {
+            List<ActivityMapping> activityMappingList) throws RequestMessageException {
         final Map<String, Object> allMap = new HashMap<>();
         final ObjectMapper mapper = new ObjectMapper();
         final List mediaStatusList = new ArrayList();
         for (final String fileName : fileNameList) {
             final Map<String, Object> eachEntryMap = new LinkedHashMap<>();
             eachEntryMap.put(JSON_TAG_MEDIA_NAME, fileName);
-
+            
             final List<MediaProcessLog> eachList = mapList.get(fileName);
             if (eachList != null && !eachList.isEmpty()) {
                 ActivityMapping activityMapping = null;
@@ -132,7 +113,7 @@ public final class JSONUtil {
                 if (activityMapping == null) {
                     eachEntryMap.put(JSON_TAG_STATUS, JSON_TAG_STATUS_NOT_FOUND);
                 }
-
+                
             } else {
                 eachEntryMap.put(JSON_TAG_STATUS, JSON_TAG_STATUS_NOT_FOUND);
             }
@@ -142,11 +123,12 @@ public final class JSONUtil {
         try {
             return mapper.writeValueAsString(allMap);
         } catch (IOException ex) {
-            throw new RequestMessageException(ERROR_WRITING_MAP, ex);
+            final String errorMsg = "Error writing map to json";
+            throw new RequestMessageException(errorMsg, ex);
         }
-
+        
     }
-
+    
     /**
      * generate json format error message
      *
@@ -167,10 +149,11 @@ public final class JSONUtil {
         try {
             return mapper.writeValueAsString(allMap);
         } catch (IOException ex) {
-            throw new RequestMessageException(ERROR_WRITING_MAP, ex);
+            final String errorMsg = "Error writing map to json";
+            throw new RequestMessageException(errorMsg, ex);
         }
     }
-
+    
     private static ActivityMapping getMappingFromList(List<ActivityMapping> activityMappingList, String activityType, String mediaType) {
         for (final ActivityMapping activityMapping : activityMappingList) {
             if (activityMapping.getActivityType().equals(activityType) && mediaType.matches(activityMapping.getMediaType())) {
@@ -179,7 +162,7 @@ public final class JSONUtil {
         }
         return null;
     }
-
+    
     /**
      * convert all media status list to mediaFileName-statusList mapping.
      *
@@ -209,14 +192,14 @@ public final class JSONUtil {
             }
         }
     }
-
+    
     public static void addGuidToMap(Map messageMap) {
-        if (messageMap.get(MEDIA_GUID) == null) {
+        if (messageMap.get("mediaGuid") == null) {
             final String guid = UUID.randomUUID().toString();
-            messageMap.put(MEDIA_GUID, guid);
+            messageMap.put("mediaGuid", guid);
         }
     }
-
+    
     /**
      * Builds the old JSON message of this image message.
      *
@@ -225,19 +208,24 @@ public final class JSONUtil {
     public static String convertToCommonMessage(ImageMessage imageMessage, Map map, Properties providerProperties) {
         final Map<String, Object> mapMessage = new LinkedHashMap<>();
         final Map<String, Object> domainMapMessage = new LinkedHashMap<>();
-
+        
         if (imageMessage.getFileUrl() != null) {
             mapMessage.put(MessageConstants.FILE_URL, imageMessage.getFileUrl());
         }
-        if (imageMessage.getFileName() != null) {
-            mapMessage.put(MessageConstants.FILE_NAME, imageMessage.getFileName());
-        } else {
+        if (imageMessage.getFileName() == null) {
             String fileName = "";
             if (imageMessage.getFileUrl() != null) {
-                fileName = ((imageMessage.getExpediaId() == null) ? "" : imageMessage.getExpediaId() + "_") + ((imageMessage.getMediaProviderId() == null) ? "" :
-                        imageMessage.getMediaProviderId() + "_") + FilenameUtils.getBaseName(imageMessage.getFileUrl()) + ".jpg";
+                if (alreadyContainsExpediaId(imageMessage)) {
+                    fileName = FilenameUtils.getBaseName(imageMessage.getFileUrl()) + ".jpg";
+                } else {
+                    fileName = ((imageMessage.getExpediaId() == null) ? "" : imageMessage.getExpediaId() + "_")
+                            + ((imageMessage.getMediaProviderId() == null) ? "" : imageMessage.getMediaProviderId() + "_")
+                            + FilenameUtils.getBaseName(imageMessage.getFileUrl()) + ".jpg";
+                }
             }
             mapMessage.put(MessageConstants.FILE_NAME, fileName);
+        } else {
+            mapMessage.put(MessageConstants.FILE_NAME, imageMessage.getFileName());
         }
         if (map.get("imageType") != null) {
             mapMessage.put("domain", map.get("imageType"));
@@ -251,8 +239,8 @@ public final class JSONUtil {
         } else {
             mapMessage.put(MessageConstants.ACTIVE, map.get("active"));
         }
-        if (map.get(MEDIA_GUID) != null) {
-            mapMessage.put(MessageConstants.MEDIA_ID, map.get(MEDIA_GUID));
+        if (map.get("mediaGuid") != null) {
+            mapMessage.put(MessageConstants.MEDIA_ID, map.get("mediaGuid"));
         }
         if (imageMessage.getStagingKey() != null) {
             mapMessage.put(MessageConstants.STAGING_KEY, imageMessage.getStagingKey());
@@ -274,5 +262,16 @@ public final class JSONUtil {
         mapMessage.put(MessageConstants.CLIENT_ID, "MultiSource");
         return new JSONWriter().write(mapMessage);
     }
-
+    
+    /**
+     * Check if the provided filename contains the expediaId or not.
+     * 
+     * @param imageMessage provided imageMessage
+     * @return true if the filename already contains the ExpediaId or false if not.
+     */
+    private static boolean alreadyContainsExpediaId(ImageMessage imageMessage) {
+        final String fileName = FilenameUtils.getBaseName(imageMessage.getFileUrl());
+        final OuterDomain domain = imageMessage.getOuterDomainData();
+        return (fileName.isEmpty()) ? false : (domain == null) ? false : fileName.startsWith(domain.getDomainId());
+    }
 }
