@@ -270,7 +270,6 @@ public class Application extends SpringBootServletInitializer {
      * @param domainName associated domain.
      * @param localeId   Localization.
      * @return returns a JSON response for domain categories request.
-     * @throws Exception
      */
     @RequestMapping(value = "/media/v1/domaincategories/{domainName}", method = RequestMethod.GET)
     public ResponseEntity<String> domainCategories(
