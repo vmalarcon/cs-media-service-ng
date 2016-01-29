@@ -3,6 +3,7 @@ package com.expedia.content.media.processing.services.dao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -76,13 +77,17 @@ public class MediaDomainCategoriesDao {
      * @return List of SubCategory Objects
      */
     private List<SubCategory> getSubCategoryList(Integer categoryId, Map<Integer, List<MediaSubCategory>> subCategoryMap) {
-        final Map<Integer, List<MediaSubCategory>> innerSubCategoryMap = subCategoryMap.get(categoryId).stream()
-                .collect(Collectors.groupingBy(subCategory -> Integer.parseInt(subCategory.getMediaSubCategoryID())));
-        final List<SubCategory> subCategoriesList = innerSubCategoryMap.keySet().stream()
-                .map(subCategoryId -> new SubCategory(String.valueOf(subCategoryId), innerSubCategoryMap.get(subCategoryId).stream()
-                        .map(item -> new LocalizedName(item.getMediaSubCategoryName(), item.getLangID()))
-                        .collect(Collectors.toList())))
-                .collect(Collectors.toList());
-        return subCategoriesList;
+        if (subCategoryMap.get(categoryId) == null) {
+            return new ArrayList<>();
+        } else {
+            final Map<Integer, List<MediaSubCategory>> innerSubCategoryMap = subCategoryMap.get(categoryId).stream()
+                    .collect(Collectors.groupingBy(subCategory -> Integer.parseInt(subCategory.getMediaSubCategoryID())));
+            final List<SubCategory> subCategoriesList = innerSubCategoryMap.keySet().stream()
+                    .map(subCategoryId -> new SubCategory(String.valueOf(subCategoryId), innerSubCategoryMap.get(subCategoryId).stream()
+                            .map(item -> new LocalizedName(item.getMediaSubCategoryName(), item.getLangID()))
+                            .collect(Collectors.toList())))
+                    .collect(Collectors.toList());
+            return subCategoriesList;
+        }
     }
 }

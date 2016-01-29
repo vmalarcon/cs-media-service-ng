@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -39,6 +40,43 @@ public class MediaDomainCategoriesDaoTest {
         when(mockResults.get(SQLMediaDomainCategoriesSproc.MEDIA_SUB_CATEGORY_RESULT_SET)).thenReturn(mockMediaSubCategories);
         List<Category> categories = mediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
         assertNotEquals(categories, null);
+    }
+
+    @Test
+    public void testDomainCategoryWithoutSubCategories() throws Exception {
+        String domain = "lodging";
+        String localeId = "1033";
+        List<MediaCategory> mockMediaCategories = new ArrayList<>();
+        mockMediaCategories.add(new MediaCategory("3", "1033", "Primary Image"));
+        mockMediaCategories.add(new MediaCategory("4", "1033", "Lobby"));
+        List<MediaSubCategory> mockMediaSubCategories = new ArrayList<>();
+        MediaDomainCategoriesDao mediaDomainCategoriesDao = new MediaDomainCategoriesDao(mockSQLMediaDomainCategoriesSproc);
+        when(mockSQLMediaDomainCategoriesSproc.execute(localeId)).thenReturn(mockResults);
+        when(mockResults.get(SQLMediaDomainCategoriesSproc.MEDIA_CATEGORY_RESULT_SET)).thenReturn(mockMediaCategories);
+        when(mockResults.get(SQLMediaDomainCategoriesSproc.MEDIA_SUB_CATEGORY_RESULT_SET)).thenReturn(mockMediaSubCategories);
+        List<Category> categories = mediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
+        assertNotEquals(categories, null);
+    }
+
+    /**
+     * This case will actually never happen in prod
+     * @throws Exception
+     */
+    @Test
+    public void testDomainSubCategoriesWithoutParentCategories() throws Exception {
+        String domain = "lodging";
+        String localeId = "1033";
+        List<MediaCategory> mockMediaCategories = new ArrayList<>();
+        List<MediaSubCategory> mockMediaSubCategories = new ArrayList<>();
+        mockMediaSubCategories.add(new MediaSubCategory("3", "3", "1033", "Featured Image"));
+        mockMediaSubCategories.add(new MediaSubCategory("4", "10000", "1033", "Interior Entrance"));
+        mockMediaSubCategories.add(new MediaSubCategory("4", "10001", "1033", "Lobby"));
+        MediaDomainCategoriesDao mediaDomainCategoriesDao = new MediaDomainCategoriesDao(mockSQLMediaDomainCategoriesSproc);
+        when(mockSQLMediaDomainCategoriesSproc.execute(localeId)).thenReturn(mockResults);
+        when(mockResults.get(SQLMediaDomainCategoriesSproc.MEDIA_CATEGORY_RESULT_SET)).thenReturn(mockMediaCategories);
+        when(mockResults.get(SQLMediaDomainCategoriesSproc.MEDIA_SUB_CATEGORY_RESULT_SET)).thenReturn(mockMediaSubCategories);
+        List<Category> categories = mediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
+        assertEquals(categories.size(), 0);
     }
 
     @Test(expected = DomainNotFoundException.class)
