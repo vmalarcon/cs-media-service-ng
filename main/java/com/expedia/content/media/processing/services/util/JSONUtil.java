@@ -13,8 +13,6 @@ import java.util.TreeMap;
 import java.util.UUID;
 
 import org.apache.commons.io.FilenameUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.MessageConstants;
@@ -26,6 +24,8 @@ import com.rabbitmq.tools.json.JSONWriter;
 /**
  * Contains methods to process JSON requests and generate JSON responses.
  */
+@SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.ModifiedCyclomaticComplexity", "PMD.StdCyclomaticComplexity", "PMD.ConfusingTernary",
+        "PMD.NPathComplexity"})
 public final class JSONUtil {
     
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
@@ -34,7 +34,6 @@ public final class JSONUtil {
     private static final String JSON_TAG_MEDIA_NAME = "mediaName";
     private static final String JSON_TAG_MEDIA_STATUS = "mediaStatuses";
     private static final String JSON_TAG_STATUS_NOT_FOUND = "NOT_FOUND";
-    private static final Logger LOGGER = LoggerFactory.getLogger(JSONUtil.class);
     
     private JSONUtil() {
     }
@@ -50,7 +49,7 @@ public final class JSONUtil {
         try {
             return OBJECT_MAPPER.readValue(jsonMessage, Map.class);
         } catch (IOException ex) {
-            String errorMsg = MessageFormat.format("Error parsing/converting Json message: {0}", jsonMessage);
+            final String errorMsg = MessageFormat.format("Error parsing/converting Json message: {0}", jsonMessage);
             throw new RequestMessageException(errorMsg, ex);
         }
     }
@@ -59,7 +58,7 @@ public final class JSONUtil {
         try {
             return OBJECT_MAPPER.readValue(jsonMessage, List.class);
         } catch (IOException ex) {
-            String errorMsg = MessageFormat.format("Error parsing/converting Json message: {0}", jsonMessage);
+            final String errorMsg = MessageFormat.format("Error parsing/converting Json message: {0}", jsonMessage);
             throw new RequestMessageException(errorMsg, ex);
         }
     }
@@ -74,7 +73,7 @@ public final class JSONUtil {
         try {
             return OBJECT_MAPPER.writeValueAsString(messageList);
         } catch (IOException ex) {
-            String errorMsg = "Error writing map to json";
+            final String errorMsg = "Error writing map to json";
             throw new RequestMessageException(errorMsg, ex);
         }
     }
@@ -90,18 +89,18 @@ public final class JSONUtil {
      */
     public static String generateJsonByProcessLogList(Map<String, List<MediaProcessLog>> mapList, List<String> fileNameList,
             List<ActivityMapping> activityMappingList) throws RequestMessageException {
-        Map<String, Object> allMap = new HashMap<>();
-        ObjectMapper mapper = new ObjectMapper();
-        List mediaStatusList = new ArrayList();
-        for (String fileName : fileNameList) {
-            Map<String, Object> eachEntryMap = new LinkedHashMap<>();
+        final Map<String, Object> allMap = new HashMap<>();
+        final ObjectMapper mapper = new ObjectMapper();
+        final List mediaStatusList = new ArrayList();
+        for (final String fileName : fileNameList) {
+            final Map<String, Object> eachEntryMap = new LinkedHashMap<>();
             eachEntryMap.put(JSON_TAG_MEDIA_NAME, fileName);
             
-            List<MediaProcessLog> eachList = mapList.get(fileName);
-            if (eachList != null && eachList.size() > 0) {
+            final List<MediaProcessLog> eachList = mapList.get(fileName);
+            if (eachList != null && !eachList.isEmpty()) {
                 ActivityMapping activityMapping = null;
                 for (int i = eachList.size() - 1; i >= 0; i--) {
-                    MediaProcessLog mediaProcessLog = eachList.get(i);
+                    final MediaProcessLog mediaProcessLog = eachList.get(i);
                     activityMapping = getMappingFromList(activityMappingList, mediaProcessLog.getActivityType(), mediaProcessLog.getMediaType());
                     if (activityMapping != null) {
                         eachEntryMap.put(JSON_TAG_STATUS, activityMapping.getStatusMessage());
@@ -124,7 +123,7 @@ public final class JSONUtil {
         try {
             return mapper.writeValueAsString(allMap);
         } catch (IOException ex) {
-            String errorMsg = "Error writing map to json";
+            final String errorMsg = "Error writing map to json";
             throw new RequestMessageException(errorMsg, ex);
         }
         
@@ -140,8 +139,8 @@ public final class JSONUtil {
      * @return json format error message
      */
     public static String generateJsonForErrorResponse(String message, String urlPath, int status, String error) {
-        Map<String, Object> allMap = new TreeMap<>();
-        ObjectMapper mapper = new ObjectMapper();
+        final Map<String, Object> allMap = new TreeMap<>();
+        final ObjectMapper mapper = new ObjectMapper();
         allMap.put("path", urlPath);
         allMap.put("message", message);
         allMap.put("error", error);
@@ -150,7 +149,7 @@ public final class JSONUtil {
         try {
             return mapper.writeValueAsString(allMap);
         } catch (IOException ex) {
-            String errorMsg = "Error writing map to json";
+            final String errorMsg = "Error writing map to json";
             throw new RequestMessageException(errorMsg, ex);
         }
     }
@@ -172,7 +171,7 @@ public final class JSONUtil {
      * @param size the input media file name list size.
      */
     public static void divideStatusListToMap(List<MediaProcessLog> statusLogList, Map<String, List<MediaProcessLog>> mapList, int size) {
-        if (statusLogList != null && statusLogList.size() > 0) {
+        if (statusLogList != null && !statusLogList.isEmpty()) {
             List[] sublist = new ArrayList[size];
             for (int k = 0; k < size; k++) {
                 final List<MediaProcessLog> eachNameList = new ArrayList<>();
@@ -228,7 +227,6 @@ public final class JSONUtil {
         } else {
             mapMessage.put(MessageConstants.FILE_NAME, imageMessage.getFileName());
         }
-        
         if (map.get("imageType") != null) {
             mapMessage.put("domain", map.get("imageType"));
         }
@@ -274,6 +272,6 @@ public final class JSONUtil {
     private static boolean alreadyContainsExpediaId(ImageMessage imageMessage) {
         final String fileName = FilenameUtils.getBaseName(imageMessage.getFileUrl());
         final OuterDomain domain = imageMessage.getOuterDomainData();
-        return (fileName.isEmpty())?false:(domain==null)?false:fileName.startsWith(domain.getDomainId());
+        return (fileName.isEmpty()) ? false : (domain == null) ? false : fileName.startsWith(domain.getDomainId());
     }
 }

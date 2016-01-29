@@ -25,13 +25,13 @@ public class RequiredValidator extends OuterDomainSeekerValidator implements Med
      */
     @Override
     public ValidationStatus validate(ImageMessage imageMessage) {
-        ValidationStatus validationStatus = new ValidationStatus();
+        final ValidationStatus validationStatus = new ValidationStatus();
 
-        if (!validateFieldNotNullOrNotEmpty(imageMessage)) {
+        if (validateFieldNotNullOrNotEmpty(imageMessage)) {
+            validationStatus.setValid(true);
+        } else {
             validationStatus.setValid(false);
             validationStatus.setMessage(fieldName + " is required.");
-        } else {
-            validationStatus.setValid(true);
         }
         return validationStatus;
     }
@@ -52,10 +52,7 @@ public class RequiredValidator extends OuterDomainSeekerValidator implements Med
         if ((fieldValue == null || StringUtils.isEmpty(fieldValue.toString())) && imageMessage.getOuterDomainData() != null) {
             fieldValue = seekOuterDomainFields(imageMessage);
         }
-        if (fieldValue == null || StringUtils.isEmpty(fieldValue.toString())) {
-            return false;
-        }
-        return true;
+        return !(fieldValue == null || StringUtils.isEmpty(fieldValue.toString()));
     }
 
 }

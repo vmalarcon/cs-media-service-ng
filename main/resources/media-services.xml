@@ -38,7 +38,6 @@
                 <ref bean="mediaProviderValidator"/>
             </list>
         </constructor-arg>
-        <constructor-arg ref="filenamesRabbitTemplate"/>
         <constructor-arg ref="threadedLogger"/>
         <constructor-arg ref="compositeReporter"/>
 
@@ -186,7 +185,6 @@
     </bean>
 
     <bean id="processLogDao" class="com.expedia.content.media.processing.services.dao.LcmProcessLogDao">
-        <constructor-arg name="processName" value="${processname}" />
         <constructor-arg name="sqlMediaLogSproc">
             <bean class="com.expedia.content.media.processing.services.dao.SQLMediaLogSproc" />
         </constructor-arg>

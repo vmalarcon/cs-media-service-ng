@@ -32,8 +32,8 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException autheticationException)
             throws IOException, ServletException {
         response.sendError(HttpServletResponse.SC_UNAUTHORIZED, autheticationException.getMessage());
-        String userName =
-                autheticationException.getAuthentication() != null ? autheticationException.getAuthentication().getPrincipal().toString() : "not provided";
+        final String userName =
+                autheticationException.getAuthentication() == null ? "not provided" : autheticationException.getAuthentication().getPrincipal().toString();
         LOGGER.info("Unauthorized user : username={}", userName);
     }
 }

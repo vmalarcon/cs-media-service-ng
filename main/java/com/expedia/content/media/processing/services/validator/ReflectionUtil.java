@@ -25,7 +25,7 @@ public final class ReflectionUtil {
     public static Object getFieldValue(Object obj, String fieldName) throws NoSuchFieldException, IllegalAccessException {
         Object objectValue = null;
         try {
-            Field field = obj.getClass().getDeclaredField(fieldName);
+            final Field field = obj.getClass().getDeclaredField(fieldName);
             field.setAccessible(true);
             if (field.getName().equals(fieldName)) {
                 objectValue = field.get(obj);

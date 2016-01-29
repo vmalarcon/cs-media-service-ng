@@ -26,13 +26,13 @@ public class NumericValidator extends OuterDomainSeekerValidator implements Medi
      */
     @Override
     public ValidationStatus validate(ImageMessage imageMessage) {
-        ValidationStatus validationStatus = new ValidationStatus();
+        final ValidationStatus validationStatus = new ValidationStatus();
         
-        if (!validateFieldNumeric(imageMessage)) {
+        if (validateFieldNumeric(imageMessage)) {
+            validationStatus.setValid(true);
+        } else {
             validationStatus.setValid(false);
             validationStatus.setMessage(fieldName + " is not numeric.");
-        } else {
-            validationStatus.setValid(true);
         }
         return validationStatus;
     }
@@ -53,10 +53,7 @@ public class NumericValidator extends OuterDomainSeekerValidator implements Medi
         if (fieldValue == null && imageMessage.getOuterDomainData() != null) {
             fieldValue = seekOuterDomainFields(imageMessage);
         }
-        if (fieldValue != null && !StringUtils.isNumeric(fieldValue.toString())) {
-            return false;
-        }
-        return true;
+        return !(fieldValue != null && !StringUtils.isNumeric(fieldValue.toString()));
     }
     
 }

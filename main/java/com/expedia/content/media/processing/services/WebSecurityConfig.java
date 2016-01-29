@@ -36,7 +36,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
      */
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        String[] arrayUser = StringUtils.split(authorizedUsers, ",");
+        final String[] arrayUser = StringUtils.split(authorizedUsers, ",");
         for (int i = 0; i < arrayUser.length; i++) {
             auth.inMemoryAuthentication().
                     withUser(arrayUser[i]).password("").roles(ROLE);
