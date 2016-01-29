@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -21,9 +22,9 @@ public class MediaDomainCategoriesDao {
     }
 
     /**
-     * Using the Result Sets of SQLMediaDomainCategoriesSproc this Method groups the results by Category ID and then
-     * populates each Category with Localized Names and SubCategories
-     * @see Category, LocalizedName, SubCategory, SQLMediaDomainCategoriesSproc
+     * Returns a List of Category Objects
+     * @apiNote the Sproc only supports the lodging domain at the moment, hence this method only supports lodging domain
+     *          we could make a switch case in the future
      *
      * @param domain        The Domain to query
      * @param localeId      The Localization Id to query by
@@ -32,9 +33,23 @@ public class MediaDomainCategoriesDao {
      */
     @SuppressWarnings("unchecked")
     public List<Category> getMediaCategoriesWithSubCategories(String domain, String localeId) throws DomainNotFoundException {
-        if (!"lodging".equals(domain)) {
+        if ("lodging".equals(domain.toLowerCase(Locale.US))) {
+            return getLodgingMediaCategoriesWithSubCategories(localeId);
+        } else {
             throw new DomainNotFoundException("Domain Not Found");
         }
+    }
+
+    /**
+     * Using the Result Sets of SQLMediaDomainCategoriesSproc this Method groups the results by Category ID and then
+     * populates each Category with Localized Names and SubCategories
+     * @see Category, LocalizedName, SubCategory, SQLMediaDomainCategoriesSproc
+     *
+     * @param localeId  The Localization Id to query by
+     * @return  List of Category Objects
+     */
+    @SuppressWarnings("unchecked")
+    private List<Category> getLodgingMediaCategoriesWithSubCategories(String localeId) {
         final Map<String, Object> results = sproc.execute(localeId);
         final List<MediaCategory> mediaCategories = (List<MediaCategory>) results.get(SQLMediaDomainCategoriesSproc.MEDIA_CATEGORY_RESULT_SET);
         final List<MediaSubCategory> mediaSubCategories = (List<MediaSubCategory>) results.get(SQLMediaDomainCategoriesSproc.MEDIA_SUB_CATEGORY_RESULT_SET);
