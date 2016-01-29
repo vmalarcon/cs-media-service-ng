@@ -12,6 +12,7 @@ import java.util.Properties;
 import java.util.TreeMap;
 import java.util.UUID;
 
+import com.expedia.content.media.processing.services.dao.Category;
 import org.apache.commons.io.FilenameUtils;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
@@ -34,6 +35,8 @@ public final class JSONUtil {
     private static final String JSON_TAG_MEDIA_NAME = "mediaName";
     private static final String JSON_TAG_MEDIA_STATUS = "mediaStatuses";
     private static final String JSON_TAG_STATUS_NOT_FOUND = "NOT_FOUND";
+    private static final String JSON_TAG_DOMAIN = "domain";
+    private static final String ERROR_WRITING_MAP = "Error writing map to json";
     
     private JSONUtil() {
     }
@@ -123,10 +126,27 @@ public final class JSONUtil {
         try {
             return mapper.writeValueAsString(allMap);
         } catch (IOException ex) {
-            final String errorMsg = "Error writing map to json";
-            throw new RequestMessageException(errorMsg, ex);
+            throw new RequestMessageException(ERROR_WRITING_MAP, ex);
         }
         
+    }
+
+    /**
+     +     * Generate the json response message.
+     +     *
+     +     * @param categories    a List of Categories with their Sub-Categories
+     +     * @param domain        The domain of the categories
+     +     * @return
+     +     */
+    public static String generateJsonByCategoryList(List<Category> categories, String domain) {
+        try {
+            final Map<String, Object> allMap = new HashMap<>();
+            allMap.put(JSON_TAG_DOMAIN, domain);
+            allMap.put("categories", categories);
+            return OBJECT_MAPPER.writeValueAsString(allMap);
+        } catch (IOException ex) {
+            throw new RequestMessageException(ERROR_WRITING_MAP, ex);
+        }
     }
     
     /**
@@ -149,8 +169,7 @@ public final class JSONUtil {
         try {
             return mapper.writeValueAsString(allMap);
         } catch (IOException ex) {
-            final String errorMsg = "Error writing map to json";
-            throw new RequestMessageException(errorMsg, ex);
+            throw new RequestMessageException(ERROR_WRITING_MAP, ex);
         }
     }
     
