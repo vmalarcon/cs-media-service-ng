@@ -276,13 +276,13 @@ public class Application extends SpringBootServletInitializer {
             @RequestHeader MultiValueMap<String, String> headers,
             @PathVariable("domainName") String domainName,
             @RequestParam(value = "localeId", required = false) String localeId) {
-        String localePath = (localeId == null) ? "" : "?localeId=" + localeId;
+        final String localePath = (localeId == null) ? "" : "?localeId=" + localeId;
         LOGGER.info("RECEIVED REQUEST - url=[{}][{}][{}], requestId=[{}]",
                 MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl(), domainName, localePath, headers.get(REQUESTID));
         try {
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            String userName = auth.getName();
-            String json = mediaServiceProcess.validateDomainCategoriesRequest(userName);
+            final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            final String userName = auth.getName();
+            final String json = mediaServiceProcess.validateDomainCategoriesRequest(userName);
             if (!"OK".equals(json)) {
                 return buildErrorCodeResponse(json, MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl(), BAD_REQUEST_CODE);
             }
@@ -305,7 +305,7 @@ public class Application extends SpringBootServletInitializer {
      */
     @Counter(name = "badRequestCounter")
     private ResponseEntity<String> buildErrorCodeResponse(String validationMessage, String url, int errorCode) {
-        String resMsg = JSONUtil.generateJsonForErrorResponse(validationMessage, url, errorCode, HTTP_STATUS_MAP.get(errorCode).getReasonPhrase());
+        final String resMsg = JSONUtil.generateJsonForErrorResponse(validationMessage, url, errorCode, HTTP_STATUS_MAP.get(errorCode).getReasonPhrase());
         return new ResponseEntity<>(resMsg, HTTP_STATUS_MAP.get(errorCode));
     }
 }
