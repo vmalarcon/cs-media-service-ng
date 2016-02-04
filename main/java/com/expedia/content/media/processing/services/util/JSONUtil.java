@@ -273,7 +273,8 @@ public final class JSONUtil {
             mapMessage.put(MessageConstants.OUTER_DOMAIN_FIELDS, domainMapMessage);
         }
         if (imageMessage.getCaption() != null) {
-            mapMessage.put(MessageConstants.CAPTION, imageMessage.getCaption());
+            domainMapMessage.put(MessageConstants.CAPTION, imageMessage.getCaption());
+            mapMessage.put(MessageConstants.OUTER_DOMAIN_FIELDS, domainMapMessage);
         }
         if (imageMessage.getMediaProviderId() != null) {
             mapMessage.put(MessageConstants.OUTER_DOMAIN_PROVIDER, providerProperties.getProperty(imageMessage.getMediaProviderId()));
