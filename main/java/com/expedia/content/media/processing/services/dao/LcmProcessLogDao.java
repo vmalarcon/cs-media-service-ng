@@ -7,7 +7,7 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.expedia.content.metrics.aspects.annotations.Meter;
+import expedia.content.solutions.metrics.annotations.Meter;
 
 /**
  * LCM implementations of process log DAO interface.
@@ -21,7 +21,6 @@ public class LcmProcessLogDao implements ProcessLogDao {
     public LcmProcessLogDao(final SQLMediaLogSproc sqlMediaLogSproc) {
         this.sqlMediaLogSproc = sqlMediaLogSproc;
     }
-
 
     @Override
     @SuppressWarnings("unchecked")
