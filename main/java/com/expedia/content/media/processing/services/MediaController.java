@@ -53,7 +53,7 @@ import expedia.content.solutions.metrics.annotations.Meter;
 import expedia.content.solutions.metrics.annotations.Timer;
 
 /**
- * TODO JavaDoc
+ * Web service controller for media resources.
  */
 @Component
 @RestController
