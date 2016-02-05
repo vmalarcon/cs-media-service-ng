@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import javax.annotation.Resource;
 
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
 import com.expedia.content.media.processing.pipeline.reporting.Activity;
@@ -154,8 +156,8 @@ public class MediaController extends CommonServiceController {
         LOGGER.info("RECEIVED REQUEST - messageName={} , JSONMessage=[{}], requestId=[{}]", serviceUrl, message, requestID);
         try {
             final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            final String userName = auth.getName();
-            return service(message, requestID, serviceUrl, userName);
+            final String clientId = auth.getName();
+            return service(message, requestID, serviceUrl, clientId);
         } catch (IllegalStateException | ImageMessageException ex) {
             LOGGER.error("ERROR - messageName={}, JSONMessage=[{}], error=[{}], requestId=[{}] .", serviceUrl, message, ex, requestID);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
@@ -166,14 +168,14 @@ public class MediaController extends CommonServiceController {
      * Common processing between mediaAdd and the AWS portion of aquireMedia. Can be transfered into mediaAdd once aquireMedia is removed.
      * 
      * @param message JSON formated ImageMessage.
-     * @param requestID Id of the sent request.
+     * @param requestID The id of the request. Used for tracking purposes.
      * @param serviceUrl URL of the message called.
-     * @param userName The client id.
+     * @param clientId Web service client id.
      * @return The response for the service call.
      * @throws Exception Thrown if the message can't be validated or the response can't be serialized.
      */
-    private ResponseEntity<String> service(final String message, final String requestID, final String serviceUrl, final String userName) throws Exception {
-        final String json = validateImageMessage(message, userName);
+    private ResponseEntity<String> service(final String message, final String requestID, final String serviceUrl, final String clientId) throws Exception {
+        final String json = validateImageMessage(message, clientId);
         if (!"[]".equals(json)) {
             return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
         }
@@ -185,22 +187,39 @@ public class MediaController extends CommonServiceController {
             return this.buildErrorResponse("Provided fileUrl does not exist.", serviceUrl, NOT_FOUND);
         }
 
-        final String guid = UUID.randomUUID().toString();
-        ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
-        imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
-        final ImageMessage imageMessageNew = imageMessageBuilder.mediaGuid(guid).clientId(userName).requestId(String.valueOf(requestID)).build();
+        final ImageMessage imageMessageNew = updateImageMessage(imageMessage, requestID, clientId);
 
         final Map<String, String> response = new HashMap<>();
-        response.put("mediaGuid", guid);
+        response.put("mediaGuid", imageMessage.getMediaGuid());
         response.put("status", "RECEIVED");
         if (imageMessage.isGenerateThumbnail()) {
-            response.put("thumbnailUrl", thumbnailProcessor.createThumbnail(imageMessage.getFileUrl(), guid,
+            response.put("thumbnailUrl", thumbnailProcessor.createThumbnail(imageMessage.getFileUrl(), imageMessage.getMediaGuid(),
                     imageMessage.getOuterDomainData().getDomain().getDomain(), imageMessage.getOuterDomainData().getDomainId()));
         }
 
         publishMsg(imageMessageNew);
         LOGGER.info("SUCCESS - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl, message, requestID);
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), ACCEPTED);
+    }
+
+    /**
+     * Updates the image message for the next step. Must be done before being published to the next work queue.
+     * 
+     * @param imageMessage The incoming image message.
+     * @param requestID The id of the request. Used for tracking purposes.
+     * @param clientId Web service client id.
+     * @return The updated message with request and other data added.
+     */
+    private ImageMessage updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId) {
+        final String guid = UUID.randomUUID().toString();
+        ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
+        imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
+        if (imageMessage.getFileName() == null) {
+            final String fileNameFromFileUrl =
+                    FilenameUtils.getBaseName(imageMessage.getFileUrl()) + "." + FilenameUtils.getExtension(imageMessage.getFileUrl());
+            imageMessageBuilder.fileName(StringUtils.isNullOrEmpty(imageMessage.getFileName()) ? fileNameFromFileUrl : imageMessage.getFileName());
+        }
+        return imageMessageBuilder.mediaGuid(guid).clientId(clientId).requestId(String.valueOf(requestID)).build();
     }
 
 
@@ -245,17 +264,17 @@ public class MediaController extends CommonServiceController {
      * Get validator list by different client, and do validation by rules and DAO validator (later)
      * return the validation error list that combine all of the error result.
      *
-     * @param message input json message
-     * @param user web service user, 
-     * @return JSON string contains fileName and error description
-     * @throws Exception when message to ImageMessage and convert java list to json
+     * @param message input json message.
+     * @param clientId Web service client id.
+     * @return JSON string contains fileName and error description.
+     * @throws Exception when message to ImageMessage and convert java list to json.
      */
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    private String validateImageMessage(final String message, final String user) throws Exception {
+    private String validateImageMessage(final String message, final String clientId) throws Exception {
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
         final List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        final List<MapMessageValidator> validatorList = mapValidatorList.get(user);
+        final List<MapMessageValidator> validatorList = mapValidatorList.get(clientId);
         if (validatorList == null) {
             return "User is not authorized.";
         }

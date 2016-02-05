@@ -28,6 +28,7 @@ import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.Message;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -57,7 +58,7 @@ public class MediaControllerTest {
         SecurityContextHolder.setContext(securityContext);
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testValidateImageSuccess() throws Exception {
         String jsonMessage = "{ " +
@@ -97,7 +98,61 @@ public class MediaControllerTest {
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
         verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
-        verify(queueMessagingTemplateMock, times(1)).send(anyString(), any());
+        ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
+        verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
+        final Message<String> publishedMessageValue = publishedMessage.getValue();
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"NASA_ISS-4.jpg\""));
+        assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
+        assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
+        assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
+    }
+    
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Test
+    public void testValidateImageSuccessWithoutFileName() throws Exception {
+        String jsonMessage = "{ " +
+                  "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " +
+                  "\"userId\": \"bobthegreat\", " +
+                  "\"domain\": \"Lodging\", " +
+                  "\"domainId\": \"1238\", " +
+                  "\"domainProvider\": \"EPC-Internal\" " +
+                 "}";
+
+        MediaController mediaController = new MediaController();
+
+        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
+        List<MapMessageValidator> messageValidator = new ArrayList<>();
+        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
+        List<Map<String, String>> validationErrorList = new ArrayList<>();
+        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
+        messageValidator.add(mockMessageValidator);
+        validators.put(TEST_CLIENT_ID, messageValidator);
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
+        assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+
+        ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
+        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
+        verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
+        final Message<String> publishedMessageValue = publishedMessage.getValue();
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"3PRGFii.jpg\""));
+        assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
+        assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
+        assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
     }
     
     @SuppressWarnings("unchecked")
