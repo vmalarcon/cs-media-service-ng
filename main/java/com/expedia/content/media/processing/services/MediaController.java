@@ -22,16 +22,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.amazonaws.util.StringUtils;
@@ -165,6 +168,32 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
+     * TODO
+     */
+    @Meter(name = "getMediaByDomainIdMessageCounter")
+    @Timer(name = "getMediaByDomainIdMessageTimer")
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
+    @RequestMapping(value = "/media/v1/imagesbydomain/{domainName}/domainId/{domainId}", method = RequestMethod.GET)
+    public ResponseEntity<String> getMediaByDomainId(@PathVariable("domainName") final String domainName, @PathVariable("domainId") final String domainId,
+                                                     @RequestParam(value = "activeFilter", required = false,
+                                                                   defaultValue = "all") final String activeFilter,
+                                                     @RequestParam(value = "derivativeTypeFilter", required = false) final String derivativeTypeFilter,
+                                                     @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+        final String requestID = this.getRequestId(headers);
+        final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
+        LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+                serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
+        if (activeFilter != null && !activeFilter.equalsIgnoreCase("all") && !activeFilter.equalsIgnoreCase("true")
+                        && !activeFilter.equalsIgnoreCase("false")) {
+            LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+                    serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
+            new ResponseEntity<>("Unsupported active filter " + activeFilter, BAD_REQUEST);
+        }
+        //if ()
+        return new ResponseEntity<>("", OK);
+    }
+
+    /**
      * Common processing between mediaAdd and the AWS portion of aquireMedia. Can be transfered into mediaAdd once aquireMedia is removed.
      * 
      * @param message JSON formated ImageMessage.
@@ -198,7 +227,8 @@ public class MediaController extends CommonServiceController {
         }
 
         publishMsg(imageMessageNew);
-        LOGGER.info("SUCCESS - messageName={}, requestId=[{}], mediaGuid=[{}], JSONMessage=[{}]", serviceUrl, requestID, imageMessageNew.getMediaGuid(), message);
+        LOGGER.info("SUCCESS - messageName={}, requestId=[{}], mediaGuid=[{}], JSONMessage=[{}]", serviceUrl, requestID, imageMessageNew.getMediaGuid(),
+                message);
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), ACCEPTED);
     }
 
@@ -222,9 +252,9 @@ public class MediaController extends CommonServiceController {
         return imageMessageBuilder.mediaGuid(guid).clientId(clientId).requestId(String.valueOf(requestID)).build();
     }
 
-
     /**
      * Verifies if the file exists in an S3 bucket or is available in HTTP.
+     * 
      * @param imageMessage Incoming image message.
      * @return {@code true} if the file exists; {@code false} otherwise.
      */
