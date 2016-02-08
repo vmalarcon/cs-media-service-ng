@@ -153,13 +153,13 @@ public class MediaController extends CommonServiceController {
                                            @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_ADD.getUrl();
-        LOGGER.info("RECEIVED REQUEST - messageName={} , JSONMessage=[{}], requestId=[{}]", serviceUrl, message, requestID);
+        LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
         try {
             final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             final String clientId = auth.getName();
             return service(message, requestID, serviceUrl, clientId);
         } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}], error=[{}], requestId=[{}] .", serviceUrl, message, ex, requestID);
+            LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex, requestID, message);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         }
     }
@@ -183,7 +183,7 @@ public class MediaController extends CommonServiceController {
 
         final boolean fileExists = verifyExistence(imageMessage);
         if (!fileExists) {
-            LOGGER.info("Response bad request provided 'fileUrl does not exist' for -message=[{}], requestId=[{}]", message, requestID);
+            LOGGER.info("Response bad request provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
             return this.buildErrorResponse("Provided fileUrl does not exist.", serviceUrl, NOT_FOUND);
         }
 
@@ -198,7 +198,7 @@ public class MediaController extends CommonServiceController {
         }
 
         publishMsg(imageMessageNew);
-        LOGGER.info("SUCCESS - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl, message, requestID);
+        LOGGER.info("SUCCESS - messageName={}, requestId=[{}], mediaGuid=[{}], JSONMessage=[{}]", serviceUrl, requestID, imageMessageNew.getMediaGuid(), message);
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), ACCEPTED);
     }
 
@@ -225,7 +225,7 @@ public class MediaController extends CommonServiceController {
 
     /**
      * Verifies if the file exists in an S3 bucket or is available in HTTP.
-     * @param message JSON formated ImageMessage.
+     * @param imageMessage Incoming image message.
      * @return {@code true} if the file exists; {@code false} otherwise.
      */
     private boolean verifyExistence(final ImageMessage imageMessage) {
