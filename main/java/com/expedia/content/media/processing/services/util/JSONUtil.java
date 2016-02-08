@@ -11,14 +11,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
-import java.util.UUID;
 
-import com.expedia.content.media.processing.services.dao.Category;
 import org.apache.commons.io.FilenameUtils;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.MessageConstants;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import com.expedia.content.media.processing.services.dao.Category;
 import com.expedia.content.media.processing.services.dao.MediaProcessLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.tools.json.JSONWriter;
@@ -161,14 +160,13 @@ public final class JSONUtil {
      */
     public static String generateJsonForErrorResponse(String message, String urlPath, int status, String error) {
         final Map<String, Object> allMap = new TreeMap<>();
-        final ObjectMapper mapper = new ObjectMapper();
         allMap.put("path", urlPath);
         allMap.put("message", message);
         allMap.put("error", error);
         allMap.put("status", status);
         allMap.put("timestamp", new Date().getTime());
         try {
-            return mapper.writeValueAsString(allMap);
+            return OBJECT_MAPPER.writeValueAsString(allMap);
         } catch (IOException ex) {
             throw new RequestMessageException(ERROR_WRITING_MAP, ex);
         }
@@ -210,13 +208,6 @@ public final class JSONUtil {
                     mapList.put(preName, sublist[i]);
                 }
             }
-        }
-    }
-    
-    public static void addGuidToMap(Map messageMap) {
-        if (messageMap.get("mediaGuid") == null) {
-            final String guid = UUID.randomUUID().toString();
-            messageMap.put("mediaGuid", guid);
         }
     }
     

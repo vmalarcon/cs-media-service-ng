@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
        xmlns:context="http://www.springframework.org/schema/context"
        xmlns:aws-context="http://www.springframework.org/schema/cloud/aws/context"
        xmlns:aws-messaging="http://www.springframework.org/schema/cloud/aws/messaging"
        xmlns="http://www.springframework.org/schema/beans"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-                          http://www.springframework.org/schema/cloud/aws/context
-                          http://www.springframework.org/schema/cloud/aws/context/spring-cloud-aws-context-1.0.xsd
-                          http://www.springframework.org/schema/cloud/aws/messaging http://www.springframework.org/schema/cloud/aws/messaging/spring-cloud-aws-messaging-1.0.xsd
-                          http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+                           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+                           http://www.springframework.org/schema/cloud/aws/context http://www.springframework.org/schema/cloud/aws/context/spring-cloud-aws-context-1.0.xsd
+                           http://www.springframework.org/schema/cloud/aws/messaging http://www.springframework.org/schema/cloud/aws/messaging/spring-cloud-aws-messaging-1.0.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
 
     <context:property-placeholder location="classpath:${EXPEDIA_ENVIRONMENT}.${AWS_REGION}.properties"/>
 
@@ -17,64 +18,33 @@
     <aws-messaging:annotation-driven-queue-listener wait-time-out="20" />
 
     <aws-context:context-region region="${AWS_REGION}" />
+    <aws-context:context-resource-loader region="${AWS_REGION}" />
 
     <bean id="filenamesRabbitTemplate" class="org.springframework.amqp.rabbit.core.RabbitTemplate">
         <property name="connectionFactory" ref="rabbitConnectionFactory"/>
         <property name="queue" value="${collector.queue}" />
         <property name="routingKey" value="${collector.queue}" />
     </bean>
+    
     <bean id="retryableAspect" class="com.expedia.content.media.processing.pipeline.retry.RetryableAspect" factory-method="aspectOf" autowire="byType" />
 
-
-    <!--can define multiple validator-->
-    <bean id="mediaServiceProcess" class="com.expedia.content.media.processing.services.MediaServiceProcess">
-        <constructor-arg>
-            <list>
-                <ref bean="expediaValidator"/>
-                <ref bean="categoryValidator"/>
-                <ref bean="providerRequiredValidator"/>
-                <ref bean="fileUrlRequiredValidator"/>
-                <ref bean="imageTypeRequiredValidator"/>
-                <ref bean="mediaProviderValidator"/>
-            </list>
-        </constructor-arg>
-        <constructor-arg ref="threadedLogger"/>
-        <constructor-arg ref="compositeReporter"/>
-
-        <property name="mediaStatusValidatorList">
-            <list value-type="com.expedia.content.media.processing.services.validator.RequestMessageValidator">
-                <ref bean="mediaStatusTypeValidator"/>
-            </list>
-        </property>
-        <property name="activityWhiteList">
-            <list>
-                <ref bean="receptionActivity"/>
-                <ref bean="derivativeCreationActivity"/>
-                <ref bean="rejectActivity"/>
-                <ref bean="publishActivity"/>
-                <ref bean="dcpPickupActivity"/>
-                <ref bean="carsDerivativeCreationActivity"/>
-            </list>
-        </property>
-        <property name="processLogDao" ref="processLogDao" />
-        <property name="mediaDomainCategoriesDao" ref="mediaDomainCategoriesDao"/>
-        <property name="mapValidatorList">
-            <map>
-                <entry key ="EPC">
-                    <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
-                        <ref bean="mvelValidator"/>
-                    </list>
-                </entry>
-                <entry key ="Media Cloud Router">
-                    <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
-                        <ref bean="mediaRouterValidator"/>
-                    </list>
-                </entry>
-            </map>
-        </property>
-        <property name="messagingTemplate" ref="queueMessagingTemplate">
-        </property>
-    </bean>
+	<util:map id="imageMessageValidators">
+	    <entry key="EPC">
+	        <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+	            <ref bean="mvelValidator"/>
+	        </list>
+	    </entry>
+	    <entry key="Media Cloud Router">
+	        <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+	            <ref bean="mediaRouterValidator"/>
+	        </list>
+	    </entry>
+	    <entry key="Multisource">
+	        <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+	            <ref bean="multisourceValidator"/>
+	        </list>
+	    </entry>
+	</util:map>
 
     <aws-messaging:queue-messaging-template id="queueMessagingTemplate" />
 
@@ -82,7 +52,7 @@
       <property name="clientRule" value="EPC" />
       <property name="ruleMaps">
           <map>
-              <entry key ="EPC">
+              <entry key="EPC">
                   <list>
                       <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
                       <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
@@ -107,7 +77,7 @@
         <property name="clientRule" value="Media Cloud Router" />
         <property name="ruleMaps">
             <map>
-                <entry key ="Media Cloud Router">
+                <entry key="Media Cloud Router">
                     <list>
                         <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
                         <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
@@ -124,85 +94,25 @@
         </property>
     </bean>
 
-    <bean id="receptionActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
-        <!-- this will work -->
-        <property name="activityType" value="Reception"/>
-        <!-- this will *not* work -->
-        <property name="statusMessage" value="RECEIVED"/>
-        <property name="mediaType" value=".*"/>
-    </bean>
-
-    <bean id="derivativeCreationActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
-        <property name="activityType" value="DerivativeCreation"/>
-        <property name="statusMessage" value="DERIVATIVES_CREATED"/>
-        <property name="mediaType" value="VirtualTour|Lodging"/>
-    </bean>
-
-    <bean id="rejectActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
-        <property name="activityType" value="Reject"/>
-        <property name="statusMessage" value="REJECTED"/>
-        <property name="mediaType" value=".*"/>
-    </bean>
-
-    <bean id="publishActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
-        <property name="activityType" value="Publish"/>
-        <property name="statusMessage" value="PUBLISHED"/>
-        <property name="mediaType" value=".*"/>
-    </bean>
-
-    <bean id="dcpPickupActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
-        <property name="activityType" value="DcpPickup"/>
-        <property name="statusMessage" value="RECEIVED"/>
-        <property name="mediaType" value="Cars"/>
-    </bean>
-
-    <bean id="carsDerivativeCreationActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
-        <property name="activityType" value="DerivativeCreation"/>
-        <property name="statusMessage" value="PUBLISHED"/>
-        <property name="mediaType" value="Cars"/>
-    </bean>
-
-    <bean id="expediaValidator" class="com.expedia.content.media.processing.services.validator.ExpediaIdValidator">
-        <property name="fieldName" value="expediaId" />
-    </bean>
-    <bean id="providerRequiredValidator" class="com.expedia.content.media.processing.services.validator.RequiredValidator">
-        <property name="fieldName" value="mediaProviderId" />
-    </bean>
-    <bean id="fileUrlRequiredValidator" class="com.expedia.content.media.processing.services.validator.RequiredValidator">
-        <property name="fieldName" value="fileUrl" />
-    </bean>
-    <bean id="imageTypeRequiredValidator" class="com.expedia.content.media.processing.services.validator.RequiredValidator">
-        <property name="fieldName" value="imageType" />
-    </bean>
-    <bean id="categoryValidator" class="com.expedia.content.media.processing.services.validator.NumericValidator">
-        <property name="fieldName" value="categoryId" />
-    </bean>
-    <bean id="mediaProviderValidator" class="com.expedia.content.media.processing.services.validator.NumericValidator">
-        <property name="fieldName" value="mediaProviderId" />
-    </bean>
-
-    <bean id="mediaStatusTypeValidator"
-          class="com.expedia.content.media.processing.services.validator.MediaNamesValidator">
-    </bean>
-
-    <bean id="processLogDao" class="com.expedia.content.media.processing.services.dao.LcmProcessLogDao">
-        <constructor-arg name="sqlMediaLogSproc">
-            <bean class="com.expedia.content.media.processing.services.dao.SQLMediaLogSproc" />
-        </constructor-arg>
-    </bean>
-
-    <bean id="mediaDomainCategoriesDao" class="com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao">
-        <constructor-arg name="sproc">
-            <bean class="com.expedia.content.media.processing.services.dao.SQLMediaDomainCategoriesSproc" />
-        </constructor-arg>
-    </bean>
-
-    <bean id="dataSource"
-          class="org.springframework.jdbc.datasource.DriverManagerDataSource">
-        <property name="driverClassName" value="net.sourceforge.jtds.jdbc.Driver" />
-        <property name="url" value="${datasource.url}" />
-        <property name="username" value="${datasource.username}" />
-        <property name="password" value="${datasource.password}" />
+    <bean id="multisourceValidator" class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
+        <property name="clientRule" value="Multisource" />
+        <property name="ruleMaps">
+            <map>
+                <entry key="Mulitsource">
+                    <list>
+                        <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
+                        <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
+                        <value>(imageMessage.fileUrl != null &amp;&amp; (!imageMessage.fileUrl.endsWith(".jpg") &amp;&amp;!imageMessage.fileUrl.endsWith(".jpeg") &amp;&amp;!imageMessage.fileUrl.endsWith(".png")&amp;&amp;!imageMessage.fileUrl.endsWith(".bmp")&amp;&amp;!imageMessage.fileUrl.endsWith(".gif"))) ? "fileUrl extension is malformed." : "valid"</value>
+                        <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
+                        <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
+                        <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
+                        <value>(domainData.domain.domain.endsWith('Lodging') &amp;&amp; domainData.domainId != null &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
+                        <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
+                        <value>(domainData != null &amp;&amp; domainData.provider == null) ? "domainProvider is required." : "valid"</value>
+                    </list>
+                </entry>
+            </map>
+        </property>
     </bean>
 
     <bean id="threadedLogger" class="com.expedia.content.media.processing.pipeline.reporting.ThreadLogActivityProcess">
@@ -254,6 +164,22 @@
         <constructor-arg name="timeout" value="${mpp.media.service.timeout}" />
     </bean>
 
+    <bean id="providerProperties"
+          class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+        <property name="locations">
+            <list>
+                <value>classpath*:provider-mapping.properties</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <property name="driverClassName" value="net.sourceforge.jtds.jdbc.Driver" />
+        <property name="url" value="${datasource.url}" />
+        <property name="username" value="${datasource.username}" />
+        <property name="password" value="${datasource.password}" />
+    </bean>
+
     <!-- Retry -->
     <bean id="loggingRetryListener" class="com.expedia.content.media.processing.pipeline.retry.LoggingRetryListener" />
 
@@ -298,13 +224,63 @@
         </property>
     </bean>
 
-    <bean id="providerProperties"
-          class="org.springframework.beans.factory.config.PropertiesFactoryBean">
-        <property name="locations">
-            <list>
-                <value>classpath*:provider-mapping.properties</value>
-            </list>
-        </property>
+    <!-- Status Controller -->
+    <bean id="receptionActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <!-- this will work -->
+        <property name="activityType" value="Reception"/>
+        <!-- this will *not* work -->
+        <property name="statusMessage" value="RECEIVED"/>
+        <property name="mediaType" value=".*"/>
     </bean>
 
+    <bean id="derivativeCreationActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="DerivativeCreation"/>
+        <property name="statusMessage" value="DERIVATIVES_CREATED"/>
+        <property name="mediaType" value="VirtualTour|Lodging"/>
+    </bean>
+
+    <bean id="rejectActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="Reject"/>
+        <property name="statusMessage" value="REJECTED"/>
+        <property name="mediaType" value=".*"/>
+    </bean>
+
+    <bean id="publishActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="Publish"/>
+        <property name="statusMessage" value="PUBLISHED"/>
+        <property name="mediaType" value=".*"/>
+    </bean>
+
+    <bean id="dcpPickupActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="DcpPickup"/>
+        <property name="statusMessage" value="RECEIVED"/>
+        <property name="mediaType" value="Cars"/>
+    </bean>
+
+    <bean id="carsDerivativeCreationActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="DerivativeCreation"/>
+        <property name="statusMessage" value="PUBLISHED"/>
+        <property name="mediaType" value="Cars"/>
+    </bean>
+
+    <bean id="mediaStatusTypeValidator"
+          class="com.expedia.content.media.processing.services.validator.MediaNamesValidator">
+    </bean>
+
+    <bean id="processLogDao" class="com.expedia.content.media.processing.services.dao.LcmProcessLogDao">
+        <constructor-arg name="sqlMediaLogSproc">
+            <bean class="com.expedia.content.media.processing.services.dao.SQLMediaLogSproc" />
+        </constructor-arg>
+    </bean>
+    <!-- /Status Controller -->
+
+    <!-- Category Controller -->
+    <bean id="mediaDomainCategoriesDao" class="com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao">
+        <constructor-arg name="sproc">
+            <bean class="com.expedia.content.media.processing.services.dao.SQLMediaDomainCategoriesSproc" />
+        </constructor-arg>
+    </bean>
+    <!-- /Category Controller -->
+
+    
 </beans>

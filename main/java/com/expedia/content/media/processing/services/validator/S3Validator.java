@@ -15,7 +15,7 @@ import com.amazonaws.services.s3.model.S3Object;
 public class S3Validator {
     private static final Logger LOGGER = LoggerFactory.getLogger(S3Validator.class);
 
-    private static final String S3_PREFIX = "s3://";
+    public static final String S3_PREFIX = "s3://";
 
     private S3Validator() {
     }
