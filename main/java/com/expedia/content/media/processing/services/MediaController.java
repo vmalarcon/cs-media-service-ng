@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.security.core.Authentication;
@@ -38,6 +37,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.amazonaws.util.StringUtils;
+import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
 import com.expedia.content.media.processing.pipeline.reporting.Activity;
@@ -183,14 +183,31 @@ public class MediaController extends CommonServiceController {
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                 serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
-        if (activeFilter != null && !activeFilter.equalsIgnoreCase("all") && !activeFilter.equalsIgnoreCase("true")
-                        && !activeFilter.equalsIgnoreCase("false")) {
+        final ResponseEntity<String> validationResponse = validateRequest(domainName, activeFilter);
+        if (validationResponse != null) {
             LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                     serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
-            new ResponseEntity<>("Unsupported active filter " + activeFilter, BAD_REQUEST);
+            return validationResponse;
         }
-        //if ()
-        return new ResponseEntity<>("", OK);
+        
+        return new ResponseEntity<String>("", OK);
+    }
+
+    /**
+     * TODO
+     * @param domainName
+     * @param activeFilter
+     * @return
+     */
+    private ResponseEntity<String> validateRequest(final String domainName, final String activeFilter) {
+        if (activeFilter != null && !activeFilter.equalsIgnoreCase("all") && !activeFilter.equalsIgnoreCase("true")
+                        && !activeFilter.equalsIgnoreCase("false")) {
+            return new ResponseEntity<String>("Unsupported active filter " + activeFilter, BAD_REQUEST);
+        }
+        if (Domain.findDomain(domainName) == null) {
+            return new ResponseEntity<String>("Domain not found " + domainName, NOT_FOUND);
+        }
+        return null;
     }
 
     /**
@@ -219,7 +236,7 @@ public class MediaController extends CommonServiceController {
         final ImageMessage imageMessageNew = updateImageMessage(imageMessage, requestID, clientId);
 
         final Map<String, String> response = new HashMap<>();
-        response.put("mediaGuid", imageMessage.getMediaGuid());
+        response.put("mediaGuid", imageMessageNew.getMediaGuid());
         response.put("status", "RECEIVED");
         if (imageMessage.isGenerateThumbnail()) {
             response.put("thumbnailUrl", thumbnailProcessor.createThumbnail(imageMessage.getFileUrl(), imageMessage.getMediaGuid(),

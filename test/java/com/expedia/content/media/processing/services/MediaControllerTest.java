@@ -1,6 +1,7 @@
 package com.expedia.content.media.processing.services;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -94,6 +95,7 @@ public class MediaControllerTest {
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
+        assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
@@ -142,6 +144,7 @@ public class MediaControllerTest {
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
+        assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
@@ -197,6 +200,7 @@ public class MediaControllerTest {
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
+        assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
         assertTrue(responseEntity.getBody().contains("\"thumbnailUrl\":\"" + thumbnailUrl + "\""));
 
