@@ -118,7 +118,7 @@ public class MediaController extends CommonServiceController {
             // new mediaCommon Message.
             if (sendToAWS) {
                 // reuse current validation logic
-                final String userName = "EPC";
+                final String userName = "Multisource";
                 return service(mediaCommonMessage, requestID, serviceUrl, userName, OK);
             } else {
                 final String response = mediaServiceClient.callMediaService(message);

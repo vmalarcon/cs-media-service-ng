@@ -274,8 +274,8 @@ public final class JSONUtil {
         if (imageMessage.getMediaProviderId() != null) {
             mapMessage.put(MessageConstants.OUTER_DOMAIN_PROVIDER, providerProperties.getProperty(imageMessage.getMediaProviderId()));
         }
-        mapMessage.put(MessageConstants.USER_ID, "MultiSource");
-        mapMessage.put(MessageConstants.CLIENT_ID, "MultiSource");
+        mapMessage.put(MessageConstants.USER_ID, "Multisource");
+        mapMessage.put(MessageConstants.CLIENT_ID, "Multisource");
         return new JSONWriter().write(mapMessage);
     }
     
