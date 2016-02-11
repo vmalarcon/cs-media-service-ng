@@ -37,4 +37,25 @@ public final class ReflectionUtil {
         LOGGER.debug("getFiledValue for field={}, return value=[{}]", fieldName, objectValue);
         return objectValue;
     }
+
+    /**
+     * this method use reflection to set the object field.
+     *
+     * @param obj
+     * @param fieldName
+     * @return field value
+     */
+    public static void setFieldValue(Object obj, String fieldName, Object value) throws NoSuchFieldException, IllegalAccessException {
+        try {
+            final Field field = obj.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            if (field.getName().equals(fieldName)) {
+                field.set(obj, value);
+            }
+        } catch (NoSuchFieldException e) {
+            LOGGER.error("setFieldValue failed : error=[{}]", e.getMessage(), e);
+            throw e;
+        }
+        LOGGER.debug("setFieldValue for field={}, return value=[{}]", fieldName, value);
+    }
 }

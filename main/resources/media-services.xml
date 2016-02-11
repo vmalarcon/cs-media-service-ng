@@ -147,8 +147,7 @@
         <constructor-arg name="appName" value="${processname}" />
     </bean>
 
-    <bean id="lcmInsertSproc" primary="true"
-          class="com.expedia.content.media.processing.pipeline.reporting.sql.SQLLogEntryInsertSproc" />
+    <bean id="lcmInsertSproc" primary="true" class="com.expedia.content.media.processing.pipeline.reporting.sql.SQLLogEntryInsertSproc" />
 
     <bean id="restClient"
           class="com.expedia.content.media.processing.services.util.RestClient">
@@ -282,5 +281,10 @@
     </bean>
     <!-- /Category Controller -->
 
-    
+    <bean id="skuGroupCatalogItemDao" class="com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao">
+        <constructor-arg name="sproc">
+            <bean class="com.expedia.content.media.processing.services.dao.SKUGroupGet" />
+        </constructor-arg>
+    </bean>
+
 </beans>
