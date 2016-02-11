@@ -1,15 +1,15 @@
 package com.expedia.content.media.processing.services.validator;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.services.util.ValidatorUtil;
+import org.mvel2.MVEL;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
-import org.mvel2.MVEL;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * validation {@code ImageMessage} list based on MVEL rule that defined in xml configuration
@@ -62,17 +62,10 @@ public class EPCMVELValidator implements MapMessageValidator {
                 compareRulesWithDomainMap(errorMsg, ruleList, messageMap);
             }
             if (errorMsg.length() > 0) {
-                putErrorMapToList(list, errorMsg, imageMessage);
+                ValidatorUtil.putErrorMapToList(list, errorMsg, imageMessage);
             }
         }
         return list;
-    }
-
-    private void putErrorMapToList(List<Map<String, String>> list, StringBuffer errorMsg, ImageMessage imageMesage) {
-        final Map<String, String> jsonMap = new TreeMap<>();
-        jsonMap.put("fileName", imageMesage.getFileName());
-        jsonMap.put("error", errorMsg.toString());
-        list.add(jsonMap);
     }
 
     private void compareRulesWithMessageMap(StringBuffer errorMsg, List<String> ruleList, Map<String, Object> objectMap) {

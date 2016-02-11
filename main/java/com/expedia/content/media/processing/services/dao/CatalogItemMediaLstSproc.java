@@ -13,32 +13,41 @@ import java.sql.SQLException;
 import java.sql.Types;
 
 /**
- * Call a MSSQL Sproc [MediaProcessLogGetByFilename] in LCM in order to retrieve data from MediaProcessLog table
+ * Call a MSSQL Sproc [CatalogItemMediaLst#01] in LCM in order to retrieve data from CatalogItemMedia table
  */
 @Repository
 public class CatalogItemMediaLstSproc extends StoredProcedure {
 
-    public static final String MEDIAS_RESULT_SET = "medias";
+    public static final String CatalogItemMedia_RESULT_SET = "CatalogItemMedias";
 
     @Autowired
     public CatalogItemMediaLstSproc(final DataSource dataSource) {
-        super(dataSource, "MediaProcessLogGetByFilename");
-        declareParameter(new SqlParameter("@pMediaFileNameList", Types.VARCHAR));
-        declareParameter(new SqlReturnResultSet(MEDIAS_RESULT_SET, new MediaRowMapper()));
+        super(dataSource, "CatalogItemMediaLst#01");
+        declareParameter(new SqlParameter("@pCatalogItemID", Types.INTEGER));
+        declareParameter(new SqlReturnResultSet(CatalogItemMedia_RESULT_SET, new CatalogItemMediaMapper()));
     }
 
     /**
-     * Spring {@link RowMapper} implementation to converts a result set to a object
-     * {@link MediaProcessLog}
+     * Spring {@link RowMapper} implementation to converts a result set to an object
+     * {@link CatalogItemMedia}
      */
-    private class MediaRowMapper implements RowMapper<MediaProcessLog> {
+    class CatalogItemMediaMapper implements RowMapper<CatalogItemMedia> {
+
         @Override
-        public MediaProcessLog mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
-            final String mediaFileName = resultSet.getString("mediaFileName");
-            final String activityNameAndType = resultSet.getString("ActivityType");
-            final String activityTime = resultSet.getString("ActivityTime");
-            final String mediaType = resultSet.getString("MediaType");
-            return new MediaProcessLog(activityTime, mediaFileName, activityNameAndType, mediaType);
+        public CatalogItemMedia mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
+            final int catalogItemId = resultSet.getInt("catalogItemId");
+            final int mediaID = resultSet.getInt("mediaID");
+            final int mediaUseRank = resultSet.getInt("mediaUseRank");
+            final boolean galleryDisplayBool = resultSet.getBoolean("galleryDisplayBool");
+            final int mediaUseTypeID = resultSet.getInt("mediaUseTypeID");
+            final int updateTravelProductID = resultSet.getInt("updateTravelProductID");
+            final int updateTUID = resultSet.getInt("updateTUID");
+            final boolean pictureShowDisplayBool = resultSet.getBoolean("pictureShowDisplayBool");
+            final boolean paragraphDisplayBool = resultSet.getBoolean("paragraphDisplayBool");
+            final String lastUpdatedBy = resultSet.getString("lastUpdatedBy");
+            final String updateLocation = resultSet.getString("updateLocation");
+            return new CatalogItemMedia(catalogItemId, mediaID, mediaUseRank, galleryDisplayBool, mediaUseTypeID, updateTravelProductID, updateTUID,
+                    pictureShowDisplayBool, paragraphDisplayBool, lastUpdatedBy, updateLocation);
         }
     }
 }
