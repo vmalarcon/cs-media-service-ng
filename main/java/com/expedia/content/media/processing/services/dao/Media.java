@@ -22,7 +22,7 @@ public class Media {
     private final Integer category;
     private final String comment;
 
-    private String mediaGUID = null;
+    private String mediaGUID;
     private List<MediaDerivative> derivatives = Collections.EMPTY_LIST;
 
     public Media(final Integer domainId, final Integer mediaId, final String fileName, final Boolean active, final Integer width, final Integer height,
@@ -54,7 +54,7 @@ public class Media {
         return fileName;
     }
 
-    public Boolean getActive() {
+    public Boolean isActive() {
         return active;
     }
 
