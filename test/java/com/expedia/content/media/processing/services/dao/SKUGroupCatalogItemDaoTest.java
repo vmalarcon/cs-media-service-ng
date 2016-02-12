@@ -17,8 +17,6 @@ import static org.mockito.Mockito.when;
 
 public class SKUGroupCatalogItemDaoTest {
 
-
-
     @BeforeClass
     public static void setUp() {
         System.setProperty("EXPEDIA_ENVIRONMENT", "test");
@@ -32,10 +30,10 @@ public class SKUGroupCatalogItemDaoTest {
                 -83.746030D, Boolean.FALSE, 1, "ATL", Boolean.FALSE, "", 1, new Timestamp(1339150200000L),
                 "PSGMcunningham", new Timestamp(1339150200000L), "PSGJambrose", 2);
         skuGroupCatalogItems.add(skuGroupCatalogItem);
-        SKUGroupGet mockSkuGroupGet = mock(SKUGroupGet.class);
+        SKUGroupGetSproc mockSkuGroupGet = mock(SKUGroupGetSproc.class);
         SKUGroupCatalogItemDao skuGroupCatalogItemDao = new SKUGroupCatalogItemDao(mockSkuGroupGet);
         Map<String, Object> mockResults = new HashMap<>();
-        mockResults.put(SKUGroupGet.SKU_GROUP_CATALOG_ITEM_MAPPER_RESULT_SET, skuGroupCatalogItems);
+        mockResults.put(SKUGroupGetSproc.SKU_GROUP_CATALOG_ITEM_MAPPER_RESULT_SET, skuGroupCatalogItems);
         when(mockSkuGroupGet.execute(123)).thenReturn(mockResults);
         assertTrue(skuGroupCatalogItemDao.gteSKUGroup(123));
     }
@@ -44,10 +42,10 @@ public class SKUGroupCatalogItemDaoTest {
     @Test
     public void testDomainIdDoesNotExist() throws Exception {
         List<SKUGroupCatalogItem> skuGroupCatalogItems = new ArrayList<>();
-        SKUGroupGet mockSkuGroupGet = mock(SKUGroupGet.class);
+        SKUGroupGetSproc mockSkuGroupGet = mock(SKUGroupGetSproc.class);
         SKUGroupCatalogItemDao skuGroupCatalogItemDao = new SKUGroupCatalogItemDao(mockSkuGroupGet);
         Map<String, Object> mockResults = new HashMap<>();
-        mockResults.put(SKUGroupGet.SKU_GROUP_CATALOG_ITEM_MAPPER_RESULT_SET, skuGroupCatalogItems);
+        mockResults.put(SKUGroupGetSproc.SKU_GROUP_CATALOG_ITEM_MAPPER_RESULT_SET, skuGroupCatalogItems);
         when(mockSkuGroupGet.execute(123)).thenReturn(mockResults);
         assertFalse(skuGroupCatalogItemDao.gteSKUGroup(123));
     }

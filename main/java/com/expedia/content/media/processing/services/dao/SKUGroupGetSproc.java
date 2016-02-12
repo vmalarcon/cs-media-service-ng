@@ -17,12 +17,12 @@ import java.sql.Types;
  * Call a MSSQL Sproc [CatalogItemMediaLst#01] in LCM in order to retrieve data from SKUGroupCatalogItem table
  */
 @Repository
-public class SKUGroupGet extends StoredProcedure {
+public class SKUGroupGetSproc extends StoredProcedure {
 
     public static final String SKU_GROUP_CATALOG_ITEM_MAPPER_RESULT_SET = "SKUGroupCatalogItem";
 
     @Autowired
-    public SKUGroupGet(final DataSource dataSource) {
+    public SKUGroupGetSproc(final DataSource dataSource) {
         super(dataSource, "SKUGroupGet#16");
         declareParameter(new SqlParameter("@pSKUGroupCatalogItemID", Types.INTEGER));
         declareParameter(new SqlReturnResultSet(SKU_GROUP_CATALOG_ITEM_MAPPER_RESULT_SET, new SKUGroupCatalogItemMapper()));

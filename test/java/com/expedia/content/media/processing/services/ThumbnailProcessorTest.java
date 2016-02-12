@@ -1,10 +1,13 @@
 package com.expedia.content.media.processing.services;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import com.expedia.content.media.processing.pipeline.util.OSDetector;
+import org.im4java.process.ProcessStarter;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.core.io.WritableResource;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -12,16 +15,24 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.springframework.core.io.ResourceLoader;
-import org.springframework.core.io.WritableResource;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ThumbnailProcessorTest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
+
+    @Before
+    public void testSetUp() throws Exception {
+        if (OSDetector.detectOS() == OSDetector.OS.WINDOWS) {
+            final String path = System.getenv("PATH").replace('\\', '/');
+            ProcessStarter.setGlobalSearchPath(path);
+        }
+    }
 
     @Test
     public void testHttpLodgingImage() throws Exception {

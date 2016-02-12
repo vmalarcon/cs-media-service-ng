@@ -32,6 +32,7 @@
 	    <entry key="EPC">
 	        <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
 	            <ref bean="mvelValidator"/>
+                <ref bean="lcmValidator"/>
 	        </list>
 	    </entry>
 	    <entry key="Media Cloud Router">
@@ -283,8 +284,10 @@
 
     <bean id="skuGroupCatalogItemDao" class="com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao">
         <constructor-arg name="sproc">
-            <bean class="com.expedia.content.media.processing.services.dao.SKUGroupGet" />
+            <bean class="com.expedia.content.media.processing.services.dao.SKUGroupGetSproc" />
         </constructor-arg>
     </bean>
+
+    <bean id="lcmValidator" class="com.expedia.content.media.processing.services.validator.LCMValidator" />
 
 </beans>

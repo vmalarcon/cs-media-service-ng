@@ -12,10 +12,10 @@ import java.util.Map;
  */
 @Component
 public class SKUGroupCatalogItemDao {
-    private final SKUGroupGet sproc;
+    private final SKUGroupGetSproc sproc;
 
     @Autowired
-    public SKUGroupCatalogItemDao(SKUGroupGet sproc) {
+    public SKUGroupCatalogItemDao(SKUGroupGetSproc sproc) {
         this.sproc = sproc;
     }
 
@@ -27,7 +27,7 @@ public class SKUGroupCatalogItemDao {
     @SuppressWarnings("unchecked")
     public Boolean gteSKUGroup(int skuGroupCatalogItemID) {
         final Map<String, Object> results = sproc.execute(skuGroupCatalogItemID);
-        final List<SKUGroupCatalogItem> skuGroupCatalogItems = (List<SKUGroupCatalogItem>) results.get(SKUGroupGet.SKU_GROUP_CATALOG_ITEM_MAPPER_RESULT_SET);
+        final List<SKUGroupCatalogItem> skuGroupCatalogItems = (List<SKUGroupCatalogItem>) results.get(SKUGroupGetSproc.SKU_GROUP_CATALOG_ITEM_MAPPER_RESULT_SET);
 
         return !CollectionUtils.isEmpty(skuGroupCatalogItems);
     }
