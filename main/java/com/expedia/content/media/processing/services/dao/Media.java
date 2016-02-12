@@ -1,6 +1,8 @@
 package com.expedia.content.media.processing.services.dao;
 
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Represents the media data from the the Media and CatalogItemMedia tables.
@@ -19,6 +21,9 @@ public class Media {
     private final Integer provider;
     private final Integer category;
     private final String comment;
+
+    private String mediaGUID = null;
+    private List<MediaDerivative> derivatives = Collections.EMPTY_LIST;
 
     public Media(final Integer domainId, final Integer mediaId, final String fileName, final Boolean active, final Integer width, final Integer height,
                  final Integer fileSize, final String lastUpdatedBy, final Date lastUpdateDate, final Integer provider, final Integer category,
@@ -83,6 +88,22 @@ public class Media {
 
     public String getComment() {
         return comment;
+    }
+
+    public String getMediaGUID() {
+        return mediaGUID;
+    }
+
+    public void setMediaGUID(String mediaGUID) {
+        this.mediaGUID = mediaGUID;
+    }
+
+    public List<MediaDerivative> getDerivatives() {
+        return derivatives;
+    }
+
+    public void setDerivatives(List<MediaDerivative> derivatives) {
+        this.derivatives = derivatives;
     }
 
 }
