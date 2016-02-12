@@ -1,4 +1,4 @@
-package com.expedia.content.media.processing.services.dao;
+package com.expedia.content.media.processing.services.dao.sql;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
@@ -6,6 +6,9 @@ import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.jdbc.core.SqlReturnResultSet;
 import org.springframework.jdbc.object.StoredProcedure;
 import org.springframework.stereotype.Repository;
+
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
 
 import javax.sql.DataSource;
 import java.sql.ResultSet;
@@ -32,13 +35,13 @@ public class SQLMediaGetSproc extends StoredProcedure {
 
     /**
      * Spring {@link RowMapper} implementation to converts a result set to a object
-     * {@link Media}
+     * {@link LcmMedia}
      */
-    private class MediaRowMapper implements RowMapper<Media> {
+    private class MediaRowMapper implements RowMapper<LcmMedia> {
         @Override
-        public Media mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
+        public LcmMedia mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
             final String activeFlag = resultSet.getString("StatusCode");
-            return new Media(resultSet.getInt("CatalogItemID"), 
+            return new LcmMedia(resultSet.getInt("CatalogItemID"), 
                     resultSet.getInt("MediaID"), 
                     resultSet.getString("MediaFileName"),
                     activeFlag != null && "A".equals(activeFlag) ? true : false,
@@ -55,13 +58,13 @@ public class SQLMediaGetSproc extends StoredProcedure {
 
     /**
      * Spring {@link RowMapper} implementation to converts a result set to a object
-     * {@link MediaDerivative}
+     * {@link LcmMediaDerivative}
      */
-    private class MediaDerivativeRowMapper implements RowMapper<MediaDerivative> {
+    private class MediaDerivativeRowMapper implements RowMapper<LcmMediaDerivative> {
         @Override
-        public MediaDerivative mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
+        public LcmMediaDerivative mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
             final String processedFlag = resultSet.getString("FileProcessedBool");
-            return new MediaDerivative(resultSet.getInt("MediaID"),
+            return new LcmMediaDerivative(resultSet.getInt("MediaID"),
                     resultSet.getInt("MediaSizeTypeID"), 
                     processedFlag != null && "1".equals(processedFlag) ? true : false, 
                     resultSet.getString("MediaFileName"), 

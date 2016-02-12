@@ -5,6 +5,11 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import com.expedia.content.media.processing.services.dao.domain.Category;
+import com.expedia.content.media.processing.services.dao.domain.MediaCategory;
+import com.expedia.content.media.processing.services.dao.domain.MediaSubCategory;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaDomainCategoriesSproc;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

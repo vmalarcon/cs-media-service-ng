@@ -1,4 +1,4 @@
-package com.expedia.content.media.processing.services.dao;
+package com.expedia.content.media.processing.services.dao.domain;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -7,7 +7,7 @@ import java.util.Map;
 /**
  * Represents the media derivative from the MediaFileName table.S
  */
-public class MediaDerivative {
+public class LcmMediaDerivative {
 
     @SuppressWarnings({"serial", "PMD.NonStaticInitializer"})
     private static final Map<Integer, String> TYPE_MAP = Collections.unmodifiableMap(new HashMap<Integer, String>() {
@@ -40,7 +40,7 @@ public class MediaDerivative {
     private final Integer height;
     private final Integer fileSize;
 
-    public MediaDerivative(final Integer mediaId, final Integer mediSizeTypeId, final Boolean fileProcessed, final String fileName, final Integer width,
+    public LcmMediaDerivative(final Integer mediaId, final Integer mediSizeTypeId, final Boolean fileProcessed, final String fileName, final Integer width,
                            final Integer height, final Integer fileSize) {
         this.mediaId = mediaId;
         this.mediSizeTypeId = mediSizeTypeId;

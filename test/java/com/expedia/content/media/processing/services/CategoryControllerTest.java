@@ -14,11 +14,11 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 
-import com.expedia.content.media.processing.services.dao.Category;
 import com.expedia.content.media.processing.services.dao.DomainNotFoundException;
-import com.expedia.content.media.processing.services.dao.LocalizedName;
 import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
-import com.expedia.content.media.processing.services.dao.SubCategory;
+import com.expedia.content.media.processing.services.dao.domain.Category;
+import com.expedia.content.media.processing.services.dao.domain.LocalizedName;
+import com.expedia.content.media.processing.services.dao.domain.SubCategory;
 
 public class CategoryControllerTest {
 

@@ -17,8 +17,8 @@ import org.apache.commons.io.FilenameUtils;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.MessageConstants;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
-import com.expedia.content.media.processing.services.dao.Category;
-import com.expedia.content.media.processing.services.dao.MediaProcessLog;
+import com.expedia.content.media.processing.services.dao.domain.Category;
+import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.tools.json.JSONWriter;
 
@@ -172,7 +172,14 @@ public final class JSONUtil {
         }
     }
     
-    private static ActivityMapping getMappingFromList(List<ActivityMapping> activityMappingList, String activityType, String mediaType) {
+    /**
+     * TODO
+     * @param activityMappingList
+     * @param activityType
+     * @param mediaType
+     * @return
+     */
+    public static ActivityMapping getMappingFromList(List<ActivityMapping> activityMappingList, String activityType, String mediaType) {
         for (final ActivityMapping activityMapping : activityMappingList) {
             if (activityMapping.getActivityType().equals(activityType) && mediaType.matches(activityMapping.getMediaType())) {
                 return activityMapping;

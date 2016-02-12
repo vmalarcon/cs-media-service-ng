@@ -1,4 +1,4 @@
-package com.expedia.content.media.processing.services.dao;
+package com.expedia.content.media.processing.services.dao.sql;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
@@ -6,6 +6,8 @@ import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.jdbc.core.SqlReturnResultSet;
 import org.springframework.jdbc.object.StoredProcedure;
 import org.springframework.stereotype.Repository;
+
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 
 import javax.sql.DataSource;
 import java.sql.ResultSet;
@@ -30,7 +32,7 @@ public class SQLMediaIdListSproc extends StoredProcedure {
 
     /**
      * Spring {@link RowMapper} implementation to converts a result set to a object
-     * {@link Media}
+     * {@link LcmMedia}
      */
     private class MediaIdRowMapper implements RowMapper<Integer> {
         @Override

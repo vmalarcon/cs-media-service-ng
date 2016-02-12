@@ -2,6 +2,9 @@ package com.expedia.content.media.processing.services.dao;
 
 import org.junit.Test;
 
+import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaLogSproc;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;

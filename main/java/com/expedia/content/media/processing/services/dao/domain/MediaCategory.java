@@ -1,4 +1,4 @@
-package com.expedia.content.media.processing.services.dao;
+package com.expedia.content.media.processing.services.dao.domain;
 
 /**
  * Represents the MediaCategory from the MediaCategoryLoc Table

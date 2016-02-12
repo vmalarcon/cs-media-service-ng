@@ -3,6 +3,8 @@ package com.expedia.content.media.processing.services.dao;
 
 import java.util.List;
 
+import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
+
 /**
  * Methods for reporting and supporting reporting.
  */

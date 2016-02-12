@@ -1,4 +1,4 @@
-package com.expedia.content.media.processing.services.dao;
+package com.expedia.content.media.processing.services.dao.domain;
 
 import java.util.Collections;
 import java.util.Date;
@@ -7,7 +7,7 @@ import java.util.List;
 /**
  * Represents the media data from the the Media and CatalogItemMedia tables.
  */
-public class Media {
+public class LcmMedia {
 
     private final Integer domainId;
     private final Integer mediaId;
@@ -22,10 +22,9 @@ public class Media {
     private final Integer category;
     private final String comment;
 
-    private String mediaGUID;
-    private List<MediaDerivative> derivatives = Collections.EMPTY_LIST;
+    private List<LcmMediaDerivative> derivatives = Collections.EMPTY_LIST;
 
-    public Media(final Integer domainId, final Integer mediaId, final String fileName, final Boolean active, final Integer width, final Integer height,
+    public LcmMedia(final Integer domainId, final Integer mediaId, final String fileName, final Boolean active, final Integer width, final Integer height,
                  final Integer fileSize, final String lastUpdatedBy, final Date lastUpdateDate, final Integer provider, final Integer category,
                  final String comment) {
         this.domainId = domainId;
@@ -90,19 +89,11 @@ public class Media {
         return comment;
     }
 
-    public String getMediaGUID() {
-        return mediaGUID;
-    }
-
-    public void setMediaGUID(String mediaGUID) {
-        this.mediaGUID = mediaGUID;
-    }
-
-    public List<MediaDerivative> getDerivatives() {
+    public List<LcmMediaDerivative> getDerivatives() {
         return derivatives;
     }
 
-    public void setDerivatives(List<MediaDerivative> derivatives) {
+    public void setDerivatives(List<LcmMediaDerivative> derivatives) {
         this.derivatives = derivatives;
     }
 
