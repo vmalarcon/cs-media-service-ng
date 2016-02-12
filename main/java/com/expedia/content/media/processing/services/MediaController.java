@@ -119,7 +119,7 @@ public class MediaController extends CommonServiceController {
             if (sendToAWS) {
                 // reuse current validation logic
                 final String userName = "Multisource";
-                return service(mediaCommonMessage, requestID, serviceUrl, userName, OK);
+                return processRequest(mediaCommonMessage, requestID, serviceUrl, userName, OK);
             } else {
                 final String response = mediaServiceClient.callMediaService(message);
                 LOGGER.info("SUCCESS send message to media service  - JSONMessage=[{}], response=[{}], requestId=[{}]", message, response, requestID);
@@ -158,7 +158,7 @@ public class MediaController extends CommonServiceController {
         try {
             final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             final String clientId = auth.getName();
-            return service(message, requestID, serviceUrl, clientId, ACCEPTED);
+            return processRequest(message, requestID, serviceUrl, clientId, ACCEPTED);
         } catch (IllegalStateException | ImageMessageException ex) {
             LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex, requestID, message);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
@@ -176,9 +176,11 @@ public class MediaController extends CommonServiceController {
      * @return The response for the service call.
      * @throws Exception Thrown if the message can't be validated or the response can't be serialized.
      */
-    private ResponseEntity<String> service(final String message, final String requestID, final String serviceUrl, final String clientId, HttpStatus successStatus) throws Exception {
+    private ResponseEntity<String> processRequest(final String message, final String requestID, final String serviceUrl, final String clientId, HttpStatus successStatus) throws Exception {
         final String json = validateImageMessage(message, clientId);
         if (!"[]".equals(json)) {
+            LOGGER.warn("Returning BAD_REQUEST for messageName={}, requestId=[{}], JSONMessage=[{}]. Errors=[{}]",
+                    serviceUrl, requestID, message, json);
             return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
         }
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
