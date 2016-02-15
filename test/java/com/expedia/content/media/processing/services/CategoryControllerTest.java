@@ -66,8 +66,8 @@ public class CategoryControllerTest {
                       "],"+
                       "\"subcategories\":["+
                         "{"+
-                          "\"subCategoryId\":\"4321\","+
-                          "\"subCategoryName\":["+
+                          "\"subcategoryId\":\"4321\","+
+                          "\"subcategoryName\":["+
                             "{"+
                               "\"localizedName\":\"sub-name\","+
                               "\"localeId\":\"1033\""+
