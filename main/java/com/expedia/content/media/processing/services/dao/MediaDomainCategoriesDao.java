@@ -44,7 +44,7 @@ public class MediaDomainCategoriesDao {
     /**
      * Using the Result Sets of SQLMediaDomainCategoriesSproc this Method groups the results by Category ID and then
      * populates each Category with Localized Names and SubCategories
-     * @see Category, LocalizedName, SubCategory, SQLMediaDomainCategoriesSproc
+     * @see Category, LocalizedName, Subcategory, SQLMediaDomainCategoriesSproc
      *
      * @param localeId  The Localization Id to query by
      * @return  List of Category Objects
@@ -69,21 +69,21 @@ public class MediaDomainCategoriesDao {
     }
 
     /**
-     * Builds a List of SubCategory Objects by CategoryId
-     * @see SubCategory
+     * Builds a List of Subcategory Objects by CategoryId
+     * @see Subcategory
      *
      * @param categoryId        The CategoryID of which the SubCategories belong
      * @param subCategoryMap    A HashMap of subCategories grouped by CategoryId
-     * @return List of SubCategory Objects
+     * @return List of Subcategory Objects
      */
-    private List<SubCategory> getSubCategoryList(Integer categoryId, Map<Integer, List<MediaSubCategory>> subCategoryMap) {
+    private List<Subcategory> getSubCategoryList(Integer categoryId, Map<Integer, List<MediaSubCategory>> subCategoryMap) {
         if (subCategoryMap.get(categoryId) == null) {
             return new ArrayList<>();
         } else {
             final Map<Integer, List<MediaSubCategory>> innerSubCategoryMap = subCategoryMap.get(categoryId).stream()
                     .collect(Collectors.groupingBy(subCategory -> Integer.parseInt(subCategory.getMediaSubCategoryID())));
-            final List<SubCategory> subCategoriesList = innerSubCategoryMap.keySet().stream()
-                    .map(subCategoryId -> new SubCategory(String.valueOf(subCategoryId), innerSubCategoryMap.get(subCategoryId).stream()
+            final List<Subcategory> subCategoriesList = innerSubCategoryMap.keySet().stream()
+                    .map(subCategoryId -> new Subcategory(String.valueOf(subCategoryId), innerSubCategoryMap.get(subCategoryId).stream()
                             .map(item -> new LocalizedName(item.getMediaSubCategoryName(), item.getLangID()))
                             .collect(Collectors.toList())))
                     .collect(Collectors.toList());
