@@ -7,6 +7,7 @@ import com.expedia.content.media.processing.services.dao.MediaProviderSproc;
 import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.springframework.test.context.ContextConfiguration;
@@ -35,6 +36,11 @@ public class LCMValidatorTest {
     @Mock
     MediaProviderSproc mockMediaProviderSproc;
 
+    @Mock
+    MediaProviderDao mockMediaProviderDao;
+
+    Map<String, Object> mockResults;
+
     @BeforeClass
     public static void setUp() {
         System.setProperty("EXPEDIA_ENVIRONMENT", "test");
@@ -49,8 +55,7 @@ public class LCMValidatorTest {
         MediaProvider mediaProvider = new MediaProvider(1, "EPC Internal User", new Timestamp(1339150200000L),
                 "phoenix", null);
         mediaProviders.add(mediaProvider);
-        MediaProviderSproc mockMediaProviderSproc = mock(MediaProviderSproc.class);
-        Map<String, Object> mockResults = new HashMap<>();
+        mockResults = new HashMap<>();
         mockResults.put(MediaProviderSproc.MEDIA_PROVIDER_MAPPER_RESULT_SET, mediaProviders);
         when(mockMediaProviderSproc.execute()).thenReturn(mockResults);
         when(mockSKUGroupCatalogItemDao.gteSKUGroup(anyInt())).thenReturn(Boolean.TRUE);
@@ -76,8 +81,11 @@ public class LCMValidatorTest {
         final List<Map<String, String>> errorList = lcmValidator.validateImages(imageMessageList);
         assertTrue(errorList.size() == 0);
         verify(mockSKUGroupCatalogItemDao, times(1)).gteSKUGroup(anyInt());
+        verify(mockMediaProviderSproc, times(1)).execute();
+        verify(mockMediaProviderDao, times(1)).getMediaProviderList(null, "test");
     }
 
+    @Ignore
     @Test
     public void testDomainIdDoesNotExist() throws Exception {
         lcmValidator = new LCMValidator();

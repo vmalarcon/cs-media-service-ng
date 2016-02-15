@@ -28,10 +28,10 @@ public class MediaProviderDao {
     public Boolean getMediaProviderList(Integer mediaProviderID, String mediaProviderName) {
         final Map<String, Object> results = sproc.execute();
         final List<MediaProvider> mediaProviders = (List<MediaProvider>) results.get(MediaProviderSproc.MEDIA_PROVIDER_MAPPER_RESULT_SET);
-        List<Integer> mediaProviderIds = mediaProviders.stream()
+        final List<Integer> mediaProviderIds = mediaProviders.stream()
                 .map(mediaProvider -> mediaProvider.getMediaProviderID())
                 .collect(Collectors.toList());
-        List<String> mediaProviderNames = mediaProviders.stream()
+        final List<String> mediaProviderNames = mediaProviders.stream()
                 .map(mediaProvider -> mediaProvider.getMediaProviderName())
                 .collect(Collectors.toList());
         return ((mediaProviderID != null && mediaProviderIds.contains(mediaProviderID)) ||
