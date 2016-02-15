@@ -5,11 +5,11 @@ import java.util.List;
 /**
  * Represents the Sub Category of a Category
  */
-public class SubCategory {
+public class Subcategory {
     private final String subcategoryId;
     private final List<LocalizedName> subcategoryName;
 
-    public SubCategory(String subcategoryId, List<LocalizedName> subcategoryName) {
+    public Subcategory(String subcategoryId, List<LocalizedName> subcategoryName) {
         this.subcategoryId = subcategoryId;
         this.subcategoryName = subcategoryName;
     }
