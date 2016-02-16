@@ -36,7 +36,7 @@ public class MediaProviderDaoTest {
         Map<String, Object> mockResults = new HashMap<>();
         mockResults.put(MediaProviderSproc.MEDIA_PROVIDER_MAPPER_RESULT_SET, mediaProviders);
         when(mockMediaProviderSproc.execute()).thenReturn(mockResults);
-        assertTrue(mediaProviderDao.getMediaProviderList("EPC Internal User"));
+        assertTrue(mediaProviderDao.mediaProviderExists("EPC Internal User"));
         verify(mockMediaProviderSproc, times(1)).execute();
     }
 
@@ -51,7 +51,7 @@ public class MediaProviderDaoTest {
         Map<String, Object> mockResults = new HashMap<>();
         mockResults.put(MediaProviderSproc.MEDIA_PROVIDER_MAPPER_RESULT_SET, mediaProviders);
         when(mockMediaProviderSproc.execute()).thenReturn(mockResults);
-        assertFalse(mediaProviderDao.getMediaProviderList("does not exist"));
+        assertFalse(mediaProviderDao.mediaProviderExists("does not exist"));
         verify(mockMediaProviderSproc, times(1)).execute();
     }
 }

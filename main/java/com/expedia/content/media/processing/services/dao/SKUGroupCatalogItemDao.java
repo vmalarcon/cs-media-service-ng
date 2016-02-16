@@ -25,7 +25,7 @@ public class SKUGroupCatalogItemDao {
      * @return true if the skuGroupCatalogItemID exists
      */
     @SuppressWarnings("unchecked")
-    public Boolean gteSKUGroup(int skuGroupCatalogItemID) {
+    public Boolean skuGroupExists(int skuGroupCatalogItemID) {
         final Map<String, Object> results = sproc.execute(skuGroupCatalogItemID);
         final List<SKUGroupCatalogItem> skuGroupCatalogItems = (List<SKUGroupCatalogItem>) results.get(SKUGroupGetSproc.SKU_GROUP_CATALOG_ITEM_MAPPER_RESULT_SET);
 

@@ -35,7 +35,7 @@ public class SKUGroupCatalogItemDaoTest {
         Map<String, Object> mockResults = new HashMap<>();
         mockResults.put(SKUGroupGetSproc.SKU_GROUP_CATALOG_ITEM_MAPPER_RESULT_SET, skuGroupCatalogItems);
         when(mockSkuGroupGet.execute(123)).thenReturn(mockResults);
-        assertTrue(skuGroupCatalogItemDao.gteSKUGroup(123));
+        assertTrue(skuGroupCatalogItemDao.skuGroupExists(123));
     }
 
 
@@ -47,6 +47,6 @@ public class SKUGroupCatalogItemDaoTest {
         Map<String, Object> mockResults = new HashMap<>();
         mockResults.put(SKUGroupGetSproc.SKU_GROUP_CATALOG_ITEM_MAPPER_RESULT_SET, skuGroupCatalogItems);
         when(mockSkuGroupGet.execute(123)).thenReturn(mockResults);
-        assertFalse(skuGroupCatalogItemDao.gteSKUGroup(123));
+        assertFalse(skuGroupCatalogItemDao.skuGroupExists(123));
     }
 }

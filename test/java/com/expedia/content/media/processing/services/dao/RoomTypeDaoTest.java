@@ -1,6 +1,8 @@
 package com.expedia.content.media.processing.services.dao;
 
 
+import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,6 +33,8 @@ public class RoomTypeDaoTest {
     List<RoomType> mockRoomTypes;
     RoomTypeDao roomTypeDao;
     Map<String, Object> mockRoomResults = new HashMap<>();
+    Map<String, Object> domainField = new HashMap<>();
+    Map<String, String> rooms = new HashMap<>();
 
     @BeforeClass
     public static void setUp() {
@@ -46,22 +50,31 @@ public class RoomTypeDaoTest {
         mockRoomResults = new HashMap<>();
         mockRoomResults.put(PropertyRoomTypeGetIDSproc.ROOM_TYPE_RESULT_SET, mockRoomTypes);
         roomTypeDao = new RoomTypeDao(sproc);
-
     }
 
 
     @Test
     public  void testRoomTypeIdExists() {
+        domainField.put("category", "22005");
+        domainField.put("propertyHero", "true");
+        rooms.put("roomId", "222");
+        rooms.put("roomHero", "true");
+        domainField.put("rooms", Arrays.asList(rooms));
         when(sproc.execute(anyInt())).thenReturn(mockRoomResults);
-        Boolean roomTypeExists = roomTypeDao.getRoomTypeCatalogItemId(123, Arrays.asList(222));
+        Boolean roomTypeExists = roomTypeDao.roomTypeCatalogItemIdExists(new OuterDomain(Domain.LODGING, "123", "", "EPC Internal User", domainField));
         assertTrue(roomTypeExists);
         verify(sproc, times(1)).execute(anyInt());
     }
 
     @Test
     public  void testRoomTypeIdDoesNotExist() {
+        domainField.put("category", "22005");
+        domainField.put("propertyHero", "true");
+        rooms.put("roomId", "444");
+        rooms.put("roomHero", "true");
+        domainField.put("rooms", Arrays.asList(rooms));
         when(sproc.execute(anyInt())).thenReturn(mockRoomResults);
-        Boolean roomTypeExists = roomTypeDao.getRoomTypeCatalogItemId(123, Arrays.asList(8, 7));
+        Boolean roomTypeExists = roomTypeDao.roomTypeCatalogItemIdExists(new OuterDomain(Domain.LODGING, "123", "", "EPC Internal User", domainField));
         assertFalse(roomTypeExists);
         verify(sproc, times(1)).execute(anyInt());
     }

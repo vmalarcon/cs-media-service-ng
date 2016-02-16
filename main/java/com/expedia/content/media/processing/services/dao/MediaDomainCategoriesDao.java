@@ -1,5 +1,7 @@
 package com.expedia.content.media.processing.services.dao;
 
+import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +17,7 @@ import java.util.stream.Collectors;
 @Component
 public class MediaDomainCategoriesDao {
     private static final int SKIP_NULL_AND_DELETED_CATEGORIES = 2;
+    private final static String CATEGORY = "category";
     private final SQLMediaDomainCategoriesSproc sproc;
 
     @Autowired
@@ -91,11 +94,37 @@ public class MediaDomainCategoriesDao {
         }
     }
 
-    public Boolean getCategoryId(String domain, String localeId, String category) {
-            final List<Category> categories = getMediaCategoriesWithSubCategories(domain, localeId);
-            final List<String> categoryIds = categories.stream()
-                    .map(c -> c.getCategoryId())
-                    .collect(Collectors.toList());
-            return categoryIds.contains(category);
+    /**
+     * verifies subCategory in the message
+     * @param outerDomain
+     * @param localeId
+     * @return
+     */
+    public Boolean subCategoryIdExists(OuterDomain outerDomain, String localeId) {
+        final String category = getCategory(outerDomain);
+        Boolean categoryExists = Boolean.TRUE;
+        if (outerDomain.getDomain().equals(Domain.LODGING)&& !"" .equals(category)) {
+                final Map<String, Object> results = sproc.execute(localeId);
+                final List<MediaSubCategory> mediaSubCategories = (List<MediaSubCategory>) results.get(SQLMediaDomainCategoriesSproc.MEDIA_SUB_CATEGORY_RESULT_SET);
+
+                final List<String> subCategoryIds = mediaSubCategories.stream()
+                        .map(s -> s.getMediaSubCategoryID())
+                        .collect(Collectors.toList());
+
+                categoryExists = subCategoryIds.contains(category);
         }
+        return categoryExists;
+    }
+
+    /**
+     * extracts category
+     * @param outerDomain
+     * @return
+     */
+    private String getCategory(OuterDomain outerDomain) {
+        final String category = outerDomain.getDomainFields() == null ||
+                outerDomain.getDomainFields().get(CATEGORY) == null ? "" :
+                outerDomain.getDomainFields().get(CATEGORY).toString();
+        return category;
+    }
 }

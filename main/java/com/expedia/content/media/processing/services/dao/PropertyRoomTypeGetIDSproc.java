@@ -36,7 +36,7 @@ public class PropertyRoomTypeGetIDSproc extends StoredProcedure {
 
         @Override
         public RoomType mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
-            final int roomTypeCatalogItemID = resultSet.getInt("roomTypeCatalogItemID");
+            final int roomTypeCatalogItemID = resultSet.getInt("roomTypeContentID");
             final int roomTypeID = resultSet.getInt("roomTypeID");
             final Timestamp updateDate = resultSet.getTimestamp("updateDate");
             final String lastUpdatedBy = resultSet.getString("lastUpdatedBy");

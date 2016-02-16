@@ -24,7 +24,7 @@ public class MediaProviderDao {
      * @return true if the mediaProvider exists in LCM
      */
     @SuppressWarnings("unchecked")
-    public Boolean getMediaProviderList(String mediaProviderName) {
+    public Boolean mediaProviderExists(String mediaProviderName) {
         final Map<String, Object> results = sproc.execute();
         final List<MediaProvider> mediaProviders = (List<MediaProvider>) results.get(MediaProviderSproc.MEDIA_PROVIDER_MAPPER_RESULT_SET);
 
