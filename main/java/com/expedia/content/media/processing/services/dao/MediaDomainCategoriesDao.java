@@ -90,4 +90,12 @@ public class MediaDomainCategoriesDao {
             return subCategoriesList;
         }
     }
+
+    public Boolean getCategoryId(String domain, String localeId, String category) {
+            final List<Category> categories = getMediaCategoriesWithSubCategories(domain, localeId);
+            final List<String> categoryIds = categories.stream()
+                    .map(c -> c.getCategoryId())
+                    .collect(Collectors.toList());
+            return categoryIds.contains(category);
+        }
 }

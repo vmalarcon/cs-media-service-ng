@@ -26,20 +26,6 @@ public class MediaProviderDaoTest {
     }
 
     @Test
-    public void testMediaProviderIdExists() throws Exception {
-        List<MediaProvider> mediaProviders = new ArrayList<>();
-        MediaProvider mediaProvider = new MediaProvider(1, "EPC Internal User", new Timestamp(1339150200000L),
-                "phoenix", null);
-        mediaProviders.add(mediaProvider);
-        MediaProviderSproc mockMediaProviderSproc = mock(MediaProviderSproc.class);
-        MediaProviderDao mediaProviderDao = new MediaProviderDao(mockMediaProviderSproc);
-        Map<String, Object> mockResults = new HashMap<>();
-        mockResults.put(MediaProviderSproc.MEDIA_PROVIDER_MAPPER_RESULT_SET, mediaProviders);
-        when(mockMediaProviderSproc.execute()).thenReturn(mockResults);
-        assertTrue(mediaProviderDao.getMediaProviderList(1, null));
-    }
-
-    @Test
     public void testMediaProviderNameExists() throws Exception {
         List<MediaProvider> mediaProviders = new ArrayList<>();
         MediaProvider mediaProvider = new MediaProvider(1, "EPC Internal User", new Timestamp(1339150200000L),
@@ -50,23 +36,8 @@ public class MediaProviderDaoTest {
         Map<String, Object> mockResults = new HashMap<>();
         mockResults.put(MediaProviderSproc.MEDIA_PROVIDER_MAPPER_RESULT_SET, mediaProviders);
         when(mockMediaProviderSproc.execute()).thenReturn(mockResults);
-        assertTrue(mediaProviderDao.getMediaProviderList(null, "EPC Internal User"));
-        verify(mockMediaProviderSproc.execute(), times(1));
-    }
-
-    @Test
-    public void testMediaProviderIdDoesNotExist() throws Exception {
-        List<MediaProvider> mediaProviders = new ArrayList<>();
-        MediaProvider mediaProvider = new MediaProvider(1, "EPC Internal User", new Timestamp(1339150200000L),
-                "phoenix", null);
-        mediaProviders.add(mediaProvider);
-        MediaProviderSproc mockMediaProviderSproc = mock(MediaProviderSproc.class);
-        MediaProviderDao mediaProviderDao = new MediaProviderDao(mockMediaProviderSproc);
-        Map<String, Object> mockResults = new HashMap<>();
-        mockResults.put(MediaProviderSproc.MEDIA_PROVIDER_MAPPER_RESULT_SET, mediaProviders);
-        when(mockMediaProviderSproc.execute()).thenReturn(mockResults);
-        assertFalse(mediaProviderDao.getMediaProviderList(2, null));
-        verify(mockMediaProviderSproc.execute(), times(1));
+        assertTrue(mediaProviderDao.getMediaProviderList("EPC Internal User"));
+        verify(mockMediaProviderSproc, times(1)).execute();
     }
 
     @Test
@@ -80,7 +51,7 @@ public class MediaProviderDaoTest {
         Map<String, Object> mockResults = new HashMap<>();
         mockResults.put(MediaProviderSproc.MEDIA_PROVIDER_MAPPER_RESULT_SET, mediaProviders);
         when(mockMediaProviderSproc.execute()).thenReturn(mockResults);
-        assertFalse(mediaProviderDao.getMediaProviderList(null, "does not exist"));
-        verify(mockMediaProviderSproc.execute(), times(1));
+        assertFalse(mediaProviderDao.getMediaProviderList("does not exist"));
+        verify(mockMediaProviderSproc, times(1)).execute();
     }
 }
