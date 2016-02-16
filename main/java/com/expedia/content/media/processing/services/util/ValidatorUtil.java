@@ -1,8 +1,6 @@
 package com.expedia.content.media.processing.services.util;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +10,6 @@ import java.util.TreeMap;
 @SuppressWarnings("PMD.UseUtilityClass")
 public class ValidatorUtil {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ValidatorUtil.class);
     private final static String ROOMID = "roomId";
 
     public static void putErrorMapToList(List<Map<String, String>> list, StringBuffer errorMsg, ImageMessage imageMesage) {
@@ -23,11 +20,11 @@ public class ValidatorUtil {
     }
 
     public static List<Integer> getRoomIds(Object rooms) {
-        List<Integer> roomIds = new ArrayList<>();
-        List roomsList = (List) rooms;
+        final List<Integer> roomIds = new ArrayList<>();
+        final List roomsList = (List) rooms;
 
             for (int i = 0; i < roomsList.size(); i++) {
-                Map room = (Map)roomsList.get(i);
+                final Map room = (Map)roomsList.get(i);
                 roomIds.add(Integer.parseInt(room.get(ROOMID).toString()));
             }
         return roomIds;

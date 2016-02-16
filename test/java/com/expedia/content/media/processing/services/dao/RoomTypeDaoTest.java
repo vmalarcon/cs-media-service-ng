@@ -53,7 +53,7 @@ public class RoomTypeDaoTest {
     @Test
     public  void testRoomTypeIdExists() {
         when(sproc.execute(anyInt())).thenReturn(mockRoomResults);
-        Boolean roomTypeExists = roomTypeDao.getRoomTypeCatalogItemId(123, Arrays.asList(222, 111));
+        Boolean roomTypeExists = roomTypeDao.getRoomTypeCatalogItemId(123, Arrays.asList(222));
         assertTrue(roomTypeExists);
         verify(sproc, times(1)).execute(anyInt());
     }
