@@ -1,6 +1,7 @@
 package com.expedia.content.media.processing.services.validator;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -304,5 +305,30 @@ public class EPCMVELValidatorTest {
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
         String errorMsg = errorList.get(0).get("error");
         assertTrue(errorMsg, errorMsg.contains("rooms list is empty"));
+    }
+
+    @Test
+    public void testMessageIsValid() throws Exception {
+        String jsonMsg =
+                "         { " +
+                        "    \"fileUrl\": \"http://well-formed-url/hello.JpEg\"," +
+                        "    \"fileName\": \"Something\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
+                        "    \"domain\": \"Lodging\", " +
+                        "    \"domainId\": \"123\", " +
+                        "    \"userId\": \"user-id\", " +
+                        "    \"domainProvider\": \"test\", " +
+                        "    \"domainFields\": { " +
+                        "      \"category\": \"123\", " +
+                        "      \"roomHero\": \"true\", " +
+                        "      \"rooms\": [ {} ]" +
+                        "    } " +
+                        " }";
+        ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        assertEquals(1, ((List) imageMessage.getOuterDomainData().getDomainFieldValue("rooms")).size());
+        List<ImageMessage> imageMessageList = new ArrayList<>();
+        imageMessageList.add(imageMessage);
+        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
+        assertTrue(errorList.isEmpty());
     }
 }
