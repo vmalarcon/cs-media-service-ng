@@ -1,6 +1,8 @@
 package com.expedia.content.media.processing.services.dao;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Index;
 import com.amazonaws.services.dynamodbv2.document.Item;
@@ -8,16 +10,8 @@ import com.amazonaws.services.dynamodbv2.document.ItemCollection;
 import com.amazonaws.services.dynamodbv2.document.QueryOutcome;
 import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
-import com.amazonaws.services.dynamodbv2.document.utils.NameMap;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
-import com.amazonaws.services.dynamodbv2.model.AttributeDefinition;
-import com.amazonaws.services.dynamodbv2.model.CreateTableRequest;
-import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndex;
-import com.amazonaws.services.dynamodbv2.model.KeySchemaElement;
-import com.amazonaws.services.dynamodbv2.model.KeyType;
-import com.amazonaws.services.dynamodbv2.model.Projection;
-import com.amazonaws.services.dynamodbv2.model.ProjectionType;
-import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughput;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,10 +19,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -39,10 +34,12 @@ public class DaoTest {
     private AmazonDynamoDBClient dynamoDBClient;
 
     private DynamoDB db;
+    private DynamoDBMapper mapper;
 
     @Before
     public void initTest() {
         db = new DynamoDB(dynamoDBClient);
+        mapper = new DynamoDBMapper(dynamoDBClient);
     }
 
     @Test
@@ -71,71 +68,45 @@ public class DaoTest {
 
     @Test
     public void testQueryBySha1() {
-        /* To create the Secondary Index
-        // Attribute definitions
-        List<AttributeDefinition> attributeDefinitions = new ArrayList<AttributeDefinition>();
-
-        attributeDefinitions.add(new AttributeDefinition()
-                .withAttributeName("SHA1")
-                .withAttributeType("S"));
-        attributeDefinitions.add(new AttributeDefinition()
-                .withAttributeName("ContentID")
-                .withAttributeType("S"));
-        attributeDefinitions.add(new AttributeDefinition()
-                .withAttributeName("MediaGUID")
-                .withAttributeType("S"));
-
-        // Table key schema
-        ArrayList<KeySchemaElement> tableKeySchema = new ArrayList<>();
-        tableKeySchema.add(new KeySchemaElement()
-                .withAttributeName("MediaGUID")
-                .withKeyType(KeyType.HASH));  //Partition key
-
-        // PrecipIndex
-        GlobalSecondaryIndex sha1Index = new GlobalSecondaryIndex()
-                .withIndexName("cs-mediadb-index-Media-SHA1_ContentID")
-                .withProvisionedThroughput(new ProvisionedThroughput()
-                        .withReadCapacityUnits((long) 10)
-                        .withWriteCapacityUnits((long) 1))
-                .withProjection(new Projection().withProjectionType(ProjectionType.ALL));
-
-        ArrayList<KeySchemaElement> indexKeySchema = new ArrayList<>();
-
-        indexKeySchema.add(new KeySchemaElement()
-                .withAttributeName("SHA1")
-                .withKeyType(KeyType.HASH));  //Partition key
-        indexKeySchema.add(new KeySchemaElement()
-                .withAttributeName("ContentID")
-                .withKeyType(KeyType.RANGE));  //Sort key
-
-        sha1Index.setKeySchema(indexKeySchema);
-
-        CreateTableRequest createTableRequest = new CreateTableRequest()
-                .withTableName("cs-mediadb-Media")
-                .withProvisionedThroughput(new ProvisionedThroughput()
-                        .withReadCapacityUnits((long) 5)
-                        .withWriteCapacityUnits((long) 1))
-                .withAttributeDefinitions(attributeDefinitions)
-                .withKeySchema(tableKeySchema)
-                .withGlobalSecondaryIndexes(sha1Index);
-
-        Table table = db.createTable(createTableRequest);
-        System.out.println(table.getDescription());
-        */
         Table table = db.getTable("cs-mediadb-Media");
-        Index index = table.getIndex("cs-mediadb-index-Media-SHA1_ContentID");
+        Index index = table.getIndex("cs-mediadb-index-Media-MediaFileName");
 
         QuerySpec spec = new QuerySpec()
-                .withKeyConditionExpression("#s = :sha1")
-                .withNameMap(new NameMap()
-                        .with("#s", "String"))
+                .withKeyConditionExpression("MediaFileName = :mfn")
                 .withValueMap(new ValueMap()
-                        .withString(":sha1","31B924EC3B066BDF0A79262CC04F10E5EE20156D"));
+                        .withString(":mfn","9462972_47_142288931795623.jpg"));
 
         ItemCollection<QueryOutcome> items = index.query(spec);
         Iterator<Item> iter = items.iterator();
         while (iter.hasNext()) {
             System.out.println(iter.next().toJSONPretty());
         }
+    }
+
+    @Test
+    public void testWithMapper() {
+        final HashMap<String, AttributeValue> params = new HashMap<>();
+        params.put(":mfn", new AttributeValue().withS("8843978_13_000092fK.jpg"));
+
+        DynamoDBQueryExpression<Media> expression = new DynamoDBQueryExpression<Media>()
+                .withIndexName("cs-mediadb-index-Media-MediaFileName")
+                .withConsistentRead(false)
+                .withKeyConditionExpression("MediaFileName = :mfn")
+                .withExpressionAttributeValues(params);
+
+        List<Media> mediaList = mapper.query(Media.class, expression);
+
+        assertNotNull(mediaList);
+        assertEquals(1, mediaList.size());
+        System.out.println(mediaList.get(0).toString());
+        Media media = mediaList.get(0);
+        assertEquals("650f13be-537f-4f09-bc68-6a69afef8766", media.getMediaGuid());
+        assertEquals("8843978_13_000092fK.jpg", media.getFileName());
+        assertEquals("Lodging", media.getDomain());
+        assertEquals("8843978", media.getDomainId());
+        assertEquals("true", media.getActive());
+        assertEquals("int", media.getEnvironment());
+        assertEquals("16364766", media.getLcmMediaId());
+        assertNotNull(media.getLastUpdated());
     }
 }
