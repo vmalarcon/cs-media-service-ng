@@ -1,8 +1,8 @@
 package com.expedia.content.media.processing.services.dao;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -29,6 +29,6 @@ public class SKUGroupCatalogItemDao {
         final Map<String, Object> results = sproc.execute(skuGroupCatalogItemID);
         final List<SKUGroupCatalogItem> skuGroupCatalogItems = (List<SKUGroupCatalogItem>) results.get(SKUGroupGetSproc.SKU_GROUP_CATALOG_ITEM_MAPPER_RESULT_SET);
 
-        return !CollectionUtils.isEmpty(skuGroupCatalogItems);
+        return CollectionUtils.isNotEmpty(skuGroupCatalogItems);
     }
 }

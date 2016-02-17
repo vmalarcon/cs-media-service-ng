@@ -288,12 +288,6 @@
         </constructor-arg>
     </bean>
 
-    <bean id="mediaProviderDao" class="com.expedia.content.media.processing.services.dao.MediaProviderDao">
-        <constructor-arg name="sproc">
-            <bean class="com.expedia.content.media.processing.services.dao.MediaProviderSproc" />
-        </constructor-arg>
-    </bean>
-
     <bean id="roomTypeDao" class="com.expedia.content.media.processing.services.dao.RoomTypeDao">
         <constructor-arg name="sproc">
             <bean class="com.expedia.content.media.processing.services.dao.PropertyRoomTypeGetIDSproc" />

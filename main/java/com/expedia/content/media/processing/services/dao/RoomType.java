@@ -5,7 +5,7 @@ import java.sql.Timestamp;
 /**
  * Represents partially RoomType in LCM.
  */
-@SuppressWarnings("PMD")
+@SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
 public final class RoomType {
 
     private final int roomTypeCatalogItemID;

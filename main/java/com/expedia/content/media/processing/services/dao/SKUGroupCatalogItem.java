@@ -5,7 +5,7 @@ import java.sql.Timestamp;
 /**
  * Represents the SKUGroupCatalogItem in LCM.
  */
-@SuppressWarnings("PMD")
+@SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField"})
 public final class SKUGroupCatalogItem {
 
     private final String name;

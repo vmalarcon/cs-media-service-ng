@@ -1,9 +1,10 @@
 package com.expedia.content.media.processing.services;
 
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-
-import java.util.List;
-
+import com.expedia.content.media.processing.services.dao.Category;
+import com.expedia.content.media.processing.services.dao.DomainNotFoundException;
+import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
+import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,11 +18,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.expedia.content.media.processing.services.dao.Category;
-import com.expedia.content.media.processing.services.dao.DomainNotFoundException;
-import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
-import com.expedia.content.media.processing.services.util.JSONUtil;
-import com.expedia.content.media.processing.services.util.MediaServiceUrl;
+import java.util.List;
+
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 /**
  * Web service controller for domain categories.
@@ -71,5 +70,4 @@ public class CategoryController extends CommonServiceController {
         final List<Category> domainCategories = mediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
         return JSONUtil.generateJsonByCategoryList(domainCategories, domain);
     }
-
 }
