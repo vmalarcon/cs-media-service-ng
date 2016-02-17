@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.services.dao.MediaDBException;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 
@@ -36,17 +37,21 @@ public class DynamoMediaRepository {
      * @param domainId Id of the domain item the media is required.
      * @return The list of media attached to the domain id.
      */
-    public List<Media> loadMedia(String domainId) {
+    public List<Media> loadMedia(Domain domain, String domainId) {
         List<Media> mediaList = null;
         try {
+            final HashMap<String, String> names = new HashMap<>();
+            names.put("#domain", "Domain");
+
             final Map<String, AttributeValue> params = new HashMap<>();
             params.put(":pDomainId", new AttributeValue().withS(domainId));
-            //params.put(":pDomainName", new AttributeValue().withS(domainName));
+            params.put(":pDomain", new AttributeValue().withS(domain.getDomain()));
 
             final DynamoDBQueryExpression<Media> query = new DynamoDBQueryExpression<Media>()
-                    .withIndexName("cs-mediadb-index-Media-DomainID")
+                    .withIndexName("cs-mediadb-index-Media-DomainID-Domain")
                     .withConsistentRead(false)
-                    .withKeyConditionExpression("DomainID = :pDomainId")// and DomainName = :pDomainName")
+                    .withKeyConditionExpression("DomainID = :pDomainId and #domain = :pDomain")
+                    .withExpressionAttributeNames(names)
                     .withExpressionAttributeValues(params);
 
             mediaList = dynamoMapper.query(Media.class, query);

@@ -20,6 +20,7 @@ import java.util.Properties;
 
 import org.junit.Test;
 
+import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
 import com.expedia.content.media.processing.services.dao.domain.Media;
@@ -87,7 +88,7 @@ public class MediaDaoTest {
         dynamoMedia3.setDomainId("1234");
         dynamoMediaList.add(dynamoMedia1);
         dynamoMediaList.add(dynamoMedia3);
-        when(mockMediaDBRepo.loadMedia(anyString())).thenReturn(dynamoMediaList);
+        when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
 
         final Properties properties = new Properties();
         properties.put("1", "EPC Internal User");
@@ -112,7 +113,7 @@ public class MediaDaoTest {
         setFieldValue(mediaDao, "providerProperties", properties);
 //        setFieldValue(mediaDao, "processLogDao", mockProcessLogDao);
 //        setFieldValue(mediaDao, "activityWhiteList", whitelist);
-        List<Media> testMediaList = mediaDao.getMediaByDomainId("Lodging", "1234", null, null);
+        List<Media> testMediaList = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null);
 
         assertEquals(3, testMediaList.size());
         testMediaList.stream().filter(media -> media.getLcmMediaId() != null).forEach(media -> assertEquals(2, media.getDerivativesList().size()));
@@ -187,7 +188,7 @@ public class MediaDaoTest {
         dynamoMedia3.setDomainId("1234");
         dynamoMediaList.add(dynamoMedia1);
         dynamoMediaList.add(dynamoMedia3);
-        when(mockMediaDBRepo.loadMedia(anyString())).thenReturn(dynamoMediaList);
+        when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
 
         final Properties properties = new Properties();
         properties.put("1", "EPC Internal User");
@@ -214,7 +215,7 @@ public class MediaDaoTest {
 //        setFieldValue(mediaDao, "activityWhiteList", whitelist);
         setFieldValue(mediaDao, "lcmMediaIdSproc", mediaIdSproc);
         setFieldValue(mediaDao, "lcmMediaSproc", mediaSproc);
-        List<Media> testMediaList1 = mediaDao.getMediaByDomainId("Lodging", "1234", "true", null);
+        List<Media> testMediaList1 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null);
 
         assertEquals(1, testMediaList1.size());
         testMediaList1.stream().forEach(media -> assertEquals(2, media.getDerivativesList().size()));
@@ -225,7 +226,7 @@ public class MediaDaoTest {
         assertEquals(dynamoMedia1.getMediaGuid(), testMedia1.getMediaGuid());
         assertTrue((media1.getFileSize() * 1024L) == testMedia1.getFileSize());
 
-        List<Media> testMediaList2 = mediaDao.getMediaByDomainId("Lodging", "1234", "false", null);
+        List<Media> testMediaList2 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "false", null);
 
         assertEquals(2, testMediaList2.size());
         testMediaList2.stream().filter(media -> media.getLcmMediaId() != null).forEach(media -> assertEquals(2, media.getDerivativesList().size()));
@@ -293,7 +294,7 @@ public class MediaDaoTest {
         dynamoMedia3.setDomainId("1234");
         dynamoMediaList.add(dynamoMedia1);
         dynamoMediaList.add(dynamoMedia3);
-        when(mockMediaDBRepo.loadMedia(anyString())).thenReturn(dynamoMediaList);
+        when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
 
         final Properties properties = new Properties();
         properties.put("1", "EPC Internal User");
@@ -320,7 +321,7 @@ public class MediaDaoTest {
 //        setFieldValue(mediaDao, "activityWhiteList", whitelist);
         setFieldValue(mediaDao, "lcmMediaIdSproc", mediaIdSproc);
         setFieldValue(mediaDao, "lcmMediaSproc", mediaSproc);
-        List<Media> testMediaList1 = mediaDao.getMediaByDomainId("Lodging", "1234", null, "a,t,b");
+        List<Media> testMediaList1 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, "a,t,b");
 
         assertEquals(3, testMediaList1.size());
         testMediaList1.stream().filter(media -> media.getLcmMediaId() != null).forEach(media -> {

@@ -359,7 +359,7 @@ public class MediaControllerTest {
         mediaValues.add(mediaItem2);
 
         MediaDao mockMediaDao = mock(MediaDao.class);
-        when(mockMediaDao.getMediaByDomainId(anyString(), anyString(), anyString(), anyString())).thenReturn(mediaValues);
+        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString())).thenReturn(mediaValues);
 
         MediaController mediaController = new MediaController();
         setFieldValue(mediaController, "mediaDao", mockMediaDao);

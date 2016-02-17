@@ -181,7 +181,7 @@ public class MediaController extends CommonServiceController {
             return validationResponse;
         }
         final List<DomainIdMedia> images =
-                transformMediaForResponse(mediaDao.getMediaByDomainId(domainName, domainId, activeFilter, derivativeTypeFilter));
+                transformMediaForResponse(mediaDao.getMediaByDomainId(Domain.findDomain(domainName), domainId, activeFilter, derivativeTypeFilter));
         final MediaByDomainIdResponse response = new MediaByDomainIdResponse();
         response.setDomain(domainName);
         response.setDomainId(domainId);

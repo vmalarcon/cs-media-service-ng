@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.function.Function;
@@ -19,6 +18,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
 import com.expedia.content.media.processing.services.dao.domain.Media;
@@ -78,10 +78,10 @@ public class MediaDao {
      */
     @SuppressWarnings("unchecked")
     @Transactional
-    public List<Media> getMediaByDomainId(String domain, String domainId, String activeFilter, String derivativeFilter) {
+    public List<Media> getMediaByDomainId(Domain domain, String domainId, String activeFilter, String derivativeFilter) {
         List<Media> domainIdMedia =
-                mediaRepo.loadMedia(domainId).stream().filter(media -> media.getDomain().equalsIgnoreCase(domain)).collect(Collectors.toList());
-        if ("lodging".equals(domain.toLowerCase(Locale.US))) {
+                mediaRepo.loadMedia(domain, domainId).stream().collect(Collectors.toList());
+        if (Domain.LODGING.equals(domain)) {
             final Map<String, Media> mediaEidMap = domainIdMedia.stream().filter(media -> media.getLcmMediaId() != null).collect(Collectors.toMap(Media::getLcmMediaId, media -> media));
             final Map<String, Object> idResult = lcmMediaIdSproc.execute(Integer.parseInt(domainId), DEFAULT_LODGING_LOCALE);
             final List<Integer> mediaIds = (List<Integer>) idResult.get(SQLMediaIdListSproc.MEDIA_ID_SET);
