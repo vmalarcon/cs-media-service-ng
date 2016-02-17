@@ -1,5 +1,5 @@
 
 server:
    tomcat:
-      max-threads: 20
+      max-threads: 200
 

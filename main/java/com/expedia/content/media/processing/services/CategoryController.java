@@ -53,7 +53,7 @@ public class CategoryController extends CommonServiceController {
             final String response = getDomainCategories(domainName, localeId);
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (DomainNotFoundException e) {
-            LOGGER.error("ERROR - JSONMessage=[{}], requestId=[{}]", e, headers.get(REQUEST_ID));
+            LOGGER.error("ERROR - message=[{}], requestId=[{}]", e.getMessage(), headers.get(REQUEST_ID), e);
             return buildErrorResponse("Requested resource with ID " + domainName + " was not found.",
                     MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + domainName + localePath, NOT_FOUND);
         }

@@ -272,13 +272,18 @@ public final class JSONUtil {
             mapMessage.put(MessageConstants.OUTER_DOMAIN_FIELDS, domainMapMessage);
         }
         if (imageMessage.getCaption() != null) {
-            mapMessage.put(MessageConstants.CAPTION, imageMessage.getCaption());
+            domainMapMessage.put(MessageConstants.CAPTION, imageMessage.getCaption());
+            mapMessage.put(MessageConstants.OUTER_DOMAIN_FIELDS, domainMapMessage);
+        }
+        if (map.get("captionLocaleId") != null) {
+            domainMapMessage.put("captionLocaleId", map.get("captionLocaleId"));
+            mapMessage.put(MessageConstants.OUTER_DOMAIN_FIELDS, domainMapMessage);
         }
         if (imageMessage.getMediaProviderId() != null) {
             mapMessage.put(MessageConstants.OUTER_DOMAIN_PROVIDER, providerProperties.getProperty(imageMessage.getMediaProviderId()));
         }
-        mapMessage.put(MessageConstants.USER_ID, "MultiSource");
-        mapMessage.put(MessageConstants.CLIENT_ID, "MultiSource");
+        mapMessage.put(MessageConstants.USER_ID, "Multisource");
+        mapMessage.put(MessageConstants.CLIENT_ID, "Multisource");
         return new JSONWriter().write(mapMessage);
     }
     

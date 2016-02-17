@@ -18,7 +18,7 @@ import com.expedia.content.media.processing.services.dao.DomainNotFoundException
 import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
 import com.expedia.content.media.processing.services.dao.domain.Category;
 import com.expedia.content.media.processing.services.dao.domain.LocalizedName;
-import com.expedia.content.media.processing.services.dao.domain.SubCategory;
+import com.expedia.content.media.processing.services.dao.domain.Subcategory;
 
 public class CategoryControllerTest {
 
@@ -32,9 +32,9 @@ public class CategoryControllerTest {
         LocalizedName subcategoryName = new LocalizedName("sub-name", localId);
         List<LocalizedName> subCategoryNames = new ArrayList<>();
         subCategoryNames.add(subcategoryName);
-        SubCategory mockSubCategory = new SubCategory("4321", subCategoryNames);
-        List<SubCategory> subCategories = new ArrayList<>();
-        subCategories.add(mockSubCategory);
+        Subcategory mockSubcategory = new Subcategory("4321", subCategoryNames);
+        List<Subcategory> subCategories = new ArrayList<>();
+        subCategories.add(mockSubcategory);
 
         LocalizedName categoryName = new LocalizedName("cat-name", localId);
         List<LocalizedName> categoryNames = new ArrayList<>();
@@ -66,8 +66,8 @@ public class CategoryControllerTest {
                       "],"+
                       "\"subcategories\":["+
                         "{"+
-                          "\"subCategoryId\":\"4321\","+
-                          "\"subCategoryName\":["+
+                          "\"subcategoryId\":\"4321\","+
+                          "\"subcategoryName\":["+
                             "{"+
                               "\"localizedName\":\"sub-name\","+
                               "\"localeId\":\"1033\""+

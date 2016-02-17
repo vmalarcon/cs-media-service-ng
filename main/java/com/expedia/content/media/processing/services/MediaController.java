@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.security.core.Authentication;
@@ -113,8 +114,8 @@ public class MediaController extends CommonServiceController {
 
             final String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, providerProperties);
             LOGGER.info("converted to - common message =[{}]", mediaCommonMessage);
-            final String userName = "EPC";
-            return service(mediaCommonMessage, requestID, serviceUrl, userName);
+            final String userName = "Multisource";
+            return processRequest(mediaCommonMessage, requestID, serviceUrl, userName, OK);
         } catch (IllegalStateException | ImageMessageException ex) {
             LOGGER.error("ERROR - messageName={}, JSONMessage=[{}], error=[{}], requestID=[{}] .", serviceUrl, message, ex, requestID);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
@@ -141,7 +142,7 @@ public class MediaController extends CommonServiceController {
         try {
             final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             final String clientId = auth.getName();
-            return service(message, requestID, serviceUrl, clientId);
+            return processRequest(message, requestID, serviceUrl, clientId, ACCEPTED);
         } catch (IllegalStateException | ImageMessageException ex) {
             LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex, requestID, message);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
@@ -241,12 +242,15 @@ public class MediaController extends CommonServiceController {
      * @param requestID The id of the request. Used for tracking purposes.
      * @param serviceUrl URL of the message called.
      * @param clientId Web service client id.
+     * @param successStatus Status to return when successful.
      * @return The response for the service call.
      * @throws Exception Thrown if the message can't be validated or the response can't be serialized.
      */
-    private ResponseEntity<String> service(final String message, final String requestID, final String serviceUrl, final String clientId) throws Exception {
+    private ResponseEntity<String> processRequest(final String message, final String requestID, final String serviceUrl, final String clientId, HttpStatus successStatus) throws Exception {
         final String json = validateImageMessage(message, clientId);
         if (!"[]".equals(json)) {
+            LOGGER.warn("Returning BAD_REQUEST for messageName={}, requestId=[{}], JSONMessage=[{}]. Errors=[{}]",
+                    serviceUrl, requestID, message, json);
             return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
         }
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
@@ -268,9 +272,8 @@ public class MediaController extends CommonServiceController {
         }
 
         publishMsg(imageMessageNew);
-        LOGGER.info("SUCCESS - messageName={}, requestId=[{}], mediaGuid=[{}], JSONMessage=[{}]", serviceUrl, requestID, imageMessageNew.getMediaGuid(),
-                message);
-        return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), ACCEPTED);
+        LOGGER.info("SUCCESS - messageName={}, requestId=[{}], mediaGuid=[{}], JSONMessage=[{}]", serviceUrl, requestID, imageMessageNew.getMediaGuid(), message);
+        return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
     }
 
     /**
