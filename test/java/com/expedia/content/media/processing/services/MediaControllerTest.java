@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services;
 
+import static com.expedia.content.media.processing.services.validator.MediaReplacementTest.createMedia;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -14,11 +15,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.services.dao.Media;
+import com.expedia.content.media.processing.services.dao.MediaDAO;
+import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -44,6 +52,7 @@ import com.expedia.content.media.processing.services.validator.MapMessageValidat
 public class MediaControllerTest {
 
     private static final String TEST_CLIENT_ID = "a-user";
+    private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     @Mock
     private Reporting reporting;
@@ -73,13 +82,7 @@ public class MediaControllerTest {
 
         MediaController mediaController = new MediaController();
 
-        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
-        List<MapMessageValidator> messageValidator = new ArrayList<>();
-        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
-        List<Map<String, String>> validationErrorList = new ArrayList<>();
-        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
-        messageValidator.add(mockMessageValidator);
-        validators.put(TEST_CLIENT_ID, messageValidator);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
         LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
@@ -122,13 +125,7 @@ public class MediaControllerTest {
 
         MediaController mediaController = new MediaController();
 
-        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
-        List<MapMessageValidator> messageValidator = new ArrayList<>();
-        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
-        List<Map<String, String>> validationErrorList = new ArrayList<>();
-        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
-        messageValidator.add(mockMessageValidator);
-        validators.put(TEST_CLIENT_ID, messageValidator);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
         LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
@@ -173,13 +170,7 @@ public class MediaControllerTest {
 
         MediaController mediaController = new MediaController();
 
-        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
-        List<MapMessageValidator> messageValidator = new ArrayList<>();
-        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
-        List<Map<String, String>> validationErrorList = new ArrayList<>();
-        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
-        messageValidator.add(mockMessageValidator);
-        validators.put(TEST_CLIENT_ID, messageValidator);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
         ThumbnailProcessor thumbnailProcessor = mock(ThumbnailProcessor.class);
@@ -264,13 +255,7 @@ public class MediaControllerTest {
 
         MediaController mediaController = new MediaController();
 
-        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
-        List<MapMessageValidator> messageValidator = new ArrayList<>();
-        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
-        List<Map<String, String>> validationErrorList = new ArrayList<>();
-        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
-        messageValidator.add(mockMessageValidator);
-        validators.put(TEST_CLIENT_ID, messageValidator);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
         LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
@@ -317,10 +302,127 @@ public class MediaControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    public void testReplaceImageSuccess() throws Exception {
+        String jsonMessage = "{ " +
+                "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " +
+                "\"fileName\": \"123_1_NASA_ISS-4.jpg\", " +
+                "\"userId\": \"bobthegreat\", " +
+                "\"domain\": \"Lodging\", " +
+                "\"domainId\": \"1238\", " +
+                "\"domainProvider\": \"EPC-Internal\", " +
+                "\"domainFields\": { " +
+                "    \"replace\": \"true\" " +
+                "  } " +
+                "}";
+
+        MediaController mediaController = new MediaController();
+
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+
+        MediaDAO mockMediaDao = mock(MediaDAO.class);
+        when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"))).thenReturn(Lists.newArrayList(
+                createMedia("old-guid", "456", "true", DATE_FORMAT.parse("2016-02-17 12:00:00")),
+                createMedia("old-but-inactive", "567", "false", DATE_FORMAT.parse("2016-10-10 12:00:00")),
+                createMedia("too-old", "890", "true", DATE_FORMAT.parse("2016-02-17 11:59:59"))
+        ));
+        setFieldValue(mediaController, "mediaDAO", mockMediaDao);
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"mediaGuid\":\"old-guid\""));
+        assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+
+        ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
+        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
+        verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
+        final Message<String> publishedMessageValue = publishedMessage.getValue();
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"123_1_NASA_ISS-4.jpg\""));
+        assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
+        assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
+        assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
+        assertTrue(publishedMessageValue.getPayload().contains("\"mediaGuid\":\"" + "old-guid"));
+        assertTrue(publishedMessageValue.getPayload().contains("\"lcmMediaId\":\"" + "456"));
+    }
+
+    @Test
+    public void testReplaceImageButNoOldFound() throws Exception {
+        String jsonMessage = "{ " +
+                "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " +
+                "\"fileName\": \"123_1_NASA_ISS-4.jpg\", " +
+                "\"userId\": \"bobthegreat\", " +
+                "\"domain\": \"Lodging\", " +
+                "\"domainId\": \"1238\", " +
+                "\"domainProvider\": \"EPC-Internal\", " +
+                "\"domainFields\": { " +
+                "    \"replace\": \"true\" " +
+                "  } " +
+                "}";
+
+        MediaController mediaController = new MediaController();
+
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+
+        MediaDAO mockMediaDao = mock(MediaDAO.class);
+        when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"))).thenReturn(Lists.newArrayList());
+        setFieldValue(mediaController, "mediaDAO", mockMediaDao);
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"mediaGuid\":"));
+        ImageMessage response = ImageMessage.parseJsonMessage(responseEntity.getBody());
+        assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+
+        ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
+        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
+        verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
+        final Message<String> publishedMessageValue = publishedMessage.getValue();
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"123_1_NASA_ISS-4.jpg\""));
+        assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
+        assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
+        assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
+        assertTrue(publishedMessageValue.getPayload().contains("\"mediaGuid\":\"" + response.getMediaGuid() + "\""));
+        assertFalse(publishedMessageValue.getPayload().contains("\"lcmMediaId\":"));
+    }
+
+    private static Map<String, List<MapMessageValidator>> getMockValidators() {
+        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
+        List<MapMessageValidator> messageValidator = new ArrayList<>();
+        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
+        List<Map<String, String>> validationErrorList = new ArrayList<>();
+        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
+        messageValidator.add(mockMessageValidator);
+        validators.put(TEST_CLIENT_ID, messageValidator);
+        return validators;
+    }
+
     private static void setFieldValue(Object obj, String fieldName, Object value) throws NoSuchFieldException, IllegalAccessException {
         final Field field = obj.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
         field.set(obj, value);
     }
-
 }
