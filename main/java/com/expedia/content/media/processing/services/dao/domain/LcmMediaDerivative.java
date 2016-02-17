@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Represents the media derivative from the MediaFileName table.S
+ * Represents the media derivative from the MediaFileName table.
  */
 public class LcmMediaDerivative {
 

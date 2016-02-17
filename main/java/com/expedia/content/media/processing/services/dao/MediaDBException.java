@@ -1,7 +1,7 @@
 package com.expedia.content.media.processing.services.dao;
 
 /**
- * TODO
+ * Exception to thrown when a Media DB exception occures.
  */
 @SuppressWarnings("serial")
 public class MediaDBException extends RuntimeException {

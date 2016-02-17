@@ -9,6 +9,7 @@ import org.springframework.boot.context.web.SpringBootServletInitializer;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import com.expedia.content.media.processing.pipeline.util.OSDetector;
 
@@ -22,6 +23,7 @@ import expedia.content.solutions.metrics.spring.EnableMetrics;
 @ComponentScan(basePackages = "com.expedia.content.media.processing")
 @ImportResource("classpath:media-services.xml")
 @EnableMetrics
+@EnableTransactionManagement
 @SuppressWarnings({"PMD.UseUtilityClass"})
 public class Application extends SpringBootServletInitializer {
 

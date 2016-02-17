@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,8 @@ import org.springframework.util.MultiValueMap;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
+import com.expedia.content.media.processing.services.dao.MediaDao;
+import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -315,6 +318,66 @@ public class MediaControllerTest {
         ResponseEntity<String> responseEntity = mediaController.acquireMedia(jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+    
+    @Test
+    public void testMediaByDomainIdInvalidActiveFilter() throws Exception {
+        MediaController mediaController = new MediaController();
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", "potato", null, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    public void testMediaByDomainIdInvalidDomain() throws Exception {
+        MediaController mediaController = new MediaController();
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("potato", "1234", "true", null, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+    }
+    
+    @Test
+    public void testMediaByDomainIdLodging() throws Exception {
+        Media mediaItem1 = new Media();
+        mediaItem1.setActive("true");
+        mediaItem1.setDomain("Lodging");
+        mediaItem1.setDomainId("1234");
+        mediaItem1.setFileName("1234_file_name.jpg");
+        mediaItem1.setMediaGuid("102d3a4b-c985-43d3-9245-b60ab1eb9a0f");
+        mediaItem1.setLastUpdated(new Date());
+        Media mediaItem2 = new Media();
+        mediaItem2.setActive("true");
+        mediaItem2.setDomain("Lodging");
+        mediaItem2.setDomainId("1234");
+        mediaItem2.setFileName("1234_file2_name.jpg");
+        mediaItem2.setMediaGuid("ea868d7d-c4ce-41a8-be43-19fff0ce5ad4");
+        mediaItem2.setLastUpdated(new Date());
+        List<Media> mediaValues = new ArrayList<>();
+        mediaValues.add(mediaItem1);
+        mediaValues.add(mediaItem2);
+
+        MediaDao mockMediaDao = mock(MediaDao.class);
+        when(mockMediaDao.getMediaByDomainId(anyString(), anyString(), anyString(), anyString())).thenReturn(mediaValues);
+
+        MediaController mediaController = new MediaController();
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", "true", null, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        String domainString = "\"domain\":\"Lodging\"";
+        assertTrue(responseEntity.getBody().contains(domainString));
+        assertEquals(responseEntity.getBody().indexOf(domainString), responseEntity.getBody().lastIndexOf(domainString));
+        String domainIdString = "\"domainId\":\"1234\"";
+        assertTrue(responseEntity.getBody().contains(domainIdString));
+        assertEquals(responseEntity.getBody().indexOf(domainIdString), responseEntity.getBody().lastIndexOf(domainIdString));
+        assertTrue(responseEntity.getBody().contains("\"images\":["));
+        assertTrue(responseEntity.getBody().contains("\"mediaGuid\":\"102d3a4b-c985-43d3-9245-b60ab1eb9a0f\""));
+        assertTrue(responseEntity.getBody().replaceAll("[0-9]{4}-[0-9]{2}-[0-9]{2}[\\s][0-9]{1,2}:[0-9]{2}:[0-9]{2}[\\.][0-9]+\\s{1}[\\+|\\-][0-9]{2}:[0-9]{2}", "timestamp").contains("\"lastUpdateDateTime\":\"timestamp\""));
+        assertTrue(responseEntity.getBody().contains("\"mediaGuid\":\"ea868d7d-c4ce-41a8-be43-19fff0ce5ad4\""));
     }
 
     private static void setFieldValue(Object obj, String fieldName, Object value) throws NoSuchFieldException, IllegalAccessException {

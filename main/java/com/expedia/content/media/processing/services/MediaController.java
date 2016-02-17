@@ -6,6 +6,9 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
 import java.net.URISyntaxException;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -13,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
@@ -45,10 +49,10 @@ import com.expedia.content.media.processing.pipeline.reporting.LogActivityProces
 import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
+import com.expedia.content.media.processing.services.dao.MediaDao;
+import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
-import com.expedia.content.media.processing.services.util.RestClient;
-import com.expedia.content.media.processing.services.util.RouterUtil;
 import com.expedia.content.media.processing.services.validator.HTTPValidator;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.expedia.content.media.processing.services.validator.S3Validator;
@@ -66,13 +70,8 @@ public class MediaController extends CommonServiceController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MediaController.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS ZZZZZ");
 
-    @Autowired
-    private RestClient mediaServiceClient;
-    @Autowired
-    private RouterUtil routerUtil;
-    @Value("${media.router.providers}")
-    private String providerRouters;
     @Resource(name = "providerProperties")
     private Properties providerProperties;
     @Autowired
@@ -87,6 +86,8 @@ public class MediaController extends CommonServiceController {
     private String publishQueue;
     @Autowired
     private ThumbnailProcessor thumbnailProcessor;
+    @Autowired
+    private MediaDao mediaDao;
 
     /**
      * web service interface to consume media message.
@@ -112,32 +113,12 @@ public class MediaController extends CommonServiceController {
 
             final String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, providerProperties);
             LOGGER.info("converted to - common message =[{}]", mediaCommonMessage);
-            final ImageMessage imageMessageCommon = ImageMessage.parseJsonMessage(mediaCommonMessage);
-            final String routeName = getRouteNameByProvider(imageMessageCommon);
-            final boolean sendToAWS = routerUtil.routeAWSByPercentage(routeName);
-
-            LOGGER.debug("send message to AWS {}", sendToAWS);
-            // new mediaCommon Message.
-            if (sendToAWS) {
-                // reuse current validation logic
-                final String userName = "EPC";
-                return service(message, requestID, serviceUrl, userName);
-            } else {
-                final String response = mediaServiceClient.callMediaService(message);
-                LOGGER.info("SUCCESS send message to media service  - JSONMessage=[{}], response=[{}], requestId=[{}]", message, response, requestID);
-                return new ResponseEntity<>("OK,message sent to mpp media service successfully.", OK);
-            }
-
+            final String userName = "EPC";
+            return service(mediaCommonMessage, requestID, serviceUrl, userName);
         } catch (IllegalStateException | ImageMessageException ex) {
             LOGGER.error("ERROR - messageName={}, JSONMessage=[{}], error=[{}], requestID=[{}] .", serviceUrl, message, ex, requestID);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         }
-    }
-
-    @Deprecated
-    private String getRouteNameByProvider(ImageMessage imageMessage) {
-        return (imageMessage.getOuterDomainData() != null && providerRouters.contains(imageMessage.getOuterDomainData().getProvider())) ? imageMessage
-                .getOuterDomainData().getProvider() : RouterUtil.DEFAULT_ROUTER_NAME;
     }
 
     /**
@@ -168,7 +149,16 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * TODO
+     * Web services interface to retrieve media information by domain name and id.
+     * 
+     * @param domainName Name of the domain the domain id belongs to.
+     * @param domainId Identification of the domain item the media is required.
+     * @param activeFilter Filter determining what images to return. When true only active are returned. When false only inactive media is returned. When
+     *            all then all are returned. All is set a default.
+     * @param derivativeTypeFilter Inclusive filter to use to only return certain types of derivatives. Returns all derivatives if not specified.
+     * @param headers Headers of the request.
+     * @return The list of media data belonging to the domain item.
+     * @throws Exception Thrown if processing the message fails.
      */
     @Meter(name = "getMediaByDomainIdMessageCounter")
     @Timer(name = "getMediaByDomainIdMessageTimer")
@@ -183,25 +173,59 @@ public class MediaController extends CommonServiceController {
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                 serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
-        final ResponseEntity<String> validationResponse = validateRequest(domainName, activeFilter);
+        final ResponseEntity<String> validationResponse = validateMediaByDomainIdRequest(domainName, activeFilter);
         if (validationResponse != null) {
             LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                     serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
             return validationResponse;
         }
-        
-        return new ResponseEntity<String>("", OK);
+        final List<DomainIdMedia> images =
+                transformMediaForResponse(mediaDao.getMediaByDomainId(domainName, domainId, activeFilter, derivativeTypeFilter));
+        final MediaByDomainIdResponse response = new MediaByDomainIdResponse();
+        response.setDomain(domainName);
+        response.setDomainId(domainId);
+        response.setImages(images);
+        return new ResponseEntity<String>(OBJECT_MAPPER.writeValueAsString(response), OK);
     }
 
     /**
-     * TODO
-     * @param domainName
-     * @param activeFilter
-     * @return
+     * Transforms a media list for a media get response format.
+     * 
+     * @param mediaList List of media to transform.
+     * @return The transformed list.
      */
-    private ResponseEntity<String> validateRequest(final String domainName, final String activeFilter) {
+    private List<DomainIdMedia> transformMediaForResponse(List<Media> mediaList) {
+        return mediaList.stream().map(media -> {
+            final DomainIdMedia domainIdMedia = new DomainIdMedia();
+            domainIdMedia.setMediaGuid(media.getMediaGuid());
+            domainIdMedia.setFileUrl(media.getFileUrl());
+            domainIdMedia.setFileName(media.getFileName());
+            domainIdMedia.setActive(media.getActive());
+            domainIdMedia.setWidth(media.getWidth());
+            domainIdMedia.setHeight(media.getHeight());
+            domainIdMedia.setFileSize(media.getFileSize());
+            domainIdMedia.setStatus(media.getStatus());
+            domainIdMedia.setLastUpdatedBy(media.getUserId());
+            domainIdMedia
+                    .setLastUpdateDateTime(ZonedDateTime.ofInstant(media.getLastUpdated().toInstant(), ZoneId.systemDefault()).format(DATE_FORMATTER));
+            domainIdMedia.setDomainProvider(media.getProvider());
+            domainIdMedia.setDomainFields(media.getDomainData());
+            domainIdMedia.setDerivatives(media.getDerivativesList());
+            domainIdMedia.setComments(media.getCommentList());
+            return domainIdMedia;
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * Validates the media by domain id request.
+     * 
+     * @param domainName Domain to validate.
+     * @param activeFilter Active filter to validate.
+     * @return Returns a response if the validation fails; null otherwise.
+     */
+    private ResponseEntity<String> validateMediaByDomainIdRequest(final String domainName, final String activeFilter) {
         if (activeFilter != null && !activeFilter.equalsIgnoreCase("all") && !activeFilter.equalsIgnoreCase("true")
-                        && !activeFilter.equalsIgnoreCase("false")) {
+                && !activeFilter.equalsIgnoreCase("false")) {
             return new ResponseEntity<String>("Unsupported active filter " + activeFilter, BAD_REQUEST);
         }
         if (Domain.findDomain(domainName) == null) {

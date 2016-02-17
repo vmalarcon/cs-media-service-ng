@@ -1,5 +1,12 @@
 package com.expedia.content.media.processing.services.dao.sql;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.Date;
+
+import javax.sql.DataSource;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.SqlParameter;
@@ -9,11 +16,6 @@ import org.springframework.stereotype.Repository;
 
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
-
-import javax.sql.DataSource;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
 
 /**
  * Call a MSSQL Sproc [MediaItemGet] in LCM in order to retrieve data from the Media, CatalogItemMedia, and MediaFileName (derivatives) tables
@@ -26,7 +28,7 @@ public class SQLMediaGetSproc extends StoredProcedure {
 
     @Autowired
     public SQLMediaGetSproc(final DataSource dataSource) {
-        super(dataSource, "MediaItemGet#04");
+        super(dataSource, "MediaItemGet#05");
         declareParameter(new SqlParameter("@pContentOwnerID", Types.INTEGER));
         declareParameter(new SqlParameter("@pMediaID", Types.INTEGER));
         declareParameter(new SqlReturnResultSet(MEDIA_SET, new MediaRowMapper()));
@@ -43,16 +45,16 @@ public class SQLMediaGetSproc extends StoredProcedure {
             final String activeFlag = resultSet.getString("StatusCode");
             return new LcmMedia(resultSet.getInt("CatalogItemID"), 
                     resultSet.getInt("MediaID"), 
-                    resultSet.getString("MediaFileName"),
+                    resultSet.getString("ContentProviderMediaName"),
                     activeFlag != null && "A".equals(activeFlag) ? true : false,
                     resultSet.getInt("MediaWidth"),
                     resultSet.getInt("MediaHeight"),
-                    resultSet.getInt("FileSizeKb") * 1024,
+                    resultSet.getInt("FileSizeKb"),
                     resultSet.getString("LastUpdatedBy"),
-                    resultSet.getDate("UpdateDate"),
+                    new Date(resultSet.getTimestamp("UpdateDate").getTime()),
                     resultSet.getInt("ContentProviderId"),
                     resultSet.getInt("MediaUseRank"),
-                    resultSet.getString("MediaComentTxt"));
+                    resultSet.getString("MediaCommentTxt"));
         }
     }
 
@@ -68,9 +70,9 @@ public class SQLMediaGetSproc extends StoredProcedure {
                     resultSet.getInt("MediaSizeTypeID"), 
                     processedFlag != null && "1".equals(processedFlag) ? true : false, 
                     resultSet.getString("MediaFileName"), 
-                    null, 
-                    null, 
-                    null);
+                    resultSet.getInt("MediaFileWidth"), 
+                    resultSet.getInt("MediaFileHeight"), 
+                    resultSet.getInt("FileSizeKb"));
         }
     }
 }

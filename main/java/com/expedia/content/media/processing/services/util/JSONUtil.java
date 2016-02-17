@@ -104,7 +104,7 @@ public final class JSONUtil {
                 ActivityMapping activityMapping = null;
                 for (int i = eachList.size() - 1; i >= 0; i--) {
                     final MediaProcessLog mediaProcessLog = eachList.get(i);
-                    activityMapping = getMappingFromList(activityMappingList, mediaProcessLog.getActivityType(), mediaProcessLog.getMediaType());
+                    activityMapping = getActivityMappingFromList(activityMappingList, mediaProcessLog.getActivityType(), mediaProcessLog.getMediaType());
                     if (activityMapping != null) {
                         eachEntryMap.put(JSON_TAG_STATUS, activityMapping.getStatusMessage());
                         eachEntryMap.put(JSON_TAG_TIME, mediaProcessLog.getActivityTime());
@@ -173,13 +173,13 @@ public final class JSONUtil {
     }
     
     /**
-     * TODO
-     * @param activityMappingList
-     * @param activityType
-     * @param mediaType
-     * @return
+     * Finds the displayable version of a MPP activity from the provided activity map.
+     * @param activityMappingList Displayable activity mapping.
+     * @param activityType The activity to display.
+     * @param mediaType The type of media the display is needed for.
+     * @return The activity name.
      */
-    public static ActivityMapping getMappingFromList(List<ActivityMapping> activityMappingList, String activityType, String mediaType) {
+    public static ActivityMapping getActivityMappingFromList(List<ActivityMapping> activityMappingList, String activityType, String mediaType) {
         for (final ActivityMapping activityMapping : activityMappingList) {
             if (activityMapping.getActivityType().equals(activityType) && mediaType.matches(activityMapping.getMediaType())) {
                 return activityMapping;
@@ -195,6 +195,7 @@ public final class JSONUtil {
      * @param mapList key is media file name, value is status list that get from LCM DB MediaProcessLog.
      * @param size the input media file name list size.
      */
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public static void divideStatusListToMap(List<MediaProcessLog> statusLogList, Map<String, List<MediaProcessLog>> mapList, int size) {
         if (statusLogList != null && !statusLogList.isEmpty()) {
             List[] sublist = new ArrayList[size];

@@ -37,7 +37,7 @@ public class SQLMediaIdListSproc extends StoredProcedure {
     private class MediaIdRowMapper implements RowMapper<Integer> {
         @Override
         public Integer mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
-            return resultSet.getInt("StatusCode");
+            return resultSet.getInt("MediaId");
         }
     }
 

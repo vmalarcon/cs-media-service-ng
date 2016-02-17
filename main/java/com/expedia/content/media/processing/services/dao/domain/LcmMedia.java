@@ -23,6 +23,7 @@ public class LcmMedia {
     private final String comment;
 
     private List<LcmMediaDerivative> derivatives = Collections.EMPTY_LIST;
+    private List<LcmMediaRoom> rooms = Collections.EMPTY_LIST;
 
     public LcmMedia(final Integer domainId, final Integer mediaId, final String fileName, final Boolean active, final Integer width, final Integer height,
                  final Integer fileSize, final String lastUpdatedBy, final Date lastUpdateDate, final Integer provider, final Integer category,
@@ -95,6 +96,14 @@ public class LcmMedia {
 
     public void setDerivatives(List<LcmMediaDerivative> derivatives) {
         this.derivatives = derivatives;
+    }
+
+    public List<LcmMediaRoom> getRooms() {
+        return rooms;
+    }
+
+    public void setRooms(List<LcmMediaRoom> rooms) {
+        this.rooms = rooms;
     }
 
 }

@@ -1,6 +1,8 @@
 package com.expedia.content.media.processing.services.dao.domain;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
@@ -11,14 +13,16 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
  * This class encapsulated the media properties before store in the database The
  * Media is build base on the received image message
  */
-
 @DynamoDBTable(tableName = "cs-mediadb-Media")
-@SuppressWarnings("PMD.TooManyFields")
+@SuppressWarnings({"PMD.TooManyFields", "PMD.ExcessivePublicCount"})
 public class Media {
 
     private String mediaGuid;
     private String fileUrl;
     private String fileName;
+    private Long fileSize;
+    private Integer width;
+    private Integer height;
     private String sourceUrl;
     private String callback;
     private String domain;
@@ -35,6 +39,9 @@ public class Media {
     private String sha1;
     private String environment;
     private String lcmMediaId;
+    private List<Map<String, Object>> derivativesList;
+    private Map<String, Object> domainData;
+    private List<String> commentList;
     private String status = "RECEIVED";
 
     @DynamoDBHashKey
@@ -63,6 +70,33 @@ public class Media {
 
     public void setFileName(String fileName) {
         this.fileName = fileName;
+    }
+
+    @DynamoDBIgnore
+    public Long getFileSize() {
+        return fileSize;
+    }
+
+    public void setFileSize(Long fileSize) {
+        this.fileSize = fileSize;
+    }
+
+    @DynamoDBIgnore
+    public Integer getWidth() {
+        return width;
+    }
+
+    public void setWidth(Integer width) {
+        this.width = width;
+    }
+
+    @DynamoDBIgnore
+    public Integer getHeight() {
+        return height;
+    }
+
+    public void setHeight(Integer height) {
+        this.height = height;
     }
 
     @DynamoDBAttribute(attributeName = "sourceUrl")
@@ -207,6 +241,33 @@ public class Media {
 
     public void setLcmMediaId(String lcmMediaId) {
         this.lcmMediaId = lcmMediaId;
+    }
+
+    @DynamoDBIgnore
+    public List<Map<String, Object>> getDerivativesList() {
+        return derivativesList;
+    }
+
+    public void setDerivativesList(List<Map<String, Object>> derivativesList) {
+        this.derivativesList = derivativesList;
+    }
+
+    @DynamoDBIgnore
+    public Map<String, Object> getDomainData() {
+        return domainData;
+    }
+
+    public void setDomainData(Map<String, Object> domainData) {
+        this.domainData = domainData;
+    }
+
+    @DynamoDBIgnore
+    public List<String> getCommentList() {
+        return commentList;
+    }
+
+    public void setCommentList(List<String> commentList) {
+        this.commentList = commentList;
     }
 
     @DynamoDBIgnore
