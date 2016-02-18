@@ -25,26 +25,26 @@
         <property name="queue" value="${collector.queue}" />
         <property name="routingKey" value="${collector.queue}" />
     </bean>
-    
+
     <bean id="retryableAspect" class="com.expedia.content.media.processing.pipeline.retry.RetryableAspect" factory-method="aspectOf" autowire="byType" />
 
-	<util:map id="imageMessageValidators">
-	    <entry key="EPC">
-	        <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
-	            <ref bean="mvelValidator"/>
-	        </list>
-	    </entry>
-	    <entry key="Media Cloud Router">
-	        <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
-	            <ref bean="mediaRouterValidator"/>
-	        </list>
-	    </entry>
-	    <entry key="Multisource">
-	        <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
-	            <ref bean="multisourceValidator"/>
-	        </list>
-	    </entry>
-	</util:map>
+    <util:map id="imageMessageValidators">
+        <entry key="EPC">
+            <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                <ref bean="mvelValidator"/>
+            </list>
+        </entry>
+        <entry key="Media Cloud Router">
+            <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                <ref bean="mediaRouterValidator"/>
+            </list>
+        </entry>
+        <entry key="Multisource">
+            <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                <ref bean="multisourceValidator"/>
+            </list>
+        </entry>
+    </util:map>
 
     <aws-messaging:queue-messaging-template id="queueMessagingTemplate" />
 
@@ -282,5 +282,5 @@
     </bean>
     <!-- /Category Controller -->
 
-    
+
 </beans>

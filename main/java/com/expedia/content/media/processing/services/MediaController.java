@@ -90,6 +90,8 @@ public class MediaController extends CommonServiceController {
     private ThumbnailProcessor thumbnailProcessor;
     @Autowired
     private MediaDAO mediaDAO;
+    @Autowired
+    private MediaReplacement mediaReplacement;
 
     /**
      * web service interface to consume media message.
@@ -228,7 +230,7 @@ public class MediaController extends CommonServiceController {
             imageMessageBuilder.fileName(StringUtils.isNullOrEmpty(imageMessage.getFileName()) ? fileNameFromFileUrl : imageMessage.getFileName());
         }
         imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
-        if (MediaReplacement.isReplacement(imageMessage)) {
+        if (mediaReplacement.isReplacement(imageMessage)) {
             // This will update the GUID to the old one.
             processReplacement(imageMessage, imageMessageBuilder);
         }

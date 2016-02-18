@@ -26,6 +26,7 @@ import java.util.Map;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.Media;
 import com.expedia.content.media.processing.services.dao.MediaDAO;
+import com.expedia.content.media.processing.services.validator.MediaReplacement;
 import com.google.common.collect.Lists;
 import org.junit.Before;
 import org.junit.Test;
@@ -59,6 +60,8 @@ public class MediaControllerTest {
     @Mock
     private QueueMessagingTemplate queueMessagingTemplateMock;
 
+    private MediaReplacement mediaReplacement = new MediaReplacement("ReplaceProvider");
+
     @Before
     public void setSecurityContext() {
         Authentication authentication = mock(Authentication.class);
@@ -89,6 +92,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
+        setFieldValue(mediaController, "mediaReplacement", mediaReplacement);
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -132,6 +136,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
+        setFieldValue(mediaController, "mediaReplacement", mediaReplacement);
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -182,6 +187,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
+        setFieldValue(mediaController, "mediaReplacement", mediaReplacement);
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -310,7 +316,7 @@ public class MediaControllerTest {
                 "\"userId\": \"bobthegreat\", " +
                 "\"domain\": \"Lodging\", " +
                 "\"domainId\": \"1238\", " +
-                "\"domainProvider\": \"EPC-Internal\", " +
+                "\"domainProvider\": \"ReplaceProvider\", " +
                 "\"domainFields\": { " +
                 "    \"replace\": \"true\" " +
                 "  } " +
@@ -325,6 +331,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
+        setFieldValue(mediaController, "mediaReplacement", mediaReplacement);
 
         MediaDAO mockMediaDao = mock(MediaDAO.class);
         when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"))).thenReturn(Lists.newArrayList(
@@ -365,7 +372,7 @@ public class MediaControllerTest {
                 "\"userId\": \"bobthegreat\", " +
                 "\"domain\": \"Lodging\", " +
                 "\"domainId\": \"1238\", " +
-                "\"domainProvider\": \"EPC-Internal\", " +
+                "\"domainProvider\": \"ReplaceProvider\", " +
                 "\"domainFields\": { " +
                 "    \"replace\": \"true\" " +
                 "  } " +
@@ -380,6 +387,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
+        setFieldValue(mediaController, "mediaReplacement", mediaReplacement);
 
         MediaDAO mockMediaDao = mock(MediaDAO.class);
         when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"))).thenReturn(Lists.newArrayList());

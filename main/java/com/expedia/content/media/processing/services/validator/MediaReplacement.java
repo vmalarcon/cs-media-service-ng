@@ -2,19 +2,28 @@ package com.expedia.content.media.processing.services.validator;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.Media;
+import com.google.common.base.Splitter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Utility methods/logic for the Media replacement logic
+ * Utility methods/logic for the Media replacement logic.
+ *
+ * <p>The class reads a configuration property with the list (comma separated) of Providers that need the replacement logic</p>
+ * <p>This class also provides utility methods to deal with the selection of media when multiple are found for replacement</p>
  */
-public final class MediaReplacement {
+@Component
+public class MediaReplacement {
 
-    public static final String REPLACE_FIELD = "replace";
+    private final String providersWithReplace;
 
-    private MediaReplacement() {
-        // static class
+    @Autowired
+    public MediaReplacement(@Value("${providers.with.replace}") String providersWithReplace) {
+        this.providersWithReplace = providersWithReplace;
     }
 
     /**
@@ -25,19 +34,17 @@ public final class MediaReplacement {
      * @param imageMessage ImageMessage to look for the replace flag
      * @return If this message is a replacement returns true, otherwise false.
      */
-    public static boolean isReplacement(ImageMessage imageMessage) {
-        if (imageMessage.getOuterDomainData() == null || imageMessage.getOuterDomainData().getDomainFields() == null) {
-            return false;
-        }
-        final Object replace = imageMessage.getOuterDomainData().getDomainFieldValue(REPLACE_FIELD);
-        if (replace instanceof String) {
-            return Boolean.parseBoolean((String) replace);
+    public boolean isReplacement(ImageMessage imageMessage) {
+        if (imageMessage.getOuterDomainData() != null) {
+            final String provider = imageMessage.getOuterDomainData().getProvider();
+            return Splitter.on(",").omitEmptyStrings().trimResults().splitToList(providersWithReplace).stream()
+                    .anyMatch(p -> p.equals(provider));
         }
         return false;
     }
 
     /**
-     * Goes thru all the active media in search of the latest media record. This is considered to be the 'best'
+     * Goes through all the active media in search of the latest media record. This is considered to be the 'best'
      * media.
      *
      * @param mediaList List of media from which to select the best.

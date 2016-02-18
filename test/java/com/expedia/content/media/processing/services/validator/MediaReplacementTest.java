@@ -4,8 +4,10 @@ import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.services.dao.Media;
 import com.google.common.collect.Lists;
+import org.junit.Before;
 import org.junit.Test;
 
+import java.lang.reflect.Field;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -13,70 +15,85 @@ import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class MediaReplacementTest {
 
     @Test
-    public void testIsReplacement() {
+    public void testIsReplacement() throws Exception {
+        MediaReplacement mediaReplacement = createMediaReplacement("A, B, Some Provider, Some Other");
+
         ImageMessage testMessage = ImageMessage.builder()
                 .outerDomainData(
                         OuterDomain.builder()
-                                .addField(MediaReplacement.REPLACE_FIELD, "true")
+                                .mediaProvider("Some Provider")
                                 .build())
                 .build();
 
-        assertTrue(MediaReplacement.isReplacement(testMessage));
+        assertTrue(mediaReplacement.isReplacement(testMessage));
     }
 
     @Test
-    public void testReplacementMissing() {
+    public void testProviderMissing() throws Exception {
+        MediaReplacement mediaReplacement = createMediaReplacement("A, B, Some Provider, Some Other");
+
         ImageMessage testMessage = ImageMessage.builder()
                 .mediaGuid("some-guid")
                 .build();
 
-        assertFalse(MediaReplacement.isReplacement(testMessage));
+        assertFalse(mediaReplacement.isReplacement(testMessage));
     }
 
     @Test
-    public void testDifferentTagInDomain() {
+    public void testDifferentTagInDomain() throws Exception {
+        MediaReplacement mediaReplacement = createMediaReplacement("A, B, Some Provider, Some Other");
+
         ImageMessage testMessage = ImageMessage.builder()
                 .outerDomainData(
                         OuterDomain.builder()
-                                .addField("_" + MediaReplacement.REPLACE_FIELD, "true")
+                                .mediaProvider("SomeProvider")
                                 .build())
                 .build();
 
-        assertFalse(MediaReplacement.isReplacement(testMessage));
+        assertFalse(mediaReplacement.isReplacement(testMessage));
     }
 
     @Test
-    public void testDomainFieldsIsNull() {
-        String testJson = "{ \"domainFields\": null }";
-        ImageMessage testMessage = ImageMessage.parseJsonMessage(testJson);
+    public void testDifferentCaseTagInDomain() throws Exception {
+        MediaReplacement mediaReplacement = createMediaReplacement("A, B, Some Provider, Some Other");
 
-        assertFalse(MediaReplacement.isReplacement(testMessage));
-    }
-
-    @Test
-    public void testValuesOfTruth() {
         ImageMessage testMessage = ImageMessage.builder()
                 .outerDomainData(
                         OuterDomain.builder()
-                                .addField(MediaReplacement.REPLACE_FIELD, "TruE")
+                                .mediaProvider("some provider")
                                 .build())
                 .build();
 
-        assertTrue(MediaReplacement.isReplacement(testMessage));
+        assertFalse(mediaReplacement.isReplacement(testMessage));
+    }
 
-        testMessage = ImageMessage.builder()
-                .outerDomainData(
-                        OuterDomain.builder()
-                                .addField(MediaReplacement.REPLACE_FIELD, "Yes")
-                                .build())
-                .build();
+    @Test
+    public void testProviderFieldIsNull() throws Exception {
+        MediaReplacement mediaReplacement = createMediaReplacement("A, B, Some Provider, Some Other");
+        ImageMessage testMessage = ImageMessage.parseJsonMessage("{ \"domain\": \"Lodging\", \"domainProvider\": null }");
 
-        assertFalse(MediaReplacement.isReplacement(testMessage));
+        assertNull(testMessage.getOuterDomainData().getProvider());
+        assertFalse(mediaReplacement.isReplacement(testMessage));
+
+        testMessage = ImageMessage.parseJsonMessage("{ \"domain\": \"Lodging\" }");
+
+        assertNull(testMessage.getOuterDomainData().getProvider());
+        assertFalse(mediaReplacement.isReplacement(testMessage));
+    }
+
+    @Test
+    public void testProviderFieldInMessage() throws Exception {
+        MediaReplacement mediaReplacement = createMediaReplacement("A, B, Some Provider, Some Other");
+        ImageMessage testMessage = ImageMessage.parseJsonMessage("{ \"domain\": \"Lodging\", \"domainProvider\": \"Some Provider\" }");
+
+        assertEquals("Some Provider", testMessage.getOuterDomainData().getProvider());
+        assertTrue(mediaReplacement.isReplacement(testMessage));
     }
 
     @Test(expected = NullPointerException.class)
@@ -137,4 +154,7 @@ public class MediaReplacementTest {
         return result;
     }
 
+    private static MediaReplacement createMediaReplacement(final String providers) throws Exception {
+        return new MediaReplacement(providers);
+    }
 }
