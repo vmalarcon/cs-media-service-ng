@@ -1,16 +1,23 @@
 package com.expedia.content.media.processing.services.dao;
 
+import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -22,6 +29,7 @@ public class MediaDomainCategoriesDaoTest {
     @Mock
     private Map<String, Object> mockResults;
 
+    Map<String, Object> domainField = new HashMap<>();
 
     @Test
     public void testDomainFound() throws Exception {
@@ -85,5 +93,47 @@ public class MediaDomainCategoriesDaoTest {
         String localeId = "1033";
         MediaDomainCategoriesDao mediaDomainCategoriesDao = new MediaDomainCategoriesDao(mockSQLMediaDomainCategoriesSproc);
         mediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
+    }
+
+    @Test
+    public  void testCategoryIdExists() {
+        domainField.put("category", "3");
+        domainField.put("propertyHero", "true");
+        String localeId = "1033";
+        List<MediaCategory> mockMediaCategories = new ArrayList<>();
+        mockMediaCategories.add(new MediaCategory("3", "1033", "Primary Image"));
+        mockMediaCategories.add(new MediaCategory("4", "1033", "Lobby"));
+        List<MediaSubCategory> mockMediaSubCategories = new ArrayList<>();
+        mockMediaSubCategories.add(new MediaSubCategory("3", "3", "1033", "Featured Image"));
+        mockMediaSubCategories.add(new MediaSubCategory("4", "10000", "1033", "Interior Entrance"));
+        mockMediaSubCategories.add(new MediaSubCategory("4", "10001", "1033", "Lobby"));
+        MediaDomainCategoriesDao mediaDomainCategoriesDao = new MediaDomainCategoriesDao(mockSQLMediaDomainCategoriesSproc);
+        when(mockSQLMediaDomainCategoriesSproc.execute(localeId)).thenReturn(mockResults);
+        when(mockResults.get(SQLMediaDomainCategoriesSproc.MEDIA_CATEGORY_RESULT_SET)).thenReturn(mockMediaCategories);
+        when(mockResults.get(SQLMediaDomainCategoriesSproc.MEDIA_SUB_CATEGORY_RESULT_SET)).thenReturn(mockMediaSubCategories);
+        Boolean categoryExists = mediaDomainCategoriesDao.subCategoryIdExists(new OuterDomain(Domain.LODGING, "123", "", "EPC Internal User", domainField), localeId);
+        assertTrue(categoryExists);
+        verify(mockSQLMediaDomainCategoriesSproc, times(1)).execute("1033");
+    }
+
+    @Test
+    public  void testCategoryDoesNotExist() {
+        domainField.put("category", "22005");
+        domainField.put("propertyHero", "true");
+        String localeId = "1033";
+        List<MediaCategory> mockMediaCategories = new ArrayList<>();
+        mockMediaCategories.add(new MediaCategory("3", "1033", "Primary Image"));
+        mockMediaCategories.add(new MediaCategory("4", "1033", "Lobby"));
+        List<MediaSubCategory> mockMediaSubCategories = new ArrayList<>();
+        mockMediaSubCategories.add(new MediaSubCategory("3", "3", "1033", "Featured Image"));
+        mockMediaSubCategories.add(new MediaSubCategory("4", "10000", "1033", "Interior Entrance"));
+        mockMediaSubCategories.add(new MediaSubCategory("4", "10001", "1033", "Lobby"));
+        MediaDomainCategoriesDao mediaDomainCategoriesDao = new MediaDomainCategoriesDao(mockSQLMediaDomainCategoriesSproc);
+        when(mockSQLMediaDomainCategoriesSproc.execute(localeId)).thenReturn(mockResults);
+        when(mockResults.get(SQLMediaDomainCategoriesSproc.MEDIA_CATEGORY_RESULT_SET)).thenReturn(mockMediaCategories);
+        when(mockResults.get(SQLMediaDomainCategoriesSproc.MEDIA_SUB_CATEGORY_RESULT_SET)).thenReturn(mockMediaSubCategories);
+        Boolean categoryExists = mediaDomainCategoriesDao.subCategoryIdExists(new OuterDomain(Domain.LODGING, "123", "", "EPC Internal User", domainField), localeId);
+        assertFalse(categoryExists);
+        verify(mockSQLMediaDomainCategoriesSproc, times(1)).execute("1033");
     }
 }

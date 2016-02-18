@@ -8,9 +8,9 @@ import java.util.List;
 public class Category {
     private final String categoryId;
     private final List<LocalizedName> categoryName;
-    private final List<SubCategory> subcategories;
+    private final List<Subcategory> subcategories;
 
-    public Category(String categoryId, List<LocalizedName> categoryName, List<SubCategory> subcategories) {
+    public Category(String categoryId, List<LocalizedName> categoryName, List<Subcategory> subcategories) {
         this.categoryId = categoryId;
         this.categoryName = categoryName;
         this.subcategories = subcategories;
@@ -24,7 +24,7 @@ public class Category {
         return categoryName;
     }
 
-    public List<SubCategory> getSubcategories() {
+    public List<Subcategory> getSubcategories() {
         return subcategories;
     }
 }

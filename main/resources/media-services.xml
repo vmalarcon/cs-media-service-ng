@@ -28,23 +28,24 @@
 
     <bean id="retryableAspect" class="com.expedia.content.media.processing.pipeline.retry.RetryableAspect" factory-method="aspectOf" autowire="byType" />
 
-    <util:map id="imageMessageValidators">
-        <entry key="EPC">
-            <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
-                <ref bean="mvelValidator"/>
-            </list>
-        </entry>
-        <entry key="Media Cloud Router">
-            <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
-                <ref bean="mediaRouterValidator"/>
-            </list>
-        </entry>
-        <entry key="Multisource">
-            <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
-                <ref bean="multisourceValidator"/>
-            </list>
-        </entry>
-    </util:map>
+	<util:map id="imageMessageValidators">
+	    <entry key="EPC">
+	        <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+	            <ref bean="mvelValidator"/>
+                <ref bean="lcmValidator"/>
+	        </list>
+	    </entry>
+	    <entry key="Media Cloud Router">
+	        <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+	            <ref bean="mediaRouterValidator"/>
+	        </list>
+	    </entry>
+	    <entry key="Multisource">
+	        <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+	            <ref bean="multisourceValidator"/>
+	        </list>
+	    </entry>
+	</util:map>
 
     <aws-messaging:queue-messaging-template id="queueMessagingTemplate" />
 
@@ -56,7 +57,7 @@
                   <list>
                       <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
                       <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
-                      <value>(imageMessage.fileUrl != null &amp;&amp; (!imageMessage.fileUrl.endsWith(".jpg") &amp;&amp;!imageMessage.fileUrl.endsWith(".jpeg") &amp;&amp;!imageMessage.fileUrl.endsWith(".png")&amp;&amp;!imageMessage.fileUrl.endsWith(".bmp")&amp;&amp;!imageMessage.fileUrl.endsWith(".gif"))) ? "fileUrl extension is malformed." : "valid"</value>
+                      <value>(imageMessage.fileUrl != null &amp;&amp; (!imageMessage.fileUrl.toLowerCase.endsWith(".jpg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".jpeg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".png")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".bmp")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".gif"))) ? "fileUrl extension is malformed." : "valid"</value>
                       <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
                       <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
                       <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
@@ -81,7 +82,7 @@
                     <list>
                         <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
                         <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
-                        <value>(imageMessage.fileUrl != null &amp;&amp; (!imageMessage.fileUrl.endsWith(".jpg") &amp;&amp;!imageMessage.fileUrl.endsWith(".jpeg") &amp;&amp;!imageMessage.fileUrl.endsWith(".png")&amp;&amp;!imageMessage.fileUrl.endsWith(".bmp")&amp;&amp;!imageMessage.fileUrl.endsWith(".gif"))) ? "fileUrl extension is malformed." : "valid"</value>
+                        <value>(imageMessage.fileUrl != null &amp;&amp; (!imageMessage.fileUrl.toLowerCase.endsWith(".jpg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".jpeg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".png")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".bmp")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".gif"))) ? "fileUrl extension is malformed." : "valid"</value>
                         <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
                         <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
                         <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
@@ -102,7 +103,7 @@
                     <list>
                         <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
                         <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
-                        <value>(imageMessage.fileUrl != null &amp;&amp; (!imageMessage.fileUrl.endsWith(".jpg") &amp;&amp;!imageMessage.fileUrl.endsWith(".jpeg") &amp;&amp;!imageMessage.fileUrl.endsWith(".png")&amp;&amp;!imageMessage.fileUrl.endsWith(".bmp")&amp;&amp;!imageMessage.fileUrl.endsWith(".gif"))) ? "fileUrl extension is malformed." : "valid"</value>
+                        <value>(imageMessage.fileUrl != null &amp;&amp; (!imageMessage.fileUrl.toLowerCase.endsWith(".jpg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".jpeg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".png")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".bmp")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".gif"))) ? "fileUrl extension is malformed." : "valid"</value>
                         <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
                         <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
                         <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
@@ -147,8 +148,7 @@
         <constructor-arg name="appName" value="${processname}" />
     </bean>
 
-    <bean id="lcmInsertSproc" primary="true"
-          class="com.expedia.content.media.processing.pipeline.reporting.sql.SQLLogEntryInsertSproc" />
+    <bean id="lcmInsertSproc" primary="true" class="com.expedia.content.media.processing.pipeline.reporting.sql.SQLLogEntryInsertSproc" />
 
     <bean id="restClient"
           class="com.expedia.content.media.processing.services.util.RestClient">
@@ -282,5 +282,18 @@
     </bean>
     <!-- /Category Controller -->
 
+    <bean id="skuGroupCatalogItemDao" class="com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao">
+        <constructor-arg name="sproc">
+            <bean class="com.expedia.content.media.processing.services.dao.SKUGroupGetSproc" />
+        </constructor-arg>
+    </bean>
+
+    <bean id="roomTypeDao" class="com.expedia.content.media.processing.services.dao.RoomTypeDao">
+        <constructor-arg name="sproc">
+            <bean class="com.expedia.content.media.processing.services.dao.PropertyRoomTypeGetIDSproc" />
+        </constructor-arg>
+    </bean>
+
+    <bean id="lcmValidator" class="com.expedia.content.media.processing.services.validator.LCMValidator" />
 
 </beans>

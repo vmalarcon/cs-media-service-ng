@@ -1,9 +1,12 @@
 package com.expedia.content.media.processing.services.dao;
 
+import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -16,6 +19,8 @@ import java.util.stream.Collectors;
 public class MediaDomainCategoriesDao {
     private static final int SKIP_NULL_AND_DELETED_CATEGORIES = 2;
     private final SQLMediaDomainCategoriesSproc sproc;
+    private MediaSubCategoryCache mediaSubCategoryCache;
+    private final static String CATEGORY = "category";
 
     @Autowired
     public MediaDomainCategoriesDao(SQLMediaDomainCategoriesSproc sproc) {
@@ -24,13 +29,13 @@ public class MediaDomainCategoriesDao {
 
     /**
      * Returns a List of Category Objects
-     * @apiNote the Sproc only supports the lodging domain at the moment, hence this method only supports lodging domain
-     *          we could make a switch case in the future
      *
-     * @param domain        The Domain to query
-     * @param localeId      The Localization Id to query by
+     * @param domain   The Domain to query
+     * @param localeId The Localization Id to query by
      * @return List of Category Objects
      * @throws DomainNotFoundException
+     * @apiNote the Sproc only supports the lodging domain at the moment, hence this method only supports lodging domain
+     * we could make a switch case in the future
      */
     @SuppressWarnings("unchecked")
     public List<Category> getMediaCategoriesWithSubCategories(String domain, String localeId) throws DomainNotFoundException {
@@ -44,10 +49,10 @@ public class MediaDomainCategoriesDao {
     /**
      * Using the Result Sets of SQLMediaDomainCategoriesSproc this Method groups the results by Category ID and then
      * populates each Category with Localized Names and SubCategories
-     * @see Category, LocalizedName, SubCategory, SQLMediaDomainCategoriesSproc
      *
-     * @param localeId  The Localization Id to query by
-     * @return  List of Category Objects
+     * @param localeId The Localization Id to query by
+     * @return List of Category Objects
+     * @see Category, LocalizedName, Subcategory, SQLMediaDomainCategoriesSproc
      */
     @SuppressWarnings("unchecked")
     private List<Category> getLodgingMediaCategoriesWithSubCategories(String localeId) {
@@ -69,25 +74,76 @@ public class MediaDomainCategoriesDao {
     }
 
     /**
-     * Builds a List of SubCategory Objects by CategoryId
-     * @see SubCategory
+     * Builds a List of Subcategory Objects by CategoryId
      *
-     * @param categoryId        The CategoryID of which the SubCategories belong
-     * @param subCategoryMap    A HashMap of subCategories grouped by CategoryId
-     * @return List of SubCategory Objects
+     * @param categoryId     The CategoryID of which the SubCategories belong
+     * @param subCategoryMap A HashMap of subCategories grouped by CategoryId
+     * @return List of Subcategory Objects
+     * @see Subcategory
      */
-    private List<SubCategory> getSubCategoryList(Integer categoryId, Map<Integer, List<MediaSubCategory>> subCategoryMap) {
+    private List<Subcategory> getSubCategoryList(Integer categoryId, Map<Integer, List<MediaSubCategory>> subCategoryMap) {
         if (subCategoryMap.get(categoryId) == null) {
             return new ArrayList<>();
         } else {
             final Map<Integer, List<MediaSubCategory>> innerSubCategoryMap = subCategoryMap.get(categoryId).stream()
                     .collect(Collectors.groupingBy(subCategory -> Integer.parseInt(subCategory.getMediaSubCategoryID())));
-            final List<SubCategory> subCategoriesList = innerSubCategoryMap.keySet().stream()
-                    .map(subCategoryId -> new SubCategory(String.valueOf(subCategoryId), innerSubCategoryMap.get(subCategoryId).stream()
+            final List<Subcategory> subCategoriesList = innerSubCategoryMap.keySet().stream()
+                    .map(subCategoryId -> new Subcategory(String.valueOf(subCategoryId), innerSubCategoryMap.get(subCategoryId).stream()
                             .map(item -> new LocalizedName(item.getMediaSubCategoryName(), item.getLangID()))
                             .collect(Collectors.toList())))
                     .collect(Collectors.toList());
             return subCategoriesList;
         }
+    }
+
+    /**
+     * verifies subCategory in the message
+     *
+     * @param outerDomain
+     * @param localeId
+     * @return
+     */
+    public Boolean subCategoryIdExists(OuterDomain outerDomain, String localeId) {
+        final String category = getCategory(outerDomain);
+        Boolean categoryExists = Boolean.TRUE;
+        if (outerDomain.getDomain().equals(Domain.LODGING) && !"".equals(category)) {
+            final Calendar cal = Calendar.getInstance();
+            if (null == mediaSubCategoryCache || mediaSubCategoryCache.getExpiryDate().before(cal.getTime())) {
+                final List<Category> domainCategories = getMediaCategoriesWithSubCategories(outerDomain.getDomain().getDomain(), localeId);
+                setMediaSubCategoryCache(domainCategories, cal);
+            }
+            categoryExists = mediaSubCategoryCache.getMediaSubCategoryCache().contains(category);
+        }
+        return categoryExists;
+    }
+
+    /**
+     * extracts category
+     *
+     * @param outerDomain
+     * @return
+     */
+    private String getCategory(OuterDomain outerDomain) {
+        final String category = outerDomain.getDomainFields() == null ||
+                outerDomain.getDomainFields().get(CATEGORY) == null ? "" :
+                outerDomain.getDomainFields().get(CATEGORY).toString();
+        return category;
+    }
+
+    /**
+     * sets mediaSubCategoryCache which contains the subcategories
+     * @param categoryList
+     * @param expiryDate
+     */
+    private void setMediaSubCategoryCache(List<Category> categoryList, Calendar expiryDate) {
+        final List<String> mediaSubCategoryIds = new ArrayList<>();
+        for (final Category category : categoryList) {
+            for (final Subcategory subcategory : category.getSubcategories()) {
+                mediaSubCategoryIds.add(subcategory.getSubcategoryId());
+            }
+        }
+
+        expiryDate.add(Calendar.DATE, 1);
+        mediaSubCategoryCache = new MediaSubCategoryCache(mediaSubCategoryIds, expiryDate.getTime());
     }
 }
