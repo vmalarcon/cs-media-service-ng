@@ -54,6 +54,7 @@ import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import com.expedia.content.media.processing.services.validator.HTTPValidator;
@@ -188,10 +189,7 @@ public class MediaController extends CommonServiceController {
         }
         final List<DomainIdMedia> images =
                 transformMediaForResponse(mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter));
-        final MediaByDomainIdResponse response = new MediaByDomainIdResponse();
-        response.setDomain(domainName);
-        response.setDomainId(domainId);
-        response.setImages(images);
+        final MediaByDomainIdResponse response = MediaByDomainIdResponse.builder().domain(domainName).domainId(domainId).images(images).build();
         return new ResponseEntity<String>(OBJECT_MAPPER.writeValueAsString(response), OK);
     }
 
@@ -203,23 +201,12 @@ public class MediaController extends CommonServiceController {
      */
     private List<DomainIdMedia> transformMediaForResponse(List<Media> mediaList) {
         return mediaList.stream().map(media -> {
-            final DomainIdMedia domainIdMedia = new DomainIdMedia();
-            domainIdMedia.setMediaGuid(media.getMediaGuid());
-            domainIdMedia.setFileUrl(media.getFileUrl());
-            domainIdMedia.setFileName(media.getFileName());
-            domainIdMedia.setActive(media.getActive());
-            domainIdMedia.setWidth(media.getWidth());
-            domainIdMedia.setHeight(media.getHeight());
-            domainIdMedia.setFileSize(media.getFileSize());
-            domainIdMedia.setStatus(media.getStatus());
-            domainIdMedia.setLastUpdatedBy(media.getUserId());
-            domainIdMedia
-                    .setLastUpdateDateTime(ZonedDateTime.ofInstant(media.getLastUpdated().toInstant(), ZoneId.systemDefault()).format(DATE_FORMATTER));
-            domainIdMedia.setDomainProvider(media.getProvider());
-            domainIdMedia.setDomainFields(media.getDomainData());
-            domainIdMedia.setDerivatives(media.getDerivativesList());
-            domainIdMedia.setComments(media.getCommentList());
-            return domainIdMedia;
+            return DomainIdMedia.builder().mediaGuid(media.getMediaGuid()).fileUrl(media.getFileUrl()).fileName(media.getFileName())
+                    .active(media.getActive()).width(media.getWidth()).height(media.getHeight()).fileSize(media.getFileSize()).status(media.getStatus())
+                    .lastUpdateDateTime(media.getUserId())
+                    .lastUpdateDateTime(ZonedDateTime.ofInstant(media.getLastUpdated().toInstant(), ZoneId.systemDefault()).format(DATE_FORMATTER))
+                    .domainProvider(media.getProvider()).domainFields(media.getDomainData()).derivatives(media.getDerivativesList())
+                    .comments(media.getCommentList()).build();
         }).collect(Collectors.toList());
     }
 
@@ -252,11 +239,11 @@ public class MediaController extends CommonServiceController {
      * @return The response for the service call.
      * @throws Exception Thrown if the message can't be validated or the response can't be serialized.
      */
-    private ResponseEntity<String> processRequest(final String message, final String requestID, final String serviceUrl, final String clientId, HttpStatus successStatus) throws Exception {
+    private ResponseEntity<String> processRequest(final String message, final String requestID, final String serviceUrl, final String clientId,
+                                                  HttpStatus successStatus) throws Exception {
         final String json = validateImageMessage(message, clientId);
         if (!"[]".equals(json)) {
-            LOGGER.warn("Returning BAD_REQUEST for messageName={}, requestId=[{}], JSONMessage=[{}]. Errors=[{}]",
-                    serviceUrl, requestID, message, json);
+            LOGGER.warn("Returning BAD_REQUEST for messageName={}, requestId=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, requestID, message, json);
             return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
         }
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
@@ -278,7 +265,8 @@ public class MediaController extends CommonServiceController {
         }
 
         publishMsg(imageMessageNew);
-        LOGGER.info("SUCCESS - messageName={}, requestId=[{}], mediaGuid=[{}], JSONMessage=[{}]", serviceUrl, requestID, imageMessageNew.getMediaGuid(), message);
+        LOGGER.info("SUCCESS - messageName={}, requestId=[{}], mediaGuid=[{}], JSONMessage=[{}]", serviceUrl, requestID, imageMessageNew.getMediaGuid(),
+                message);
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
     }
 
@@ -308,16 +296,17 @@ public class MediaController extends CommonServiceController {
 
     /**
      * This method processes the replacement changes needed on the ImageMessageBuilder for the provided ImageMessage.
-     *
-     * <p>The method will first try to find the media that have the same file name. If multiple, it will choose the
-     * best one for replacement. It will finally populate the replacement mediaId and GUID on the ImageMessageBuilder.</p>
+     * <p>
+     * The method will first try to find the media that have the same file name. If multiple, it will choose the
+     * best one for replacement. It will finally populate the replacement mediaId and GUID on the ImageMessageBuilder.
+     * </p>
      *
      * @param imageMessage Original message received.
      * @param imageMessageBuilder Builder for the new/mutated ImageMessage.
      */
     private void processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder) {
-        LOGGER.info("This is a replacement: mediaGuid=[{}], filename=[{}], requestId=[{}]",
-                imageMessage.getMediaGuid(), imageMessage.getFileName(), imageMessage.getRequestId());
+        LOGGER.info("This is a replacement: mediaGuid=[{}], filename=[{}], requestId=[{}]", imageMessage.getMediaGuid(), imageMessage.getFileName(),
+                imageMessage.getRequestId());
         final List<Media> mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
         final Optional<Media> bestMedia = MediaReplacement.selectBestMedia(mediaList);
         // Replace the GUID and MediaId of the existing Media
@@ -327,11 +316,11 @@ public class MediaController extends CommonServiceController {
             domainBuilder.addField("lcmMediaId", media.getDomainId());
             imageMessageBuilder.outerDomainData(domainBuilder.build());
             imageMessageBuilder.mediaGuid(media.getMediaGuid());
-            LOGGER.info("The replacement information is: mediaGuid=[{}], filename=[{}], requestId=[{}], lcmMediaId=[{}]",
-                    media.getMediaGuid(), imageMessage.getFileName(), imageMessage.getRequestId(), media.getDomainId());
+            LOGGER.info("The replacement information is: mediaGuid=[{}], filename=[{}], requestId=[{}], lcmMediaId=[{}]", media.getMediaGuid(),
+                    imageMessage.getFileName(), imageMessage.getRequestId(), media.getDomainId());
         } else {
-            LOGGER.warn("Could not find the best media for the filename=[{}] on the list: [{}]. Will create a new GUID.",
-                    imageMessage.getFileName(), Joiner.on("; ").join(mediaList));
+            LOGGER.warn("Could not find the best media for the filename=[{}] on the list: [{}]. Will create a new GUID.", imageMessage.getFileName(),
+                    Joiner.on("; ").join(mediaList));
         }
     }
 
