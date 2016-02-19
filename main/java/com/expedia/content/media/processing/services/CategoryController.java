@@ -71,5 +71,4 @@ public class CategoryController extends CommonServiceController {
         final List<Category> domainCategories = mediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
         return JSONUtil.generateJsonByCategoryList(domainCategories, domain);
     }
-
 }

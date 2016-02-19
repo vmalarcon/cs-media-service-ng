@@ -68,9 +68,11 @@ public class LcmDynamoMediaDao implements MediaDao  {
     @Value("${image.root.path}")
     private String imageRootPath;
 
-    /* (non-Javadoc)
-     * @see com.expedia.content.media.processing.services.dao.MediaDao#getMediaByDomainId(com.expedia.content.media.processing.pipeline.domain.Domain, java.lang.String, java.lang.String, java.lang.String)
-     */
+    @Override
+    public List<Media> getMediaByFilename(String fileName) {
+        return mediaRepo.getMediaByFilename(fileName);
+    }
+    
     @Override
     @SuppressWarnings("unchecked")
     @Transactional

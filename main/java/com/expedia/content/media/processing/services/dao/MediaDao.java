@@ -5,9 +5,6 @@ import java.util.List;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 
-/**
- * Media data access operations.
- */
 public interface MediaDao {
 
     /**
@@ -21,4 +18,11 @@ public interface MediaDao {
      */
     List<Media> getMediaByDomainId(Domain domain, String domainId, String activeFilter, String derivativeFilter);
 
+    /**
+     * Given a fileName returns all the media that were saved with that name.
+     *
+     * @param fileName File name of the Media.
+     * @return List of Media with the requested Filename.
+     */
+    List<Media> getMediaByFilename(String fileName);
 }

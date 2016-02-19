@@ -14,6 +14,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -44,6 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
 import com.expedia.content.media.processing.pipeline.reporting.Activity;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
@@ -56,8 +58,10 @@ import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import com.expedia.content.media.processing.services.validator.HTTPValidator;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
+import com.expedia.content.media.processing.services.validator.MediaReplacement;
 import com.expedia.content.media.processing.services.validator.S3Validator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Joiner;
 
 import expedia.content.solutions.metrics.annotations.Meter;
 import expedia.content.solutions.metrics.annotations.Timer;
@@ -89,6 +93,8 @@ public class MediaController extends CommonServiceController {
     private ThumbnailProcessor thumbnailProcessor;
     @Autowired
     private MediaDao mediaDao;
+    @Autowired
+    private MediaReplacement mediaReplacement;
 
     /**
      * web service interface to consume media message.
@@ -285,7 +291,6 @@ public class MediaController extends CommonServiceController {
      * @return The updated message with request and other data added.
      */
     private ImageMessage updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId) {
-        final String guid = UUID.randomUUID().toString();
         ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
         imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
         if (imageMessage.getFileName() == null) {
@@ -293,7 +298,41 @@ public class MediaController extends CommonServiceController {
                     FilenameUtils.getBaseName(imageMessage.getFileUrl()) + "." + FilenameUtils.getExtension(imageMessage.getFileUrl());
             imageMessageBuilder.fileName(StringUtils.isNullOrEmpty(imageMessage.getFileName()) ? fileNameFromFileUrl : imageMessage.getFileName());
         }
-        return imageMessageBuilder.mediaGuid(guid).clientId(clientId).requestId(String.valueOf(requestID)).build();
+        imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
+        if (mediaReplacement.isReplacement(imageMessage)) {
+            // This will update the GUID to the old one.
+            processReplacement(imageMessage, imageMessageBuilder);
+        }
+        return imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).build();
+    }
+
+    /**
+     * This method processes the replacement changes needed on the ImageMessageBuilder for the provided ImageMessage.
+     *
+     * <p>The method will first try to find the media that have the same file name. If multiple, it will choose the
+     * best one for replacement. It will finally populate the replacement mediaId and GUID on the ImageMessageBuilder.</p>
+     *
+     * @param imageMessage Original message received.
+     * @param imageMessageBuilder Builder for the new/mutated ImageMessage.
+     */
+    private void processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder) {
+        LOGGER.info("This is a replacement: mediaGuid=[{}], filename=[{}], requestId=[{}]",
+                imageMessage.getMediaGuid(), imageMessage.getFileName(), imageMessage.getRequestId());
+        final List<Media> mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
+        final Optional<Media> bestMedia = MediaReplacement.selectBestMedia(mediaList);
+        // Replace the GUID and MediaId of the existing Media
+        if (bestMedia.isPresent()) {
+            final Media media = bestMedia.get();
+            final OuterDomain.OuterDomainBuilder domainBuilder = OuterDomain.builder().from(imageMessage.getOuterDomainData());
+            domainBuilder.addField("lcmMediaId", media.getDomainId());
+            imageMessageBuilder.outerDomainData(domainBuilder.build());
+            imageMessageBuilder.mediaGuid(media.getMediaGuid());
+            LOGGER.info("The replacement information is: mediaGuid=[{}], filename=[{}], requestId=[{}], lcmMediaId=[{}]",
+                    media.getMediaGuid(), imageMessage.getFileName(), imageMessage.getRequestId(), media.getDomainId());
+        } else {
+            LOGGER.warn("Could not find the best media for the filename=[{}] on the list: [{}]. Will create a new GUID.",
+                    imageMessage.getFileName(), Joiner.on("; ").join(mediaList));
+        }
     }
 
     /**

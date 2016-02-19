@@ -32,6 +32,25 @@ public class DynamoMediaRepository {
     }
 
     /**
+     * Given a fileName returns all the media that were saved with that name.
+     *
+     * @param fileName File name of the Media.
+     * @return List of Media with the requested Filename.
+     */
+    public List<Media> getMediaByFilename(String fileName) {
+        final HashMap<String, AttributeValue> params = new HashMap<>();
+        params.put(":mfn", new AttributeValue().withS(fileName));
+
+        final DynamoDBQueryExpression<Media> expression = new DynamoDBQueryExpression<Media>()
+                .withIndexName("cs-mediadb-index-Media-MediaFileName")
+                .withConsistentRead(false)
+                .withKeyConditionExpression("MediaFileName = :mfn")
+                .withExpressionAttributeValues(params);
+
+        return dynamoMapper.query(Media.class, expression);
+    }
+    
+    /**
      * Loads a list of media items based on a domain id.
      * 
      * @param domainId Id of the domain item the media is required.

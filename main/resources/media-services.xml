@@ -27,13 +27,14 @@
         <property name="queue" value="${collector.queue}" />
         <property name="routingKey" value="${collector.queue}" />
     </bean>
-    
+
     <bean id="retryableAspect" class="com.expedia.content.media.processing.pipeline.retry.RetryableAspect" factory-method="aspectOf" autowire="byType" />
 
 	<util:map id="imageMessageValidators">
 	    <entry key="EPC">
 	        <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
 	            <ref bean="mvelValidator"/>
+                <ref bean="lcmValidator"/>
 	        </list>
 	    </entry>
 	    <entry key="Media Cloud Router">
@@ -149,8 +150,7 @@
         <constructor-arg name="appName" value="${processname}" />
     </bean>
 
-    <bean id="lcmInsertSproc" primary="true"
-          class="com.expedia.content.media.processing.pipeline.reporting.sql.SQLLogEntryInsertSproc" />
+    <bean id="lcmInsertSproc" primary="true" class="com.expedia.content.media.processing.pipeline.reporting.sql.SQLLogEntryInsertSproc" />
 
     <bean id="providerProperties"
           class="org.springframework.beans.factory.config.PropertiesFactoryBean">
@@ -281,5 +281,18 @@
     </bean>
     <!-- /Category Controller -->
 
-    
+    <bean id="skuGroupCatalogItemDao" class="com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao">
+        <constructor-arg name="sproc">
+            <bean class="com.expedia.content.media.processing.services.dao.SKUGroupGetSproc" />
+        </constructor-arg>
+    </bean>
+
+    <bean id="roomTypeDao" class="com.expedia.content.media.processing.services.dao.RoomTypeDao">
+        <constructor-arg name="sproc">
+            <bean class="com.expedia.content.media.processing.services.dao.PropertyRoomTypeGetIDSproc" />
+        </constructor-arg>
+    </bean>
+
+    <bean id="lcmValidator" class="com.expedia.content.media.processing.services.validator.LCMValidator" />
+
 </beans>
