@@ -181,7 +181,7 @@ public class MediaController extends CommonServiceController {
             return validationResponse;
         }
         final List<DomainIdMedia> images =
-                transformMediaForResponse(mediaDao.getMediaByDomainId(Domain.findDomain(domainName), domainId, activeFilter, derivativeTypeFilter));
+                transformMediaForResponse(mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter));
         final MediaByDomainIdResponse response = new MediaByDomainIdResponse();
         response.setDomain(domainName);
         response.setDomainId(domainId);
@@ -229,7 +229,7 @@ public class MediaController extends CommonServiceController {
                 && !activeFilter.equalsIgnoreCase("false")) {
             return new ResponseEntity<String>("Unsupported active filter " + activeFilter, BAD_REQUEST);
         }
-        if (Domain.findDomain(domainName) == null) {
+        if (Domain.findDomain(domainName, true) == null) {
             return new ResponseEntity<String>("Domain not found " + domainName, NOT_FOUND);
         }
         return null;

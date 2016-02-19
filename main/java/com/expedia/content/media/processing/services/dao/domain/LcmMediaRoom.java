@@ -1,18 +1,15 @@
 package com.expedia.content.media.processing.services.dao.domain;
 
+import lombok.Builder;
+import lombok.Getter;
+
 /**
  * Represents a room associated to a media from the CatalogItemMedia and RoomType tables.
  */
+@Builder
+@SuppressWarnings({"PMD.UnusedPrivateField"})
 public class LcmMediaRoom {
 
-    private final int roomId;
-
-    public LcmMediaRoom(int roomId) {
-        this.roomId = roomId;
-    }
-
-    public int getRoomId() {
-        return roomId;
-    }
+    @Getter private final int roomId;
 
 }

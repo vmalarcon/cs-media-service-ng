@@ -43,18 +43,20 @@ public class SQLMediaGetSproc extends StoredProcedure {
         @Override
         public LcmMedia mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
             final String activeFlag = resultSet.getString("StatusCode");
-            return new LcmMedia(resultSet.getInt("CatalogItemID"), 
-                    resultSet.getInt("MediaID"), 
-                    resultSet.getString("ContentProviderMediaName"),
-                    activeFlag != null && "A".equals(activeFlag) ? true : false,
-                    resultSet.getInt("MediaWidth"),
-                    resultSet.getInt("MediaHeight"),
-                    resultSet.getInt("FileSizeKb"),
-                    resultSet.getString("LastUpdatedBy"),
-                    new Date(resultSet.getTimestamp("UpdateDate").getTime()),
-                    resultSet.getInt("ContentProviderId"),
-                    resultSet.getInt("MediaUseRank"),
-                    resultSet.getString("MediaCommentTxt"));
+            return LcmMedia.builder()
+                    .domainId(resultSet.getInt("CatalogItemID"))
+                    .mediaId(resultSet.getInt("MediaID"))
+                    .provider(resultSet.getInt("ContentProviderId"))
+                    .active(activeFlag != null && "A".equals(activeFlag) ? true : false)
+                    .fileName(resultSet.getString("ContentProviderMediaName"))
+                    .width(resultSet.getInt("MediaWidth"))
+                    .height(resultSet.getInt("MediaHeight"))
+                    .lastUpdatedBy(resultSet.getString("LastUpdatedBy"))
+                    .fileSize(resultSet.getInt("FileSizeKb"))
+                    .lastUpdateDate(new Date(resultSet.getTimestamp("UpdateDate").getTime()))
+                    .category(resultSet.getInt("MediaUseRank"))
+                    .comment(resultSet.getString("MediaCommentTxt"))
+                    .build();
         }
     }
 
@@ -66,13 +68,14 @@ public class SQLMediaGetSproc extends StoredProcedure {
         @Override
         public LcmMediaDerivative mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
             final String processedFlag = resultSet.getString("FileProcessedBool");
-            return new LcmMediaDerivative(resultSet.getInt("MediaID"),
-                    resultSet.getInt("MediaSizeTypeID"), 
-                    processedFlag != null && "1".equals(processedFlag) ? true : false, 
-                    resultSet.getString("MediaFileName"), 
-                    resultSet.getInt("MediaFileWidth"), 
-                    resultSet.getInt("MediaFileHeight"), 
-                    resultSet.getInt("FileSizeKb"));
+            return LcmMediaDerivative.builder()
+                    .mediaId(resultSet.getInt("MediaID"))
+                    .mediSizeTypeId(resultSet.getInt("MediaSizeTypeID"))
+                    .fileProcessed(processedFlag != null && "1".equals(processedFlag) ? true : false)
+                    .width(resultSet.getInt("MediaFileWidth"))
+                    .height(resultSet.getInt("MediaFileHeight"))
+                    .fileSize(resultSet.getInt("FileSizeKb"))
+                    .build();
         }
     }
 }

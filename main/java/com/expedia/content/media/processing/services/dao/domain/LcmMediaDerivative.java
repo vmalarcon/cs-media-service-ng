@@ -4,9 +4,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import lombok.Builder;
+import lombok.Getter;
+
 /**
  * Represents the media derivative from the MediaFileName table.
  */
+@Builder
+@SuppressWarnings({"PMD.UnusedPrivateField"})
 public class LcmMediaDerivative {
 
     @SuppressWarnings({"serial", "PMD.NonStaticInitializer"})
@@ -32,51 +37,16 @@ public class LcmMediaDerivative {
         }
     });
 
-    private final Integer mediaId;
+    @Getter private final Integer mediaId;
     private final Integer mediSizeTypeId;
-    private final Boolean fileProcessed;
-    private final String fileName;
-    private final Integer width;
-    private final Integer height;
-    private final Integer fileSize;
-
-    public LcmMediaDerivative(final Integer mediaId, final Integer mediSizeTypeId, final Boolean fileProcessed, final String fileName, final Integer width,
-                           final Integer height, final Integer fileSize) {
-        this.mediaId = mediaId;
-        this.mediSizeTypeId = mediSizeTypeId;
-        this.fileProcessed = fileProcessed;
-        this.fileName = fileName;
-        this.width = width;
-        this.height = height;
-        this.fileSize = fileSize;
-    }
-
-    public Integer getMediaId() {
-        return mediaId;
-    }
+    @Getter private final Boolean fileProcessed;
+    @Getter private final String fileName;
+    @Getter private final Integer width;
+    @Getter private final Integer height;
+    @Getter private final Integer fileSize;
 
     public String getMediSizeType() {
         return TYPE_MAP.get(mediSizeTypeId);
-    }
-
-    public Boolean isFileProcessed() {
-        return fileProcessed;
-    }
-
-    public String getFileName() {
-        return fileName;
-    }
-
-    public Integer getWidth() {
-        return width;
-    }
-
-    public Integer getHeight() {
-        return height;
-    }
-
-    public Integer getFileSize() {
-        return fileSize;
     }
 
 }

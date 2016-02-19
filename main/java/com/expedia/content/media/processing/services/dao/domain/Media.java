@@ -9,49 +9,53 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 /**
  * This class encapsulated the media properties before store in the database The
  * Media is build base on the received image message
  */
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @DynamoDBTable(tableName = "cs-mediadb-Media")
 @SuppressWarnings({"PMD.TooManyFields", "PMD.ExcessivePublicCount"})
 public class Media {
 
-    private String mediaGuid;
-    private String fileUrl;
-    private String fileName;
-    private Long fileSize;
-    private Integer width;
-    private Integer height;
-    private String sourceUrl;
-    private String callback;
-    private String domain;
-    private String domainId;
-    private String domainFields;
-    private Date lastUpdated;
-    private String active;
-    private String provider;
-    private String clientId;
-    private String userId;
-    private String metadata;
-    private String derivatives;
+    @Setter private String mediaGuid;
+    @Setter private String fileUrl;
+    @Setter private String fileName;
+    @Setter private Long fileSize;
+    @Setter private Integer width;
+    @Setter private Integer height;
+    @Setter private String sourceUrl;
+    @Setter private String callback;
+    @Setter private String domain;
+    @Setter private String domainId;
+    @Setter private String domainFields;
+    @Setter private Date lastUpdated;
+    @Setter private String active;
+    @Setter private String provider;
+    @Setter private String clientId;
+    @Setter private String userId;
+    @Setter private String metadata;
+    @Setter private String derivatives;
     private String pHash;
-    private String sha1;
-    private String environment;
-    private String lcmMediaId;
-    private List<Map<String, Object>> derivativesList;
-    private Map<String, Object> domainData;
-    private List<String> commentList;
-    private String status = "RECEIVED";
-
+    @Setter private String sha1;
+    @Setter private String environment;
+    @Setter private String lcmMediaId;
+    @Setter private List<Map<String, Object>> derivativesList;
+    @Setter private Map<String, Object> domainData;
+    @Setter private List<String> commentList;
+    @Setter private String status;
+    
     @DynamoDBHashKey
     @DynamoDBAttribute(attributeName = "MediaGuid")
     public String getMediaGuid() {
         return mediaGuid;
-    }
-
-    public void setMediaGuid(String mediaGuid) {
-        this.mediaGuid = mediaGuid;
     }
 
     @DynamoDBAttribute(attributeName = "MediaFileUrl")
@@ -59,17 +63,9 @@ public class Media {
         return fileUrl;
     }
 
-    public void setFileUrl(String fileUrl) {
-        this.fileUrl = fileUrl;
-    }
-
     @DynamoDBAttribute(attributeName = "MediaFileName")
     public String getFileName() {
         return fileName;
-    }
-
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
     }
 
     @DynamoDBIgnore
@@ -77,17 +73,9 @@ public class Media {
         return fileSize;
     }
 
-    public void setFileSize(Long fileSize) {
-        this.fileSize = fileSize;
-    }
-
     @DynamoDBIgnore
     public Integer getWidth() {
         return width;
-    }
-
-    public void setWidth(Integer width) {
-        this.width = width;
     }
 
     @DynamoDBIgnore
@@ -95,17 +83,9 @@ public class Media {
         return height;
     }
 
-    public void setHeight(Integer height) {
-        this.height = height;
-    }
-
     @DynamoDBAttribute(attributeName = "sourceUrl")
     public String getSourceUrl() {
         return sourceUrl;
-    }
-
-    public void setSourceUrl(String sourceUrl) {
-        this.sourceUrl = sourceUrl;
     }
 
     @DynamoDBAttribute(attributeName = "MediaCallback")
@@ -113,17 +93,9 @@ public class Media {
         return callback;
     }
 
-    public void setCallback(String callback) {
-        this.callback = callback;
-    }
-
     @DynamoDBAttribute(attributeName = "Domain")
     public String getDomain() {
         return domain;
-    }
-
-    public void setDomain(String domain) {
-        this.domain = domain;
     }
 
     @DynamoDBAttribute(attributeName = "DomainID")
@@ -131,17 +103,9 @@ public class Media {
         return domainId;
     }
 
-    public void setDomainId(String domainId) {
-        this.domainId = domainId;
-    }
-
     @DynamoDBAttribute(attributeName = "DomainField")
     public String getDomainFields() {
         return domainFields;
-    }
-
-    public void setDomainFields(String domainFields) {
-        this.domainFields = domainFields;
     }
 
     @DynamoDBAttribute(attributeName = "LastUpdated")
@@ -149,17 +113,9 @@ public class Media {
         return lastUpdated;
     }
 
-    public void setLastUpdated(Date lastUpdated) {
-        this.lastUpdated = lastUpdated;
-    }
-
     @DynamoDBAttribute(attributeName = "Active")
     public String getActive() {
         return active;
-    }
-
-    public void setActive(String active) {
-        this.active = active;
     }
 
     @DynamoDBAttribute(attributeName = "Provider")
@@ -167,17 +123,9 @@ public class Media {
         return provider;
     }
 
-    public void setProvider(String provider) {
-        this.provider = provider;
-    }
-
     @DynamoDBAttribute(attributeName = "ClientId")
     public String getClientId() {
         return clientId;
-    }
-
-    public void setClientId(String clientId) {
-        this.clientId = clientId;
     }
 
     @DynamoDBAttribute(attributeName = "UserId")
@@ -185,17 +133,9 @@ public class Media {
         return userId;
     }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-
     @DynamoDBAttribute(attributeName = "MetaDatas")
     public String getMetadata() {
         return metadata;
-    }
-
-    public void setMetadata(String metadata) {
-        this.metadata = metadata;
     }
 
     @DynamoDBAttribute(attributeName = "Derivatives")
@@ -203,15 +143,11 @@ public class Media {
         return derivatives;
     }
 
-    public void setDerivatives(String derivatives) {
-        this.derivatives = derivatives;
-    }
-
     @DynamoDBAttribute(attributeName = "PHASH")
     public String getpHash() {
         return pHash;
     }
-
+    
     public void setpHash(String pHash) {
         this.pHash = pHash;
     }
@@ -221,17 +157,9 @@ public class Media {
         return sha1;
     }
 
-    public void setSha1(String sha1) {
-        this.sha1 = sha1;
-    }
-
     @DynamoDBAttribute(attributeName = "Environment")
     public String getEnvironment() {
         return environment;
-    }
-
-    public void setEnvironment(String environment) {
-        this.environment = environment;
     }
 
     @DynamoDBAttribute(attributeName = "LcmMediaId")
@@ -239,17 +167,9 @@ public class Media {
         return lcmMediaId;
     }
 
-    public void setLcmMediaId(String lcmMediaId) {
-        this.lcmMediaId = lcmMediaId;
-    }
-
     @DynamoDBIgnore
     public List<Map<String, Object>> getDerivativesList() {
         return derivativesList;
-    }
-
-    public void setDerivativesList(List<Map<String, Object>> derivativesList) {
-        this.derivativesList = derivativesList;
     }
 
     @DynamoDBIgnore
@@ -257,26 +177,14 @@ public class Media {
         return domainData;
     }
 
-    public void setDomainData(Map<String, Object> domainData) {
-        this.domainData = domainData;
-    }
-
     @DynamoDBIgnore
     public List<String> getCommentList() {
         return commentList;
     }
 
-    public void setCommentList(List<String> commentList) {
-        this.commentList = commentList;
-    }
-
     @DynamoDBIgnore
     public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
+        return status == null ? "RECEIVED" :status;
     }
 
 }
