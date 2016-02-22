@@ -356,7 +356,7 @@ public class MediaControllerTest {
                 createByFileNameMedia("old-but-inactive", "567", "false", DATE_FORMAT.parse("2016-10-10 12:00:00")),
                 createByFileNameMedia("too-old", "890", "true", DATE_FORMAT.parse("2016-02-17 11:59:59"))
         ));
-        setFieldValue(mediaController, "mediaDAO", mockMediaDao);
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -408,7 +408,7 @@ public class MediaControllerTest {
 
         MediaDao mockMediaDao = mock(MediaDao.class);
         when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"))).thenReturn(Lists.newArrayList());
-        setFieldValue(mediaController, "mediaDAO", mockMediaDao);
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();

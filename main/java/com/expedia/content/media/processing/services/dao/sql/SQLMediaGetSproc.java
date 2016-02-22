@@ -69,6 +69,7 @@ public class SQLMediaGetSproc extends StoredProcedure {
         public LcmMediaDerivative mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
             final String processedFlag = resultSet.getString("FileProcessedBool");
             return LcmMediaDerivative.builder()
+                    .fileName(resultSet.getString("MediaFileName"))
                     .mediaId(resultSet.getInt("MediaID"))
                     .mediSizeTypeId(resultSet.getInt("MediaSizeTypeID"))
                     .fileProcessed(processedFlag != null && "1".equals(processedFlag) ? true : false)
