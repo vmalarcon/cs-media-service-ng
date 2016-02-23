@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 import javax.annotation.Resource;
 
 import org.apache.commons.io.FilenameUtils;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,7 +75,7 @@ public class MediaController extends CommonServiceController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MediaController.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    //private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS ZZZZZ");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
 
     @Resource(name = "providerProperties")
     private Properties providerProperties;
@@ -198,12 +200,10 @@ public class MediaController extends CommonServiceController {
      */
     private List<DomainIdMedia> transformMediaForResponse(List<Media> mediaList) {
         return mediaList.stream().map(media -> {
-            final String x = org.joda.time.format.DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ").print(media.getLastUpdated().getTime());
-            //ZonedDateTime.ofInstant(media.getLastUpdated().toInstant(), ZoneId.systemDefault()).format(DATE_FORMATTER)
             return DomainIdMedia.builder().mediaGuid(media.getMediaGuid()).fileUrl(media.getFileUrl()).fileName(media.getFileName())
                     .active(media.getActive()).width(media.getWidth()).height(media.getHeight()).fileSize(media.getFileSize()).status(media.getStatus())
                     .lastUpdatedBy(media.getUserId())
-                    .lastUpdateDateTime(x)
+                    .lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
                     .domainProvider(media.getProvider()).domainFields(media.getDomainData()).derivatives(media.getDerivativesList())
                     .comments(media.getCommentList()).build();
         }).collect(Collectors.toList());
