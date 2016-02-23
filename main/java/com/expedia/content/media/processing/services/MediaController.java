@@ -6,7 +6,6 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
 import java.net.URISyntaxException;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -74,7 +73,7 @@ public class MediaController extends CommonServiceController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MediaController.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS ZZZZZ");
+    //private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS ZZZZZ");
 
     @Resource(name = "providerProperties")
     private Properties providerProperties;
