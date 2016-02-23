@@ -198,7 +198,7 @@ public class MediaController extends CommonServiceController {
      */
     private List<DomainIdMedia> transformMediaForResponse(List<Media> mediaList) {
         return mediaList.stream().map(media -> {
-            final String x = org.joda.time.format.DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZZZZ").print(media.getLastUpdated().getTime());
+            final String x = org.joda.time.format.DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ").print(media.getLastUpdated().getTime());
             //ZonedDateTime.ofInstant(media.getLastUpdated().toInstant(), ZoneId.systemDefault()).format(DATE_FORMATTER)
             return DomainIdMedia.builder().mediaGuid(media.getMediaGuid()).fileUrl(media.getFileUrl()).fileName(media.getFileName())
                     .active(media.getActive()).width(media.getWidth()).height(media.getHeight()).fileSize(media.getFileSize()).status(media.getStatus())
