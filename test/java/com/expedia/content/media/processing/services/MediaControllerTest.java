@@ -319,7 +319,6 @@ public class MediaControllerTest {
         assertEquals(responseEntity.getBody().indexOf(domainIdString), responseEntity.getBody().lastIndexOf(domainIdString));
         assertTrue(responseEntity.getBody().contains("\"images\":["));
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\":\"102d3a4b-c985-43d3-9245-b60ab1eb9a0f\""));
-        System.out.println("BODY: ---------------------------->"  + responseEntity.getBody());
         assertTrue(responseEntity.getBody()
                 .replaceAll("[0-9]{4}-[0-9]{2}-[0-9]{2}[\\s][0-9]{1,2}:[0-9]{2}:[0-9]{2}[\\.][0-9]+\\s{1}[\\+|\\-][0-9]{2}:[0-9]{2}", "timestamp")
                 .contains("\"lastUpdateDateTime\":\"timestamp\""));
