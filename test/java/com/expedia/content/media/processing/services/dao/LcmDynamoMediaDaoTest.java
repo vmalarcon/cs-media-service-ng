@@ -224,8 +224,8 @@ public class LcmDynamoMediaDaoTest {
         setFieldValue(mediaDao, "lcmMediaSproc", mediaSproc);
         setFieldValue(mediaDao, "mediaRepo", mockMediaDBRepo);
         setFieldValue(mediaDao, "providerProperties", properties);
-//        setFieldValue(mediaDao, "processLogDao", makeMockProcessLogDao());
-//        setFieldValue(mediaDao, "activityWhiteList", makeActivityWhitelist());
+        setFieldValue(mediaDao, "processLogDao", makeMockProcessLogDao());
+        setFieldValue(mediaDao, "activityWhiteList", makeActivityWhitelist());
         return mediaDao;
     }
 

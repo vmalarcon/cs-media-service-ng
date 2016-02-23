@@ -22,9 +22,12 @@ import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
 import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaIdListSproc;
+import com.expedia.content.media.processing.services.util.ActivityMapping;
+import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -59,10 +62,10 @@ public class LcmDynamoMediaDao implements MediaDao {
     private SQLMediaGetSproc lcmMediaSproc;
     @Autowired
     private DynamoMediaRepository mediaRepo;
-//    @Autowired
-//    private LcmProcessLogDao processLogDao;
-//    @Autowired
-//    private List<ActivityMapping> activityWhiteList;
+    @Autowired
+    private LcmProcessLogDao processLogDao;
+    @Autowired
+    private List<ActivityMapping> activityWhiteList;
     @Resource(name = "providerProperties")
     private Properties providerProperties;
     @Value("${image.root.path}")
@@ -100,9 +103,9 @@ public class LcmDynamoMediaDao implements MediaDao {
                                 || (activeFilter.equals(ACTIVE_FILTER_FALSE)
                                         && (media.getActive() == null || media.getActive().equals(ACTIVE_FILTER_FALSE)))) ? true : false)
                 .collect(Collectors.toList());
-//        final List<String> fileNames = domainIdMedia.stream().map(media -> media.getFileName()).collect(Collectors.toList());
-//        final Map<String, String> fileStatus = getLatestStatus(fileNames);
-//        domainIdMedia.stream().forEach(media -> media.setStatus(fileStatus.get(media.getFileName())));
+        final List<String> fileNames = domainIdMedia.stream().map(media -> media.getFileName()).collect(Collectors.toList());
+        final Map<String, String> fileStatus = getLatestStatus(fileNames);
+        domainIdMedia.stream().forEach(media -> media.setStatus(fileStatus.get(media.getFileName())));
         return domainIdMedia;
     }
 
@@ -186,13 +189,17 @@ public class LcmDynamoMediaDao implements MediaDao {
      * @param fileNames File names for which the status is required.
      * @return The latest status of a media filesS.
      */
-//    private Map<String, String> getLatestStatus(List<String> fileNames) {
-//        final List<MediaProcessLog> logs = processLogDao.findMediaStatus(fileNames);
-//            return fileNames.stream().collect(Collectors.toMap(MediaProcessLog::getMediaFileName, log -> {
-//                final ActivityMapping activityStatus = JSONUtil.getActivityMappingFromList(activityWhiteList, log.getActivityType(), log.getMediaType());
-//                return activityStatus == null ? "PUBLISHED" : activityStatus.getStatusMessage();
-//            }));
-//    }
+    private Map<String, String> getLatestStatus(List<String> fileNames) {
+        List<MediaProcessLog> logs = processLogDao.findMediaStatus(fileNames);
+        logs = logs == null ? new ArrayList<>() : logs;
+        final Map<String, MediaProcessLog> mappedLogs = logs.stream().collect(Collectors.toMap(MediaProcessLog::getMediaFileName, log -> log));
+
+        return fileNames.stream().collect(Collectors.toMap(String::toString, fileName -> {
+            final MediaProcessLog log = mappedLogs.get(fileName);
+            final ActivityMapping activityStatus = (log == null) ? null : JSONUtil.getActivityMappingFromList(activityWhiteList, log.getActivityType(), log.getMediaType());
+            return activityStatus == null ? "PUBLISHED" : activityStatus.getStatusMessage();
+        }));
+    }
 
     /**
      * Extract domain data to be added to a media data response.
