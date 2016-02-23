@@ -103,7 +103,7 @@ public class LcmDynamoMediaDao implements MediaDao {
                                 || (activeFilter.equals(ACTIVE_FILTER_FALSE)
                                         && (media.getActive() == null || media.getActive().equals(ACTIVE_FILTER_FALSE)))) ? true : false)
                 .collect(Collectors.toList());
-        final List<String> fileNames = domainIdMedia.stream().map(media -> media.getFileName()).collect(Collectors.toList());
+        final List<String> fileNames = domainIdMedia.stream().filter(media -> media.getFileName() != null).map(media -> media.getFileName()).collect(Collectors.toList());
         final Map<String, String> fileStatus = getLatestStatus(fileNames);
         domainIdMedia.stream().forEach(media -> media.setStatus(fileStatus.get(media.getFileName())));
         return domainIdMedia;
