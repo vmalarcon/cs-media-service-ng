@@ -1,6 +1,17 @@
 package com.expedia.content.media.processing.services;
 
-import com.expedia.content.media.processing.pipeline.util.OSDetector;
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
 import org.im4java.process.ProcessStarter;
 import org.junit.Before;
 import org.junit.Rule;
@@ -9,17 +20,7 @@ import org.junit.rules.TemporaryFolder;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.WritableResource;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.lang.reflect.Field;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import com.expedia.content.media.processing.pipeline.util.OSDetector;
 
 public class ThumbnailProcessorTest {
 
@@ -74,12 +75,6 @@ public class ThumbnailProcessorTest {
         } catch (Exception e) {
             assertEquals("Unable to generate thumbnail with url: http://i.imgur.com/Ta3uP.jpg and GUID: 29e6394d-760a-4526-b2dd-b70d312679b7", e.getMessage());
         }
-    }
-
-    private static void setFieldValue(Object obj, String fieldName, Object value) throws NoSuchFieldException, IllegalAccessException {
-        final Field field = obj.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(obj, value);
     }
 
 }

@@ -1,19 +1,12 @@
 package com.expedia.content.media.processing.services.validator;
 
-import org.junit.Test;
-
-import java.lang.reflect.Field;
-
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class MediaNamesValidatorTest {
+import org.junit.Test;
 
-    private static void setFieldValue(Object obj, String fieldName, Object value) throws NoSuchFieldException, IllegalAccessException {
-        Field field = obj.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(obj, value);
-    }
+public class MediaNamesValidatorTest {
 
     @Test
     public void testMediaStatusMessageValid() throws Exception {

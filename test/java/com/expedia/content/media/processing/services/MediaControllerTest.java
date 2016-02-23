@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services;
 
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
 import static com.expedia.content.media.processing.services.validator.MediaReplacementTest.createByFileNameMedia;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -14,7 +15,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Field;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -445,9 +445,4 @@ public class MediaControllerTest {
         return validators;
     }
 
-    private static void setFieldValue(Object obj, String fieldName, Object value) throws NoSuchFieldException, IllegalAccessException {
-        final Field field = obj.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(obj, value);
-    }
 }

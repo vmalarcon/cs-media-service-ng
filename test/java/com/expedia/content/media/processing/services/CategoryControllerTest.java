@@ -1,11 +1,11 @@
 package com.expedia.content.media.processing.services;
 
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -99,12 +99,6 @@ public class CategoryControllerTest {
         ResponseEntity<String> response = categoryController.domainCategories(mockHeader, lodgingDoman, localId);
         assertEquals(404, response.getStatusCode().value());
         assertTrue(response.getBody().startsWith("{\"error\":\"Not Found\",\"message\":\"Requested resource with ID potato was not found.\",\"path\":\"/media/v1/domaincategories/potato?localeId=1033\",\"status\":404,\"timestamp\"", 0));
-    }
-
-    private static void setFieldValue(Object obj, String fieldName, Object value) throws NoSuchFieldException, IllegalAccessException {
-        final Field field = obj.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(obj, value);
     }
 
 }

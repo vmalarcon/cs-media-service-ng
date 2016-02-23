@@ -1,11 +1,11 @@
 package com.expedia.content.media.processing.services;
 
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -360,12 +360,6 @@ public class StatusControllerTest {
         assertEquals(400, response.getStatusCode().value());
         assertTrue(response.getBody().toString().startsWith(
                 "{\"error\":\"Bad Request\",\"message\":\"Error parsing/converting Json message: {\\\"mediaNames\\\":\\\"1037678_109010ice.jpg\\\",\\\"1055797_1742165ice.jpg\\\"]}\",\"path\":\"/media/v1/lateststatus\",\"status\":400,\"timestamp\""));
-    }
-
-    private static void setFieldValue(Object obj, String fieldName, Object value) throws NoSuchFieldException, IllegalAccessException {
-        final Field field = obj.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(obj, value);
     }
 
 }
