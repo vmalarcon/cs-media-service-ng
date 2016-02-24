@@ -36,7 +36,6 @@ public class ValidatorUtil {
 
     public static Boolean containsIgnoreCase(Collection collection, String str) {
         final Predicate<Object> predicate  = (s) -> StringUtils.equalsIgnoreCase(s.toString(), str);
-        Boolean exists = IterableUtils.matchesAny(collection, predicate);
-        return exists;
+        return IterableUtils.matchesAny(collection, predicate);
     }
 }
