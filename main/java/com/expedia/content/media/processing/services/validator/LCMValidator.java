@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import static com.expedia.content.media.processing.services.util.ValidatorUtil.containsIgnoreCase;
+
 public class LCMValidator implements MapMessageValidator {
 
     @Autowired
@@ -42,7 +44,7 @@ public class LCMValidator implements MapMessageValidator {
                 errorMsg.append("The domainId does not exist in LCM.");
             }
 
-            if (!providerProperties.values().contains(imageMessage.getOuterDomainData().getProvider())) {
+            if (!containsIgnoreCase(providerProperties.values(), imageMessage.getOuterDomainData().getProvider())) {
                 errorMsg.append("The mediaProvider does not exist in LCM.");
             }
 

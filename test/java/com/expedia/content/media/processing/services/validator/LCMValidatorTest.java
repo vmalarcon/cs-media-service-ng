@@ -1,32 +1,5 @@
 package com.expedia.content.media.processing.services.validator;
 
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
-import org.codehaus.plexus.util.ReflectionUtils;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.test.context.ContextConfiguration;
-
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
@@ -37,6 +10,32 @@ import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
 import com.expedia.content.media.processing.services.dao.domain.MediaCategory;
 import com.expedia.content.media.processing.services.dao.domain.MediaSubCategory;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaDomainCategoriesSproc;
+import org.codehaus.plexus.util.ReflectionUtils;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.test.context.ContextConfiguration;
+
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
 @RunWith(MockitoJUnitRunner.class)
@@ -390,5 +389,42 @@ public class LCMValidatorTest {
         verify(mockProviderProperties, times(1)).values();
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
         verifyZeroInteractions(mockPropertyRoomTypeGetIDSproc);
+    }
+
+    @Test
+    public void testMediaProviderIgnoreCase() throws Exception {
+        final String jsonMsg =
+                "         { " +
+                        "    \"fileUrl\": \"http://well-formed-url/hello.jpg\"," +
+                        "    \"fileName\": \"Something\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
+                        "    \"domain\": \"Lodging\", " +
+                        "    \"domainId\": \"123\", " +
+                        "    \"userId\": \"user-id\", " +
+                        "    \"domainProvider\": \"epc InTerNaL user\", " +
+                        "    \"domainFields\": { " +
+                        "          \"category\": \"3\"," +
+                        "          \"propertyHero\": \"true\"," +
+                        "          \"rooms\": [ " +
+                        "               {" +
+                        "                 \"roomId\": \"222\", " +
+                        "                 \"roomHero\": \"true\" " +
+                        "               }" +
+                        "                     ]" +
+                        "                       }" +
+                        " }";
+        final ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        final List<ImageMessage> imageMessageList = new ArrayList<>();
+        imageMessageList.add(imageMessage);
+        when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
+        when(mockProviderProperties.values()).thenReturn(Arrays.asList("EPC Internal User"));
+        when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
+        when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
+        final List<Map<String, String>> errorList = lcmValidator.validateImages(imageMessageList);
+        assertTrue(errorList.size() == 0);
+        verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
+        verify(mockProviderProperties, times(1)).values();
+        verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
+        verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
     }
 }

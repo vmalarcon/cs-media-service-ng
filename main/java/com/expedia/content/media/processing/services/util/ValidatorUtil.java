@@ -1,8 +1,12 @@
 package com.expedia.content.media.processing.services.util;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import org.apache.commons.collections4.IterableUtils;
+import org.apache.commons.collections4.Predicate;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -28,5 +32,11 @@ public class ValidatorUtil {
                 roomIds.add(Integer.parseInt(room.get(ROOMID).toString()));
             }
         return roomIds;
+    }
+
+    public static Boolean containsIgnoreCase(Collection collection, String str) {
+        final Predicate<Object> predicate  = (s) -> StringUtils.equalsIgnoreCase(s.toString(), str);
+        Boolean exists = IterableUtils.matchesAny(collection, predicate);
+        return exists;
     }
 }
