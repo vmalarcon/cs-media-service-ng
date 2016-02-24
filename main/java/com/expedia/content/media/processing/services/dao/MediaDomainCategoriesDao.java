@@ -7,6 +7,7 @@ import com.expedia.content.media.processing.services.dao.domain.MediaCategory;
 import com.expedia.content.media.processing.services.dao.domain.MediaSubCategory;
 import com.expedia.content.media.processing.services.dao.domain.Subcategory;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaDomainCategoriesSproc;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -111,7 +112,7 @@ public class MediaDomainCategoriesDao {
     public Boolean subCategoryIdExists(OuterDomain outerDomain, String localeId) {
         final String category = getCategory(outerDomain);
         Boolean categoryExists = Boolean.TRUE;
-        if (!"".equals(category)) {
+        if (StringUtils.isNotBlank(category)) {
             final Calendar cal = Calendar.getInstance();
             if (null == mediaSubCategoryCache || mediaSubCategoryCache.getExpiryDate().before(cal.getTime())) {
                 final List<Category> domainCategories = getMediaCategoriesWithSubCategories(outerDomain.getDomain().getDomain(), localeId);
