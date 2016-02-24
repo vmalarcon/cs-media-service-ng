@@ -1,16 +1,5 @@
 package com.expedia.content.media.processing.services.dao;
 
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.services.dao.domain.Category;
 import com.expedia.content.media.processing.services.dao.domain.LocalizedName;
@@ -18,6 +7,15 @@ import com.expedia.content.media.processing.services.dao.domain.MediaCategory;
 import com.expedia.content.media.processing.services.dao.domain.MediaSubCategory;
 import com.expedia.content.media.processing.services.dao.domain.Subcategory;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaDomainCategoriesSproc;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Domain Categories DAO.
@@ -113,7 +111,7 @@ public class MediaDomainCategoriesDao {
     public Boolean subCategoryIdExists(OuterDomain outerDomain, String localeId) {
         final String category = getCategory(outerDomain);
         Boolean categoryExists = Boolean.TRUE;
-        if (outerDomain.getDomain().equals(Domain.LODGING) && !"".equals(category)) {
+        if (!"".equals(category)) {
             final Calendar cal = Calendar.getInstance();
             if (null == mediaSubCategoryCache || mediaSubCategoryCache.getExpiryDate().before(cal.getTime())) {
                 final List<Category> domainCategories = getMediaCategoriesWithSubCategories(outerDomain.getDomain().getDomain(), localeId);

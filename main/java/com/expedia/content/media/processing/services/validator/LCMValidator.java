@@ -1,6 +1,7 @@
 package com.expedia.content.media.processing.services.validator;
 
 
+import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
 import com.expedia.content.media.processing.services.dao.RoomTypeDao;
@@ -48,7 +49,8 @@ public class LCMValidator implements MapMessageValidator {
                 errorMsg.append("The mediaProvider does not exist in LCM.");
             }
 
-            if (!mediaDomainCategoriesDao.subCategoryIdExists(imageMessage.getOuterDomainData(), DEFAULT_LANG_ID)) {
+            if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING)
+                    && !mediaDomainCategoriesDao.subCategoryIdExists(imageMessage.getOuterDomainData(), DEFAULT_LANG_ID)) {
                 errorMsg.append("The category does not exist in LCM.");
             }
 
