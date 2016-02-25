@@ -82,7 +82,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     public List<Media> getMediaByDomainId(Domain domain, String domainId, String activeFilter, String derivativeFilter) {
         List<Media> domainIdMedia = mediaRepo.loadMedia(domain, domainId).stream().collect(Collectors.toList());
         if (Domain.LODGING.equals(domain)) {
-            final Map<String, Media> mediaEidMap =
+            final Map<String, Media> mediaLcmMediaIdMap =
                     domainIdMedia.stream().filter(media -> media.getLcmMediaId() != null && !"null".equals(media.getLcmMediaId()))
                             .collect(Collectors.toMap(Media::getLcmMediaId, media -> media));
             final Map<String, Object> idResult = lcmMediaIdSproc.execute(Integer.parseInt(domainId), DEFAULT_LODGING_LOCALE);
@@ -90,10 +90,10 @@ public class LcmDynamoMediaDao implements MediaDao {
             /* @formatter:off */
             final List<Media> lcmMediaList = mediaIds.stream()
                     .map(buildLcmMedia(domainId, derivativeFilter))
-                    .map(convertMedia(mediaEidMap))
+                    .map(convertMedia(mediaLcmMediaIdMap))
                     .collect(Collectors.toList());
             /* @formatter:on */
-            domainIdMedia.removeAll(mediaEidMap.values());
+            domainIdMedia.removeAll(mediaLcmMediaIdMap.values());
             domainIdMedia.addAll(0, lcmMediaList);
 
         }
@@ -153,13 +153,14 @@ public class LcmDynamoMediaDao implements MediaDao {
                     .domainId((dynamoMedia == null) ? String.valueOf(lcmMedia.getDomainId()) : dynamoMedia.getDomainId())
                     .fileName(lcmMedia.getFileName())
                     .fileSize(lcmMedia.getFileSize() * KB_TO_BYTES_CONVERTER)
+                    .width(lcmMedia.getWidth())
+                    .height(lcmMedia.getHeight())
                     .lastUpdated(lcmMedia.getLastUpdateDate())
                     .lcmMediaId(lcmMedia.getMediaId().toString())
                     .mediaGuid((dynamoMedia == null) ? null : dynamoMedia.getMediaGuid())
                     .provider((dynamoMedia == null) ? (lcmMedia.getProvider() == null ? null
                                                                     : providerProperties.getProperty(lcmMedia.getProvider().toString()))
                                                     : dynamoMedia.getProvider())
-                    .fileSize(lcmMedia.getFileSize() * KB_TO_BYTES_CONVERTER)
                     .sourceUrl((dynamoMedia == null) ? null : dynamoMedia.getSourceUrl())
                     .userId(lcmMedia.getLastUpdatedBy())
                     .commentList(extractCommentList(lcmMedia))

@@ -200,6 +200,9 @@ public class MediaController extends CommonServiceController {
      */
     private List<DomainIdMedia> transformMediaForResponse(List<Media> mediaList) {
         return mediaList.stream().map(media -> {
+            if (media.getDomainData() != null) {
+                media.getDomainData().put("lcmMediaId", media.getLcmMediaId());
+            }
             return DomainIdMedia.builder().mediaGuid(media.getMediaGuid()).fileUrl(media.getFileUrl()).fileName(media.getFileName())
                     .active(media.getActive()).width(media.getWidth()).height(media.getHeight()).fileSize(media.getFileSize()).status(media.getStatus())
                     .lastUpdatedBy(media.getUserId())
