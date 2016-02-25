@@ -46,7 +46,7 @@ public class SQLMediaGetSproc extends StoredProcedure {
             return LcmMedia.builder()
                     .domainId(resultSet.getInt("CatalogItemID"))
                     .mediaId(resultSet.getInt("MediaID"))
-                    .provider(resultSet.getInt("ContentProviderId"))
+                    .provider(resultSet.getInt("MediaProviderID"))
                     .active(activeFlag != null && "A".equals(activeFlag) ? true : false)
                     .fileName(resultSet.getString("ContentProviderMediaName"))
                     .width(resultSet.getInt("MediaWidth"))
