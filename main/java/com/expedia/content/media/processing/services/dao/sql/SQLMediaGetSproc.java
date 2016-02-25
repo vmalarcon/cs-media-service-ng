@@ -56,6 +56,7 @@ public class SQLMediaGetSproc extends StoredProcedure {
                     .lastUpdateDate(new Date(resultSet.getTimestamp("UpdateDate").getTime()))
                     .category(resultSet.getInt("MediaUseRank"))
                     .comment(resultSet.getString("MediaCommentTxt"))
+                    .formatId(resultSet.getInt("MediaFormatID"))
                     .build();
         }
     }

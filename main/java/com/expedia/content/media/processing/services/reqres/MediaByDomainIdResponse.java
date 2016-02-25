@@ -2,8 +2,6 @@ package com.expedia.content.media.processing.services.reqres;
 
 import java.util.List;
 
-import com.expedia.content.media.processing.services.DomainIdMedia;
-
 import lombok.Builder;
 import lombok.Getter;
 

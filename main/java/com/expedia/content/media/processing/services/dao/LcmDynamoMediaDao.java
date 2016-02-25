@@ -40,6 +40,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     private static final int DEFAULT_LODGING_LOCALE = 1033;
     private static final int LCM_HERO_CATEGORY = 3;
     private static final long KB_TO_BYTES_CONVERTER = 1024L;
+    private static final String LODGING_VIRTUAL_TOUR_DERIVATIVE_TYPE = "VirtualTour";
     private static final String ACTIVE_FILTER_ALL = "all";
     private static final String ACTIVE_FILTER_TRUE = "true";
     private static final String ACTIVE_FILTER_FALSE = "false";
@@ -164,6 +165,8 @@ public class LcmDynamoMediaDao implements MediaDao {
                     .sourceUrl((dynamoMedia == null) ? null : dynamoMedia.getSourceUrl())
                     .userId(lcmMedia.getLastUpdatedBy())
                     .commentList(extractCommentList(lcmMedia))
+                    .domainDerivativeCategory(lcmMedia.getFormatId() == null || !lcmMedia.getFormatId().equals(2) ?
+                                                                                  null : LODGING_VIRTUAL_TOUR_DERIVATIVE_TYPE)
                     .build();
             /* @formatter:on */
         };
