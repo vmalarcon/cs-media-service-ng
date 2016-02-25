@@ -146,7 +146,6 @@ public class LcmDynamoMediaDao implements MediaDao {
             /* @formatter:off */
             return Media.builder()
                     .active(lcmMedia.getActive().toString())
-                    .callback((dynamoMedia == null) ? null : dynamoMedia.getCallback())
                     .clientId((dynamoMedia == null) ? null : dynamoMedia.getClientId())
                     .derivativesList(extractDerivatives(lcmMedia))
                     .domain((dynamoMedia == null) ? null : dynamoMedia.getDomain())

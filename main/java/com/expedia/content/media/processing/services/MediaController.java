@@ -312,7 +312,7 @@ public class MediaController extends CommonServiceController {
         if (bestMedia.isPresent()) {
             final Media media = bestMedia.get();
             final OuterDomain.OuterDomainBuilder domainBuilder = OuterDomain.builder().from(imageMessage.getOuterDomainData());
-            domainBuilder.addField("lcmMediaId", media.getDomainId());
+            domainBuilder.addField("lcmMediaId", media.getLcmMediaId());
             imageMessageBuilder.outerDomainData(domainBuilder.build());
             imageMessageBuilder.mediaGuid(media.getMediaGuid());
             LOGGER.info("The replacement information is: mediaGuid=[{}], filename=[{}], requestId=[{}], lcmMediaId=[{}]", media.getMediaGuid(),

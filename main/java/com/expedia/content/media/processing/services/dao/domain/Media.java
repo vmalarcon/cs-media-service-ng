@@ -32,7 +32,6 @@ public class Media {
     @Setter private Integer width;
     @Setter private Integer height;
     @Setter private String sourceUrl;
-    @Setter private String callback;
     @Setter private String domain;
     @Setter private String domainId;
     @Setter private String domainFields;
@@ -51,9 +50,9 @@ public class Media {
     @Setter private Map<String, Object> domainData;
     @Setter private List<String> commentList;
     @Setter private String status;
-    
+
     @DynamoDBHashKey
-    @DynamoDBAttribute(attributeName = "MediaGuid")
+    @DynamoDBAttribute(attributeName = "MediaGUID")
     public String getMediaGuid() {
         return mediaGuid;
     }
@@ -83,14 +82,9 @@ public class Media {
         return height;
     }
 
-    @DynamoDBAttribute(attributeName = "sourceUrl")
+    @DynamoDBAttribute(attributeName = "SourceUrl")
     public String getSourceUrl() {
         return sourceUrl;
-    }
-
-    @DynamoDBAttribute(attributeName = "MediaCallback")
-    public String getCallback() {
-        return callback;
     }
 
     @DynamoDBAttribute(attributeName = "Domain")
@@ -147,7 +141,7 @@ public class Media {
     public String getpHash() {
         return pHash;
     }
-    
+
     public void setpHash(String pHash) {
         this.pHash = pHash;
     }
@@ -162,7 +156,7 @@ public class Media {
         return environment;
     }
 
-    @DynamoDBAttribute(attributeName = "LcmMediaId")
+    @DynamoDBAttribute(attributeName = "lcmMediaId")
     public String getLcmMediaId() {
         return lcmMediaId;
     }
@@ -184,7 +178,7 @@ public class Media {
 
     @DynamoDBIgnore
     public String getStatus() {
-        return status == null ? "RECEIVED" :status;
+        return status == null ? "RECEIVED" : status;
     }
 
 }
