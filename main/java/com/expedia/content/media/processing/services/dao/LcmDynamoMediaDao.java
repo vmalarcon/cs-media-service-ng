@@ -83,7 +83,8 @@ public class LcmDynamoMediaDao implements MediaDao {
         List<Media> domainIdMedia = mediaRepo.loadMedia(domain, domainId).stream().collect(Collectors.toList());
         if (Domain.LODGING.equals(domain)) {
             final Map<String, Media> mediaEidMap =
-                    domainIdMedia.stream().filter(media -> media.getLcmMediaId() != null).collect(Collectors.toMap(Media::getLcmMediaId, media -> media));
+                    domainIdMedia.stream().filter(media -> media.getLcmMediaId() != null && !"null".equals(media.getLcmMediaId()))
+                            .collect(Collectors.toMap(Media::getLcmMediaId, media -> media));
             final Map<String, Object> idResult = lcmMediaIdSproc.execute(Integer.parseInt(domainId), DEFAULT_LODGING_LOCALE);
             final List<Integer> mediaIds = (List<Integer>) idResult.get(SQLMediaIdListSproc.MEDIA_ID_SET);
             /* @formatter:off */
@@ -103,7 +104,8 @@ public class LcmDynamoMediaDao implements MediaDao {
                                 || (activeFilter.equals(ACTIVE_FILTER_FALSE)
                                         && (media.getActive() == null || media.getActive().equals(ACTIVE_FILTER_FALSE)))) ? true : false)
                 .collect(Collectors.toList());
-        final List<String> fileNames = domainIdMedia.stream().filter(media -> media.getFileName() != null).map(media -> media.getFileName()).collect(Collectors.toList());
+        final List<String> fileNames =
+                domainIdMedia.stream().filter(media -> media.getFileName() != null).map(media -> media.getFileName()).collect(Collectors.toList());
         final Map<String, String> fileStatus = getLatestStatus(fileNames);
         domainIdMedia.stream().forEach(media -> media.setStatus(fileStatus.get(media.getFileName())));
         return domainIdMedia;
@@ -192,13 +194,35 @@ public class LcmDynamoMediaDao implements MediaDao {
     private Map<String, String> getLatestStatus(List<String> fileNames) {
         List<MediaProcessLog> logs = processLogDao.findMediaStatus(fileNames);
         logs = logs == null ? new ArrayList<>() : logs;
-        final Map<String, MediaProcessLog> mappedLogs = logs.stream().collect(Collectors.toMap(MediaProcessLog::getMediaFileName, log -> log));
+        final Map<String, List<MediaProcessLog>> fileNameLogListMap = new HashMap<>();
+        JSONUtil.divideStatusListToMap(logs, fileNameLogListMap, fileNames.size());
 
         return fileNames.stream().collect(Collectors.toMap(String::toString, fileName -> {
-            final MediaProcessLog log = mappedLogs.get(fileName);
-            final ActivityMapping activityStatus = (log == null) ? null : JSONUtil.getActivityMappingFromList(activityWhiteList, log.getActivityType(), log.getMediaType());
+            final List<MediaProcessLog> logList = fileNameLogListMap.get(fileName);
+            final ActivityMapping activityStatus = (logList == null) ? null : getLatestActivityMapping(logList);
             return activityStatus == null ? "PUBLISHED" : activityStatus.getStatusMessage();
         }));
+    }
+
+    /**
+     * Finds the latest activity that is part of the activity white list. The list is expected to
+     * be ordered from oldest to latest.
+     * 
+     * @param logList The list to search.
+     * @return The found activity mapping. {@code null} if no activity is found.
+     */
+    private ActivityMapping getLatestActivityMapping(List<MediaProcessLog> logList) {
+        ActivityMapping activityMapping = null;
+        for (int i = logList.size() - 1; i >= 0; i--) {
+            final MediaProcessLog mediaProcessLog = logList.get(i);
+            activityMapping = JSONUtil.getActivityMappingFromList(activityWhiteList, mediaProcessLog.getActivityType(), mediaProcessLog.getMediaType());
+            if (activityMapping == null) {
+                continue;
+            } else {
+                return activityMapping;
+            }
+        }
+        return activityMapping;
     }
 
     /**

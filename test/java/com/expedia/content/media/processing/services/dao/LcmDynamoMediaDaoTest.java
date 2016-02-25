@@ -258,8 +258,10 @@ public class LcmDynamoMediaDaoTest {
     private LcmProcessLogDao makeMockProcessLogDao() {
         LcmProcessLogDao mockProcessLogDao = mock(LcmProcessLogDao.class);
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<MediaProcessLog>();
-        MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "Publish", "1037678_109010ice.jpg", "Lodging");
-        mediaLogStatuses.add(mediaLogStatus);
+        MediaProcessLog mediaLogStatus1 = new MediaProcessLog("2014-07-29 10:08:11.6890000 -07:00", "image1.jpg", "Something", "Lodging");
+        mediaLogStatuses.add(mediaLogStatus1);
+        MediaProcessLog mediaLogStatus2 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "image1.jpg", "Publish", "Lodging");
+        mediaLogStatuses.add(mediaLogStatus2);
         when(mockProcessLogDao.findMediaStatus(any())).thenReturn(mediaLogStatuses);
         return mockProcessLogDao;
     }
