@@ -138,7 +138,7 @@ public class MediaController extends CommonServiceController {
      */
     @Meter(name = "addMessageCounter")
     @Timer(name = "addMessageTimer")
-    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
+    @SuppressWarnings({"PMD.SignatureDeclareThrowsException", "PMD.AvoidCatchingNPE"})
     @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST)
     public ResponseEntity<String> mediaAdd(@RequestBody final String message,
                                            @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
@@ -149,10 +149,28 @@ public class MediaController extends CommonServiceController {
             final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             final String clientId = auth.getName();
             return processRequest(message, requestID, serviceUrl, clientId, ACCEPTED);
-        } catch (IllegalStateException | ImageMessageException ex) {
+        } catch (NullPointerException e) {
+            final String nullFieldMessage = findNullRequiredField(JSONUtil.buildMapFromJson(message));
+            return this.buildErrorResponse((nullFieldMessage == null) ? "A Field was passed with null as the value, remove the field or give it a value" : nullFieldMessage, serviceUrl, BAD_REQUEST);
+        } catch (IllegalStateException | ImageMessageException ex ) {
             LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex, requestID, message);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         }
+    }
+
+    private String findNullRequiredField(Map jsonMap){
+        final Map<String, String> requiredFields = new HashMap<>();
+        requiredFields.put("fileUrl", (String) jsonMap.get("fileUrl"));
+        requiredFields.put("domain", (String) jsonMap.get("domain"));
+        requiredFields.put("domainId", (String) jsonMap.get("domainId"));
+        requiredFields.put("userId", (String) jsonMap.get("userId"));
+        requiredFields.put("domainProvider", (String) jsonMap.get("domainProvider"));
+        for(final Map.Entry<String, String> entry : requiredFields.entrySet()) {
+            if (entry.getValue() == null) {
+                return "Required Field " + entry.getKey() + " is null";
+            }
+        }
+        return null;
     }
 
     /**
@@ -240,6 +258,7 @@ public class MediaController extends CommonServiceController {
      */
     private ResponseEntity<String> processRequest(final String message, final String requestID, final String serviceUrl, final String clientId,
                                                   HttpStatus successStatus) throws Exception {
+
         final String json = validateImageMessage(message, clientId);
         if (!"[]".equals(json)) {
             LOGGER.warn("Returning BAD_REQUEST for messageName={}, requestId=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, requestID, message, json);
@@ -268,6 +287,7 @@ public class MediaController extends CommonServiceController {
                 message);
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
     }
+
 
     /**
      * Updates the image message for the next step. Must be done before being published to the next work queue.
