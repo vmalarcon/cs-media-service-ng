@@ -7,16 +7,13 @@ import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDa
 import com.expedia.content.media.processing.services.dao.RoomTypeDao;
 import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
 import com.expedia.content.media.processing.services.util.ValidatorUtil;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-
-import static com.expedia.content.media.processing.services.util.ValidatorUtil.containsIgnoreCase;
 
 public class LCMValidator implements MapMessageValidator {
 
@@ -28,9 +25,6 @@ public class LCMValidator implements MapMessageValidator {
 
     @Autowired
     private RoomTypeDao roomTypeDao;
-
-    @Resource(name = "providerProperties")
-    private Properties providerProperties;
 
     private final static String DEFAULT_LANG_ID = "1033";
 
@@ -45,7 +39,7 @@ public class LCMValidator implements MapMessageValidator {
                 errorMsg.append("The domainId does not exist in LCM.");
             }
 
-            if (!containsIgnoreCase(providerProperties.values(), imageMessage.getOuterDomainData().getProvider())) {
+            if (StringUtils.isEmpty(ValidatorUtil.getDomianProvider(imageMessage.getOuterDomainData().getProvider()))) {
                 errorMsg.append("The mediaProvider does not exist in LCM.");
             }
 

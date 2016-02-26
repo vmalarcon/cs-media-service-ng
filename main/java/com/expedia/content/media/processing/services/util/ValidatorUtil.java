@@ -1,20 +1,23 @@
 package com.expedia.content.media.processing.services.util;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import org.apache.commons.collections4.IterableUtils;
-import org.apache.commons.collections4.Predicate;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("PMD.UseUtilityClass")
 public class ValidatorUtil {
 
     private final static String ROOMID = "roomId";
+    private static Properties providerProperties;
+
+    public static void setProviderProperties(Properties properties) {
+        providerProperties = properties;
+    }
 
     public static void putErrorMapToList(List<Map<String, String>> list, StringBuffer errorMsg, ImageMessage imageMesage) {
         final Map<String, String> jsonMap = new TreeMap<>();
@@ -34,8 +37,11 @@ public class ValidatorUtil {
         return roomIds;
     }
 
-    public static Boolean containsIgnoreCase(Collection collection, String str) {
-        final Predicate<Object> predicate  = (s) -> StringUtils.equalsIgnoreCase(s.toString(), str);
-        return IterableUtils.matchesAny(collection, predicate);
+    public static String getDomianProvider(String domainProvider) {
+        String domainProviderText = providerProperties.entrySet().stream()
+                .filter(providerProperty -> ((String) providerProperty.getValue()).equalsIgnoreCase(domainProvider))
+                .map(providerProperty -> (String) providerProperty.getValue())
+                .collect(Collectors.joining());
+        return domainProviderText;
     }
 }

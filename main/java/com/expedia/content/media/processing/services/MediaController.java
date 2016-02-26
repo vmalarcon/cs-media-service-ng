@@ -1,23 +1,29 @@
 package com.expedia.content.media.processing.services;
 
-import static org.springframework.http.HttpStatus.ACCEPTED;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.OK;
-
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import javax.annotation.Resource;
-
+import com.amazonaws.util.StringUtils;
+import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
+import com.expedia.content.media.processing.pipeline.reporting.Activity;
+import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
+import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
+import com.expedia.content.media.processing.pipeline.reporting.Reporting;
+import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
+import com.expedia.content.media.processing.services.dao.MediaDao;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
+import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.util.MediaServiceUrl;
+import com.expedia.content.media.processing.services.util.ValidatorUtil;
+import com.expedia.content.media.processing.services.validator.HTTPValidator;
+import com.expedia.content.media.processing.services.validator.MapMessageValidator;
+import com.expedia.content.media.processing.services.validator.MediaReplacement;
+import com.expedia.content.media.processing.services.validator.S3Validator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Joiner;
+import expedia.content.solutions.metrics.annotations.Meter;
+import expedia.content.solutions.metrics.annotations.Timer;
 import org.apache.commons.io.FilenameUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -41,30 +47,22 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.amazonaws.util.StringUtils;
-import com.expedia.content.media.processing.pipeline.domain.Domain;
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
-import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
-import com.expedia.content.media.processing.pipeline.reporting.Activity;
-import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
-import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
-import com.expedia.content.media.processing.pipeline.reporting.Reporting;
-import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
-import com.expedia.content.media.processing.services.dao.MediaDao;
-import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
-import com.expedia.content.media.processing.services.util.JSONUtil;
-import com.expedia.content.media.processing.services.util.MediaServiceUrl;
-import com.expedia.content.media.processing.services.validator.HTTPValidator;
-import com.expedia.content.media.processing.services.validator.MapMessageValidator;
-import com.expedia.content.media.processing.services.validator.MediaReplacement;
-import com.expedia.content.media.processing.services.validator.S3Validator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Joiner;
+import javax.annotation.Resource;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
-import expedia.content.solutions.metrics.annotations.Meter;
-import expedia.content.solutions.metrics.annotations.Timer;
+import static org.springframework.http.HttpStatus.ACCEPTED;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.OK;
 
 /**
  * Web service controller for media resources.
@@ -148,6 +146,7 @@ public class MediaController extends CommonServiceController {
         try {
             final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             final String clientId = auth.getName();
+            ValidatorUtil.setProviderProperties(providerProperties);
             return processRequest(message, requestID, serviceUrl, clientId, ACCEPTED);
         } catch (IllegalStateException | ImageMessageException ex) {
             LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex, requestID, message);
@@ -230,6 +229,7 @@ public class MediaController extends CommonServiceController {
     /**
      * Common processing between mediaAdd and the AWS portion of aquireMedia. Can be transfered into mediaAdd once aquireMedia is removed.
      * 
+     * @param providerProperties
      * @param message JSON formated ImageMessage.
      * @param requestID The id of the request. Used for tracking purposes.
      * @param serviceUrl URL of the message called.
@@ -253,7 +253,7 @@ public class MediaController extends CommonServiceController {
             return this.buildErrorResponse("Provided fileUrl does not exist.", serviceUrl, NOT_FOUND);
         }
 
-        final ImageMessage imageMessageNew = updateImageMessage(imageMessage, requestID, clientId);
+        final ImageMessage imageMessageNew = updateImageMessage(imageMessage, requestID, clientId, providerProperties);
 
         final Map<String, String> response = new HashMap<>();
         response.put("mediaGuid", imageMessageNew.getMediaGuid());
@@ -275,9 +275,10 @@ public class MediaController extends CommonServiceController {
      * @param imageMessage The incoming image message.
      * @param requestID The id of the request. Used for tracking purposes.
      * @param clientId Web service client id.
+     * @param providerProperties
      * @return The updated message with request and other data added.
      */
-    private ImageMessage updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId) {
+    private ImageMessage updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId, Properties providerProperties) {
         ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
         imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
         if (imageMessage.getFileName() == null) {
@@ -290,7 +291,8 @@ public class MediaController extends CommonServiceController {
             // This will update the GUID to the old one.
             processReplacement(imageMessage, imageMessageBuilder);
         }
-        return imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).build();
+        final OuterDomain outerDomain = updateOuterDomain(providerProperties, imageMessage.getOuterDomainData());
+        return imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).outerDomainData(outerDomain).build();
     }
 
     /**
@@ -399,4 +401,15 @@ public class MediaController extends CommonServiceController {
         logActivityProcess.log(logEntry, reporting);
     }
 
+    /**
+     * get the domainProviderId from the mapping
+     * @param providerProperties
+     * @param outerDomain
+     * @return
+     */
+    private OuterDomain updateOuterDomain(Properties providerProperties, OuterDomain outerDomain) {
+        ValidatorUtil.setProviderProperties(providerProperties);
+        final String domainProvider =  ValidatorUtil.getDomianProvider(outerDomain.getProvider());
+        return OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
+    }
 }
