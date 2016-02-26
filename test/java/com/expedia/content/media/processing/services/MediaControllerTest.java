@@ -152,7 +152,6 @@ public class MediaControllerTest {
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void testValidateImageSuccessWithThumbnail() throws Exception {
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", "
@@ -228,7 +227,6 @@ public class MediaControllerTest {
         verify(queueMessagingTemplateMock, times(0)).send(anyString(), any());
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void testURLNotFound() throws Exception {
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgasdfasdfasdfur.com/3PRGFasdfasdfasdfii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", "
@@ -294,8 +292,11 @@ public class MediaControllerTest {
 
     @Test
     public void testMediaByDomainIdLodging() throws Exception {
+        
+        Map<String, Object> domainData = new HashMap<>();
+        domainData.put("propertyHero", "true");
         Media mediaItem1 = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file_name.jpg")
-                .mediaGuid("102d3a4b-c985-43d3-9245-b60ab1eb9a0f").lastUpdated(new Date()).build();
+                .mediaGuid("102d3a4b-c985-43d3-9245-b60ab1eb9a0f").lastUpdated(new Date()).domainData(domainData).lcmMediaId("4321").build();
         Media mediaItem2 = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file2_name.jpg")
                 .mediaGuid("ea868d7d-c4ce-41a8-be43-19fff0ce5ad4").lastUpdated(new Date()).build();
         List<Media> mediaValues = new ArrayList<>();
@@ -324,8 +325,11 @@ public class MediaControllerTest {
                 .replaceAll("[0-9]{4}-[0-9]{2}-[0-9]{2}[\\s][0-9]{1,2}:[0-9]{2}:[0-9]{2}[\\.][0-9]+\\s{1}[\\+|\\-][0-9]{2}:[0-9]{2}", "timestamp")
                 .contains("\"lastUpdateDateTime\":\"timestamp\""));
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\":\"ea868d7d-c4ce-41a8-be43-19fff0ce5ad4\""));
+        assertTrue(responseEntity.getBody().contains("\"lcmMediaId\":\"4321\""));
+        assertTrue(responseEntity.getBody().contains("\"domainFields\":{"));
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testReplaceImageSuccess() throws Exception {
         String jsonMessage = "{ " +
@@ -382,6 +386,7 @@ public class MediaControllerTest {
         assertTrue(publishedMessageValue.getPayload().contains("\"lcmMediaId\":\"" + "456"));
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testReplaceImageButNoOldFound() throws Exception {
         String jsonMessage = "{ " +
@@ -471,6 +476,7 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"message\":\"A Field was passed with null as the value, remove the field or give it a value\""));
     }
 
+    @SuppressWarnings({"unchecked"})
     private static Map<String, List<MapMessageValidator>> getMockValidators() {
         Map<String, List<MapMessageValidator>> validators = new HashMap<>();
         List<MapMessageValidator> messageValidator = new ArrayList<>();

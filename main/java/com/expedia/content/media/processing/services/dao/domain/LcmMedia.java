@@ -27,6 +27,7 @@ public class LcmMedia {
     @Getter private final Integer provider;
     @Getter private final Integer category;
     @Getter private final String comment;
+    @Getter private final Integer formatId;
 
     @Getter @Setter private List<LcmMediaDerivative> derivatives = Collections.EMPTY_LIST;
     @Getter @Setter private List<LcmMediaRoom> rooms = Collections.EMPTY_LIST;
