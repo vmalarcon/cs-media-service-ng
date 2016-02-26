@@ -50,6 +50,7 @@ public class Media {
     @Setter private Map<String, Object> domainData;
     @Setter private List<String> commentList;
     @Setter private String status;
+    @Setter private String domainDerivativeCategory;
 
     @DynamoDBHashKey
     @DynamoDBAttribute(attributeName = "MediaGUID")
@@ -179,6 +180,11 @@ public class Media {
     @DynamoDBIgnore
     public String getStatus() {
         return status == null ? "RECEIVED" : status;
+    }
+
+    @DynamoDBIgnore
+    public String getDomainDerivativeCategory() {
+        return domainDerivativeCategory;
     }
 
 }

@@ -48,7 +48,7 @@ public class LcmDynamoMediaDaoTest {
         SQLMediaGetSproc mediaSproc = mock(SQLMediaGetSproc.class);
         List<LcmMedia> mediaList1 = new ArrayList<>();
         LcmMedia media1 = LcmMedia.builder().domainId(1234).mediaId(1).fileName("image1.jpg").active(true).width(20).height(21).fileSize(200)
-                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(3).comment("Comment").build();
+                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(3).comment("Comment").formatId(2).build();
         mediaList1.add(media1);
         Map<String, Object> mediaResult1 = make2DerivativeMediaResult(mediaList1, 1, 1, 2, true, true, "image1_t.jpg", "image1_s.jpg");
 
@@ -89,6 +89,7 @@ public class LcmDynamoMediaDaoTest {
         assertTrue((media1.getFileSize() * 1024L) == testMedia1.getFileSize());
         assertEquals("true", testMedia1.getDomainData().get("propertyHero"));
         assertEquals("4321", testMedia1.getDomainData().get("categoryId"));
+        assertEquals("VirtualTour", testMedia1.getDomainDerivativeCategory());
         Media testMedia2 = testMediaList.get(1);
         assertNull(testMedia2.getMediaGuid());
         assertNull(testMedia2.getCommentList());
@@ -258,8 +259,10 @@ public class LcmDynamoMediaDaoTest {
     private LcmProcessLogDao makeMockProcessLogDao() {
         LcmProcessLogDao mockProcessLogDao = mock(LcmProcessLogDao.class);
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<MediaProcessLog>();
-        MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "Publish", "1037678_109010ice.jpg", "Lodging");
-        mediaLogStatuses.add(mediaLogStatus);
+        MediaProcessLog mediaLogStatus1 = new MediaProcessLog("2014-07-29 10:08:11.6890000 -07:00", "image1.jpg", "Something", "Lodging");
+        mediaLogStatuses.add(mediaLogStatus1);
+        MediaProcessLog mediaLogStatus2 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "image1.jpg", "Publish", "Lodging");
+        mediaLogStatuses.add(mediaLogStatus2);
         when(mockProcessLogDao.findMediaStatus(any())).thenReturn(mediaLogStatuses);
         return mockProcessLogDao;
     }

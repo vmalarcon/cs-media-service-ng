@@ -59,6 +59,29 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.amazonaws.util.StringUtils;
+import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
+import com.expedia.content.media.processing.pipeline.reporting.Activity;
+import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
+import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
+import com.expedia.content.media.processing.pipeline.reporting.Reporting;
+import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
+import com.expedia.content.media.processing.services.dao.MediaDao;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
+import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
+import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.util.MediaServiceUrl;
+import com.expedia.content.media.processing.services.validator.HTTPValidator;
+import com.expedia.content.media.processing.services.validator.MapMessageValidator;
+import com.expedia.content.media.processing.services.validator.MediaReplacement;
+import com.expedia.content.media.processing.services.validator.S3Validator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Joiner;
+
 import static org.springframework.http.HttpStatus.ACCEPTED;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -71,6 +94,10 @@ import static org.springframework.http.HttpStatus.OK;
 @RestController
 public class MediaController extends CommonServiceController {
 
+    private static final String RESPONSE_FIELD_MEDIA_GUID = "mediaGuid";
+    private static final String RESPONSE_FIELD_STATUS = "status";
+    private static final String RESPONSE_FIELD_THUMBNAIL_URL = "thumbnailUrl";
+    private static final String RESPONSE_FIELD_LCM_MEDIA_ID = "lcmMediaId";
     private static final Logger LOGGER = LoggerFactory.getLogger(MediaController.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
@@ -199,11 +226,15 @@ public class MediaController extends CommonServiceController {
      */
     private List<DomainIdMedia> transformMediaForResponse(List<Media> mediaList) {
         return mediaList.stream().map(media -> {
+            if (media.getDomainData() != null) {
+                media.getDomainData().put(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
+            }
             return DomainIdMedia.builder().mediaGuid(media.getMediaGuid()).fileUrl(media.getFileUrl()).fileName(media.getFileName())
                     .active(media.getActive()).width(media.getWidth()).height(media.getHeight()).fileSize(media.getFileSize()).status(media.getStatus())
                     .lastUpdatedBy(media.getUserId())
                     .lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
                     .domainProvider(media.getProvider()).domainFields(media.getDomainData()).derivatives(media.getDerivativesList())
+                    .domainDerivativeCategory(media.getDomainDerivativeCategory())
                     .comments(media.getCommentList()).build();
         }).collect(Collectors.toList());
     }
@@ -229,7 +260,6 @@ public class MediaController extends CommonServiceController {
     /**
      * Common processing between mediaAdd and the AWS portion of aquireMedia. Can be transfered into mediaAdd once aquireMedia is removed.
      * 
-     * @param providerProperties
      * @param message JSON formated ImageMessage.
      * @param requestID The id of the request. Used for tracking purposes.
      * @param serviceUrl URL of the message called.
@@ -256,10 +286,10 @@ public class MediaController extends CommonServiceController {
         final ImageMessage imageMessageNew = updateImageMessage(imageMessage, requestID, clientId, providerProperties);
 
         final Map<String, String> response = new HashMap<>();
-        response.put("mediaGuid", imageMessageNew.getMediaGuid());
-        response.put("status", "RECEIVED");
+        response.put(RESPONSE_FIELD_MEDIA_GUID, imageMessageNew.getMediaGuid());
+        response.put(RESPONSE_FIELD_STATUS, "RECEIVED");
         if (imageMessageNew.isGenerateThumbnail()) {
-            response.put("thumbnailUrl", thumbnailProcessor.createThumbnail(imageMessageNew.getFileUrl(), imageMessageNew.getMediaGuid(),
+            response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnailProcessor.createThumbnail(imageMessageNew.getFileUrl(), imageMessageNew.getMediaGuid(),
                     imageMessageNew.getOuterDomainData().getDomain().getDomain(), imageMessageNew.getOuterDomainData().getDomainId()));
         }
 
@@ -314,7 +344,7 @@ public class MediaController extends CommonServiceController {
         if (bestMedia.isPresent()) {
             final Media media = bestMedia.get();
             final OuterDomain.OuterDomainBuilder domainBuilder = OuterDomain.builder().from(imageMessage.getOuterDomainData());
-            domainBuilder.addField("lcmMediaId", media.getLcmMediaId());
+            domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
             imageMessageBuilder.outerDomainData(domainBuilder.build());
             imageMessageBuilder.mediaGuid(media.getMediaGuid());
             LOGGER.info("The replacement information is: mediaGuid=[{}], filename=[{}], requestId=[{}], lcmMediaId=[{}]", media.getMediaGuid(),
