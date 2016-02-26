@@ -38,7 +38,7 @@ public class ValidatorUtil {
     }
 
     public static String getDomianProvider(String domainProvider) {
-        String domainProviderText = providerProperties.entrySet().stream()
+        final String domainProviderText = providerProperties.entrySet().stream()
                 .filter(providerProperty -> ((String) providerProperty.getValue()).equalsIgnoreCase(domainProvider))
                 .map(providerProperty -> (String) providerProperty.getValue())
                 .collect(Collectors.joining());
