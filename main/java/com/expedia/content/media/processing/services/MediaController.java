@@ -154,28 +154,13 @@ public class MediaController extends CommonServiceController {
             final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             final String clientId = auth.getName();
             return processRequest(message, requestID, serviceUrl, clientId, ACCEPTED);
-        } catch (NullPointerException e) {
-            final String nullFieldMessage = findNullRequiredField(JSONUtil.buildMapFromJson(message));
-            return this.buildErrorResponse((nullFieldMessage == null) ? "A Field was passed with null as the value, remove the field or give it a value" : nullFieldMessage, serviceUrl, BAD_REQUEST);
+        } catch (NullPointerException ex) {
+            LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex, requestID, message);
+            return this.buildErrorResponse(ex.getMessage(), serviceUrl, BAD_REQUEST);
         } catch (IllegalStateException | ImageMessageException ex ) {
             LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex, requestID, message);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         }
-    }
-
-    private String findNullRequiredField(Map jsonMap){
-        final Map<String, String> requiredFields = new HashMap<>();
-        requiredFields.put("fileUrl", (String) jsonMap.get("fileUrl"));
-        requiredFields.put("domain", (String) jsonMap.get("domain"));
-        requiredFields.put("domainId", (String) jsonMap.get("domainId"));
-        requiredFields.put("userId", (String) jsonMap.get("userId"));
-        requiredFields.put("domainProvider", (String) jsonMap.get("domainProvider"));
-        for(final Map.Entry<String, String> entry : requiredFields.entrySet()) {
-            if (entry.getValue() == null) {
-                return "Required Field " + entry.getKey() + " is null";
-            }
-        }
-        return null;
     }
 
     /**
