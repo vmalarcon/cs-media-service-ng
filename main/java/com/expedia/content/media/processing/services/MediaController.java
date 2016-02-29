@@ -261,7 +261,7 @@ public class MediaController extends CommonServiceController {
             return this.buildErrorResponse("Provided fileUrl does not exist.", serviceUrl, NOT_FOUND);
         }
 
-        final ImageMessage imageMessageNew = updateImageMessage(imageMessage, requestID, clientId, providerProperties);
+        final ImageMessage imageMessageNew = updateImageMessage(imageMessage, requestID, clientId);
 
         final Map<String, String> response = new HashMap<>();
         response.put(RESPONSE_FIELD_MEDIA_GUID, imageMessageNew.getMediaGuid());
@@ -283,10 +283,9 @@ public class MediaController extends CommonServiceController {
      * @param imageMessage The incoming image message.
      * @param requestID The id of the request. Used for tracking purposes.
      * @param clientId Web service client id.
-     * @param providerProperties
      * @return The updated message with request and other data added.
      */
-    private ImageMessage updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId, Properties providerProperties) {
+    private ImageMessage updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId) {
         ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
         imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
         if (imageMessage.getFileName() == null) {
@@ -295,12 +294,13 @@ public class MediaController extends CommonServiceController {
             imageMessageBuilder.fileName(StringUtils.isNullOrEmpty(imageMessage.getFileName()) ? fileNameFromFileUrl : imageMessage.getFileName());
         }
         imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
+        final OuterDomain outerDomain = updateOuterDomain(imageMessage.getOuterDomainData());
+        imageMessageBuilder.outerDomainData(outerDomain);
         if (mediaReplacement.isReplacement(imageMessage)) {
             // This will update the GUID to the old one.
             processReplacement(imageMessage, imageMessageBuilder);
         }
-        final OuterDomain outerDomain = updateOuterDomain(providerProperties, imageMessage.getOuterDomainData());
-        return imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).outerDomainData(outerDomain).build();
+        return imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).build();
     }
 
     /**
@@ -411,13 +411,13 @@ public class MediaController extends CommonServiceController {
 
     /**
      * get the domainProviderId from the mapping
-     * @param providerProperties
      * @param outerDomain
      * @return
      */
-    private OuterDomain updateOuterDomain(Properties providerProperties, OuterDomain outerDomain) {
-        ValidatorUtil.setProviderProperties(providerProperties);
+    @SuppressWarnings("PMD.UnnecessaryLocalBeforeReturn")
+    private OuterDomain updateOuterDomain(OuterDomain outerDomain) {
         final String domainProvider =  ValidatorUtil.getDomianProvider(outerDomain.getProvider());
-        return OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
+        final OuterDomain newOuterDomain = OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
+        return newOuterDomain;
     }
 }
