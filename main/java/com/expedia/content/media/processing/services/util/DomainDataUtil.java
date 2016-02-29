@@ -12,9 +12,9 @@ public class DomainDataUtil {
     private final static String ROOMID = "roomId";
 
     /**
-     * utility method used to extracts roomIds from the domainFields.rooms
+     * utility method used to extracts roomIds from the domainFields.rooms.
      * @param rooms
-     * @return
+     * @return list of roomIds
      */
     public static List<Integer> getRoomIds(Object rooms) {
         final List<Integer> roomIds = new ArrayList<>();

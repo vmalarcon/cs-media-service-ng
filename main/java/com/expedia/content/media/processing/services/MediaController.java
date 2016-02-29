@@ -294,9 +294,8 @@ public class MediaController extends CommonServiceController {
         }
         imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
 
-        final String domainProvider = getDomainProviderFromMapping(imageMessage.getOuterDomainData().getProvider());
-        final OuterDomain newOuterDomain = OuterDomain.builder().from(imageMessage.getOuterDomainData()).mediaProvider(domainProvider).build();
-        imageMessageBuilder.outerDomainData(newOuterDomain);
+        final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
+        imageMessageBuilder.outerDomainData(outerDomain);
         if (mediaReplacement.isReplacement(imageMessage)) {
             // This will update the GUID to the old one.
             processReplacement(imageMessage, imageMessageBuilder);
@@ -412,11 +411,15 @@ public class MediaController extends CommonServiceController {
 
     /**
      * get the domainProvider text from the mapping regardless of case-sensitivity
-     * @param domainProvider
-     * @return
+     * if the exact text is not passed, datamanager fails to find it and defaults it
+     * to 1
+     * @param outerDomain
+     * @return outerDomain with domainProvider replaced by the exact domainProvider from the mapping
      */
     @SuppressWarnings("PMD.UnnecessaryLocalBeforeReturn")
-    private String getDomainProviderFromMapping(String domainProvider) {
-        return DomainDataUtil.getDomianProvider(domainProvider, providerProperties);
+    private OuterDomain getDomainProviderFromMapping(OuterDomain outerDomain) {
+        final String domainProvider =  DomainDataUtil.getDomianProvider(outerDomain.getProvider(), providerProperties);
+        final OuterDomain newOuterDomain = OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
+        return newOuterDomain;
     }
 }
