@@ -154,9 +154,6 @@ public class MediaController extends CommonServiceController {
             final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             final String clientId = auth.getName();
             return processRequest(message, requestID, serviceUrl, clientId, ACCEPTED);
-        } catch (NullPointerException ex) {
-            LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex, requestID, message);
-            return this.buildErrorResponse(ex.getMessage(), serviceUrl, BAD_REQUEST);
         } catch (IllegalStateException | ImageMessageException ex ) {
             LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex, requestID, message);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);

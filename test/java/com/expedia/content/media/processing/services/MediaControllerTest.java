@@ -23,7 +23,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.validator.EPCMVELValidator;
+import com.expedia.content.media.processing.services.validator.LCMValidator;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -54,7 +55,7 @@ import com.google.common.collect.Lists;
 @RunWith(MockitoJUnitRunner.class)
 public class MediaControllerTest {
 
-    private static final String TEST_CLIENT_ID = "a-user";
+    private static final String TEST_CLIENT_ID = "EPC";
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     @Mock
@@ -442,12 +443,18 @@ public class MediaControllerTest {
 
     @Test
     public void testMissingRequiredField() throws Exception {
-        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", " + "\"userId\": \"bobthegreat\", "
+        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", " + "\"userId\": \"EPC\", "
                 + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC-Internal\" " + "}";
 
         MediaController mediaController = new MediaController();
-        Map<String, List<MapMessageValidator>> validators = getMockValidators();
-        setFieldValue(mediaController, "mapValidatorList", validators);
+        Map<String, List<MapMessageValidator>> validators =  new HashMap<>();
+        List<MapMessageValidator> messageValidator = new ArrayList<>();
+        MapMessageValidator EPCMessageValidator = new EPCMVELValidator();
+        MapMessageValidator LCMMessageValidator = new LCMValidator();
+        messageValidator.add(EPCMessageValidator);
+        messageValidator.add(LCMMessageValidator);
+        validators.put("EPC", messageValidator);
+
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
@@ -458,7 +465,7 @@ public class MediaControllerTest {
     }
 
     @Test
-    public void testMissingFieldSentWithValueNull() throws Exception {
+    public void testFieldSentWithValueNull() throws Exception {
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", "
                 + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC-Internal\", " + "\"domainFields\":" +
                 "{\"propertyHero\":null}"
@@ -473,8 +480,9 @@ public class MediaControllerTest {
 
         ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
         assertEquals(responseEntity.getStatusCode(), HttpStatus.BAD_REQUEST);
-        assertTrue(responseEntity.getBody().contains("\"message\":\"A Field was passed with null as the value, remove the field or give it a value\""));
+        assertTrue(responseEntity.getBody().contains("\"message\":\"null value in entry: propertyHero=null\""));
     }
+
 
     @SuppressWarnings({"unchecked"})
     private static Map<String, List<MapMessageValidator>> getMockValidators() {
