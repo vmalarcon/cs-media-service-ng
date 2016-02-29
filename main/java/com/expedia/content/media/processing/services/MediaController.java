@@ -247,6 +247,7 @@ public class MediaController extends CommonServiceController {
      */
     private ResponseEntity<String> processRequest(final String message, final String requestID, final String serviceUrl, final String clientId,
                                                   HttpStatus successStatus) throws Exception {
+
         final String json = validateImageMessage(message, clientId);
         if (!"[]".equals(json)) {
             LOGGER.warn("Returning BAD_REQUEST for messageName={}, requestId=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, requestID, message, json);
@@ -275,6 +276,7 @@ public class MediaController extends CommonServiceController {
                 message);
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
     }
+
 
     /**
      * Updates the image message for the next step. Must be done before being published to the next work queue.
@@ -391,6 +393,9 @@ public class MediaController extends CommonServiceController {
         List<Map<String, String>> validationErrorList = null;
         for (final MapMessageValidator mapMessageValidator : validatorList) {
             validationErrorList = mapMessageValidator.validateImages(imageMessageList);
+            if (!validationErrorList.isEmpty()) {
+                return JSONUtil.convertValidationErrors(validationErrorList);
+            }
         }
         return JSONUtil.convertValidationErrors(validationErrorList);
     }

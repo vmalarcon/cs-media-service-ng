@@ -49,8 +49,7 @@ public class LCMValidator implements MapMessageValidator {
                 errorMsg.append("The mediaProvider does not exist in LCM.");
             }
 
-            if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING)
-                    && !mediaDomainCategoriesDao.subCategoryIdExists(imageMessage.getOuterDomainData(), DEFAULT_LANG_ID)) {
+            if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING) && !mediaDomainCategoriesDao.subCategoryIdExists(imageMessage.getOuterDomainData(), DEFAULT_LANG_ID)) {
                 errorMsg.append("The category does not exist in LCM.");
             }
 
