@@ -6,14 +6,17 @@ import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
 import com.expedia.content.media.processing.services.dao.RoomTypeDao;
 import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
+import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.ValidatorUtil;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 public class LCMValidator implements MapMessageValidator {
 
@@ -25,6 +28,9 @@ public class LCMValidator implements MapMessageValidator {
 
     @Autowired
     private RoomTypeDao roomTypeDao;
+
+    @Resource(name = "providerProperties")
+    private Properties providerProperties;
 
     private final static String DEFAULT_LANG_ID = "1033";
 
@@ -39,7 +45,7 @@ public class LCMValidator implements MapMessageValidator {
                 errorMsg.append("The domainId does not exist in LCM.");
             }
 
-            if (StringUtils.isEmpty(ValidatorUtil.getDomianProvider(imageMessage.getOuterDomainData().getProvider()))) {
+            if (StringUtils.isEmpty(DomainDataUtil.getDomianProvider(imageMessage.getOuterDomainData().getProvider(), providerProperties))) {
                 errorMsg.append("The mediaProvider does not exist in LCM.");
             }
 

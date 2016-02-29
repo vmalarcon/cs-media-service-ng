@@ -10,7 +10,6 @@ import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
 import com.expedia.content.media.processing.services.dao.domain.MediaCategory;
 import com.expedia.content.media.processing.services.dao.domain.MediaSubCategory;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaDomainCategoriesSproc;
-import com.expedia.content.media.processing.services.util.ValidatorUtil;
 import org.codehaus.plexus.util.ReflectionUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -100,7 +99,7 @@ public class LCMValidatorTest {
         mockRoomTypes.add(new RoomType(333, 444, new Timestamp(1339150200000L), "phoenix", "phoenix"));
         mockRoomResults = new HashMap<>();
         mockRoomResults.put(PropertyRoomTypeGetIDSproc.ROOM_TYPE_RESULT_SET, mockRoomTypes);
-        ValidatorUtil.setProviderProperties(mockProviderProperties);
+        ReflectionUtils.setVariableValueInObject(lcmValidator, "providerProperties", mockProviderProperties);
         ReflectionUtils.setVariableValueInObject(lcmValidator, "skuGroupCatalogItemDao", mockSKUGroupCatalogItemDao);
         ReflectionUtils.setVariableValueInObject(lcmValidator, "mediaDomainCategoriesDao", mockMediaDomainCategoriesDao);
         ReflectionUtils.setVariableValueInObject(lcmValidator, "roomTypeDao", roomTypeDao);

@@ -14,9 +14,9 @@ import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
+import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
-import com.expedia.content.media.processing.services.util.ValidatorUtil;
 import com.expedia.content.media.processing.services.validator.HTTPValidator;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.expedia.content.media.processing.services.validator.MediaReplacement;
@@ -151,7 +151,6 @@ public class MediaController extends CommonServiceController {
         try {
             final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             final String clientId = auth.getName();
-            ValidatorUtil.setProviderProperties(providerProperties);
             return processRequest(message, requestID, serviceUrl, clientId, ACCEPTED);
         } catch (IllegalStateException | ImageMessageException ex) {
             LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex, requestID, message);
@@ -416,7 +415,7 @@ public class MediaController extends CommonServiceController {
      */
     @SuppressWarnings("PMD.UnnecessaryLocalBeforeReturn")
     private OuterDomain updateOuterDomain(OuterDomain outerDomain) {
-        final String domainProvider =  ValidatorUtil.getDomianProvider(outerDomain.getProvider());
+        final String domainProvider =  DomainDataUtil.getDomianProvider(outerDomain.getProvider(), providerProperties);
         final OuterDomain newOuterDomain = OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
         return newOuterDomain;
     }
