@@ -218,7 +218,7 @@ public class MediaController extends CommonServiceController {
 
     /**
      * Validates the media by domain id request.
-     * 
+     *
      * @param domainName Domain to validate.
      * @param activeFilter Active filter to validate.
      * @return Returns a response if the validation fails; null otherwise.
@@ -236,7 +236,7 @@ public class MediaController extends CommonServiceController {
 
     /**
      * Common processing between mediaAdd and the AWS portion of aquireMedia. Can be transfered into mediaAdd once aquireMedia is removed.
-     * 
+     *
      * @param message JSON formated ImageMessage.
      * @param requestID The id of the request. Used for tracking purposes.
      * @param serviceUrl URL of the message called.
@@ -278,7 +278,7 @@ public class MediaController extends CommonServiceController {
 
     /**
      * Updates the image message for the next step. Must be done before being published to the next work queue.
-     * 
+     *
      * @param imageMessage The incoming image message.
      * @param requestID The id of the request. Used for tracking purposes.
      * @param clientId Web service client id.
@@ -293,8 +293,10 @@ public class MediaController extends CommonServiceController {
             imageMessageBuilder.fileName(StringUtils.isNullOrEmpty(imageMessage.getFileName()) ? fileNameFromFileUrl : imageMessage.getFileName());
         }
         imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
-        final OuterDomain outerDomain = updateOuterDomain(imageMessage.getOuterDomainData());
-        imageMessageBuilder.outerDomainData(outerDomain);
+
+        final String domainProvider = getDomainProviderFromMapping(imageMessage.getOuterDomainData().getProvider());
+        final OuterDomain newOuterDomain = OuterDomain.builder().from(imageMessage.getOuterDomainData()).mediaProvider(domainProvider).build();
+        imageMessageBuilder.outerDomainData(newOuterDomain);
         if (mediaReplacement.isReplacement(imageMessage)) {
             // This will update the GUID to the old one.
             processReplacement(imageMessage, imageMessageBuilder);
@@ -334,7 +336,7 @@ public class MediaController extends CommonServiceController {
 
     /**
      * Verifies if the file exists in an S3 bucket or is available in HTTP.
-     * 
+     *
      * @param imageMessage Incoming image message.
      * @return {@code true} if the file exists; {@code false} otherwise.
      */
@@ -409,14 +411,12 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * get the domainProviderId from the mapping
-     * @param outerDomain
+     * get the domainProvider text from the mapping regardless of case-sensitivity
+     * @param domainProvider
      * @return
      */
     @SuppressWarnings("PMD.UnnecessaryLocalBeforeReturn")
-    private OuterDomain updateOuterDomain(OuterDomain outerDomain) {
-        final String domainProvider =  DomainDataUtil.getDomianProvider(outerDomain.getProvider(), providerProperties);
-        final OuterDomain newOuterDomain = OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
-        return newOuterDomain;
+    private String getDomainProviderFromMapping(String domainProvider) {
+        return DomainDataUtil.getDomianProvider(domainProvider, providerProperties);
     }
 }
