@@ -23,8 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.expedia.content.media.processing.services.validator.EPCMVELValidator;
-import com.expedia.content.media.processing.services.validator.LCMValidator;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -55,7 +53,7 @@ import com.google.common.collect.Lists;
 @RunWith(MockitoJUnitRunner.class)
 public class MediaControllerTest {
 
-    private static final String TEST_CLIENT_ID = "EPC";
+    private static final String TEST_CLIENT_ID = "a-user";
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     @Mock
