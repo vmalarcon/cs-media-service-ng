@@ -143,7 +143,7 @@ public class MediaController extends CommonServiceController {
      */
     @Meter(name = "addMessageCounter")
     @Timer(name = "addMessageTimer")
-    @SuppressWarnings({"PMD.SignatureDeclareThrowsException", "PMD.AvoidCatchingNPE"})
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST)
     public ResponseEntity<String> mediaAdd(@RequestBody final String message,
                                            @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
@@ -154,7 +154,7 @@ public class MediaController extends CommonServiceController {
             final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             final String clientId = auth.getName();
             return processRequest(message, requestID, serviceUrl, clientId, ACCEPTED);
-        } catch (IllegalStateException | ImageMessageException ex ) {
+        } catch (IllegalStateException | ImageMessageException ex) {
             LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex, requestID, message);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         }

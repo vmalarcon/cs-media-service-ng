@@ -441,49 +441,6 @@ public class MediaControllerTest {
         assertFalse(publishedMessageValue.getPayload().contains("\"lcmMediaId\":"));
     }
 
-    @Test
-    public void testMissingRequiredField() throws Exception {
-        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", " + "\"userId\": \"EPC\", "
-                + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC-Internal\" " + "}";
-
-        MediaController mediaController = new MediaController();
-        Map<String, List<MapMessageValidator>> validators =  new HashMap<>();
-        List<MapMessageValidator> messageValidator = new ArrayList<>();
-        MapMessageValidator EPCMessageValidator = new EPCMVELValidator();
-        MapMessageValidator LCMMessageValidator = new LCMValidator();
-        messageValidator.add(EPCMessageValidator);
-        messageValidator.add(LCMMessageValidator);
-        validators.put("EPC", messageValidator);
-
-        String requestId = "test-request-id";
-        MultiValueMap<String, String> mockHeader = new HttpHeaders();
-        mockHeader.add("request-id", requestId);
-
-        ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
-        assertEquals(responseEntity.getStatusCode(), HttpStatus.BAD_REQUEST);
-        assertTrue(responseEntity.getBody().contains("\"message\":\"Required Field domain is null\""));
-    }
-
-    @Test
-    public void testFieldSentWithValueNull() throws Exception {
-        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", "
-                + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC-Internal\", " + "\"domainFields\":" +
-                "{\"propertyHero\":null}"
-                + "}";
-
-        MediaController mediaController = new MediaController();
-        Map<String, List<MapMessageValidator>> validators = getMockValidators();
-        setFieldValue(mediaController, "mapValidatorList", validators);
-        String requestId = "test-request-id";
-        MultiValueMap<String, String> mockHeader = new HttpHeaders();
-        mockHeader.add("request-id", requestId);
-
-        ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
-        assertEquals(responseEntity.getStatusCode(), HttpStatus.BAD_REQUEST);
-        assertTrue(responseEntity.getBody().contains("\"message\":\"null value in entry: propertyHero=null\""));
-    }
-
-
     @SuppressWarnings({"unchecked"})
     private static Map<String, List<MapMessageValidator>> getMockValidators() {
         Map<String, List<MapMessageValidator>> validators = new HashMap<>();
