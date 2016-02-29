@@ -393,7 +393,7 @@ public class MediaController extends CommonServiceController {
         List<Map<String, String>> validationErrorList = null;
         for (final MapMessageValidator mapMessageValidator : validatorList) {
             validationErrorList = mapMessageValidator.validateImages(imageMessageList);
-            if (validationErrorList.isEmpty()) {
+            if (!validationErrorList.isEmpty()) {
                 return JSONUtil.convertValidationErrors(validationErrorList);
             }
         }

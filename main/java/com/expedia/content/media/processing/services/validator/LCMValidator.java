@@ -41,15 +41,16 @@ public class LCMValidator implements MapMessageValidator {
             final StringBuffer errorMsg = new StringBuffer();
             messageMap.put("imageMessage", imageMessage);
 
-            if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING) && !mediaDomainCategoriesDao.subCategoryIdExists(imageMessage.getOuterDomainData(), DEFAULT_LANG_ID)) {
-                errorMsg.append("The category does not exist in LCM.");
-            }
             if (!skuGroupCatalogItemDao.skuGroupExists(Integer.parseInt(imageMessage.getOuterDomainData().getDomainId()))) {
                 errorMsg.append("The domainId does not exist in LCM.");
             }
 
             if (!containsIgnoreCase(providerProperties.values(), imageMessage.getOuterDomainData().getProvider())) {
                 errorMsg.append("The mediaProvider does not exist in LCM.");
+            }
+
+            if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING) && !mediaDomainCategoriesDao.subCategoryIdExists(imageMessage.getOuterDomainData(), DEFAULT_LANG_ID)) {
+                errorMsg.append("The category does not exist in LCM.");
             }
 
             if (!roomTypeDao.roomTypeCatalogItemIdExists(imageMessage.getOuterDomainData())) {
