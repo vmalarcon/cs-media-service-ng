@@ -1,23 +1,5 @@
 package com.expedia.content.media.processing.services.dao;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import javax.annotation.Resource;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
@@ -30,6 +12,22 @@ import com.expedia.content.media.processing.services.util.ActivityMapping;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import javax.annotation.Resource;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Media data access operations through LCM and the Dynamo MediaDB.
@@ -294,22 +292,23 @@ public class LcmDynamoMediaDao implements MediaDao {
     /**
      * Extract derivative data from the media objects.
      * JSON from the media DB.
-     * 
+     *
      * @param lcmMedia Data object containing media data from LCM.
      * @return
      */
     private List<Map<String, Object>> extractDerivatives(final LcmMedia lcmMedia) {
         List<Map<String, Object>> derivatives = null;
         if (lcmMedia.getDerivatives() != null && !lcmMedia.getDerivatives().isEmpty()) {
-            derivatives = lcmMedia.getDerivatives().stream().map(derivative -> {
-                final Map<String, Object> derivativeData = new HashMap<>();
-                derivativeData.put(FIELD_DERIVATIVE_LOCATION, imageRootPath + derivative.getFileName());
-                derivativeData.put(FIELD_DERIVATIVE_TYPE, derivative.getMediSizeType());
-                derivativeData.put(FIELD_DERIVATIVE_WIDTH, derivative.getWidth());
-                derivativeData.put(FIELD_DERIVATIVE_HEIGHT, derivative.getHeight());
-                derivativeData.put(FIELD_DERIVATIVE_FILE_SIZE, derivative.getFileSize() * KB_TO_BYTES_CONVERTER);
-                return derivativeData;
-            }).collect(Collectors.toList());
+            derivatives = lcmMedia.getDerivatives().stream().filter(derivative -> derivative.getFileProcessed())
+                    .map(derivative -> {
+                        final Map<String, Object> derivativeData = new HashMap<>();
+                        derivativeData.put(FIELD_DERIVATIVE_LOCATION, imageRootPath + derivative.getFileName());
+                        derivativeData.put(FIELD_DERIVATIVE_TYPE, derivative.getMediSizeType());
+                        derivativeData.put(FIELD_DERIVATIVE_WIDTH, derivative.getWidth());
+                        derivativeData.put(FIELD_DERIVATIVE_HEIGHT, derivative.getHeight());
+                        derivativeData.put(FIELD_DERIVATIVE_FILE_SIZE, derivative.getFileSize() * KB_TO_BYTES_CONVERTER);
+                        return derivativeData;
+                    }).collect(Collectors.toList());
         }
         return derivatives;
     }

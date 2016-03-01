@@ -1,12 +1,7 @@
 package com.expedia.content.media.processing.services.dao.sql;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.util.Date;
-
-import javax.sql.DataSource;
-
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.SqlParameter;
@@ -14,8 +9,11 @@ import org.springframework.jdbc.core.SqlReturnResultSet;
 import org.springframework.jdbc.object.StoredProcedure;
 import org.springframework.stereotype.Repository;
 
-import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
-import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
+import javax.sql.DataSource;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.Date;
 
 /**
  * Call a MSSQL Sproc [MediaItemGet] in LCM in order to retrieve data from the Media, CatalogItemMedia, and MediaFileName (derivatives) tables
@@ -57,6 +55,7 @@ public class SQLMediaGetSproc extends StoredProcedure {
                     .category(resultSet.getInt("MediaUseRank"))
                     .comment(resultSet.getString("MediaCommentTxt"))
                     .formatId(resultSet.getInt("MediaFormatID"))
+                    .filProcessBool(resultSet.getBoolean("FileProcessedBool"))
                     .build();
         }
     }
