@@ -53,7 +53,7 @@ public class CategoryController extends CommonServiceController {
                 getRequestId(headers));
         if (localeId != null) {
             if (!StringUtils.isNumeric(localeId) || localeId.length() > 5) {
-                return buildErrorResponse("Requested localeId " + localeId + " must be a number with length less than 5.",
+                return buildErrorResponse("Requested localeId " + localeId + " must be a number less than 5 characters.",
                         MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + domainName + localePath, BAD_REQUEST);
             }
         }

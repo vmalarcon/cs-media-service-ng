@@ -73,6 +73,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     private String imageRootPath;
     @Value("${media.status.sproc.param.limit}")
     private int paramLimit;
+
     @Override
     public List<Media> getMediaByFilename(String fileName) {
         return mediaRepo.getMediaByFilename(fileName);
@@ -104,32 +105,44 @@ public class LcmDynamoMediaDao implements MediaDao {
                         .filter(media -> (activeFilter == null || activeFilter.isEmpty() || activeFilter.equals(ACTIVE_FILTER_ALL)
                                 || (activeFilter.equals(ACTIVE_FILTER_TRUE) && media.getActive() != null && media.getActive().equals(ACTIVE_FILTER_TRUE))
                                 || (activeFilter.equals(ACTIVE_FILTER_FALSE)
-                                        && (media.getActive() == null || media.getActive().equals(ACTIVE_FILTER_FALSE)))) ? true : false)
-                .collect(Collectors.toList());
+                                && (media.getActive() == null || media.getActive().equals(ACTIVE_FILTER_FALSE)))) ? true : false)
+                        .collect(Collectors.toList());
         final List<String> fileNames =
-                domainIdMedia.stream().filter(media -> media.getFileName() != null).map(media -> media.getFileName()).distinct().collect(Collectors.toList());
+                domainIdMedia.stream().filter(media -> media.getFileName() != null).map(media -> media.getFileName()).distinct()
+                        .collect(Collectors.toList());
 
         final Map<String, String> fileStatus = getStatusByLoop(paramLimit, fileNames);
         domainIdMedia.stream().forEach(media -> media.setStatus(fileStatus.get(media.getFileName())));
         return domainIdMedia;
     }
 
+    /**
+     * because of the parameter length limitation in Sproc 'MediaProcessLogGetByFilename', if the fileNames lengh is bigger than the limitation
+     * we call the sproc multiple times to get the result.
+     *
+     * @param limit  sproc parameter limitation
+     * @param fileNames
+     * @return
+     */
     private Map<String, String> getStatusByLoop(int limit, List<String> fileNames) {
         final int total = fileNames.size();
         Map<String, String> fileStatusAll = new HashMap<>();
         if (total > limit) {
-            final int loopTime = total / limit;
+            final int sprocCallCount = total / limit;
             final int rest = total % limit;
             int start = 0;
-            for (int i = 0; i < loopTime; i++) {
+            for (int i = 0; i < sprocCallCount; i++) {
                 final List<String> subList = fileNames.subList(start, start + limit);
                 final Map<String, String> fileStatus = getLatestStatus(subList);
                 fileStatusAll.putAll(fileStatus);
                 start = start + limit;
             }
             final List<String> leftNames = fileNames.subList(total - rest, total);
-            final Map<String, String> fileStatus = getLatestStatus(leftNames);
-            fileStatusAll.putAll(fileStatus);
+            if (!leftNames.isEmpty()) {
+                final Map<String, String> fileStatus = getLatestStatus(leftNames);
+                fileStatusAll.putAll(fileStatus);
+            }
+
         } else {
             fileStatusAll = getLatestStatus(fileNames);
         }
@@ -160,7 +173,7 @@ public class LcmDynamoMediaDao implements MediaDao {
 
     /**
      * Function that converts LCM media item to a media item to return.
-     * 
+     *
      * @param mediaEidMap A map of media DB items that have an EID.
      * @return The converted LCM media.
      */
@@ -198,7 +211,7 @@ public class LcmDynamoMediaDao implements MediaDao {
 
     /**
      * Builds a comment list from the LCM media comment. There is only one comment in LCM, but the response expects a list.
-     * 
+     *
      * @param lcmMedia Data object containing media data from LCM.
      * @return The latest status of a media file.
      */
@@ -214,7 +227,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     /**
      * Pulls the latest processing status of media files. When a file doesn't have any process logs the file is
      * considered old and therefore published.
-     * 
+     *
      * @param fileNames File names for which the status is required.
      * @return The latest status of a media filesS.
      */
@@ -224,7 +237,7 @@ public class LcmDynamoMediaDao implements MediaDao {
         final Map<String, List<MediaProcessLog>> fileNameLogListMap = new HashMap<>();
         JSONUtil.divideStatusListToMap(logs, fileNameLogListMap, fileNames.size());
 
-        return fileNames.stream().collect(Collectors.toMap(String::toString, fileName -> {
+        return fileNames.stream().distinct().collect(Collectors.toMap(String::toString, fileName -> {
             final List<MediaProcessLog> logList = fileNameLogListMap.get(fileName);
             final ActivityMapping activityStatus = (logList == null) ? null : getLatestActivityMapping(logList);
             return activityStatus == null ? "PUBLISHED" : activityStatus.getStatusMessage();
@@ -234,7 +247,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     /**
      * Finds the latest activity that is part of the activity white list. The list is expected to
      * be ordered from oldest to latest.
-     * 
+     *
      * @param logList The list to search.
      * @return The found activity mapping. {@code null} if no activity is found.
      */
@@ -254,8 +267,8 @@ public class LcmDynamoMediaDao implements MediaDao {
 
     /**
      * Extract domain data to be added to a media data response.
-     * 
-     * @param lcmMedia Data object containing media data from LCM.
+     *
+     * @param lcmMedia    Data object containing media data from LCM.
      * @param dynamoMedia Data object containing media data form the Media DB.
      * @return A map of domain data.
      */
@@ -279,9 +292,9 @@ public class LcmDynamoMediaDao implements MediaDao {
     /**
      * Extract LCM domain data and stores into a passed map to be interpreted the same way as if it would have been pulled in JSON from
      * the media DB.
-     * 
-     * @param lcmMedia Data object containing media data from LCM.
-     * @param dynamoMedia Data object containing media data form the Media DB.
+     *
+     * @param lcmMedia      Data object containing media data from LCM.
+     * @param dynamoMedia   Data object containing media data form the Media DB.
      * @param lcmDomainData Map to store extracted LCM data into.
      */
     private void extractLcmDomainFields(final LcmMedia lcmMedia, final Media dynamoMedia, final Map<String, Object> lcmDomainData) {
@@ -300,8 +313,8 @@ public class LcmDynamoMediaDao implements MediaDao {
     /**
      * Extract LCM domain room data and stores into a passed map to be interpreted the same way as if it would have been pulled in
      * JSON from the media DB.
-     * 
-     * @param lcmMedia Data object containing media data from LCM.
+     *
+     * @param lcmMedia      Data object containing media data from LCM.
      * @param lcmDomainData Map to store extracted LCM data into.
      */
     private void extractLcmRooms(final LcmMedia lcmMedia, final Map<String, Object> lcmDomainData) {
@@ -318,7 +331,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     /**
      * Extract derivative data from the media objects.
      * JSON from the media DB.
-     * 
+     *
      * @param lcmMedia Data object containing media data from LCM.
      * @return
      */
