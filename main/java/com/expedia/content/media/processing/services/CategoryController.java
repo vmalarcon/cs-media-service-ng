@@ -47,15 +47,15 @@ public class CategoryController extends CommonServiceController {
                                                    final @PathVariable("domainName") String domainName,
                                                    final @RequestParam(value = "localeId", required = false) String localeId) {
         final String localePath = (localeId == null) ? "" : "?localeId=" + localeId;
-        LOGGER.info("RECEIVED REQUEST - url=[{}][{}][{}], requestId=[{}]", MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl(), domainName, localePath,
-                getRequestId(headers));
+        LOGGER.info("RECEIVED REQUEST - url=[{}]/[{}][{}], requestId=[{}]",
+                MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl(), domainName, localePath, getRequestId(headers));
         try {
             final String response = getDomainCategories(domainName, localeId);
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (DomainNotFoundException e) {
             LOGGER.error("ERROR - message=[{}], requestId=[{}]", e.getMessage(), headers.get(REQUEST_ID), e);
             return buildErrorResponse("Requested resource with ID " + domainName + " was not found.",
-                    MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + domainName + localePath, NOT_FOUND);
+                    MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + "/" + domainName + localePath, NOT_FOUND);
         }
     }
 
