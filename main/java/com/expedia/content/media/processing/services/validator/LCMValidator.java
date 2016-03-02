@@ -45,7 +45,7 @@ public class LCMValidator implements MapMessageValidator {
                 errorMsg.append("The domainId does not exist in LCM.");
             }
 
-            if (StringUtils.isEmpty(DomainDataUtil.getDomianProvider(imageMessage.getOuterDomainData().getProvider(), providerProperties))) {
+            if (StringUtils.isEmpty(DomainDataUtil.getDomainProvider(imageMessage.getOuterDomainData().getProvider(), providerProperties))) {
                 errorMsg.append("The mediaProvider does not exist in LCM.");
             }
 

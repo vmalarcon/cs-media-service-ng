@@ -96,7 +96,7 @@ public class MediaControllerTest {
     public void testValidateImageSuccess() throws Exception {
         String jsonMessage =
                 "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", " + "\"userId\": \"bobthegreat\", "
-                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC-Internal\" " + "}";
+                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Internal User\" " + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -133,7 +133,7 @@ public class MediaControllerTest {
     @Test
     public void testValidateImageSuccessWithoutFileName() throws Exception {
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", "
-                + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC-Internal\" " + "}";
+                + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Internal User\" " + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -170,7 +170,7 @@ public class MediaControllerTest {
     public void testValidateImageSuccessWithThumbnail() throws Exception {
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", "
                 + "\"userId\": \"bobthegreat\", " + "\"generateThumbnail\": \"true\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", "
-                + "\"domainProvider\": \"EPC-Internal\" " + "}";
+                + "\"domainProvider\": \"EPC Internal User\" " + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -208,7 +208,7 @@ public class MediaControllerTest {
     public void testClientNotValid() throws Exception {
         String jsonMessage =
                 "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", " + "\"userId\": \"bobthegreat\", "
-                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC-Internal\" " + "}";
+                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Internal User\" " + "}";
 
         Map<String, List<MapMessageValidator>> validators = new HashMap<>();
         List<MapMessageValidator> messageValidator = new ArrayList<>();
@@ -240,7 +240,7 @@ public class MediaControllerTest {
     @Test
     public void testURLNotFound() throws Exception {
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgasdfasdfasdfur.com/3PRGFasdfasdfasdfii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", "
-                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC-Internal\" "
+                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Internal User\" "
                 + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
@@ -478,6 +478,40 @@ public class MediaControllerTest {
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
         assertTrue(publishedMessageValue.getPayload().contains("\"domainProvider\":\"SCORE\""));
+    }
+
+    @Test
+    public void testFreeToBookFileNameExtraction() throws Exception {
+        String jsonMessage =
+                "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg/why/would/someone/name/all/of/their/files/original.jpg\", " + "\"fileName\": \"original.jpg\", " + "\"userId\": \"bobthegreat\", "
+                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"freetobook\" " + "}";
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+        setFieldValue(mediaController, "mediaReplacement", mediaReplacement);
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
+        assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
+        assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+
+        ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
+        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
+        verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
+        final Message<String> publishedMessageValue = publishedMessage.getValue();
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"http:\\/\\/i.imgur.com\\/3PRGFii.jpg\\/why\\/would\\/someone\\/name\\/all\\/of\\/their\\/files\\/original.jpg\""));
+
     }
 
     @SuppressWarnings({"unchecked"})

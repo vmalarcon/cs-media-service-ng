@@ -33,7 +33,7 @@ public class DomainDataUtil {
      * @param providerProperties
      * @return empty if the domainProvider is invalid, domainProvider otherwise
      */
-    public static String getDomianProvider(String domainProvider, Properties providerProperties) {
+    public static String getDomainProvider(String domainProvider, Properties providerProperties) {
         final String domainProviderText = providerProperties.entrySet().stream()
                 .filter(providerProperty -> ((String) providerProperty.getValue()).equalsIgnoreCase(domainProvider))
                 .map(providerProperty -> (String) providerProperty.getValue())

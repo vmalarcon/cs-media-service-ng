@@ -1,6 +1,5 @@
 package com.expedia.content.media.processing.services;
 
-import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
@@ -15,6 +14,7 @@ import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.util.DomainDataUtil;
+import com.expedia.content.media.processing.services.util.FileNameUtil;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import com.expedia.content.media.processing.services.validator.HTTPValidator;
@@ -25,7 +25,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import expedia.content.solutions.metrics.annotations.Meter;
 import expedia.content.solutions.metrics.annotations.Timer;
-import org.apache.commons.io.FilenameUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
@@ -289,11 +288,9 @@ public class MediaController extends CommonServiceController {
     private ImageMessage updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId) {
         ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
         imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
-        if (imageMessage.getFileName() == null) {
-            final String fileNameFromFileUrl =
-                    FilenameUtils.getBaseName(imageMessage.getFileUrl()) + "." + FilenameUtils.getExtension(imageMessage.getFileUrl());
-            imageMessageBuilder.fileName(StringUtils.isNullOrEmpty(imageMessage.getFileName()) ? fileNameFromFileUrl : imageMessage.getFileName());
-        }
+
+        imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(imageMessage.getOuterDomainData().getProvider(), imageMessage));
+
         imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
 
         final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
@@ -423,7 +420,7 @@ public class MediaController extends CommonServiceController {
      */
     @SuppressWarnings("PMD.UnnecessaryLocalBeforeReturn")
     private OuterDomain getDomainProviderFromMapping(OuterDomain outerDomain) {
-        final String domainProvider =  DomainDataUtil.getDomianProvider(outerDomain.getProvider(), providerProperties);
+        final String domainProvider =  DomainDataUtil.getDomainProvider(outerDomain.getProvider(), providerProperties);
         final OuterDomain newOuterDomain = OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
         return newOuterDomain;
     }
