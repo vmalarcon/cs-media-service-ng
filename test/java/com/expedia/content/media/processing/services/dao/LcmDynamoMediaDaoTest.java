@@ -278,11 +278,12 @@ public class LcmDynamoMediaDaoTest {
         assertNull(testMedia2.getMediaGuid());
         assertNull(testMedia2.getCommentList());
         assertEquals(1, testMedia2.getDerivativesList().size());
-        assertEquals(((HashMap) testMedia2.getDerivativesList().get(0)).get("fileSize"), 200 * 1024L);
-        assertEquals(((HashMap) testMedia2.getDerivativesList().get(0)).get("width"), 20);
-        assertEquals(((HashMap) testMedia2.getDerivativesList().get(0)).get("height"), 21);
-        assertEquals(((HashMap)testMedia2.getDerivativesList().get(0)).get("type"), "s");
-        assertEquals(((HashMap) testMedia2.getDerivativesList().get(0)).get("location"), "https://media.int.expedia.com/image2_s.jpg");
+        HashMap derivative = (HashMap) testMedia2.getDerivativesList().get(0);
+        assertEquals(derivative.get("fileSize"), 200 * 1024L);
+        assertEquals(derivative.get("width"), 20);
+        assertEquals(derivative.get("height"), 21);
+        assertEquals(derivative.get("type"), "s");
+        assertEquals(derivative.get("location"), "https://media.int.expedia.com/image2_s.jpg");
         Media testMedia3 = testMediaList.get(2);
         assertEquals(dynamoMedia3.getMediaGuid(), testMedia3.getMediaGuid());
         assertNull(testMedia3.getDerivativesList());

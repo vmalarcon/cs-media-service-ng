@@ -55,7 +55,7 @@ public class SQLMediaGetSproc extends StoredProcedure {
                     .category(resultSet.getInt("MediaUseRank"))
                     .comment(resultSet.getString("MediaCommentTxt"))
                     .formatId(resultSet.getInt("MediaFormatID"))
-                    .filProcessBool(resultSet.getBoolean("FileProcessedBool"))
+                    .filProcessedBool(resultSet.getBoolean("FileProcessedBool"))
                     .build();
         }
     }
