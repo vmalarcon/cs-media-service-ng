@@ -1,9 +1,11 @@
 package com.expedia.content.media.processing.services;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +51,12 @@ public class CategoryController extends CommonServiceController {
         final String localePath = (localeId == null) ? "" : "?localeId=" + localeId;
         LOGGER.info("RECEIVED REQUEST - url=[{}][{}][{}], requestId=[{}]", MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl(), domainName, localePath,
                 getRequestId(headers));
+        if (localeId != null) {
+            if (!StringUtils.isNumeric(localeId) || localeId.length() > 5) {
+                return buildErrorResponse("Requested localeId " + localeId + " must be a number with length less than 5.",
+                        MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + domainName + localePath, BAD_REQUEST);
+            }
+        }
         try {
             final String response = getDomainCategories(domainName, localeId);
             return new ResponseEntity<>(response, HttpStatus.OK);

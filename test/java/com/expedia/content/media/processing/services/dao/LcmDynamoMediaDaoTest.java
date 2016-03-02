@@ -224,6 +224,8 @@ public class LcmDynamoMediaDaoTest {
         MediaDao mediaDao = new LcmDynamoMediaDao();
         setFieldValue(mediaDao, "lcmMediaIdSproc", mediaIdSproc);
         setFieldValue(mediaDao, "lcmMediaSproc", mediaSproc);
+        setFieldValue(mediaDao, "paramLimit", 50);
+
         setFieldValue(mediaDao, "mediaRepo", mockMediaDBRepo);
         setFieldValue(mediaDao, "providerProperties", properties);
         setFieldValue(mediaDao, "processLogDao", makeMockProcessLogDao());

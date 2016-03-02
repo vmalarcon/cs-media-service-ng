@@ -71,7 +71,8 @@ public class LcmDynamoMediaDao implements MediaDao {
     private Properties providerProperties;
     @Value("${image.root.path}")
     private String imageRootPath;
-
+    @Value("${media.status.sproc.param.limit}")
+    private int paramLimit;
     @Override
     public List<Media> getMediaByFilename(String fileName) {
         return mediaRepo.getMediaByFilename(fileName);
@@ -106,16 +107,39 @@ public class LcmDynamoMediaDao implements MediaDao {
                                         && (media.getActive() == null || media.getActive().equals(ACTIVE_FILTER_FALSE)))) ? true : false)
                 .collect(Collectors.toList());
         final List<String> fileNames =
-                domainIdMedia.stream().filter(media -> media.getFileName() != null).map(media -> media.getFileName()).collect(Collectors.toList());
-        final Map<String, String> fileStatus = getLatestStatus(fileNames);
+                domainIdMedia.stream().filter(media -> media.getFileName() != null).map(media -> media.getFileName()).distinct().collect(Collectors.toList());
+
+        final Map<String, String> fileStatus = getStatusByLoop(paramLimit, fileNames);
         domainIdMedia.stream().forEach(media -> media.setStatus(fileStatus.get(media.getFileName())));
         return domainIdMedia;
     }
 
+    private Map<String, String> getStatusByLoop(int limit, List<String> fileNames) {
+        final int total = fileNames.size();
+        Map<String, String> fileStatusAll = new HashMap<>();
+        if (total > limit) {
+            final int loopTime = total / limit;
+            final int rest = total % limit;
+            int start = 0;
+            for (int i = 0; i < loopTime; i++) {
+                final List<String> subList = fileNames.subList(start, start + limit);
+                final Map<String, String> fileStatus = getLatestStatus(subList);
+                fileStatusAll.putAll(fileStatus);
+                start = start + limit;
+            }
+            final List<String> leftNames = fileNames.subList(total - rest, total);
+            final Map<String, String> fileStatus = getLatestStatus(leftNames);
+            fileStatusAll.putAll(fileStatus);
+        } else {
+            fileStatusAll = getLatestStatus(fileNames);
+        }
+        return fileStatusAll;
+    }
+
     /**
      * From a domain id builds a media item from LCM data. Allows an inclusive filter for derivatives.
-     * 
-     * @param domainId Id of the domain object for which the media is required.
+     *
+     * @param domainId         Id of the domain object for which the media is required.
      * @param derivativeFilter Inclusive filter of derivatives. A null or empty string will not exclude any derivatives.
      * @return
      */
