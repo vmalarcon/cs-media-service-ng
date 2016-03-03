@@ -2,6 +2,8 @@ package com.expedia.content.media.processing.services.util;
 
 import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FilenameUtils;
 
 import java.util.Optional;
@@ -15,9 +17,10 @@ public class FileNameUtil {
 
 
     public static final Function<ImageMessage, String> futureProvidersFunction = (consumedImageMessage) -> {
-        final String fileNameFromFileUrl = consumedImageMessage.getFileUrl();
+        final String fileNameFromFileUrl = DigestUtils.sha1Hex(consumedImageMessage.getFileUrl()) + "." + FilenameUtils.getExtension(consumedImageMessage.getFileUrl());
         return fileNameFromFileUrl;
     };
+
 
     private static final Function<ImageMessage, String> currentProvidersFunction = (consumedImageMessage) -> {
         if (StringUtils.isNullOrEmpty(consumedImageMessage.getFileName())) {
