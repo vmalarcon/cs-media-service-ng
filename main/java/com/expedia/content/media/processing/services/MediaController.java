@@ -213,7 +213,11 @@ public class MediaController extends CommonServiceController {
                     .lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
                     .domainProvider(media.getProvider()).domainFields(media.getDomainData()).derivatives(media.getDerivativesList())
                     .domainDerivativeCategory(media.getDomainDerivativeCategory())
-                    .comments(media.getCommentList()).build();
+                    .comments( (media.getCommentList() == null) ? null :
+                            media.getCommentList().stream()
+                                    .map(comment -> new Comment(comment, DATE_FORMATTER.print(media.getLastUpdated().getTime())))
+                                    .collect(Collectors.toList()))
+                    .build();
         }).collect(Collectors.toList());
     }
 

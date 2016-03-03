@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -298,13 +299,16 @@ public class MediaControllerTest {
 
     @Test
     public void testMediaByDomainIdLodging() throws Exception {
-        
+
+        List<String> commentList = new LinkedList<>();
+        commentList.add("Comment1");
+        commentList.add("Comment2");
         Map<String, Object> domainData = new HashMap<>();
         domainData.put("propertyHero", "true");
         Media mediaItem1 = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file_name.jpg")
                 .mediaGuid("102d3a4b-c985-43d3-9245-b60ab1eb9a0f").lastUpdated(new Date()).domainData(domainData).lcmMediaId("4321").build();
         Media mediaItem2 = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file2_name.jpg")
-                .mediaGuid("ea868d7d-c4ce-41a8-be43-19fff0ce5ad4").lastUpdated(new Date()).build();
+                .mediaGuid("ea868d7d-c4ce-41a8-be43-19fff0ce5ad4").lastUpdated(new Date()).commentList(commentList).build();
         List<Media> mediaValues = new ArrayList<>();
         mediaValues.add(mediaItem1);
         mediaValues.add(mediaItem2);
@@ -329,6 +333,8 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody()
                 .replaceAll("[0-9]{4}-[0-9]{2}-[0-9]{2}[\\s][0-9]{1,2}:[0-9]{2}:[0-9]{2}[\\.][0-9]+\\s{1}[\\+|\\-][0-9]{2}:[0-9]{2}", "timestamp")
                 .contains("\"lastUpdateDateTime\":\"timestamp\""));
+        assertTrue(responseEntity.getBody().contains("\"comments\":[{\"note\":\"Comment1\",\"timestamp\""));
+        assertTrue(responseEntity.getBody().contains(",{\"note\":\"Comment2\",\"timestamp\""));
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\":\"ea868d7d-c4ce-41a8-be43-19fff0ce5ad4\""));
         assertTrue(responseEntity.getBody().contains("\"lcmMediaId\":\"4321\""));
         assertTrue(responseEntity.getBody().contains("\"domainFields\":{"));

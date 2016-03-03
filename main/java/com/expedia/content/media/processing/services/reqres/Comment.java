@@ -1,7 +1,7 @@
 package com.expedia.content.media.processing.services.reqres;
 
 /**
- * Created by sstannus on 3/3/16.
+ * Comment Object with note and timestamp
  */
 public class Comment {
     private final String note;
@@ -10,5 +10,13 @@ public class Comment {
     public Comment(String note, String timestamp) {
         this.note = note;
         this.timestamp = timestamp;
+    }
+
+    public String getNote() {
+        return note;
+    }
+
+    public String getTimestamp() {
+        return timestamp;
     }
 }
