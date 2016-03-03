@@ -56,6 +56,7 @@ import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
+import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import com.expedia.content.media.processing.services.validator.HTTPValidator;
@@ -222,7 +223,7 @@ public class MediaController extends CommonServiceController {
 
     /**
      * Validates the media by domain id request.
-     * 
+     *
      * @param domainName Domain to validate.
      * @param activeFilter Active filter to validate.
      * @return Returns a response if the validation fails; null otherwise.
@@ -240,7 +241,7 @@ public class MediaController extends CommonServiceController {
 
     /**
      * Common processing between mediaAdd and the AWS portion of aquireMedia. Can be transfered into mediaAdd once aquireMedia is removed.
-     * 
+     *
      * @param message JSON formated ImageMessage.
      * @param requestID The id of the request. Used for tracking purposes.
      * @param serviceUrl URL of the message called.
@@ -251,6 +252,7 @@ public class MediaController extends CommonServiceController {
      */
     private ResponseEntity<String> processRequest(final String message, final String requestID, final String serviceUrl, final String clientId,
                                                   HttpStatus successStatus) throws Exception {
+
         final String json = validateImageMessage(message, clientId);
         if (!"[]".equals(json)) {
             LOGGER.warn("Returning BAD_REQUEST for messageName={}, requestId=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, requestID, message, json);
@@ -280,9 +282,10 @@ public class MediaController extends CommonServiceController {
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
     }
 
+
     /**
      * Updates the image message for the next step. Must be done before being published to the next work queue.
-     * 
+     *
      * @param imageMessage The incoming image message.
      * @param requestID The id of the request. Used for tracking purposes.
      * @param clientId Web service client id.
@@ -297,6 +300,9 @@ public class MediaController extends CommonServiceController {
             imageMessageBuilder.fileName(StringUtils.isNullOrEmpty(imageMessage.getFileName()) ? fileNameFromFileUrl : imageMessage.getFileName());
         }
         imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
+
+        final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
+        imageMessageBuilder.outerDomainData(outerDomain);
         if (mediaReplacement.isReplacement(imageMessage)) {
             // This will update the GUID to the old one.
             processReplacement(imageMessage, imageMessageBuilder);
@@ -336,7 +342,7 @@ public class MediaController extends CommonServiceController {
 
     /**
      * Verifies if the file exists in an S3 bucket or is available in HTTP.
-     * 
+     *
      * @param imageMessage Incoming image message.
      * @return {@code true} if the file exists; {@code false} otherwise.
      */
@@ -393,6 +399,9 @@ public class MediaController extends CommonServiceController {
         List<Map<String, String>> validationErrorList = null;
         for (final MapMessageValidator mapMessageValidator : validatorList) {
             validationErrorList = mapMessageValidator.validateImages(imageMessageList);
+            if (!validationErrorList.isEmpty()) {
+                return JSONUtil.convertValidationErrors(validationErrorList);
+            }
         }
         return JSONUtil.convertValidationErrors(validationErrorList);
     }
@@ -410,4 +419,17 @@ public class MediaController extends CommonServiceController {
         logActivityProcess.log(logEntry, reporting);
     }
 
+    /**
+     * get the domainProvider text from the mapping regardless of case-sensitivity
+     * if the exact text is not passed, datamanager fails to find it and defaults it
+     * to 1
+     * @param outerDomain
+     * @return outerDomain with domainProvider replaced by the exact domainProvider from the mapping
+     */
+    @SuppressWarnings("PMD.UnnecessaryLocalBeforeReturn")
+    private OuterDomain getDomainProviderFromMapping(OuterDomain outerDomain) {
+        final String domainProvider =  DomainDataUtil.getDomianProvider(outerDomain.getProvider(), providerProperties);
+        final OuterDomain newOuterDomain = OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
+        return newOuterDomain;
+    }
 }

@@ -2,6 +2,7 @@ package com.expedia.content.media.processing.services;
 
 import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -11,6 +12,7 @@ import java.util.List;
 
 import org.junit.Test;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 
@@ -99,6 +101,18 @@ public class CategoryControllerTest {
         ResponseEntity<String> response = categoryController.domainCategories(mockHeader, lodgingDoman, localId);
         assertEquals(404, response.getStatusCode().value());
         assertTrue(response.getBody().startsWith("{\"error\":\"Not Found\",\"message\":\"Requested resource with ID potato was not found.\",\"path\":\"/media/v1/domaincategories/potato?localeId=1033\",\"status\":404,\"timestamp\"", 0));
+    }
+
+    @Test
+    public void testInvalidLocalId() throws Exception {
+        final String lodgingDoman = "potato";
+        final String localId = "10335555";
+        CategoryController categoryController = new CategoryController();
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        headers.add("request-id", "testid");
+        ResponseEntity<String> responseEntity = categoryController.domainCategories(headers, lodgingDoman, localId);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
 }

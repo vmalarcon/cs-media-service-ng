@@ -6,7 +6,9 @@ import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
 import com.expedia.content.media.processing.services.dao.RoomTypeDao;
 import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
+import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.ValidatorUtil;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.annotation.Resource;
@@ -15,8 +17,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
-import static com.expedia.content.media.processing.services.util.ValidatorUtil.containsIgnoreCase;
 
 public class LCMValidator implements MapMessageValidator {
 
@@ -45,12 +45,11 @@ public class LCMValidator implements MapMessageValidator {
                 errorMsg.append("The domainId does not exist in LCM.");
             }
 
-            if (!containsIgnoreCase(providerProperties.values(), imageMessage.getOuterDomainData().getProvider())) {
+            if (StringUtils.isEmpty(DomainDataUtil.getDomianProvider(imageMessage.getOuterDomainData().getProvider(), providerProperties))) {
                 errorMsg.append("The mediaProvider does not exist in LCM.");
             }
 
-            if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING)
-                    && !mediaDomainCategoriesDao.subCategoryIdExists(imageMessage.getOuterDomainData(), DEFAULT_LANG_ID)) {
+            if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING) && !mediaDomainCategoriesDao.subCategoryIdExists(imageMessage.getOuterDomainData(), DEFAULT_LANG_ID)) {
                 errorMsg.append("The category does not exist in LCM.");
             }
 

@@ -21,11 +21,12 @@ import org.springframework.test.context.ContextConfiguration;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -63,6 +64,7 @@ public class LCMValidatorTest {
     RoomTypeDao roomTypeDao;
     List<RoomType> mockRoomTypes;
     Map<String, Object> mockRoomResults = new HashMap<>();
+    Set<Map.Entry<Object, Object>> providerMapping;
 
     @BeforeClass
     public static void setUp() {
@@ -97,10 +99,14 @@ public class LCMValidatorTest {
         mockRoomTypes.add(new RoomType(333, 444, new Timestamp(1339150200000L), "phoenix", "phoenix"));
         mockRoomResults = new HashMap<>();
         mockRoomResults.put(PropertyRoomTypeGetIDSproc.ROOM_TYPE_RESULT_SET, mockRoomTypes);
-        ReflectionUtils.setVariableValueInObject(lcmValidator, "skuGroupCatalogItemDao", mockSKUGroupCatalogItemDao);
         ReflectionUtils.setVariableValueInObject(lcmValidator, "providerProperties", mockProviderProperties);
+        ReflectionUtils.setVariableValueInObject(lcmValidator, "skuGroupCatalogItemDao", mockSKUGroupCatalogItemDao);
         ReflectionUtils.setVariableValueInObject(lcmValidator, "mediaDomainCategoriesDao", mockMediaDomainCategoriesDao);
         ReflectionUtils.setVariableValueInObject(lcmValidator, "roomTypeDao", roomTypeDao);
+        providerMapping = new HashSet<>();
+        providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("1", "EPC Internal User"));
+        providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("6", "SCORE"));
+        when(mockProviderProperties.entrySet()).thenReturn(providerMapping);
     }
 
     @Test
@@ -129,13 +135,12 @@ public class LCMValidatorTest {
         final List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
-        when(mockProviderProperties.values()).thenReturn(Arrays.asList("EPC Internal User"));
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
         final List<Map<String, String>> errorList = lcmValidator.validateImages(imageMessageList);
         assertTrue(errorList.size() == 0);
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
-        verify(mockProviderProperties, times(1)).values();
+        verify(mockProviderProperties, times(1)).entrySet();
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
         verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
     }
@@ -166,7 +171,6 @@ public class LCMValidatorTest {
         final List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.FALSE);
-        when(mockProviderProperties.values()).thenReturn(Arrays.asList("EPC Internal User"));
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
         final List<Map<String, String>> errorList = lcmValidator.validateImages(imageMessageList);
@@ -174,7 +178,7 @@ public class LCMValidatorTest {
         assertTrue(errorList.get(0).get("error").equals("The domainId does not exist in LCM."));
         assertTrue(errorList.get(0).get("fileName").equals("Something"));
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
-        verify(mockProviderProperties, times(1)).values();
+        verify(mockProviderProperties, times(1)).entrySet();
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
         verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
     }
@@ -205,7 +209,6 @@ public class LCMValidatorTest {
         final List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
-        when(mockProviderProperties.values()).thenReturn(Arrays.asList("EPC Internal User"));
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
         final List<Map<String, String>> errorList = lcmValidator.validateImages(imageMessageList);
@@ -213,7 +216,7 @@ public class LCMValidatorTest {
         assertTrue(errorList.get(0).get("error").equals("The mediaProvider does not exist in LCM."));
         assertTrue(errorList.get(0).get("fileName").equals("Something"));
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
-        verify(mockProviderProperties, times(1)).values();
+        verify(mockProviderProperties, times(1)).entrySet();
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
         verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
     }
@@ -244,7 +247,6 @@ public class LCMValidatorTest {
         final List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
-        when(mockProviderProperties.values()).thenReturn(Arrays.asList("EPC Internal User"));
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
         final List<Map<String, String>> errorList = lcmValidator.validateImages(imageMessageList);
@@ -252,7 +254,7 @@ public class LCMValidatorTest {
         assertTrue(errorList.get(0).get("error").equals("The category does not exist in LCM."));
         assertTrue(errorList.get(0).get("fileName").equals("Something"));
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
-        verify(mockProviderProperties, times(1)).values();
+        verify(mockProviderProperties, times(1)).entrySet();
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
         verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
     }
@@ -273,13 +275,12 @@ public class LCMValidatorTest {
         final List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
-        when(mockProviderProperties.values()).thenReturn(Arrays.asList("EPC Internal User"));
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
         final List<Map<String, String>> errorList = lcmValidator.validateImages(imageMessageList);
         assertTrue(errorList.size() == 0);
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
-        verify(mockProviderProperties, times(1)).values();
+        verify(mockProviderProperties, times(1)).entrySet();
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
         verifyZeroInteractions(mockPropertyRoomTypeGetIDSproc);
     }
@@ -310,13 +311,12 @@ public class LCMValidatorTest {
         final List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
-        when(mockProviderProperties.values()).thenReturn(Arrays.asList("EPC Internal User"));
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
         final List<Map<String, String>> errorList = lcmValidator.validateImages(imageMessageList);
         assertTrue(errorList.size() == 0);
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
-        verify(mockProviderProperties, times(1)).values();
+        verify(mockProviderProperties, times(1)).entrySet();
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
         verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
     }
@@ -347,7 +347,6 @@ public class LCMValidatorTest {
         final List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
-        when(mockProviderProperties.values()).thenReturn(Arrays.asList("EPC Internal User"));
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
         final List<Map<String, String>> errorList = lcmValidator.validateImages(imageMessageList);
@@ -355,7 +354,7 @@ public class LCMValidatorTest {
         assertTrue(errorList.get(0).get("error").equals("The room does not belong to the property in LCM."));
         assertTrue(errorList.get(0).get("fileName").equals("Something"));
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
-        verify(mockProviderProperties, times(1)).values();
+        verify(mockProviderProperties, times(1)).entrySet();
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
         verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(anyInt());
     }
@@ -380,13 +379,12 @@ public class LCMValidatorTest {
         final List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
-        when(mockProviderProperties.values()).thenReturn(Arrays.asList("EPC Internal User"));
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
         final List<Map<String, String>> errorList = lcmValidator.validateImages(imageMessageList);
         assertTrue(errorList.size() == 0);
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
-        verify(mockProviderProperties, times(1)).values();
+        verify(mockProviderProperties, times(1)).entrySet();
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
         verifyZeroInteractions(mockPropertyRoomTypeGetIDSproc);
     }
@@ -417,13 +415,12 @@ public class LCMValidatorTest {
         final List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
-        when(mockProviderProperties.values()).thenReturn(Arrays.asList("EPC Internal User"));
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
         final List<Map<String, String>> errorList = lcmValidator.validateImages(imageMessageList);
         assertTrue(errorList.size() == 0);
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
-        verify(mockProviderProperties, times(1)).values();
+        verify(mockProviderProperties, times(1)).entrySet();
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
         verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
     }

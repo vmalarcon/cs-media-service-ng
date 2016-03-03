@@ -3,7 +3,7 @@ package com.expedia.content.media.processing.services.dao;
 import com.amazonaws.util.CollectionUtils;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
-import com.expedia.content.media.processing.services.util.ValidatorUtil;
+import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -55,7 +55,7 @@ public class RoomTypeDao {
     private List<Integer> getRoomIds(OuterDomain outerDomain) {
         final List<Integer> roomIds = outerDomain.getDomainFields() == null ||
                 outerDomain.getDomainFields().get(ROOMS) == null ? Collections.EMPTY_LIST :
-                ValidatorUtil.getRoomIds(outerDomain.getDomainFields().get(ROOMS));
+                DomainDataUtil.getRoomIds(outerDomain.getDomainFields().get(ROOMS));
         return roomIds;
     }
 }

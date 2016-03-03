@@ -104,7 +104,9 @@ public class EPCMVELValidatorTest {
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello\"," +
                         "    \"fileName\": \"Something\", " +
-                        "    \"mediaGuid\": \"media-uuid\" " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
+                        "    \"domainId\": \"123\", " +
+                        "    \"userId\": \"user-id\"" +
                         " }";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
         assertEquals("media-uuid", imageMessage.getMediaGuid());

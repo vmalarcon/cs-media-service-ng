@@ -1,10 +1,10 @@
 package com.expedia.content.media.processing.services.reqres;
 
-import java.util.List;
-import java.util.Map;
-
 import lombok.Builder;
 import lombok.Getter;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Media response object representation.
