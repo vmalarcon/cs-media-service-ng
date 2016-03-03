@@ -55,7 +55,6 @@ public class SQLMediaGetSproc extends StoredProcedure {
                     .category(resultSet.getInt("MediaUseRank"))
                     .comment(resultSet.getString("MediaCommentTxt"))
                     .formatId(resultSet.getInt("MediaFormatID"))
-                    .filProcessedBool(resultSet.getBoolean("FileProcessedBool"))
                     .build();
         }
     }
@@ -67,12 +66,11 @@ public class SQLMediaGetSproc extends StoredProcedure {
     private class MediaDerivativeRowMapper implements RowMapper<LcmMediaDerivative> {
         @Override
         public LcmMediaDerivative mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
-            final String processedFlag = resultSet.getString("FileProcessedBool");
             return LcmMediaDerivative.builder()
                     .fileName(resultSet.getString("MediaFileName"))
                     .mediaId(resultSet.getInt("MediaID"))
                     .mediSizeTypeId(resultSet.getInt("MediaSizeTypeID"))
-                    .fileProcessed(processedFlag != null && "1".equals(processedFlag) ? true : false)
+                    .fileProcessed(resultSet.getBoolean("FileProcessedBool"))
                     .width(resultSet.getInt("MediaFileWidth"))
                     .height(resultSet.getInt("MediaFileHeight"))
                     .fileSize(resultSet.getInt("FileSizeKb"))
