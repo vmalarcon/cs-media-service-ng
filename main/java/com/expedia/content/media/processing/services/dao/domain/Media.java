@@ -9,6 +9,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
+import com.expedia.content.media.processing.services.reqres.Comment;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -48,7 +49,7 @@ public class Media {
     @Setter private String lcmMediaId;
     @Setter private List<Map<String, Object>> derivativesList;
     @Setter private Map<String, Object> domainData;
-    @Setter private List<String> commentList;
+    @Setter private List<Comment> commentList;
     @Setter private String status;
     @Setter private String domainDerivativeCategory;
 
@@ -173,7 +174,7 @@ public class Media {
     }
 
     @DynamoDBIgnore
-    public List<String> getCommentList() {
+    public List<Comment> getCommentList() {
         return commentList;
     }
 
