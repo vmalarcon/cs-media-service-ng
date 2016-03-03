@@ -1,26 +1,5 @@
 package com.expedia.content.media.processing.services.dao;
 
-import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
-import org.junit.Test;
-
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
@@ -30,6 +9,25 @@ import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepos
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaIdListSproc;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class LcmDynamoMediaDaoTest {
 
@@ -219,6 +217,78 @@ public class LcmDynamoMediaDaoTest {
         });
     }
 
+    @Test
+    public void testGetMediaByDomainIdFileProcessFalse() throws Exception {
+        SQLMediaIdListSproc mediaIdSproc = mock(SQLMediaIdListSproc.class);
+        Integer mediaId1 = 1;
+        Integer mediaId2 = 2;
+        List<Integer> mediaIds = new ArrayList<>();
+        mediaIds.add(mediaId1);
+        mediaIds.add(mediaId2);
+        Map<String, Object> idResult = new HashMap<>();
+        idResult.put(SQLMediaIdListSproc.MEDIA_ID_SET, mediaIds);
+        when(mediaIdSproc.execute(anyInt(), anyString())).thenReturn(idResult);
+
+        SQLMediaGetSproc mediaSproc = mock(SQLMediaGetSproc.class);
+        List<LcmMedia> mediaList1 = new ArrayList<>();
+        LcmMedia media1 = LcmMedia.builder().domainId(1234).mediaId(1).fileName("image1.jpg").active(true).width(20).height(21).fileSize(200)
+                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(3).comment("Comment").formatId(2).build();
+        mediaList1.add(media1);
+        Map<String, Object> mediaResult1 = make2DerivativeMediaResult(mediaList1, 1, 1, 2, false, false, "image1_t.jpg", "image1_s.jpg");
+
+        List<LcmMedia> mediaList2 = new ArrayList<>();
+        LcmMedia media2 = LcmMedia.builder().domainId(1234).mediaId(2).fileName("image2.jpg").active(true).width(40).height(41).fileSize(500)
+                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(500).comment("").build();
+        mediaList2.add(media2);
+        Map<String, Object> mediaResult2 = make2DerivativeMediaResult(mediaList2, 2, 1, 2, false, true, "image2_t.jpg", "image2_s.jpg");
+
+        when(mediaSproc.execute(anyInt(), eq(mediaId1))).thenReturn(mediaResult1);
+        when(mediaSproc.execute(anyInt(), eq(mediaId2))).thenReturn(mediaResult2);
+
+        DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
+        List<Media> dynamoMediaList = new ArrayList<>();
+        String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
+        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234")
+                .domainFields("{\"categoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
+        String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").build();
+        dynamoMediaList.add(dynamoMedia1);
+        dynamoMediaList.add(dynamoMedia3);
+        when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
+
+        final Properties properties = new Properties();
+        properties.put("1", "EPC Internal User");
+
+        MediaDao mediaDao = makeMockMediaDao(mediaIdSproc, mediaSproc, mockMediaDBRepo, properties);
+        List<Media> testMediaList = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null);
+
+        assertEquals(3, testMediaList.size());
+        Media testMedia1 = testMediaList.get(0);
+        assertEquals(media1.getDomainId().toString(), testMedia1.getDomainId());
+        assertEquals(media1.getLastUpdatedBy(), testMedia1.getUserId());
+        assertEquals(media1.getFileName(), testMedia1.getFileName());
+        assertEquals(dynamoMedia1.getMediaGuid(), testMedia1.getMediaGuid());
+        assertEquals(media1.getComment(), testMedia1.getCommentList().get(0));
+        assertTrue((media1.getFileSize() * 1024L) == testMedia1.getFileSize());
+        assertEquals(0, testMedia1.getDerivativesList().size());
+        assertEquals("true", testMedia1.getDomainData().get("propertyHero"));
+        assertEquals("4321", testMedia1.getDomainData().get("categoryId"));
+        assertEquals("VirtualTour", testMedia1.getDomainDerivativeCategory());
+        Media testMedia2 = testMediaList.get(1);
+        assertNull(testMedia2.getMediaGuid());
+        assertNull(testMedia2.getCommentList());
+        assertEquals(1, testMedia2.getDerivativesList().size());
+        HashMap derivative = (HashMap) testMedia2.getDerivativesList().get(0);
+        assertEquals(derivative.get("fileSize"), 200 * 1024L);
+        assertEquals(derivative.get("width"), 20);
+        assertEquals(derivative.get("height"), 21);
+        assertEquals(derivative.get("type"), "s");
+        assertEquals(derivative.get("location"), "https://media.int.expedia.com/image2_s.jpg");
+        Media testMedia3 = testMediaList.get(2);
+        assertEquals(dynamoMedia3.getMediaGuid(), testMedia3.getMediaGuid());
+        assertNull(testMedia3.getDerivativesList());
+    }
+
     private MediaDao makeMockMediaDao(SQLMediaIdListSproc mediaIdSproc, SQLMediaGetSproc mediaSproc, DynamoMediaRepository mockMediaDBRepo,
                                       final Properties properties) throws NoSuchFieldException, IllegalAccessException {
         MediaDao mediaDao = new LcmDynamoMediaDao();
@@ -228,6 +298,7 @@ public class LcmDynamoMediaDaoTest {
         setFieldValue(mediaDao, "providerProperties", properties);
         setFieldValue(mediaDao, "processLogDao", makeMockProcessLogDao());
         setFieldValue(mediaDao, "activityWhiteList", makeActivityWhitelist());
+        setFieldValue(mediaDao, "imageRootPath", "https://media.int.expedia.com/");
         return mediaDao;
     }
 
