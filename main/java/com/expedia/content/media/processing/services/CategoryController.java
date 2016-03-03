@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -45,6 +46,7 @@ public class CategoryController extends CommonServiceController {
      * @return Returns a JSON response for the domain categories request.
      */
     @RequestMapping(value = "/media/v1/domaincategories/{domainName}", method = RequestMethod.GET)
+    @Transactional
     public ResponseEntity<String> domainCategories(final @RequestHeader MultiValueMap<String, String> headers,
                                                    final @PathVariable("domainName") String domainName,
                                                    final @RequestParam(value = "localeId", required = false) String localeId) {

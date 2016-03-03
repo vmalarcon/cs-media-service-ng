@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -60,6 +61,7 @@ public class StatusController extends CommonServiceController {
     @Meter(name = "mediaLatestStatusCounter")
     @Timer(name = "mediaLatestStatusTimer")
     @RequestMapping(value = "/media/v1/lateststatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @Transactional
     public ResponseEntity getMediaLatestStatus(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
         final String requestID = getRequestId(headers);
         LOGGER.info("RECEIVED REQUEST - url=[{}], imageMessage=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_STATUS.getUrl(), message,
