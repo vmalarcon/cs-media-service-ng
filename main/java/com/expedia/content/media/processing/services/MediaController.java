@@ -291,15 +291,16 @@ public class MediaController extends CommonServiceController {
 
         imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
 
-        final ImageMessage tempImageMessage = imageMessageBuilder.build();
-        imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(tempImageMessage));
-
         final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
         imageMessageBuilder.outerDomainData(outerDomain);
+
         if (mediaReplacement.isReplacement(imageMessage)) {
             // This will update the GUID to the old one.
             processReplacement(imageMessage, imageMessageBuilder);
+        } else {
+            imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(imageMessageBuilder.build()));
         }
+
         return imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).build();
     }
 

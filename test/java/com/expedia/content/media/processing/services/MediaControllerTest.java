@@ -88,6 +88,8 @@ public class MediaControllerTest {
         providerMapping = new HashSet<>();
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("1", "EPC Internal User"));
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("6", "SCORE"));
+        providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("53", "freetobook"));
+        providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("56", "ReplaceProvider"));
         when(mockProviderProperties.entrySet()).thenReturn(providerMapping);
     }
 
