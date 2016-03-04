@@ -289,9 +289,10 @@ public class MediaController extends CommonServiceController {
         ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
         imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
 
-        imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(imageMessage.getOuterDomainData().getProvider(), imageMessage));
-
         imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
+
+        final ImageMessage tempImageMessage = imageMessageBuilder.build();
+        imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(tempImageMessage));
 
         final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
         imageMessageBuilder.outerDomainData(outerDomain);

@@ -510,7 +510,7 @@ public class MediaControllerTest {
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
-        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"037f0b6d3446d5cb04ee09fb6f29e11567f9b093.jpg\""));
+        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_freetobook_(.*).jpg\"(.*)"));
 
     }
 

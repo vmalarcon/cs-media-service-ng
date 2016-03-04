@@ -17,7 +17,8 @@ public class FileNameUtil {
 
 
     public static final Function<ImageMessage, String> futureProvidersFunction = (consumedImageMessage) -> {
-        final String fileNameFromFileUrl = DigestUtils.sha1Hex(consumedImageMessage.getFileUrl()) + "." + FilenameUtils.getExtension(consumedImageMessage.getFileUrl());
+        final String fileNameFromFileUrl = consumedImageMessage.getOuterDomainData().getDomainId() + "_" + consumedImageMessage.getOuterDomainData().getProvider()
+                + "_" + consumedImageMessage.getMediaGuid() + "." + FilenameUtils.getExtension(consumedImageMessage.getFileUrl());
         return fileNameFromFileUrl;
     };
 
@@ -116,10 +117,10 @@ public class FileNameUtil {
     /**
      * resolve FileName by the MediaProvider name
      *
-     * @param providerName
      * @param imageMessage
      */
-    public static String resolveFileNameByProvider(String providerName, ImageMessage imageMessage) {
+    public static String resolveFileNameByProvider(ImageMessage imageMessage) {
+        String providerName = imageMessage.getOuterDomainData().getProvider();
         Optional<MediaProvider> mediaProvider = MediaProvider.findProviderByName(providerName);
         if (mediaProvider.isPresent()) {
             return mediaProvider.get().function.apply(imageMessage);
