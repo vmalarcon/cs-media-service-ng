@@ -3,7 +3,6 @@ package com.expedia.content.media.processing.services.util;
 import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FilenameUtils;
 
 import java.util.Optional;
@@ -15,15 +14,24 @@ import java.util.stream.Stream;
  */
 public class FileNameUtil {
 
-
-    public static final Function<ImageMessage, String> futureProvidersFunction = (consumedImageMessage) -> {
-        final String fileNameFromFileUrl = consumedImageMessage.getOuterDomainData().getDomainId() + "_" + consumedImageMessage.getOuterDomainData().getProvider()
+    /**
+     * This function takes in the ImageMessage with mediaGuid and returns the fileName in the following format:
+     * EID_ProviderName_MediaGUID.jpg
+     *
+     */
+    public static final Function<ImageMessage, String> guidProviderNameToFileNameFunction = (consumedImageMessage) -> {
+        final String fileNameFromMediaGUID = consumedImageMessage.getOuterDomainData().getDomainId() + "_" + consumedImageMessage.getOuterDomainData().getProvider()
                 + "_" + consumedImageMessage.getMediaGuid() + "." + FilenameUtils.getExtension(consumedImageMessage.getFileUrl());
-        return fileNameFromFileUrl;
+        return fileNameFromMediaGUID;
     };
 
-
-    private static final Function<ImageMessage, String> currentProvidersFunction = (consumedImageMessage) -> {
+    /**
+     * This function takes in the ImageMessage and returns the fileName from the imageMessage if it is already set and if it is not
+     * it is set in the following format: 
+     * baseNameOfFileURL.jpg
+     *
+     */
+    public static final Function<ImageMessage, String> fileURLToFileNameFunction = (consumedImageMessage) -> {
         if (StringUtils.isNullOrEmpty(consumedImageMessage.getFileName())) {
             final String fileNameFromFileUrl =
                     FilenameUtils.getBaseName(consumedImageMessage.getFileUrl()) + "." + FilenameUtils.getExtension(consumedImageMessage.getFileUrl());
@@ -86,7 +94,7 @@ public class FileNameUtil {
         HOMEAWAY("homeaway"),
         WOTIF("wotif"),
         EVIIVO("eviivo"),
-        FREETOBOOK("freetobook", futureProvidersFunction),
+        FREETOBOOK("freetobook", guidProviderNameToFileNameFunction),
         PRODUCT_API_TEST("productapi-test"),
         ORBITZ("orbitz"),
         REPLACEPROVIDER("replaceprovider");
@@ -96,7 +104,7 @@ public class FileNameUtil {
 
 
         MediaProvider(String mediaProvider) {
-            this(mediaProvider, currentProvidersFunction);
+            this(mediaProvider, fileURLToFileNameFunction);
         }
 
         MediaProvider(String mediaProvider, Function<ImageMessage, String> function) {
@@ -125,7 +133,7 @@ public class FileNameUtil {
         if (mediaProvider.isPresent()) {
             return mediaProvider.get().function.apply(imageMessage);
         }
-        return futureProvidersFunction.apply(imageMessage);
+        return guidProviderNameToFileNameFunction.apply(imageMessage);
     }
 
 }
