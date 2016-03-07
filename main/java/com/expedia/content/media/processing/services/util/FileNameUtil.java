@@ -19,7 +19,7 @@ public class FileNameUtil {
      * EID_ProviderName_MediaGUID.jpg
      *
      */
-    public static final Function<ImageMessage, String> guidProviderNameToFileNameFunction = (consumedImageMessage) -> {
+    private static final Function<ImageMessage, String> guidProviderNameToFileNameFunction = (consumedImageMessage) -> {
         final String fileNameFromMediaGUID = consumedImageMessage.getOuterDomainData().getDomainId() + "_" + consumedImageMessage.getOuterDomainData().getProvider()
                 + "_" + consumedImageMessage.getMediaGuid() + "." + FilenameUtils.getExtension(consumedImageMessage.getFileUrl());
         return fileNameFromMediaGUID;
@@ -31,7 +31,7 @@ public class FileNameUtil {
      * baseNameOfFileURL.jpg
      *
      */
-    public static final Function<ImageMessage, String> fileURLToFileNameFunction = (consumedImageMessage) -> {
+    private static final Function<ImageMessage, String> fileURLToFileNameFunction = (consumedImageMessage) -> {
         if (StringUtils.isNullOrEmpty(consumedImageMessage.getFileName())) {
             final String fileNameFromFileUrl =
                     FilenameUtils.getBaseName(consumedImageMessage.getFileUrl()) + "." + FilenameUtils.getExtension(consumedImageMessage.getFileUrl());
@@ -116,7 +116,7 @@ public class FileNameUtil {
             return name;
         }
 
-        private static Optional<MediaProvider> findProviderByName(String providerName) {
+        private static Optional<MediaProvider> findMediaProviderByProviderName(String providerName) {
             return Stream.of(values()).filter(mp -> mp.getName().equals(providerName.toLowerCase())).findFirst();
         }
     }
@@ -129,7 +129,7 @@ public class FileNameUtil {
      */
     public static String resolveFileNameByProvider(ImageMessage imageMessage) {
         String providerName = imageMessage.getOuterDomainData().getProvider();
-        Optional<MediaProvider> mediaProvider = MediaProvider.findProviderByName(providerName);
+        Optional<MediaProvider> mediaProvider = MediaProvider.findMediaProviderByProviderName(providerName);
         if (mediaProvider.isPresent()) {
             return mediaProvider.get().function.apply(imageMessage);
         }
