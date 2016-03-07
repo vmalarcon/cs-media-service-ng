@@ -117,7 +117,7 @@ public class FileNameUtil {
         }
 
         private static Optional<MediaProvider> findMediaProviderByProviderName(String providerName) {
-            return Stream.of(values()).filter(mp -> mp.getName().equals(providerName.toLowerCase())).findFirst();
+            return Stream.of(MediaProvider.values()).filter(mediaProvider -> mediaProvider.getName().equals(providerName.toLowerCase())).findFirst();
         }
     }
 
