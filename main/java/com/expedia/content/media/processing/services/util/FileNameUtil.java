@@ -11,10 +11,12 @@ import java.util.stream.Stream;
 
 /**
  * Utility class for resolving file names
+ * --ALL PROVIDERS ADDED TO THE ENUM SHOULD USE THE FUNCTION guidProviderNameToFileNameFunction--
  */
 public class FileNameUtil {
 
     /**
+     * --THIS FUNCTION SHOULD BE USED FOR ALL FUTURE PROVIDERS ADDED TO THE ENUM--
      * This function takes in the ImageMessage with mediaGuid and returns the fileName in the following format:
      * EID_ProviderName_MediaGUID.jpg
      *
@@ -41,9 +43,10 @@ public class FileNameUtil {
     };
 
     /**
-     * Mapping enum for LCM:MediaProvider to logic for resolving fileName
+     * Mapping enum for LCM:MediaProvider to function logic for resolving a fileName
      */
     public enum MediaProvider {
+        FREETOBOOK("freetobook", guidProviderNameToFileNameFunction),
         EPC_INTERNAL_USER("epc internal user"),
         EPC_EXTERNAL_USER("epc external user"),
         EPC_LEGACY("epc legacy"),
@@ -94,7 +97,6 @@ public class FileNameUtil {
         HOMEAWAY("homeaway"),
         WOTIF("wotif"),
         EVIIVO("eviivo"),
-        FREETOBOOK("freetobook", guidProviderNameToFileNameFunction),
         PRODUCT_API_TEST("productapi-test"),
         ORBITZ("orbitz"),
         REPLACEPROVIDER("replaceprovider");
@@ -102,7 +104,7 @@ public class FileNameUtil {
         private final String name;
         private final Function<ImageMessage, String> function;
 
-
+        // FOR LEGACY PROVIDERS ONLY
         MediaProvider(String mediaProvider) {
             this(mediaProvider, fileURLToFileNameFunction);
         }
