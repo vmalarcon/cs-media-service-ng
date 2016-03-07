@@ -27,6 +27,6 @@ public class DomainIdMedia {
     @Getter private final String domainDerivativeCategory;
     @Getter private final Map<String, Object> domainFields;
     @Getter private final List<Map<String, Object>> derivatives;
-    @Getter private final List<String> comments;
+    @Getter private final List<Comment> comments;
 
 }
