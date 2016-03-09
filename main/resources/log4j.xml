@@ -67,6 +67,21 @@
         <appender-ref ref="traceLogAppender"/>
     </logger>
 
+    <logger name="com.expedia.www.commons.statsd.StatsdClient" additivity="false">
+        <param name="threshold" value="INFO" />
+        <appender-ref ref="traceLogAppender" />
+    </logger>
+
+    <logger name="com.amazonaws" additivity="false">
+        <param name="threshold" value="INFO" />
+        <appender-ref ref="traceLogAppender" />
+    </logger>
+
+    <logger name="org.apache.http" additivity="false">
+        <param name="threshold" value="INFO" />
+        <appender-ref ref="traceLogAppender" />
+    </logger>
+
     <logger name="org.springframework" additivity="false">
         <level value="INFO" />
         <appender-ref ref="${application.environment}Appender"/>
