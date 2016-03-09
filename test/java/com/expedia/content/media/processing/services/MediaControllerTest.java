@@ -522,6 +522,13 @@ public class MediaControllerTest {
 
     }
 
+//    @Test
+//    public void testSuccessfulTemporaryDerivativeRequest() throws Exception {
+//        String jsonMessage =
+//                "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg/why/would/someone/name/all/of/their/files/original.jpg\", " + "\"fileName\": \"original.jpg\", " + "\"userId\": \"bobthegreat\", "
+//                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"freetobook\" " + "}";
+//    }
+
     @SuppressWarnings({"unchecked"})
     private static Map<String, List<MapMessageValidator>> getMockValidators() {
         Map<String, List<MapMessageValidator>> validators = new HashMap<>();

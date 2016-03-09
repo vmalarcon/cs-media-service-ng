@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import com.expedia.content.media.processing.services.derivative.TempDerivativeMessage;
+import com.expedia.content.media.processing.services.validator.TempDerivativeValidator;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
@@ -200,6 +202,33 @@ public class MediaController extends CommonServiceController {
         return new ResponseEntity<String>(OBJECT_MAPPER.writeValueAsString(response), OK);
     }
 
+    @RequestMapping(value = "/media/v1/tempderivative", method = RequestMethod.POST)
+    @Transactional
+    public ResponseEntity<String> getTempDerivative(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
+        final String requestID = this.getRequestId(headers);
+        final String serviceUrl = MediaServiceUrl.MEDIA_TEMP_DERIVATIVE.getUrl();
+        LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
+        try {
+            final TempDerivativeMessage tempDerivative = JSONUtil.buildTempDerivativeFromJSONMessage(message);
+            final List<String> errorList = TempDerivativeValidator.validateMessage(tempDerivative);
+            if (errorList.isEmpty()) {
+                LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, String.join("," , errorList), requestID, message);
+                return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
+            }
+            final boolean fileExists =  verifyExistence(tempDerivative.getFileUrl());
+            if (!fileExists) {
+                LOGGER.info("Response bad request provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
+                return this.buildErrorResponse("Provided fileUrl does not exist.", serviceUrl, NOT_FOUND);
+            }
+            return new ResponseEntity<>(thumbnailProcessor.createTempDerivative(tempDerivative), ACCEPTED);
+
+        } catch (IllegalStateException | ImageMessageException ex) {
+            LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex, requestID, message);
+            return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
+        }
+
+    }
+
     /**
      * Transforms a media list for a media get response format.
      * 
@@ -264,7 +293,7 @@ public class MediaController extends CommonServiceController {
         }
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
 
-        final boolean fileExists = verifyExistence(imageMessage);
+        final boolean fileExists = verifyExistence(imageMessage.getFileUrl());
         if (!fileExists) {
             LOGGER.info("Response bad request provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
             return this.buildErrorResponse("Provided fileUrl does not exist.", serviceUrl, NOT_FOUND);
@@ -347,15 +376,14 @@ public class MediaController extends CommonServiceController {
     /**
      * Verifies if the file exists in an S3 bucket or is available in HTTP.
      *
-     * @param imageMessage Incoming image message.
+     * @param fileUrl Incoming imageMessage's fileUrl.
      * @return {@code true} if the file exists; {@code false} otherwise.
      */
-    private boolean verifyExistence(final ImageMessage imageMessage) {
-        final String fileUrl = imageMessage.getFileUrl();
+    private boolean verifyExistence(final String fileUrl) {
         if (fileUrl.startsWith(S3Validator.S3_PREFIX)) {
-            return S3Validator.checkFileExists(imageMessage.getFileUrl());
+            return S3Validator.checkFileExists(fileUrl);
         } else {
-            return HTTPValidator.checkFileExists(imageMessage.getFileUrl());
+            return HTTPValidator.checkFileExists(fileUrl);
         }
     }
 
