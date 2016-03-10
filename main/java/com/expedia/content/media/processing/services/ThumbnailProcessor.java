@@ -107,7 +107,7 @@ public class ThumbnailProcessor {
                 thumbnailPath = fetchUrl(fileUrl, identifier, workFolder.getWorkPath());
             }
 
-            thumbnailPath = generateThumbnail(thumbnailPath, width, height, rotation, imageMessageThumbnail);
+            thumbnailPath = generateThumbnail(thumbnailPath, width, height, (rotation == null) ? "0" : rotation, imageMessageThumbnail);
             thumbnailUrl = (imageMessageThumbnail) ? computeS3thumbnailPath(thumbnailPath, guid, domain, domainId) : computeS3thumbnailPath();
             LOGGER.debug("Writing thumbnail: " + thumbnailUrl);
             final WritableResource writableResource = (WritableResource) resourceLoader.getResource(thumbnailUrl);
