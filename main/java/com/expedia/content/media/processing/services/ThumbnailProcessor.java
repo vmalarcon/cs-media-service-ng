@@ -117,8 +117,8 @@ public class ThumbnailProcessor {
             LOGGER.debug("Wrote thumbnail: " + thumbnailUrl);
             thumbnailUrl = thumbnailUrl.replaceFirst(S3_PREFIX, "https://s3-" + this.regionName + ".amazonaws.com");
         } catch (Exception e) {
-        LOGGER.error("Unable to generate thumbnail with url: " + fileUrl, e);
-        throw new RuntimeException("Unable to generate thumbnail with url: " + fileUrl + ((imageMessageThumbnail) ? " and GUID: " + identifier : ""), e);
+            LOGGER.error("Unable to generate thumbnail with url: " + fileUrl, e);
+            throw new RuntimeException("Unable to generate thumbnail with url: " + fileUrl + ((imageMessageThumbnail) ? " and GUID: " + identifier : ""), e);
         }
         LOGGER.debug("Created thumbnail url=[" + fileUrl + "]" + ((imageMessageThumbnail) ? "guid=[" + guid + "]" : ""));
         return thumbnailUrl;
