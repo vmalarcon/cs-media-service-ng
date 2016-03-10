@@ -59,27 +59,27 @@
 
     <logger name="com.expedia.www.platform.connector.logging.ConnectorLogger.Transaction" additivity="false">
         <param name="threshold" value="INFO" />
-        <appender-ref ref="transactionLogAppender"/>
+        <appender-ref ref="devAppender"/>
     </logger>
 
     <logger name="com.expedia.www.platform.connector.logging.ConnectorLogger.Trace" additivity="false">
         <param name="threshold" value="INFO" />
-        <appender-ref ref="traceLogAppender"/>
+        <appender-ref ref="devAppender"/>
     </logger>
 
     <logger name="com.expedia.www.commons.statsd.StatsdClient" additivity="false">
         <param name="threshold" value="INFO" />
-        <appender-ref ref="traceLogAppender" />
+        <appender-ref ref="devAppender" />
     </logger>
 
     <logger name="com.amazonaws" additivity="false">
         <param name="threshold" value="INFO" />
-        <appender-ref ref="traceLogAppender" />
+        <appender-ref ref="devAppender" />
     </logger>
 
     <logger name="org.apache.http" additivity="false">
         <param name="threshold" value="INFO" />
-        <appender-ref ref="traceLogAppender" />
+        <appender-ref ref="devAppender" />
     </logger>
 
     <logger name="org.springframework" additivity="false">
