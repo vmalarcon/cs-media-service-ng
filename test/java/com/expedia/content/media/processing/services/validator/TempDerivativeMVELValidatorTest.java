@@ -32,16 +32,14 @@ public class TempDerivativeMVELValidatorTest {
 
     @Test
     public void testMessageFileUrlMissing() throws Exception {
-        String jsonMsg = "{}";
-        TempDerivativeMessage tempDerivativeMessage = TempDerivativeController.buildTempDerivativeFromJSONMessage(jsonMsg);
+        TempDerivativeMessage tempDerivativeMessage = new TempDerivativeMessage(null, null, null, null);
         String errors = tempDerivativeMVELValidator.validateTempDerivativeMessage(tempDerivativeMessage);
         assertTrue(errors.contains("fileUrl is required"));
     }
 
     @Test
     public void testMessageFileUrlMalformed() throws Exception {
-        String jsonMsg = "{ \"fileUrl\": \"this is a malformed Url\" }";
-        TempDerivativeMessage tempDerivativeMessage = TempDerivativeController.buildTempDerivativeFromJSONMessage(jsonMsg);
+        TempDerivativeMessage tempDerivativeMessage = new TempDerivativeMessage("this is a malformed Url", null, null, null);
         String errors = tempDerivativeMVELValidator.validateTempDerivativeMessage(tempDerivativeMessage);
         assertTrue(errors.contains("fileUrl is malformed"));
     }
@@ -53,7 +51,7 @@ public class TempDerivativeMVELValidatorTest {
                 "\"rotation\": \"180\"," +
                 "\"height\": 180" +
                 " }";
-        TempDerivativeMessage tempDerivativeMessage = TempDerivativeController.buildTempDerivativeFromJSONMessage(jsonMsg);
+        TempDerivativeMessage tempDerivativeMessage = new TempDerivativeMessage("s3://ewe-cs-media-test/e2e/images/9oZkgVs.jpg", null, null, 180);
         String errors = tempDerivativeMVELValidator.validateTempDerivativeMessage(tempDerivativeMessage);
         assertTrue(errors.contains("width is required."));
     }
@@ -65,19 +63,14 @@ public class TempDerivativeMVELValidatorTest {
                 "\"rotation\": \"180\"," +
                 "\"width\": 180" +
                 " }";
-        TempDerivativeMessage tempDerivativeMessage = TempDerivativeController.buildTempDerivativeFromJSONMessage(jsonMsg);
+        TempDerivativeMessage tempDerivativeMessage = new TempDerivativeMessage("s3://ewe-cs-media-test/e2e/images/9oZkgVs.jpg", null, 180, null);
         String errors = tempDerivativeMVELValidator.validateTempDerivativeMessage(tempDerivativeMessage);
         assertTrue(errors.contains("height is required."));
     }
 
     @Test
     public void testMessageRotationMissing() throws Exception {
-        String jsonMsg = "{ " +
-                "\"fileUrl\": \"s3://ewe-cs-media-test/e2e/images/9oZkgVs.jpg\"," +
-                "\"width\": 180," +
-                "\"height\": 180" +
-                " }";
-        TempDerivativeMessage tempDerivativeMessage = TempDerivativeController.buildTempDerivativeFromJSONMessage(jsonMsg);
+        TempDerivativeMessage tempDerivativeMessage = new TempDerivativeMessage("s3://ewe-cs-media-test/e2e/images/9oZkgVs.jpg", null, 180, 180);
         String errors = tempDerivativeMVELValidator.validateTempDerivativeMessage(tempDerivativeMessage);
         assertTrue(errors.contains(""));
     }
@@ -90,7 +83,7 @@ public class TempDerivativeMVELValidatorTest {
                 "\"width\": 180," +
                 "\"height\": 180" +
                 " }";
-        TempDerivativeMessage tempDerivativeMessage = TempDerivativeController.buildTempDerivativeFromJSONMessage(jsonMsg);
+        TempDerivativeMessage tempDerivativeMessage = new TempDerivativeMessage("s3://ewe-cs-media-test/e2e/images/9oZkgVs.jpg", "234", 180, 180);
         String errors = tempDerivativeMVELValidator.validateTempDerivativeMessage(tempDerivativeMessage);
         assertTrue(errors.contains("rotation accepted values are 0, 90, 180, and 270."));
     }

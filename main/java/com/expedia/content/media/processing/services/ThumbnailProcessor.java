@@ -148,7 +148,7 @@ public class ThumbnailProcessor {
      * Fetch S3 URL. Starts with {@code s3://}.
      *
      * @param url Image URL to fetch from S3.
-     * @param newFileName GUID for the image.
+     * @param newFileName new fileName for the image.
      * @param workPath Temporary working folder to use for downloading the image.
      * @return Path where the image is downloaded.
      * @throws IOException When unable to fetch the S3 URL.

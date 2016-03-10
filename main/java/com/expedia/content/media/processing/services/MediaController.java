@@ -18,7 +18,6 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
-import com.expedia.content.media.processing.services.util.VerifyExistenceUtil;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
@@ -71,7 +70,7 @@ import expedia.content.solutions.metrics.annotations.Timer;
  * Web service controller for media resources.
  */
 @RestController
-public class MediaController extends CommonServiceController implements VerifyExistenceUtil {
+public class MediaController extends CommonServiceController {
 
     private static final String RESPONSE_FIELD_MEDIA_GUID = "mediaGuid";
     private static final String RESPONSE_FIELD_STATUS = "status";
@@ -262,7 +261,7 @@ public class MediaController extends CommonServiceController implements VerifyEx
         }
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
 
-        final boolean fileExists = verifyURLExistence(imageMessage.getFileUrl());
+        final boolean fileExists = verifyUrlExistence(imageMessage.getFileUrl());
         if (!fileExists) {
             LOGGER.info("Response bad request provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
             return this.buildErrorResponse("Provided fileUrl does not exist.", serviceUrl, NOT_FOUND);
