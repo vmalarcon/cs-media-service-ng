@@ -121,7 +121,7 @@ public class LcmDynamoMediaDao implements MediaDao {
      * @param media1 First media to compare.
      * @param media2 Second media to compare.
      * @param domain Different domains will have different sorting requirements.
-     * @return 0 if the media objects weigh the same
+     * @return 0 if the media objects weigh the same, greater than 1 if the first item weighs more, less than 1 if the first item weighs less.
      */
     private int compareMedia(Media media1, Media media2, Domain domain) {
         if (Domain.LODGING.equals(domain)) {
