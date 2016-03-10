@@ -1,6 +1,6 @@
 package com.expedia.content.media.processing.services.validator;
 
-import com.expedia.content.media.processing.services.derivative.TempDerivativeMessage;
+import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
 import org.mvel2.MVEL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

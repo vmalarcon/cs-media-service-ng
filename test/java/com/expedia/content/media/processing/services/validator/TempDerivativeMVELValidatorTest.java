@@ -1,8 +1,7 @@
 package com.expedia.content.media.processing.services.validator;
 
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.services.derivative.TempDerivativeMessage;
-import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
+import com.expedia.content.media.processing.services.TempDerivativeController;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -10,16 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by sstannus on 3/10/16.
- */
 @RunWith(SpringJUnit4ClassRunner.class)
 // For faster tests, uncomment the following line
 @ContextConfiguration(locations = "classpath:mvel-validator.xml")
@@ -41,7 +33,7 @@ public class TempDerivativeMVELValidatorTest {
     @Test
     public void testMessageFileUrlMissing() throws Exception {
         String jsonMsg = "{}";
-        TempDerivativeMessage tempDerivativeMessage = JSONUtil.buildTempDerivativeFromJSONMessage(jsonMsg);
+        TempDerivativeMessage tempDerivativeMessage = TempDerivativeController.buildTempDerivativeFromJSONMessage(jsonMsg);
         String errors = tempDerivativeMVELValidator.validateTempDerivativeMessage(tempDerivativeMessage);
         assertTrue(errors.contains("fileUrl is required"));
     }
@@ -49,7 +41,7 @@ public class TempDerivativeMVELValidatorTest {
     @Test
     public void testMessageFileUrlMalformed() throws Exception {
         String jsonMsg = "{ \"fileUrl\": \"this is a malformed Url\" }";
-        TempDerivativeMessage tempDerivativeMessage = JSONUtil.buildTempDerivativeFromJSONMessage(jsonMsg);
+        TempDerivativeMessage tempDerivativeMessage = TempDerivativeController.buildTempDerivativeFromJSONMessage(jsonMsg);
         String errors = tempDerivativeMVELValidator.validateTempDerivativeMessage(tempDerivativeMessage);
         assertTrue(errors.contains("fileUrl is malformed"));
     }
@@ -61,7 +53,7 @@ public class TempDerivativeMVELValidatorTest {
                 "\"rotation\": \"180\"," +
                 "\"height\": 180" +
                 " }";
-        TempDerivativeMessage tempDerivativeMessage = JSONUtil.buildTempDerivativeFromJSONMessage(jsonMsg);
+        TempDerivativeMessage tempDerivativeMessage = TempDerivativeController.buildTempDerivativeFromJSONMessage(jsonMsg);
         String errors = tempDerivativeMVELValidator.validateTempDerivativeMessage(tempDerivativeMessage);
         assertTrue(errors.contains("width is required."));
     }
@@ -73,7 +65,7 @@ public class TempDerivativeMVELValidatorTest {
                 "\"rotation\": \"180\"," +
                 "\"width\": 180" +
                 " }";
-        TempDerivativeMessage tempDerivativeMessage = JSONUtil.buildTempDerivativeFromJSONMessage(jsonMsg);
+        TempDerivativeMessage tempDerivativeMessage = TempDerivativeController.buildTempDerivativeFromJSONMessage(jsonMsg);
         String errors = tempDerivativeMVELValidator.validateTempDerivativeMessage(tempDerivativeMessage);
         assertTrue(errors.contains("height is required."));
     }
@@ -85,7 +77,7 @@ public class TempDerivativeMVELValidatorTest {
                 "\"width\": 180," +
                 "\"height\": 180" +
                 " }";
-        TempDerivativeMessage tempDerivativeMessage = JSONUtil.buildTempDerivativeFromJSONMessage(jsonMsg);
+        TempDerivativeMessage tempDerivativeMessage = TempDerivativeController.buildTempDerivativeFromJSONMessage(jsonMsg);
         String errors = tempDerivativeMVELValidator.validateTempDerivativeMessage(tempDerivativeMessage);
         assertTrue(errors.contains(""));
     }
@@ -98,9 +90,9 @@ public class TempDerivativeMVELValidatorTest {
                 "\"width\": 180," +
                 "\"height\": 180" +
                 " }";
-        TempDerivativeMessage tempDerivativeMessage = JSONUtil.buildTempDerivativeFromJSONMessage(jsonMsg);
+        TempDerivativeMessage tempDerivativeMessage = TempDerivativeController.buildTempDerivativeFromJSONMessage(jsonMsg);
         String errors = tempDerivativeMVELValidator.validateTempDerivativeMessage(tempDerivativeMessage);
-        assertTrue(errors.contains("rotation value is not an accepted value."));
+        assertTrue(errors.contains("rotation accepted values are 0, 90, 180, and 270."));
     }
 
 }

@@ -18,8 +18,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
-import com.expedia.content.media.processing.services.derivative.TempDerivativeMessage;
-import com.expedia.content.media.processing.services.validator.TempDerivativeMVELValidator;
+import com.expedia.content.media.processing.services.util.VerifyExistenceUtil;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
@@ -61,10 +60,8 @@ import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.FileNameUtil;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
-import com.expedia.content.media.processing.services.validator.HTTPValidator;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.expedia.content.media.processing.services.validator.MediaReplacement;
-import com.expedia.content.media.processing.services.validator.S3Validator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 
@@ -76,7 +73,7 @@ import expedia.content.solutions.metrics.annotations.Timer;
  */
 @Component
 @RestController
-public class MediaController extends CommonServiceController {
+public class MediaController extends CommonServiceController implements VerifyExistenceUtil {
 
     private static final String RESPONSE_FIELD_MEDIA_GUID = "mediaGuid";
     private static final String RESPONSE_FIELD_STATUS = "status";
@@ -104,8 +101,7 @@ public class MediaController extends CommonServiceController {
     private MediaDao mediaDao;
     @Autowired
     private MediaReplacement mediaReplacement;
-    @Autowired
-    private TempDerivativeMVELValidator tempDerivativeMVELValidator;
+
 
     /**
      * web service interface to consume media message.
@@ -202,43 +198,6 @@ public class MediaController extends CommonServiceController {
                 transformMediaForResponse(mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter));
         final MediaByDomainIdResponse response = MediaByDomainIdResponse.builder().domain(domainName).domainId(domainId).images(images).build();
         return new ResponseEntity<String>(OBJECT_MAPPER.writeValueAsString(response), OK);
-    }
-
-    /**
-     * Web services interface to create a temporary derivative of a given image with given specifications.
-     *
-     * @param message JSON formated TempDerivativeMessage.
-     * @param headers request Headers.
-     * @return url of the generated temporary derivative.
-     * @throws Exception
-     */
-    @RequestMapping(value = "/media/v1/tempderivative", method = RequestMethod.POST)
-    @Transactional
-    public ResponseEntity<String> getTempDerivative(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
-        final String requestID = this.getRequestId(headers);
-        final String serviceUrl = MediaServiceUrl.MEDIA_TEMP_DERIVATIVE.getUrl();
-        LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
-        try {
-            final TempDerivativeMessage tempDerivativeMessage = JSONUtil.buildTempDerivativeFromJSONMessage(message);
-            final String errors = tempDerivativeMVELValidator.validateTempDerivativeMessage(tempDerivativeMessage);
-            if (!errors.isEmpty()) {
-                LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, errors, requestID, message);
-                return this.buildErrorResponse("JSON request format is invalid. " + errors + " Json message=" + message, serviceUrl, BAD_REQUEST);
-            }
-            final boolean fileExists =  verifyExistence(tempDerivativeMessage.getFileUrl());
-            if (!fileExists) {
-                LOGGER.info("Response bad request provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
-                return this.buildErrorResponse("Provided fileUrl does not exist.", serviceUrl, NOT_FOUND);
-            }
-            final Map<String, String> response = new HashMap<>();
-            response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnailProcessor.createTempDerivative(tempDerivativeMessage));
-            return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);
-
-        } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex, requestID, message);
-            return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
-        }
-
     }
 
     /**
@@ -382,20 +341,6 @@ public class MediaController extends CommonServiceController {
         } else {
             LOGGER.warn("Could not find the best media for the filename=[{}] on the list: [{}]. Will create a new GUID.", imageMessage.getFileName(),
                     Joiner.on("; ").join(mediaList));
-        }
-    }
-
-    /**
-     * Verifies if the file exists in an S3 bucket or is available in HTTP.
-     *
-     * @param fileUrl Incoming imageMessage's fileUrl.
-     * @return {@code true} if the file exists; {@code false} otherwise.
-     */
-    private boolean verifyExistence(final String fileUrl) {
-        if (fileUrl.startsWith(S3Validator.S3_PREFIX)) {
-            return S3Validator.checkFileExists(fileUrl);
-        } else {
-            return HTTPValidator.checkFileExists(fileUrl);
         }
     }
 

@@ -1,4 +1,4 @@
-package com.expedia.content.media.processing.services.derivative;
+package com.expedia.content.media.processing.services.reqres;
 
 /**
  * Represents a Temporary Derivative Message sent to media/v1/tempderivative

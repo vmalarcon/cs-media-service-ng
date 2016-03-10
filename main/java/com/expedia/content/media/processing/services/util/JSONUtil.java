@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
 
-import com.expedia.content.media.processing.services.derivative.TempDerivativeMessage;
 import org.apache.commons.io.FilenameUtils;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
@@ -286,17 +285,6 @@ public final class JSONUtil {
         mapMessage.put(MessageConstants.USER_ID, "Multisource");
         mapMessage.put(MessageConstants.CLIENT_ID, "Multisource");
         return new JSONWriter().write(mapMessage);
-    }
-
-    public static TempDerivativeMessage buildTempDerivativeFromJSONMessage(String jsonMessage) throws RequestMessageException{
-        final Map jsonMap = buildMapFromJson(jsonMessage);
-        final String fileUrl = (String) jsonMap.get("fileUrl");
-        final String rotation = (String) jsonMap.get("rotation");
-        final Integer width = (Integer) jsonMap.get("width");
-        final Integer height = (Integer) jsonMap.get("height");
-
-        return new TempDerivativeMessage(fileUrl, rotation, width, height);
-
     }
     
     /**

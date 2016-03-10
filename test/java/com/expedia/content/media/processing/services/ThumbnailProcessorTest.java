@@ -13,7 +13,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import com.expedia.content.media.processing.services.derivative.TempDerivativeMessage;
+import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
 import org.im4java.process.ProcessStarter;
 import org.junit.Before;
 import org.junit.Rule;
@@ -93,7 +93,7 @@ public class ThumbnailProcessorTest {
         when(mockResourceLoader.getResource(anyString())).thenReturn(mockWritableResource);
         setFieldValue(thumbProcessor, "resourceLoader", mockResourceLoader);
         TempDerivativeMessage tempDerivativeMessage = new TempDerivativeMessage("http://i.imgur.com/Ta3uP.jpg", "0", 180, 180);
-        String thumbnailPath = thumbProcessor.createTempDerivative(tempDerivativeMessage);
+        String thumbnailPath = thumbProcessor.createTempDerivativeThumbnail(tempDerivativeMessage);
         assertTrue(thumbnailPath.matches("https://s3-us-north-200.amazonaws.com/cs-media-bucket/test/thumbnails/(.*)"));
     }
 
@@ -113,10 +113,10 @@ public class ThumbnailProcessorTest {
         TempDerivativeMessage tempDerivativeMessage = new TempDerivativeMessage("http://i.imgur.com/Ta3uP.jpg", "HELLO, IS IT ME YOU'RE LOOKING FOR?", 180, 180);
 
         try {
-            thumbProcessor.createTempDerivative(tempDerivativeMessage);
+            thumbProcessor.createTempDerivativeThumbnail(tempDerivativeMessage);
             fail("Should throw exception");
         } catch (Exception e) {
-            assertEquals("Unable to generate temporary derivative with url: http://i.imgur.com/Ta3uP.jpg", e.getMessage());
+            assertEquals("Unable to generate thumbnail with url: http://i.imgur.com/Ta3uP.jpg", e.getMessage());
         }
     }
 }
