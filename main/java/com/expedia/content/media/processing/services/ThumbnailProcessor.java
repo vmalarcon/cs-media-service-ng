@@ -122,7 +122,7 @@ public class ThumbnailProcessor {
             tempDerivativeUrl = tempDerivativeUrl.replaceFirst(S3_PREFIX, "https://s3-" + this.regionName + ".amazonaws.com");
         } catch (Exception e) {
             LOGGER.error("Unable to generate temporary derivative with url: " + tempDerivativeMessage.getFileUrl(), e);
-            throw new RuntimeException("Unable to generate thumbnail with url: " + tempDerivativeMessage.getFileUrl(), e);
+            throw new RuntimeException("Unable to generate temporary derivative with url: " + tempDerivativeMessage.getFileUrl(), e);
         }
         LOGGER.debug("Created temporary derivative url=[{}]", tempDerivativeMessage.getFileUrl());
         return tempDerivativeUrl;
