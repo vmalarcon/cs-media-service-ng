@@ -148,9 +148,9 @@ public class LcmDynamoMediaDaoTest {
         Media dynamoMedia2 = Media.builder().mediaGuid(guid2).domain("Lodging").domainId("1234").build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
         Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").fileName("image3.jpg").domainId("1234").build();
-        dynamoMediaList.add(dynamoMedia1);
         dynamoMediaList.add(dynamoMedia2);
         dynamoMediaList.add(dynamoMedia3);
+        dynamoMediaList.add(dynamoMedia1); //Put hero last to verify it returns as first item.
         when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
 
         final Properties properties = new Properties();
@@ -162,6 +162,7 @@ public class LcmDynamoMediaDaoTest {
         setFieldValue(mediaDao, "paramLimit", 2);
         List<Media> testMediaList = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null);
         verify(lcmProcessLogDao, times(2)).findMediaStatus(any());
+        assertEquals(guid1, testMediaList.get(0).getMediaGuid());
     }
 
     @Test
