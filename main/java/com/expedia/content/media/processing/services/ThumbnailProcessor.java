@@ -90,7 +90,7 @@ public class ThumbnailProcessor {
      * @param identifier either the guid of the imageMessage, or the filename of the sent file
      * @param domain domain of an imageMessage
      * @param domainId domainId of an imageMessage
-     * @return
+     * @return thumbnailUrl the url of the generated thumbnail
      */
     @SuppressWarnings({"PMD.NPathComplexity"})
     private String createGenericThumbnail(final String fileUrl, final int width, final int height, final String rotation, final String identifier, final String domain, final String domainId) {
