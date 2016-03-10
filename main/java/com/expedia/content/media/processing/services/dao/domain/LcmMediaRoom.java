@@ -11,5 +11,7 @@ import lombok.Getter;
 public class LcmMediaRoom {
 
     @Getter private final int roomId;
+    @Getter private final Boolean roomHero;
+
 
 }

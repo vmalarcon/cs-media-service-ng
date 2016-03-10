@@ -11,6 +11,13 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
+import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetSproc;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,10 +25,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
-import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
-import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
-import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaIdListSproc;
@@ -46,6 +49,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     private static final String FIELD_CATEGORY_ID = "categoryId";
     private static final String FIELD_PROPERTY_HERO = "propertyHero";
     private static final String FIELD_ROOM_ID = "roomId";
+    private static final String FIELD_ROOM_HERO = "roomHero";
     private static final String FIELD_ROOMS = "rooms";
     private static final String FIELD_DERIVATIVE_LOCATION = "location";
     private static final String FIELD_DERIVATIVE_TYPE = "type";
@@ -60,6 +64,8 @@ public class LcmDynamoMediaDao implements MediaDao {
     private SQLMediaIdListSproc lcmMediaIdSproc;
     @Autowired
     private SQLMediaGetSproc lcmMediaSproc;
+    @Autowired
+    private SQLRoomGetSproc roomGetSproc;
     @Autowired
     private DynamoMediaRepository mediaRepo;
     @Autowired
@@ -316,10 +322,13 @@ public class LcmDynamoMediaDao implements MediaDao {
      * @param lcmDomainData Map to store extracted LCM data into.
      */
     private void extractLcmRooms(final LcmMedia lcmMedia, final Map<String, Object> lcmDomainData) {
-        if (lcmMedia.getRooms() != null && !lcmMedia.getRooms().isEmpty()) {
-            final List<Map<String, String>> roomList = lcmMedia.getRooms().stream().map(room -> {
+        final Map<String, Object> roomResult = roomGetSproc.execute(lcmMedia.getMediaId());
+        final List<LcmMediaRoom> lcmMediaRoomList = (List<LcmMediaRoom>) roomResult.get(SQLRoomGetSproc.MEDIA_SET);
+        if (!lcmMediaRoomList.isEmpty()) {
+            final List<Map<String, String>> roomList = lcmMediaRoomList.stream().map(room -> {
                 Map<String, String> roomData = new HashMap<>();
                 roomData.put(FIELD_ROOM_ID, String.valueOf(room.getRoomId()));
+                roomData.put(FIELD_ROOM_HERO, room.getRoomHero().toString());
                 return roomData;
             }).collect(Collectors.toList());
             lcmDomainData.put(FIELD_ROOMS, roomList);
