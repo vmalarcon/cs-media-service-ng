@@ -38,15 +38,15 @@ public class LcmMediaDerivative {
     });
 
     @Getter private final Integer mediaId;
-    private final Integer mediSizeTypeId;
+    private final Integer mediaSizeTypeId;
     @Getter private final Boolean fileProcessed;
     @Getter private final String fileName;
     @Getter private final Integer width;
     @Getter private final Integer height;
     @Getter private final Integer fileSize;
 
-    public String getMediSizeType() {
-        return TYPE_MAP.get(mediSizeTypeId);
+    public String getMediaSizeType() {
+        return TYPE_MAP.get(mediaSizeTypeId);
     }
 
 }
