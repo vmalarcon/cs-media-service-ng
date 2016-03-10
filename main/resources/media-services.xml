@@ -144,7 +144,10 @@
           class="com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper">
         <constructor-arg name="dynamoDB" ref="amazonDynamoDB" />
     </bean>
-
+    <bean id="dynamoMediaRepository" class="com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository">
+       <constructor-arg name="dynamoMapper" ref="dynamoMapper"/>
+       <constructor-arg name="environment" value="${EXPEDIA_ENVIRONMENT}"/>
+    </bean>
     <bean id="lcmReporter" class="com.expedia.content.media.processing.pipeline.reporting.sql.LcmReporting">
         <constructor-arg name="logEntryInsertProcedure" ref="lcmInsertSproc" />
         <constructor-arg name="appName" value="${processname}" />

@@ -49,7 +49,7 @@ public class ThumbnailProcessorTest {
         when(mockResourceLoader.getResource(anyString())).thenReturn(mockWritableResource);
         setFieldValue(thumbProcessor, "resourceLoader", mockResourceLoader);
 
-        String thumbnailPath = thumbProcessor.createThumbnail("http://i.imgur.com/Ta3uP.jpg", "29e6394d-760a-4526-b2dd-b70d312679b7", "lodging", "1234");
+        String thumbnailPath = thumbProcessor.createThumbnail("http://i.imgur.com/Ta3uP.jpg", "29e6394d-760a-4526-b2dd-b70d312679b7", "lodging", "1234").getLocation();
         assertEquals(
                 "https://s3-us-north-200.amazonaws.com/cs-media-bucket/test/thumbnails/lodging/1000000/10000/1300/1234/1234_29e6394d-760a-4526-b2dd-b70d312679b7_t.jpg",
                 thumbnailPath);

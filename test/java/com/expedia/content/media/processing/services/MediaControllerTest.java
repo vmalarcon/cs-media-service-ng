@@ -180,7 +180,7 @@ public class MediaControllerTest {
 
         ThumbnailProcessor thumbnailProcessor = mock(ThumbnailProcessor.class);
         String thumbnailUrl = "http://url.net/thumbnail.jpg";
-        when(thumbnailProcessor.createThumbnail(anyString(), anyString(), anyString(), anyString())).thenReturn(thumbnailUrl);
+        when(thumbnailProcessor.createThumbnail(anyString(), anyString(), anyString(), anyString()).getLocation()).thenReturn(thumbnailUrl);
         setFieldValue(mediaController, "thumbnailProcessor", thumbnailProcessor);
 
         LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);

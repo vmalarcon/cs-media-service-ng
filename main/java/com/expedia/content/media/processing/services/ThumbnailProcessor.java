@@ -2,6 +2,7 @@ package com.expedia.content.media.processing.services;
 
 import static com.expedia.content.media.processing.pipeline.domain.Domain.LODGING;
 
+import java.awt.image.BufferedImage;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -11,6 +12,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Locale;
+
+import javax.imageio.ImageIO;
 
 import org.im4java.core.ConvertCmd;
 import org.im4java.core.IM4JavaException;
@@ -27,6 +30,7 @@ import org.springframework.stereotype.Component;
 import com.amazonaws.util.IOUtils;
 import com.expedia.content.media.processing.pipeline.util.LodgingUtil;
 import com.expedia.content.media.processing.pipeline.util.TemporaryWorkFolder;
+import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.google.common.base.Joiner;
 
 import expedia.content.solutions.metrics.annotations.Timer;
@@ -36,13 +40,14 @@ import expedia.content.solutions.metrics.annotations.Timer;
  */
 @Component
 public class ThumbnailProcessor {
-
+    
     private static final Logger LOGGER = LoggerFactory.getLogger(ThumbnailProcessor.class);
-
+    
     private static final int THUMBNAIL_WIDTH = 180;
     private static final int THUMBNAIL_HEIGHT = 180;
     private static final String S3_PREFIX = "s3:/";
-
+    private static final String DERIVATIVE_TYPE = "t";
+    
     @Autowired
     private ResourceLoader resourceLoader;
     @Value("${service.temp.work.folder}")
@@ -51,7 +56,7 @@ public class ThumbnailProcessor {
     private String regionName;
     @Value("${service.thumbnail.output.location}")
     private String thumbnailOuputLocation;
-
+    
     /**
      * Create the thumbnail and save it in S3.
      *
@@ -61,12 +66,12 @@ public class ThumbnailProcessor {
      * @param domainId DomainId for the image.
      * @return URL Path for the resulting thumbnail on S3.
      */
-    public String createThumbnail(final String url, final String guid, final String domain, final String domainId) {
+    public Thumbnail createThumbnail(final String url, final String guid, final String domain, final String domainId) {
         LOGGER.debug("Creating thumbnail url=[{}] guid=[{}]", url, guid);
         String thumbnailUrl;
+        Path thumbnailPath;
         final Path workPath = Paths.get(tempWorkFolder);
         try (TemporaryWorkFolder workFolder = new TemporaryWorkFolder(workPath)) {
-            Path thumbnailPath;
             if (url.toLowerCase(Locale.US).startsWith(S3_PREFIX)) {
                 thumbnailPath = fetchS3(url, guid, workFolder.getWorkPath());
             } else {
@@ -86,9 +91,9 @@ public class ThumbnailProcessor {
             throw new RuntimeException("Unable to generate thumbnail with url: " + url + " and GUID: " + guid, e);
         }
         LOGGER.debug("Created thumbnail url=[{}] guid=[{}]", url, guid);
-        return thumbnailUrl;
+        return buildThumbnail(thumbnailPath, thumbnailUrl);
     }
-
+    
     /**
      * Fetch HTTP URL. Starts with {@code http://} or {@code https://}.
      *
@@ -107,7 +112,7 @@ public class ThumbnailProcessor {
         LOGGER.debug("Fetched HTTP URL -> " + url);
         return filePath;
     }
-
+    
     /**
      * Fetch S3 URL. Starts with {@code s3://}.
      *
@@ -126,7 +131,7 @@ public class ThumbnailProcessor {
         LOGGER.debug("Fetched S3 URL -> " + url);
         return filePath;
     }
-
+    
     /**
      * Generates the thumbnail using ImageMagick.
      *
@@ -147,7 +152,7 @@ public class ThumbnailProcessor {
         operation.resize(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, "!");
         operation.addImage(sourcePath.toString());
         operation.addImage(thumbnailPath.toString());
-
+        
         final ConvertCmd convertCmd = new ConvertCmd();
         LOGGER.debug("convert.thumb> {}", "convert " + operation.getCmdArgs().toString().replaceAll(",", ""));
         convertCmd.run(operation);
@@ -155,7 +160,7 @@ public class ThumbnailProcessor {
         LOGGER.debug("Generated thumbnail" + sourcePath);
         return thumbnailPath;
     }
-
+    
     /**
      * Verify the result of an ImageMagick execution
      *
@@ -170,7 +175,7 @@ public class ThumbnailProcessor {
             throw new IM4JavaException("IM Exception. Please see log for details");
         }
     }
-
+    
     /**
      * Builds the S3 storage location and file name for the source file.
      * 
@@ -183,7 +188,40 @@ public class ThumbnailProcessor {
     private String computeS3tumbnailPath(final Path thumbnailPath, final String guid, final String domain, final String domainId) {
         final String fileName = thumbnailPath.getFileName().toString();
         final String domainPath = LODGING.name().equalsIgnoreCase(domain) ? LodgingUtil.buildFolderPath(Integer.parseInt(domainId)) : domainId;
-        return thumbnailOuputLocation + domain.toLowerCase(Locale.US) + domainPath + domainId + (fileName.contains(guid) ? "" : "_" + guid) + "_" + fileName;
+        return thumbnailOuputLocation + domain.toLowerCase(Locale.US) + domainPath + domainId + (fileName.contains(guid) ? "" : "_" + guid) + "_"
+                + fileName;
     }
-
+    
+    /**
+     * Build a thumbnail from the given path
+     * 
+     * @param thumbnailPath path to use.
+     * @param url thumbnail location url;
+     * @return
+     */
+    private Thumbnail buildThumbnail(Path thumbnailPath, String url) {
+        BufferedImage bufferedImage;
+        int height = 0;
+        int width = 0;
+        Long thumbnailSize = 0L;
+        if (thumbnailPath != null) {
+            try {
+                bufferedImage = ImageIO.read(thumbnailPath.toFile());
+                height = bufferedImage.getHeight();
+                LOGGER.debug("Thumbnail height: " + height);
+                width = bufferedImage.getWidth();
+                LOGGER.debug("Thumbnail width: " + width);
+                thumbnailSize = thumbnailPath.toFile().length();
+                LOGGER.debug("Thumbnail size: " + thumbnailSize);
+                return Thumbnail.builder().height(Integer.toString(height))
+                        .location(url).size(Long.toString(thumbnailSize))
+                        .type(DERIVATIVE_TYPE).widht(Integer.toString(width)).build();
+                        
+            } catch (Exception e) {
+                LOGGER.debug("Unable to extract the metadas for the given url file: " + url);
+            }
+        }
+        return null;
+    }
+    
 }
