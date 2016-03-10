@@ -86,13 +86,14 @@
         <level value="INFO" />
         <appender-ref ref="${application.environment}Appender"/>
     </logger>
+
     <logger name="com.expedia.www.commons.io" additivity="false">
         <level value="ERROR" />
         <appender-ref ref="${application.environment}Appender" />
     </logger>
 
     <root>
-        <priority value="DEBUG"/>
+        <priority value="INFO"/>
         <appender-ref ref="${application.environment}Appender"/>
         <appender-ref ref="errorAppender"/>
     </root>

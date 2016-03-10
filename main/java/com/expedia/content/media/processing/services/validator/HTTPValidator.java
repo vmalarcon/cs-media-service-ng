@@ -1,12 +1,21 @@
 package com.expedia.content.media.processing.services.validator;
 
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpHead;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.HttpURLConnection;
-import java.net.URL;
 
 /**
  * Verifies if the HTTP URL exists.
  */
 public class HTTPValidator {
+    private static final Logger LOGGER = LoggerFactory.getLogger(HTTPValidator.class);
+
+    private static final CloseableHttpClient HTTP_CLIENT = HttpClients.createDefault();
 
     private HTTPValidator() {
     }
@@ -19,10 +28,11 @@ public class HTTPValidator {
      */
     public static boolean checkFileExists(String fileUrl) {
         try {
-            final HttpURLConnection connection = (HttpURLConnection) new URL(fileUrl).openConnection();
-            connection.setRequestMethod("HEAD");
-            return (connection.getResponseCode() == HttpURLConnection.HTTP_OK);
+            final HttpHead httpHead = new HttpHead(fileUrl);
+            final CloseableHttpResponse response = HTTP_CLIENT.execute(httpHead);
+            return (response.getStatusLine().getStatusCode() == HttpURLConnection.HTTP_OK);
         } catch (Exception e) {
+            LOGGER.warn("Url check failed: [{}]!", fileUrl, e);
             return false;
         }
     }
