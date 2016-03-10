@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Resource;
 
 import com.expedia.content.media.processing.services.derivative.TempDerivativeMessage;
-import com.expedia.content.media.processing.services.validator.TempDerivativeValidator;
+import com.expedia.content.media.processing.services.validator.TempDerivativeMVELValidator;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
@@ -104,6 +104,8 @@ public class MediaController extends CommonServiceController {
     private MediaDao mediaDao;
     @Autowired
     private MediaReplacement mediaReplacement;
+    @Autowired
+    private TempDerivativeMVELValidator tempDerivativeMVELValidator;
 
     /**
      * web service interface to consume media message.
@@ -202,6 +204,14 @@ public class MediaController extends CommonServiceController {
         return new ResponseEntity<String>(OBJECT_MAPPER.writeValueAsString(response), OK);
     }
 
+    /**
+     * Web services interface to create a temporary derivative of a given image with given specifications.
+     *
+     * @param message JSON formated TempDerivativeMessage.
+     * @param headers request Headers.
+     * @return url of the generated temporary derivative.
+     * @throws Exception
+     */
     @RequestMapping(value = "/media/v1/tempderivative", method = RequestMethod.POST)
     @Transactional
     public ResponseEntity<String> getTempDerivative(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
@@ -209,18 +219,20 @@ public class MediaController extends CommonServiceController {
         final String serviceUrl = MediaServiceUrl.MEDIA_TEMP_DERIVATIVE.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
         try {
-            final TempDerivativeMessage tempDerivative = JSONUtil.buildTempDerivativeFromJSONMessage(message);
-            final List<String> errorList = TempDerivativeValidator.validateMessage(tempDerivative);
-            if (errorList.isEmpty()) {
-                LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, String.join("," , errorList), requestID, message);
-                return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
+            final TempDerivativeMessage tempDerivativeMessage = JSONUtil.buildTempDerivativeFromJSONMessage(message);
+            final String errors = tempDerivativeMVELValidator.validateTempDerivativeMessage(tempDerivativeMessage);
+            if (!errors.isEmpty()) {
+                LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, errors, requestID, message);
+                return this.buildErrorResponse("JSON request format is invalid. " + errors + " Json message=" + message, serviceUrl, BAD_REQUEST);
             }
-            final boolean fileExists =  verifyExistence(tempDerivative.getFileUrl());
+            final boolean fileExists =  verifyExistence(tempDerivativeMessage.getFileUrl());
             if (!fileExists) {
                 LOGGER.info("Response bad request provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
                 return this.buildErrorResponse("Provided fileUrl does not exist.", serviceUrl, NOT_FOUND);
             }
-            return new ResponseEntity<>(thumbnailProcessor.createTempDerivative(tempDerivative), ACCEPTED);
+            final Map<String, String> response = new HashMap<>();
+            response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnailProcessor.createTempDerivative(tempDerivativeMessage));
+            return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);
 
         } catch (IllegalStateException | ImageMessageException ex) {
             LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex, requestID, message);

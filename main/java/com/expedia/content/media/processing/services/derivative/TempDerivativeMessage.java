@@ -1,15 +1,15 @@
 package com.expedia.content.media.processing.services.derivative;
 
 /**
- * Object model of Temporary Derivative Message
+ * Represents a Temporary Derivative Message sent to media/v1/tempderivative
  */
 public class TempDerivativeMessage {
     private String fileUrl;
     private String rotation;
-    private int width;
-    private int height;
+    private Integer width;
+    private Integer height;
 
-    public TempDerivativeMessage(String fileUrl, String rotation, int width, int height) {
+    public TempDerivativeMessage(String fileUrl, String rotation, Integer width, Integer height) {
         this.fileUrl = fileUrl;
         this.rotation = rotation;
         this.width = width;
@@ -32,19 +32,19 @@ public class TempDerivativeMessage {
         this.rotation = rotation;
     }
 
-    public int getWidth() {
+    public Integer getWidth() {
         return width;
     }
 
-    public void setWidth(int width) {
+    public void setWidth(Integer width) {
         this.width = width;
     }
 
-    public int getHeight() {
+    public Integer getHeight() {
         return height;
     }
 
-    public void setHeight(int height) {
+    public void setHeight(Integer height) {
         this.height = height;
     }
 }

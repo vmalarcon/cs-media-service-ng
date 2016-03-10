@@ -9,6 +9,7 @@ import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.expedia.content.media.processing.services.validator.MediaReplacement;
+import com.expedia.content.media.processing.services.validator.TempDerivativeMVELValidator;
 import com.google.common.collect.Lists;
 import org.codehaus.plexus.util.ReflectionUtils;
 import org.junit.Before;
@@ -522,12 +523,41 @@ public class MediaControllerTest {
 
     }
 
-//    @Test
-//    public void testSuccessfulTemporaryDerivativeRequest() throws Exception {
-//        String jsonMessage =
-//                "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg/why/would/someone/name/all/of/their/files/original.jpg\", " + "\"fileName\": \"original.jpg\", " + "\"userId\": \"bobthegreat\", "
-//                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"freetobook\" " + "}";
-//    }
+    @Test
+    public void testSuccessfulTemporaryDerivativeRequest() throws Exception {
+        String jsonMessage = "{ "
+                + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg/why/would/someone/name/all/of/their/files/original.jpg\", "
+                + "\"rotation\": \"90\", "
+                + "\"width\": 180, "
+                + "\"height\": 180"
+                + "}";
+
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+        TempDerivativeMVELValidator tempDerivativeMVELValidator = mock(TempDerivativeMVELValidator.class);
+        setFieldValue(mediaController, "tempDerivativeMVELValidator", tempDerivativeMVELValidator);
+
+        ThumbnailProcessor thumbnailProcessor = mock(ThumbnailProcessor.class);
+        String thumbnailUrl = "http://url.net/thumbnail.jpg";
+        when(thumbnailProcessor.createThumbnail(anyString(), anyString(), anyString(), anyString())).thenReturn(thumbnailUrl);
+        setFieldValue(mediaController, "thumbnailProcessor", thumbnailProcessor);
+
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+        setFieldValue(mediaController, "mediaReplacement", mediaReplacement);
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        when(tempDerivativeMVELValidator.validateTempDerivativeMessage(any())).thenReturn("");
+        ResponseEntity<String> responseEntity = mediaController.getTempDerivative(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"thumbnailUrl\":"));
+    }
 
     @SuppressWarnings({"unchecked"})
     private static Map<String, List<MapMessageValidator>> getMockValidators() {
@@ -540,5 +570,4 @@ public class MediaControllerTest {
         validators.put(TEST_CLIENT_ID, messageValidator);
         return validators;
     }
-
 }

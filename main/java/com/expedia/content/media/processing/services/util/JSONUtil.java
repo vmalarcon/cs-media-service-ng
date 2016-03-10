@@ -292,8 +292,8 @@ public final class JSONUtil {
         final Map jsonMap = buildMapFromJson(jsonMessage);
         final String fileUrl = (String) jsonMap.get("fileUrl");
         final String rotation = (String) jsonMap.get("rotation");
-        final int width = (Integer) jsonMap.get("width");
-        final int height = (Integer) jsonMap.get("height");
+        final Integer width = (Integer) jsonMap.get("width");
+        final Integer height = (Integer) jsonMap.get("height");
 
         return new TempDerivativeMessage(fileUrl, rotation, width, height);
 

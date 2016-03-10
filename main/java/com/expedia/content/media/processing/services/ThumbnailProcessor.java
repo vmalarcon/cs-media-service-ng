@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 import com.expedia.content.media.processing.services.derivative.TempDerivativeMessage;
 import org.apache.commons.io.FilenameUtils;
@@ -103,19 +104,19 @@ public class ThumbnailProcessor {
         String tempDerivativeUrl;
         final Path workPath = Paths.get(tempWorkFolder);
         try (TemporaryWorkFolder workFolder = new TemporaryWorkFolder(workPath)) {
-            Path thumbnailPath;
+            Path tempDerivativePath;
             if (tempDerivativeMessage.getFileUrl().toLowerCase(Locale.US).startsWith(S3_PREFIX)) {
-                thumbnailPath = fetchS3(tempDerivativeMessage.getFileUrl(), fileName, workFolder.getWorkPath());
+                tempDerivativePath = fetchS3(tempDerivativeMessage.getFileUrl(), fileName, workFolder.getWorkPath());
             } else {
-                thumbnailPath = fetchUrl(tempDerivativeMessage.getFileUrl(), fileName, workFolder.getWorkPath());
+                tempDerivativePath = fetchUrl(tempDerivativeMessage.getFileUrl(), fileName, workFolder.getWorkPath());
             }
-            thumbnailPath = generateThumbnail(thumbnailPath,tempDerivativeMessage.getWidth(),
+            tempDerivativePath = generateThumbnail(tempDerivativePath,tempDerivativeMessage.getWidth(),
                     tempDerivativeMessage.getHeight(), (tempDerivativeMessage.getRotation() == null) ? "0": tempDerivativeMessage.getRotation(), false);
-            tempDerivativeUrl = computeS3tempDerivativePath(thumbnailPath);
+            tempDerivativeUrl = computeS3tempDerivativePath();
             LOGGER.debug("Writing temporary derivative: " + tempDerivativeUrl);
             final WritableResource writableResource = (WritableResource) resourceLoader.getResource(tempDerivativeUrl);
             try (OutputStream out = writableResource.getOutputStream()) {
-                out.write(IOUtils.toByteArray(new FileInputStream(thumbnailPath.toFile())));
+                out.write(IOUtils.toByteArray(new FileInputStream(tempDerivativePath.toFile())));
             }
             LOGGER.debug("Wrote temporary derivative: " + tempDerivativeUrl);
             tempDerivativeUrl = tempDerivativeUrl.replaceFirst(S3_PREFIX, "https://s3-" + this.regionName + ".amazonaws.com");
@@ -123,7 +124,7 @@ public class ThumbnailProcessor {
             LOGGER.error("Unable to generate temporary derivative with url: " + tempDerivativeMessage.getFileUrl(), e);
             throw new RuntimeException("Unable to generate thumbnail with url: " + tempDerivativeMessage.getFileUrl(), e);
         }
-        LOGGER.debug("Created thumbnail url=[{}]", tempDerivativeMessage.getFileUrl());
+        LOGGER.debug("Created temporary derivative url=[{}]", tempDerivativeMessage.getFileUrl());
         return tempDerivativeUrl;
 
     }
@@ -232,14 +233,12 @@ public class ThumbnailProcessor {
     }
 
     /**
-     * Builds the S3 storage location for the source file.
+     * Builds the S3 storage location for the source file with a unique name.
      *
-     * @param tempDerivativePath the tempDerivative work file.
      * @return The storage location of the temporary derivative.
      */
-    private String computeS3tempDerivativePath(final Path tempDerivativePath) {
-        final String fileName = tempDerivativePath.getFileName().toString();
-        return thumbnailOuputLocation + "lodging" + fileName;
+    private String computeS3tempDerivativePath() {
+        return thumbnailOuputLocation + UUID.randomUUID().toString();
     }
 
 
