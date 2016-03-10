@@ -31,7 +31,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -71,7 +70,6 @@ import expedia.content.solutions.metrics.annotations.Timer;
 /**
  * Web service controller for media resources.
  */
-@Component
 @RestController
 public class MediaController extends CommonServiceController implements VerifyExistenceUtil {
 
@@ -264,7 +262,7 @@ public class MediaController extends CommonServiceController implements VerifyEx
         }
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
 
-        final boolean fileExists = verifyExistence(imageMessage.getFileUrl());
+        final boolean fileExists = verifyURLExistence(imageMessage.getFileUrl());
         if (!fileExists) {
             LOGGER.info("Response bad request provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
             return this.buildErrorResponse("Provided fileUrl does not exist.", serviceUrl, NOT_FOUND);

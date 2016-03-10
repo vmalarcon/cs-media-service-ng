@@ -13,7 +13,7 @@ public interface VerifyExistenceUtil {
      * @param fileUrl Incoming imageMessage's fileUrl.
      * @return {@code true} if the file exists; {@code false} otherwise.
      */
-    default boolean verifyExistence(final String fileUrl) {
+    default boolean verifyURLExistence(final String fileUrl) {
         if (fileUrl.startsWith(S3Validator.S3_PREFIX)) {
             return S3Validator.checkFileExists(fileUrl);
         } else {

@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +31,7 @@ import static org.springframework.http.HttpStatus.OK;
 /**
  * Web service controller for temporary derivatives.
  */
+@RestController
 public class TempDerivativeController extends CommonServiceController implements VerifyExistenceUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(TempDerivativeController.class);
     private static final String RESPONSE_FIELD_THUMBNAIL_URL = "thumbnailUrl";
@@ -60,7 +63,7 @@ public class TempDerivativeController extends CommonServiceController implements
                 LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, errors, requestID, message);
                 return this.buildErrorResponse("JSON request format is invalid. " + errors + " Json message=" + message, serviceUrl, BAD_REQUEST);
             }
-            final boolean fileExists = verifyExistence(tempDerivativeMessage.getFileUrl());
+            final boolean fileExists = verifyURLExistence(tempDerivativeMessage.getFileUrl());
             if (!fileExists) {
                 LOGGER.info("Response bad request provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
                 return this.buildErrorResponse("Provided fileUrl does not exist.", serviceUrl, NOT_FOUND);
