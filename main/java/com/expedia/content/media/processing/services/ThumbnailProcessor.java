@@ -2,7 +2,6 @@ package com.expedia.content.media.processing.services;
 
 import static com.expedia.content.media.processing.pipeline.domain.Domain.LODGING;
 
-import java.awt.image.BufferedImage;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -12,8 +11,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Locale;
-
-import javax.imageio.ImageIO;
 
 import org.im4java.core.ConvertCmd;
 import org.im4java.core.IM4JavaException;
@@ -28,9 +25,11 @@ import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.util.IOUtils;
+import com.expedia.content.media.processing.pipeline.domain.Metadata;
 import com.expedia.content.media.processing.pipeline.util.LodgingUtil;
 import com.expedia.content.media.processing.pipeline.util.TemporaryWorkFolder;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
+import com.expedia.content.media.processing.services.util.FileNameUtil;
 import com.google.common.base.Joiner;
 
 import expedia.content.solutions.metrics.annotations.Timer;
@@ -70,19 +69,23 @@ public class ThumbnailProcessor {
         LOGGER.debug("Creating thumbnail url=[{}] guid=[{}]", url, guid);
         String thumbnailUrl;
         Path thumbnailPath;
+        Path sourcePath;
+        Thumbnail thumbnail = null;
         final Path workPath = Paths.get(tempWorkFolder);
         try (TemporaryWorkFolder workFolder = new TemporaryWorkFolder(workPath)) {
             if (url.toLowerCase(Locale.US).startsWith(S3_PREFIX)) {
-                thumbnailPath = fetchS3(url, guid, workFolder.getWorkPath());
+                sourcePath = fetchS3(url, guid, workFolder.getWorkPath());
             } else {
-                thumbnailPath = fetchUrl(url, guid, workFolder.getWorkPath());
+                sourcePath = fetchUrl(url, guid, workFolder.getWorkPath());
             }
-            thumbnailPath = generateThumbnail(thumbnailPath);
+            thumbnailPath = generateThumbnail(sourcePath);
             thumbnailUrl = computeS3tumbnailPath(thumbnailPath, guid, domain, domainId);
             LOGGER.debug("Writing thumbnail: " + thumbnailUrl);
             final WritableResource writableResource = (WritableResource) resourceLoader.getResource(thumbnailUrl);
-            try (OutputStream out = writableResource.getOutputStream()) {
-                out.write(IOUtils.toByteArray(new FileInputStream(thumbnailPath.toFile())));
+            try (OutputStream out = writableResource.getOutputStream();
+                    FileInputStream file = new FileInputStream(thumbnailPath.toFile())) {
+                out.write(IOUtils.toByteArray(file));
+                thumbnail = buildThumbnail(thumbnailPath, thumbnailUrl, sourcePath);
             }
             LOGGER.debug("Wrote thumbnail: " + thumbnailUrl);
             thumbnailUrl = thumbnailUrl.replaceFirst(S3_PREFIX, "https://s3-" + this.regionName + ".amazonaws.com");
@@ -91,7 +94,7 @@ public class ThumbnailProcessor {
             throw new RuntimeException("Unable to generate thumbnail with url: " + url + " and GUID: " + guid, e);
         }
         LOGGER.debug("Created thumbnail url=[{}] guid=[{}]", url, guid);
-        return buildThumbnail(thumbnailPath, thumbnailUrl);
+        return thumbnail;
     }
     
     /**
@@ -108,7 +111,9 @@ public class ThumbnailProcessor {
         LOGGER.debug("Fetching HTTP URL -> " + url);
         final URL validUrl = new URL(url);
         final Path filePath = Paths.get(workPath.toString(), guid + ".jpg");
-        IOUtils.copy(validUrl.openStream(), new FileOutputStream(filePath.toString()));
+        try (FileOutputStream fileOutputStream = new FileOutputStream(filePath.toString())) {
+            IOUtils.copy(validUrl.openStream(), fileOutputStream);
+        }
         LOGGER.debug("Fetched HTTP URL -> " + url);
         return filePath;
     }
@@ -127,7 +132,9 @@ public class ThumbnailProcessor {
         LOGGER.debug("Fetching S3 URL -> " + url);
         final Resource resource = resourceLoader.getResource(url);
         final Path filePath = Paths.get(workPath.toString(), guid + ".jpg");
-        IOUtils.copy(resource.getInputStream(), new FileOutputStream(filePath.toString()));
+        try (FileOutputStream fileOutputStream = new FileOutputStream(filePath.toString())) {
+            IOUtils.copy(resource.getInputStream(), fileOutputStream);
+        }
         LOGGER.debug("Fetched S3 URL -> " + url);
         return filePath;
     }
@@ -199,27 +206,15 @@ public class ThumbnailProcessor {
      * @param url thumbnail location url;
      * @return
      */
-    private Thumbnail buildThumbnail(Path thumbnailPath, String url) {
-        BufferedImage bufferedImage;
-        int height = 0;
-        int width = 0;
-        Long thumbnailSize = 0L;
-        if (thumbnailPath != null) {
-            try {
-                bufferedImage = ImageIO.read(thumbnailPath.toFile());
-                height = bufferedImage.getHeight();
-                LOGGER.debug("Thumbnail height: " + height);
-                width = bufferedImage.getWidth();
-                LOGGER.debug("Thumbnail width: " + width);
-                thumbnailSize = thumbnailPath.toFile().length();
-                LOGGER.debug("Thumbnail size: " + thumbnailSize);
-                return Thumbnail.builder().height(Integer.toString(height))
-                        .location(url).size(Long.toString(thumbnailSize))
-                        .type(DERIVATIVE_TYPE).widht(Integer.toString(width)).build();
-                        
-            } catch (Exception e) {
-                LOGGER.debug("Unable to extract the metadas for the given url file: " + url);
-            }
+    private Thumbnail buildThumbnail(Path thumbnailPath, String url, Path sourcePath) {
+        final Metadata thumbnailMetadata = FileNameUtil.getBasicMetadata(thumbnailPath);
+        final Metadata sourceMetadata = FileNameUtil.getBasicMetadata(sourcePath);
+        if (thumbnailMetadata != null) {
+            return Thumbnail.builder().thumbnailMetadata(thumbnailMetadata)
+                    .sourceMetadata(sourceMetadata)
+                    .location(url)
+                    .type(DERIVATIVE_TYPE)
+                    .build();
         }
         return null;
     }

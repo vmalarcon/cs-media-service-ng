@@ -15,10 +15,12 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.Metadata;
 import com.expedia.content.media.processing.services.dao.MediaDBException;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaDerivative;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
+import com.expedia.content.media.processing.services.util.FileNameUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
@@ -92,7 +94,8 @@ public class DynamoMediaRepository {
     /**
      * Store the media Add message in dynamoDB
      * 
-     * @param imageMessage
+     * @param imageMessage message to store.
+     * @param thumbnail Associated thumbnail.
      */
     public void storeMediaAddMessage(ImageMessage imageMessage, Thumbnail thumbnail) {
         try {
@@ -102,7 +105,7 @@ public class DynamoMediaRepository {
                     imageMessage.getRequestId());
             if (thumbnail != null) {
                 dynamoMapper.save(buildDerivative(imageMessage, thumbnail));
-                LOGGER.info("Thumbnail successfully added in dynamodb : Derivatives=[{}], RequestId=[{}] ", thumbnail,
+                LOGGER.info("Thumbnail derivative successfully added in dynamodb : Derivatives=[{}], RequestId=[{}] ", thumbnail,
                         imageMessage.getRequestId());
             }
         } catch (Exception e) {
@@ -119,33 +122,38 @@ public class DynamoMediaRepository {
      * @return returns the media
      */
     private Media buildMedia(ImageMessage imageMessage, Thumbnail thumbnail) throws Exception {
-        final MediaDerivative mediaDerivative = (thumbnail == null)
-                ? null : buildDerivative(imageMessage, thumbnail);
-                
+        MediaDerivative mediaDerivative = null;
+        Metadata basicMetadata = null;
+        if (thumbnail != null) {
+            mediaDerivative = buildDerivative(imageMessage, thumbnail);
+            basicMetadata = thumbnail.getSourceMetadata();
+        }
         return Media.builder().active(imageMessage.isActive().toString())
                 .clientId(imageMessage.getClientId())
                 .derivatives((mediaDerivative == null) ? "" : WRITER.writeValueAsString(mediaDerivative))
                 .domain(imageMessage.getOuterDomainData().getDomain().getDomain())
                 .domainDerivativeCategory(imageMessage.getOuterDomainData().getDerivativeCategory())
-                .domainFields(imageMessage.getOuterDomainData().getDomainFields().toString())
+                .domainFields(WRITER.writeValueAsString(imageMessage.getOuterDomainData().getDomainFields()))
                 .domainId(imageMessage.getOuterDomainData().getDomainId())
                 .environment(environment)
                 .fileName(imageMessage.getFileName())
                 .fileUrl(imageMessage.getFileUrl())
-                .metadata((imageMessage.getMetadata() == null) ? "" : WRITER.writeValueAsString(imageMessage.getMetadata()))
                 .lastUpdated(new Date())
+                .metadata(basicMetadata == null ? "" : WRITER.writeValueAsString(basicMetadata))
                 .mediaGuid(imageMessage.getMediaGuid()).build();
     }
     
     /**
-     * Build a MediaDerivative object from the imageMessage an thumbnail.
+     * Build a MediaDerivative object from the imageMessage and thumbnail object.
      * 
      * @param imageMessage imageMessage to use.
      * @param thumbnail thumbnail to use.
      * @return returns the MediaDerivative.
      */
     private MediaDerivative buildDerivative(ImageMessage imageMessage, Thumbnail thumbnail) {
-        return MediaDerivative.builder().height(thumbnail.getHeight()).width(thumbnail.getWidht())
+        return MediaDerivative.builder().height(Integer.toString(thumbnail.getThumbnailMetadata().getHeight()))
+                .width(Integer.toString(thumbnail.getThumbnailMetadata().getWidth()))
+                .fileSize(Integer.toString(thumbnail.getThumbnailMetadata().getFileSize()))
                 .location(thumbnail.getLocation())
                 .mediaGuid(imageMessage.getMediaGuid())
                 .type(thumbnail.getType()).build();

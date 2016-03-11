@@ -1,37 +1,45 @@
 package com.expedia.content.media.processing.services.util;
 
-import com.amazonaws.util.StringUtils;
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-
-import org.apache.commons.io.FilenameUtils;
-
+import java.awt.image.BufferedImage;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
+
+import javax.imageio.ImageIO;
+
+import org.apache.commons.io.FilenameUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.amazonaws.util.StringUtils;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.Metadata;
 
 /**
  * Utility class for resolving file names
  * --ALL PROVIDERS ADDED TO THE ENUM SHOULD USE THE FUNCTION guidProviderNameToFileNameFunction--
  */
 public class FileNameUtil {
-
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileNameUtil.class);
+    
     /**
      * --THIS FUNCTION SHOULD BE USED FOR ALL FUTURE PROVIDERS ADDED TO THE ENUM--
      * This function takes in the ImageMessage with mediaGuid and returns the fileName in the following format:
      * EID_ProviderName_MediaGUID.jpg
-     *
      */
     private static final Function<ImageMessage, String> guidProviderNameToFileNameFunction = (consumedImageMessage) -> {
-        final String fileNameFromMediaGUID = consumedImageMessage.getOuterDomainData().getDomainId() + "_" + consumedImageMessage.getOuterDomainData().getProvider()
-                + "_" + consumedImageMessage.getMediaGuid() + "." + FilenameUtils.getExtension(consumedImageMessage.getFileUrl());
+        final String fileNameFromMediaGUID =
+                consumedImageMessage.getOuterDomainData().getDomainId() + "_" + consumedImageMessage.getOuterDomainData().getProvider()
+                        + "_" + consumedImageMessage.getMediaGuid() + "." + FilenameUtils.getExtension(consumedImageMessage.getFileUrl());
         return fileNameFromMediaGUID;
     };
-
+    
     /**
      * This function takes in the ImageMessage and returns the fileName from the imageMessage if it is already set and if it is not
-     * it is set in the following format: 
+     * it is set in the following format:
      * baseNameOfFileURL.jpg
-     *
      */
     private static final Function<ImageMessage, String> fileURLToFileNameFunction = (consumedImageMessage) -> {
         if (StringUtils.isNullOrEmpty(consumedImageMessage.getFileName())) {
@@ -41,7 +49,7 @@ public class FileNameUtil {
         }
         return consumedImageMessage.getFileName();
     };
-
+    
     /**
      * Mapping enum for LCM:MediaProvider to function logic for resolving a fileName
      */
@@ -100,42 +108,68 @@ public class FileNameUtil {
         PRODUCT_API_TEST("productapi-test"),
         ORBITZ("orbitz"),
         REPLACEPROVIDER("replaceprovider");
-
+        
         private final String name;
         private final Function<ImageMessage, String> function;
-
+        
         // FOR LEGACY PROVIDERS ONLY
         MediaProvider(String mediaProvider) {
             this(mediaProvider, fileURLToFileNameFunction);
         }
-
+        
         MediaProvider(String mediaProvider, Function<ImageMessage, String> function) {
             this.name = mediaProvider;
             this.function = function;
         }
-
+        
         private String getName() {
             return name;
         }
-
+        
         private static Optional<MediaProvider> findMediaProviderByProviderName(String providerName) {
             return Stream.of(MediaProvider.values()).filter(mediaProvider -> mediaProvider.getName().equals(providerName.toLowerCase())).findFirst();
         }
     }
-
-
+    
     /**
      * resolve FileName by the MediaProvider name
      *
      * @param imageMessage
      */
     public static String resolveFileNameByProvider(ImageMessage imageMessage) {
-        String providerName = imageMessage.getOuterDomainData().getProvider();
-        Optional<MediaProvider> mediaProvider = MediaProvider.findMediaProviderByProviderName(providerName);
+        final String providerName = imageMessage.getOuterDomainData().getProvider();
+        final Optional<MediaProvider> mediaProvider = MediaProvider.findMediaProviderByProviderName(providerName);
         if (mediaProvider.isPresent()) {
             return mediaProvider.get().function.apply(imageMessage);
         }
         return guidProviderNameToFileNameFunction.apply(imageMessage);
     }
-
+    
+    /**
+     * Retrieve basic metadatas for a file.
+     * 
+     * @param sourcePath source path.
+     * @return
+     */
+    public static Metadata getBasicMetadata(Path sourcePath) {
+        BufferedImage bufferedImage;
+        int height = 0;
+        int width = 0;
+        Long sourceSize = 0L;
+        if (sourcePath != null) {
+            try {
+                bufferedImage = ImageIO.read(sourcePath.toFile());
+                height = bufferedImage.getHeight();
+                width = bufferedImage.getWidth();
+                LOGGER.debug("Media width: " + width);
+                sourceSize = sourcePath.toFile().length();
+                LOGGER.debug("Media size: " + sourceSize);
+                return Metadata.builder().fileSize((int) sourcePath.toFile().length()).width(width).height(height).build();
+            } catch (Exception e) {
+                LOGGER.debug("Unable to extract the metadas for the given url file: " + sourcePath.getFileName());
+            }
+        }
+        return null;
+    }
+    
 }
