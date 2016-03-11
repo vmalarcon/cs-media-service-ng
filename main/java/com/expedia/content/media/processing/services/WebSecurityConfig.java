@@ -61,6 +61,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         http.httpBasic().and().authorizeRequests().
                 antMatchers(HttpMethod.POST, MediaServiceUrl.MEDIA_STATUS.getUrl()).authenticated().
                 antMatchers(HttpMethod.POST, MediaServiceUrl.MEDIA_ADD.getUrl()).authenticated().
+                antMatchers(HttpMethod.POST, MediaServiceUrl.MEDIA_TEMP_DERIVATIVE.getUrl()).authenticated().
                 antMatchers(HttpMethod.GET, MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl() + "/**").authenticated().
                 antMatchers(HttpMethod.GET, MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + "/**").authenticated();
         http.csrf().disable();

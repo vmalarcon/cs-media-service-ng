@@ -5,11 +5,14 @@ import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaIdListSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetSproc;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
 import org.junit.Test;
+import org.junit.Before;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -37,6 +40,18 @@ import static org.mockito.Mockito.verify;
 
 public class LcmDynamoMediaDaoTest {
 
+    SQLRoomGetSproc roomGetSproc =null;
+
+    @Before
+    public void setUp() throws Exception {
+        roomGetSproc = mock(SQLRoomGetSproc.class);
+        Map<String, Object> roomResult = new HashMap<>();
+        LcmMediaRoom lcmMediaRoom = LcmMediaRoom.builder().roomId(123).roomHero(true).build();
+        List<LcmMediaRoom> lcmMediaRoomList = new ArrayList<>();
+        lcmMediaRoomList.add(lcmMediaRoom);
+        roomResult.put("room", lcmMediaRoomList);
+        when(roomGetSproc.execute(anyInt())).thenReturn(roomResult);
+    }
     @Test
     public void testGetMediaByDomainIdNoFilter() throws Exception {
         SQLMediaIdListSproc mediaIdSproc = mock(SQLMediaIdListSproc.class);
@@ -80,11 +95,17 @@ public class LcmDynamoMediaDaoTest {
         properties.put("1", "EPC Internal User");
 
         MediaDao mediaDao = makeMockMediaDao(mediaIdSproc, mediaSproc, mockMediaDBRepo, properties);
+        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
         List<Media> testMediaList = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null);
 
         assertEquals(3, testMediaList.size());
         testMediaList.stream().filter(media -> media.getLcmMediaId() != null).forEach(media -> assertEquals(2, media.getDerivativesList().size()));
         Media testMedia1 = testMediaList.get(0);
+        Map<String, Object> domainMap= testMedia1.getDomainData();
+        List rooms = (ArrayList)domainMap.get("rooms");
+        assertEquals(((HashMap)rooms.get(0)).get("roomId"),"123");
+        assertTrue(Boolean.valueOf(((HashMap) rooms.get(0)).get("roomHero").toString()));
+
         assertEquals(media1.getDomainId().toString(), testMedia1.getDomainId());
         assertEquals(media1.getLastUpdatedBy(), testMedia1.getUserId());
         assertEquals(media1.getFileName(), testMedia1.getFileName());
@@ -148,9 +169,9 @@ public class LcmDynamoMediaDaoTest {
         Media dynamoMedia2 = Media.builder().mediaGuid(guid2).domain("Lodging").domainId("1234").build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
         Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").fileName("image3.jpg").domainId("1234").build();
-        dynamoMediaList.add(dynamoMedia1);
         dynamoMediaList.add(dynamoMedia2);
         dynamoMediaList.add(dynamoMedia3);
+        dynamoMediaList.add(dynamoMedia1); //Put hero last to verify it returns as first item.
         when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
 
         final Properties properties = new Properties();
@@ -160,8 +181,11 @@ public class LcmDynamoMediaDaoTest {
         LcmProcessLogDao lcmProcessLogDao = makeMockProcessLogDao();
         setFieldValue(mediaDao, "processLogDao", lcmProcessLogDao);
         setFieldValue(mediaDao, "paramLimit", 2);
+        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
+
         List<Media> testMediaList = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null);
         verify(lcmProcessLogDao, times(2)).findMediaStatus(any());
+        assertEquals(guid1, testMediaList.get(0).getMediaGuid());
     }
 
     @Test
@@ -209,6 +233,7 @@ public class LcmDynamoMediaDaoTest {
         MediaDao mediaDao = makeMockMediaDao(mediaIdSproc, mediaSproc, mockMediaDBRepo, properties);
         setFieldValue(mediaDao, "lcmMediaIdSproc", mediaIdSproc);
         setFieldValue(mediaDao, "lcmMediaSproc", mediaSproc);
+        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
         List<Media> testMediaList1 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null);
 
         assertEquals(1, testMediaList1.size());
@@ -277,6 +302,7 @@ public class LcmDynamoMediaDaoTest {
         MediaDao mediaDao = makeMockMediaDao(mediaIdSproc, mediaSproc, mockMediaDBRepo, properties);
         setFieldValue(mediaDao, "lcmMediaIdSproc", mediaIdSproc);
         setFieldValue(mediaDao, "lcmMediaSproc", mediaSproc);
+        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
         List<Media> testMediaList1 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, "a,t,b");
 
         assertEquals(3, testMediaList1.size());
@@ -329,6 +355,7 @@ public class LcmDynamoMediaDaoTest {
         properties.put("1", "EPC Internal User");
 
         MediaDao mediaDao = makeMockMediaDao(mediaIdSproc, mediaSproc, mockMediaDBRepo, properties);
+        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
         List<Media> testMediaList = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null);
 
         assertEquals(3, testMediaList.size());

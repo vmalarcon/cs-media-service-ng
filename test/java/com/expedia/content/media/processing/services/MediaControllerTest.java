@@ -533,5 +533,4 @@ public class MediaControllerTest {
         validators.put(TEST_CLIENT_ID, messageValidator);
         return validators;
     }
-
 }

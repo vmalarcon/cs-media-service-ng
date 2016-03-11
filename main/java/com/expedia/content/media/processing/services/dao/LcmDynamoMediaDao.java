@@ -11,6 +11,13 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
+import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetSproc;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,10 +25,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
-import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
-import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
-import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaIdListSproc;
@@ -46,6 +49,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     private static final String FIELD_CATEGORY_ID = "categoryId";
     private static final String FIELD_PROPERTY_HERO = "propertyHero";
     private static final String FIELD_ROOM_ID = "roomId";
+    private static final String FIELD_ROOM_HERO = "roomHero";
     private static final String FIELD_ROOMS = "rooms";
     private static final String FIELD_DERIVATIVE_LOCATION = "location";
     private static final String FIELD_DERIVATIVE_TYPE = "type";
@@ -60,6 +64,8 @@ public class LcmDynamoMediaDao implements MediaDao {
     private SQLMediaIdListSproc lcmMediaIdSproc;
     @Autowired
     private SQLMediaGetSproc lcmMediaSproc;
+    @Autowired
+    private SQLRoomGetSproc roomGetSproc;
     @Autowired
     private DynamoMediaRepository mediaRepo;
     @Autowired
@@ -104,6 +110,7 @@ public class LcmDynamoMediaDao implements MediaDao {
                                 || (activeFilter.equals(ACTIVE_FILTER_TRUE) && media.getActive() != null && media.getActive().equals(ACTIVE_FILTER_TRUE))
                                 || (activeFilter.equals(ACTIVE_FILTER_FALSE)
                                 && (media.getActive() == null || media.getActive().equals(ACTIVE_FILTER_FALSE)))) ? true : false)
+                        .sorted((media1, media2) -> compareMedia(media1, media2, domain))
                         .collect(Collectors.toList());
         final List<String> fileNames =
                 domainIdMedia.stream().filter(media -> media.getFileName() != null).map(media -> media.getFileName()).distinct()
@@ -115,12 +122,29 @@ public class LcmDynamoMediaDao implements MediaDao {
     }
 
     /**
+     * Compares two media objects for sorting.
+     * 
+     * @param media1 First media to compare.
+     * @param media2 Second media to compare.
+     * @param domain Different domains will have different sorting requirements.
+     * @return 0 if the media objects weigh the same, greater than 1 if the first item weighs more, less than 1 if the first item weighs less.
+     */
+    private int compareMedia(Media media1, Media media2, Domain domain) {
+        if (Domain.LODGING.equals(domain)) {
+            final Boolean media1Hero = Boolean.valueOf(media1.getDomainData() == null ? null : ((String) media1.getDomainData().get("propertyHero")));
+            final Boolean media2Hero = Boolean.valueOf(media2.getDomainData() == null ? null : ((String) media2.getDomainData().get("propertyHero")));
+            return media2Hero.compareTo(media1Hero);
+        }
+        return 0;
+    }
+
+    /**
      * because of the parameter length limitation in Sproc 'MediaProcessLogGetByFilename', if the fileNames lengh is bigger than the limitation
      * we call the sproc multiple times to get the result.
      *
-     * @param limit  sproc parameter limitation
-     * @param fileNames
-     * @return
+     * @param limit Sproc parameter limitation.
+     * @param fileNames File names to fetch the status for.
+     * @return List of all status mapped to their file name.
      */
     private Map<String, String> getStatusByLoop(int limit, List<String> fileNames) {
         final int total = fileNames.size();
@@ -316,10 +340,13 @@ public class LcmDynamoMediaDao implements MediaDao {
      * @param lcmDomainData Map to store extracted LCM data into.
      */
     private void extractLcmRooms(final LcmMedia lcmMedia, final Map<String, Object> lcmDomainData) {
-        if (lcmMedia.getRooms() != null && !lcmMedia.getRooms().isEmpty()) {
-            final List<Map<String, String>> roomList = lcmMedia.getRooms().stream().map(room -> {
+        final Map<String, Object> roomResult = roomGetSproc.execute(lcmMedia.getMediaId());
+        final List<LcmMediaRoom> lcmMediaRoomList = (List<LcmMediaRoom>) roomResult.get(SQLRoomGetSproc.MEDIA_SET);
+        if (!lcmMediaRoomList.isEmpty()) {
+            final List<Map<String, String>> roomList = lcmMediaRoomList.stream().map(room -> {
                 Map<String, String> roomData = new HashMap<>();
                 roomData.put(FIELD_ROOM_ID, String.valueOf(room.getRoomId()));
+                roomData.put(FIELD_ROOM_HERO, room.getRoomHero().toString());
                 return roomData;
             }).collect(Collectors.toList());
             lcmDomainData.put(FIELD_ROOMS, roomList);

@@ -59,25 +59,41 @@
 
     <logger name="com.expedia.www.platform.connector.logging.ConnectorLogger.Transaction" additivity="false">
         <param name="threshold" value="INFO" />
-        <appender-ref ref="transactionLogAppender"/>
+        <appender-ref ref="devAppender"/>
     </logger>
 
     <logger name="com.expedia.www.platform.connector.logging.ConnectorLogger.Trace" additivity="false">
         <param name="threshold" value="INFO" />
-        <appender-ref ref="traceLogAppender"/>
+        <appender-ref ref="devAppender"/>
+    </logger>
+
+    <logger name="com.expedia.www.commons.statsd.StatsdClient" additivity="false">
+        <param name="threshold" value="INFO" />
+        <appender-ref ref="devAppender" />
+    </logger>
+
+    <logger name="com.amazonaws" additivity="false">
+        <param name="threshold" value="INFO" />
+        <appender-ref ref="devAppender" />
+    </logger>
+
+    <logger name="org.apache.http" additivity="false">
+        <param name="threshold" value="INFO" />
+        <appender-ref ref="devAppender" />
     </logger>
 
     <logger name="org.springframework" additivity="false">
         <level value="INFO" />
         <appender-ref ref="${application.environment}Appender"/>
     </logger>
+
     <logger name="com.expedia.www.commons.io" additivity="false">
         <level value="ERROR" />
         <appender-ref ref="${application.environment}Appender" />
     </logger>
 
     <root>
-        <priority value="DEBUG"/>
+        <priority value="INFO"/>
         <appender-ref ref="${application.environment}Appender"/>
         <appender-ref ref="errorAppender"/>
     </root>

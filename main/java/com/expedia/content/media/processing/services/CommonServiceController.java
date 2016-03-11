@@ -1,5 +1,7 @@
 package com.expedia.content.media.processing.services;
 
+import com.expedia.content.media.processing.services.validator.HTTPValidator;
+import com.expedia.content.media.processing.services.validator.S3Validator;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
@@ -40,6 +42,20 @@ public abstract class CommonServiceController {
      */
     protected String getRequestId(MultiValueMap<String, String> headers) {
         return headers.getFirst(REQUEST_ID);
+    }
+
+    /**
+     * Verifies if the file exists in an S3 bucket or is available in HTTP.
+     *
+     * @param fileUrl Incoming imageMessage's fileUrl.
+     * @return {@code true} if the file exists; {@code false} otherwise.
+     */
+    public boolean verifyUrlExistence(final String fileUrl) {
+        if (fileUrl.startsWith(S3Validator.S3_PREFIX)) {
+            return S3Validator.checkFileExists(fileUrl);
+        } else {
+            return HTTPValidator.checkFileExists(fileUrl);
+        }
     }
 
 }
