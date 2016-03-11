@@ -7,8 +7,8 @@ import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.services.dao.LcmDynamoMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.util.MediaReplacement;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
-import com.expedia.content.media.processing.services.validator.MediaReplacement;
 import com.google.common.collect.Lists;
 import org.codehaus.plexus.util.ReflectionUtils;
 import org.junit.Before;
@@ -41,7 +41,7 @@ import java.util.Properties;
 import java.util.Set;
 
 import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-import static com.expedia.content.media.processing.services.validator.MediaReplacementTest.createByFileNameMedia;
+import static com.expedia.content.media.processing.services.util.MediaReplacementTest.createByFileNameMedia;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -69,9 +69,8 @@ public class MediaControllerTest {
     @Mock
     Properties mockProviderProperties;
 
-    private MediaReplacement mediaReplacement = new MediaReplacement("ReplaceProvider");
-    Set<Map.Entry<Object, Object>> providerMapping;
-    MediaController mediaController;
+    private Set<Map.Entry<Object, Object>> providerMapping;
+    private MediaController mediaController;
 
     @Before
     public void setSecurityContext() {
@@ -108,7 +107,6 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
-        setFieldValue(mediaController, "mediaReplacement", mediaReplacement);
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -145,7 +143,6 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
-        setFieldValue(mediaController, "mediaReplacement", mediaReplacement);
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -187,7 +184,6 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
-        setFieldValue(mediaController, "mediaReplacement", mediaReplacement);
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -364,7 +360,6 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
-        setFieldValue(mediaController, "mediaReplacement", mediaReplacement);
 
         MediaDao mockMediaDao = mock(MediaDao.class);
         when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"))).thenReturn(Lists.newArrayList(
@@ -419,7 +414,6 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
-        setFieldValue(mediaController, "mediaReplacement", mediaReplacement);
 
         MediaDao mockMediaDao = mock(MediaDao.class);
         when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"))).thenReturn(Lists.newArrayList());
@@ -463,7 +457,6 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
-        setFieldValue(mediaController, "mediaReplacement", mediaReplacement);
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -500,7 +493,6 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
-        setFieldValue(mediaController, "mediaReplacement", mediaReplacement);
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
