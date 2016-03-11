@@ -14,7 +14,6 @@ import java.util.Locale;
 import java.util.UUID;
 
 import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
-import org.apache.commons.io.FilenameUtils;
 import org.im4java.core.ConvertCmd;
 import org.im4java.core.IM4JavaException;
 import org.im4java.core.IMOperation;
@@ -75,9 +74,10 @@ public class ThumbnailProcessor {
      * @return URL Path for the resulting temporary derivative on S3
      */
     public String createTempDerivativeThumbnail(TempDerivativeMessage tempDerivativeMessage) {
-        final String fileName = FilenameUtils.getBaseName(tempDerivativeMessage.getFileUrl());
+        final String guid = UUID.randomUUID().toString();
+
         return createGenericThumbnail(tempDerivativeMessage.getFileUrl(), tempDerivativeMessage.getWidth(),
-                tempDerivativeMessage.getHeight(), tempDerivativeMessage.getRotation(), fileName, null, null);
+                tempDerivativeMessage.getHeight(), tempDerivativeMessage.getRotation(), guid, "tempderivative", null);
     }
 
     /**
@@ -87,28 +87,25 @@ public class ThumbnailProcessor {
      * @param width the width of the returned thumbnail
      * @param height the height of the returned thumbnail
      * @param rotation the rotation of the returned thumbnail
-     * @param identifier either the guid of the imageMessage, or the filename of the sent file
+     * @param guid the guid of the message
      * @param domain domain of an imageMessage
      * @param domainId domainId of an imageMessage
      * @return thumbnailUrl the url of the generated thumbnail
      */
-    @SuppressWarnings({"PMD.NPathComplexity"})
-    private String createGenericThumbnail(final String fileUrl, final int width, final int height, final String rotation, final String identifier, final String domain, final String domainId) {
-        final String guid = (FilenameUtils.getBaseName(fileUrl).equals(identifier)) ? "" : identifier;
-        final boolean imageMessageThumbnail = (!guid.isEmpty());
-        LOGGER.debug("Creating thumbnail url=[" + fileUrl + "]" + ((imageMessageThumbnail) ? "guid=[" + guid + "]" : ""));
+    private String createGenericThumbnail(final String fileUrl, final int width, final int height, final String rotation, final String guid, final String domain, final String domainId) {
+
+        LOGGER.debug("Creating thumbnail url=[{}] guid=[{}]", fileUrl, guid);
         String thumbnailUrl;
         final Path workPath = Paths.get(tempWorkFolder);
         try (TemporaryWorkFolder workFolder = new TemporaryWorkFolder(workPath)) {
             Path thumbnailPath;
             if (fileUrl.toLowerCase(Locale.US).startsWith(S3_PREFIX)) {
-                thumbnailPath = fetchS3(fileUrl, identifier, workFolder.getWorkPath());
+                thumbnailPath = fetchS3(fileUrl, guid, workFolder.getWorkPath());
             } else {
-                thumbnailPath = fetchUrl(fileUrl, identifier, workFolder.getWorkPath());
+                thumbnailPath = fetchUrl(fileUrl, guid, workFolder.getWorkPath());
             }
-
-            thumbnailPath = generateThumbnail(thumbnailPath, width, height, (rotation == null) ? "0" : rotation, imageMessageThumbnail);
-            thumbnailUrl = (imageMessageThumbnail) ? computeS3thumbnailPath(thumbnailPath, guid, domain, domainId) : computeS3thumbnailPath();
+            thumbnailPath = generateThumbnail(thumbnailPath, width, height, (rotation == null) ? "0" : rotation, (domainId != null));
+            thumbnailUrl = computeS3thumbnailPath(thumbnailPath, guid, domain, domainId);
             LOGGER.debug("Writing thumbnail: " + thumbnailUrl);
             final WritableResource writableResource = (WritableResource) resourceLoader.getResource(thumbnailUrl);
             try (OutputStream out = writableResource.getOutputStream()) {
@@ -118,9 +115,9 @@ public class ThumbnailProcessor {
             thumbnailUrl = thumbnailUrl.replaceFirst(S3_PREFIX, "https://s3-" + this.regionName + ".amazonaws.com");
         } catch (Exception e) {
             LOGGER.error("Unable to generate thumbnail with url: " + fileUrl, e);
-            throw new RuntimeException("Unable to generate thumbnail with url: " + fileUrl + ((imageMessageThumbnail) ? " and GUID: " + identifier : ""), e);
+            throw new RuntimeException("Unable to generate thumbnail with url: " + fileUrl + " and GUID: " + guid, e);
         }
-        LOGGER.debug("Created thumbnail url=[" + fileUrl + "]" + ((imageMessageThumbnail) ? "guid=[" + guid + "]" : ""));
+        LOGGER.debug("Created thumbnail url=[{}] guid=[{}]", fileUrl, guid);
         return thumbnailUrl;
     }
 
@@ -223,20 +220,12 @@ public class ThumbnailProcessor {
      * @return The storage location of the thumbnail.
      */
     private String computeS3thumbnailPath(final Path thumbnailPath, final String guid, final String domain, final String domainId) {
-        final String fileName = thumbnailPath.getFileName().toString();
-        final String domainPath = LODGING.name().equalsIgnoreCase(domain) ? LodgingUtil.buildFolderPath(Integer.parseInt(domainId)) : domainId;
-        return thumbnailOuputLocation + domain.toLowerCase(Locale.US) + domainPath + domainId + (fileName.contains(guid) ? "" : "_" + guid) + "_" + fileName;
+        if (domainId ==  null) {
+            return thumbnailOuputLocation + domain + "/" + guid;
+        } else {
+            final String fileName = thumbnailPath.getFileName().toString();
+            final String domainPath = LODGING.name().equalsIgnoreCase(domain) ? LodgingUtil.buildFolderPath(Integer.parseInt(domainId)) : domainId;
+            return thumbnailOuputLocation + domain.toLowerCase(Locale.US) + domainPath + domainId + (fileName.contains(guid) ? "" : "_" + guid) + "_" + fileName;
+        }
     }
-
-    /**
-     * Builds the S3 storage location for the source file with a unique name.
-     *
-     * @return The storage location of the temporary derivative.
-     */
-    private String computeS3thumbnailPath() {
-        return thumbnailOuputLocation + UUID.randomUUID().toString();
-    }
-
-
-
 }

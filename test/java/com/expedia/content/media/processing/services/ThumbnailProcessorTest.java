@@ -94,7 +94,7 @@ public class ThumbnailProcessorTest {
         setFieldValue(thumbProcessor, "resourceLoader", mockResourceLoader);
         TempDerivativeMessage tempDerivativeMessage = new TempDerivativeMessage("http://i.imgur.com/Ta3uP.jpg", "0", 180, 180);
         String thumbnailPath = thumbProcessor.createTempDerivativeThumbnail(tempDerivativeMessage);
-        assertTrue(thumbnailPath.matches("https://s3-us-north-200.amazonaws.com/cs-media-bucket/test/thumbnails/(.*)"));
+        assertTrue(thumbnailPath.matches("https://s3-us-north-200.amazonaws.com/cs-media-bucket/test/thumbnails/tempderivative/(.*)"));
     }
 
     @Test
@@ -116,7 +116,7 @@ public class ThumbnailProcessorTest {
             thumbProcessor.createTempDerivativeThumbnail(tempDerivativeMessage);
             fail("Should throw exception");
         } catch (Exception e) {
-            assertEquals("Unable to generate thumbnail with url: http://i.imgur.com/Ta3uP.jpg", e.getMessage());
+            assertTrue(e.getMessage().matches("Unable to generate thumbnail with url: http://i.imgur.com/Ta3uP.jpg and GUID:(.*)"));
         }
     }
 }
