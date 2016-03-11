@@ -202,7 +202,8 @@ public class ThumbnailProcessor {
     /**
      * Build a thumbnail from the given path
      * 
-     * @param thumbnailPath path to use.
+     * @param thumbnailPath path for the thumbnail.
+     * @param sourcePath path for the source image.
      * @param url thumbnail location url;
      * @return
      */
