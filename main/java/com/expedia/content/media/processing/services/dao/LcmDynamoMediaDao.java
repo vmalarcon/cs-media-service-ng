@@ -104,6 +104,7 @@ public class LcmDynamoMediaDao implements MediaDao {
                     domainIdMedia.stream()
                             .filter(media -> ((activeFilter.equals(ACTIVE_FILTER_TRUE) && ACTIVE_FILTER_TRUE.equals(media.getActive()))
                                     || (activeFilter.equals(ACTIVE_FILTER_FALSE) && (media.getActive() == null || media.getActive().equals(ACTIVE_FILTER_FALSE)))))
+                            .sorted((media1, media2) -> compareMedia(media1, media2, domain))
                             .collect(Collectors.toList());
         }
         final List<String> fileNames =
@@ -116,12 +117,29 @@ public class LcmDynamoMediaDao implements MediaDao {
     }
 
     /**
+     * Compares two media objects for sorting.
+     * 
+     * @param media1 First media to compare.
+     * @param media2 Second media to compare.
+     * @param domain Different domains will have different sorting requirements.
+     * @return 0 if the media objects weigh the same, greater than 1 if the first item weighs more, less than 1 if the first item weighs less.
+     */
+    private int compareMedia(Media media1, Media media2, Domain domain) {
+        if (Domain.LODGING.equals(domain)) {
+            final Boolean media1Hero = Boolean.valueOf(media1.getDomainData() == null ? null : ((String) media1.getDomainData().get("propertyHero")));
+            final Boolean media2Hero = Boolean.valueOf(media2.getDomainData() == null ? null : ((String) media2.getDomainData().get("propertyHero")));
+            return media2Hero.compareTo(media1Hero);
+        }
+        return 0;
+    }
+
+    /**
      * because of the parameter length limitation in Sproc 'MediaProcessLogGetByFilename', if the fileNames lengh is bigger than the limitation
      * we call the sproc multiple times to get the result.
      *
-     * @param limit  sproc parameter limitation
-     * @param fileNames
-     * @return
+     * @param limit Sproc parameter limitation.
+     * @param fileNames File names to fetch the status for.
+     * @return List of all status mapped to their file name.
      */
     private Map<String, String> getStatusByLoop(int limit, List<String> fileNames) {
         final int total = fileNames.size();
