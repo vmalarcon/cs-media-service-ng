@@ -55,6 +55,7 @@ public class LcmDynamoMediaDao implements MediaDao {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LcmDynamoMediaDao.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final Integer FORMAT_ID_2 = 2;
 
     @Autowired
     private SQLMediaIdListSproc lcmMediaIdSproc;
@@ -194,35 +195,39 @@ public class LcmDynamoMediaDao implements MediaDao {
      * @param mediaEidMap A map of media DB items that have an EID.
      * @return The converted LCM media.
      */
-    @SuppressWarnings({"PMD.NPathComplexity", "PMD.CyclomaticComplexity", "PMD.StdCyclomaticComplexity", "PMD.ModifiedCyclomaticComplexity"})
     private Function<LcmMedia, Media> convertMedia(final Map<String, Media> mediaEidMap) {
         return lcmMedia -> {
             final Media dynamoMedia = mediaEidMap.get(lcmMedia.getMediaId().toString());
             /* @formatter:off */
-            return Media.builder()
+            final Media.MediaBuilder mediaBuilder = Media.builder()
                     .active(lcmMedia.getActive().toString())
-                    .fileUrl((dynamoMedia == null) ? null : dynamoMedia.getFileUrl())
-                    .clientId((dynamoMedia == null) ? null : dynamoMedia.getClientId())
                     .derivativesList(extractDerivatives(lcmMedia))
-                    .domain((dynamoMedia == null) ? null : dynamoMedia.getDomain())
                     .domainData(extractDomainFields(lcmMedia, dynamoMedia))
-                    .domainId((dynamoMedia == null) ? String.valueOf(lcmMedia.getDomainId()) : dynamoMedia.getDomainId())
                     .fileName(lcmMedia.getFileName())
                     .fileSize(lcmMedia.getFileSize() * KB_TO_BYTES_CONVERTER)
                     .width(lcmMedia.getWidth())
                     .height(lcmMedia.getHeight())
                     .lastUpdated(lcmMedia.getLastUpdateDate())
                     .lcmMediaId(lcmMedia.getMediaId().toString())
-                    .mediaGuid((dynamoMedia == null) ? null : dynamoMedia.getMediaGuid())
-                    .provider((dynamoMedia == null) ? (lcmMedia.getProvider() == null ? null
-                                                                    : providerProperties.getProperty(lcmMedia.getProvider().toString()))
-                                                    : dynamoMedia.getProvider())
-                    .sourceUrl((dynamoMedia == null) ? null : dynamoMedia.getSourceUrl())
                     .userId(lcmMedia.getLastUpdatedBy())
                     .commentList(extractCommentList(lcmMedia))
-                    .domainDerivativeCategory(lcmMedia.getFormatId() == null || !lcmMedia.getFormatId().equals(2) ?
-                                                                                  null : LODGING_VIRTUAL_TOUR_DERIVATIVE_TYPE)
-                    .build();
+                    .domainDerivativeCategory(FORMAT_ID_2.equals(lcmMedia.getFormatId()) ? LODGING_VIRTUAL_TOUR_DERIVATIVE_TYPE : null);
+
+            if (dynamoMedia == null) {
+                mediaBuilder.domainId(String.valueOf(lcmMedia.getDomainId()))
+                        .provider(lcmMedia.getProvider() == null ? null
+                                : providerProperties.getProperty(lcmMedia.getProvider().toString()));
+            } else {
+                mediaBuilder.fileUrl(dynamoMedia.getFileUrl())
+                        .clientId(dynamoMedia.getClientId())
+                        .domain(dynamoMedia.getDomain())
+                        .domainId(dynamoMedia.getDomainId())
+                        .mediaGuid(dynamoMedia.getMediaGuid())
+                        .provider(dynamoMedia.getProvider())
+                        .sourceUrl(dynamoMedia.getSourceUrl());
+            }
+
+            return mediaBuilder.build();
             /* @formatter:on */
         };
     }
