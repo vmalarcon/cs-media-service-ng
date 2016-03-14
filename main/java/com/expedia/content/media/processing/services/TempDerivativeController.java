@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,12 +33,12 @@ public class TempDerivativeController extends CommonServiceController {
     private static final Logger LOGGER = LoggerFactory.getLogger(TempDerivativeController.class);
     private static final String RESPONSE_FIELD_THUMBNAIL_URL = "thumbnailUrl";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
+    
     @Autowired
     private ThumbnailProcessor thumbnailProcessor;
     @Autowired
     private TempDerivativeMVELValidator tempDerivativeMVELValidator;
-
+    
     /**
      * Web services interface to create a temporary derivative of a given image with given specifications.
      *
@@ -49,7 +48,8 @@ public class TempDerivativeController extends CommonServiceController {
      * @throws Exception
      */
     @RequestMapping(value = "/media/v1/tempderivative", method = RequestMethod.POST)
-    public ResponseEntity<String> getTempDerivative(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
+    public ResponseEntity<String> getTempDerivative(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers)
+            throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_TEMP_DERIVATIVE.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
@@ -68,20 +68,19 @@ public class TempDerivativeController extends CommonServiceController {
             final Map<String, String> response = new HashMap<>();
             response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnailProcessor.createTempDerivativeThumbnail(tempDerivativeMessage));
             return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);
-
+            
         } catch (IllegalStateException | ImageMessageException ex) {
             LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         }
     }
-
+    
     private static TempDerivativeMessage buildTempDerivativeFromJSONMessage(String jsonMessage) throws RequestMessageException {
         final Map jsonMap = JSONUtil.buildMapFromJson(jsonMessage);
         final String fileUrl = (String) jsonMap.get("fileUrl");
         final String rotation = (String) jsonMap.get("rotation");
         final Integer width = (Integer) jsonMap.get("width");
         final Integer height = (Integer) jsonMap.get("height");
-
-        return new TempDerivativeMessage(fileUrl, rotation, width, height);
+        return TempDerivativeMessage.builder().fileUrl(fileUrl).rotation(rotation).width(width).height(height).build();
     }
 }

@@ -98,8 +98,6 @@ public class MediaController extends CommonServiceController {
     private ThumbnailProcessor thumbnailProcessor;
     @Autowired
     private MediaDao mediaDao;
-    @Autowired
-    private MediaReplacement mediaReplacement;
     
     @Autowired
     private DynamoMediaRepository dynamoMediaRepository;

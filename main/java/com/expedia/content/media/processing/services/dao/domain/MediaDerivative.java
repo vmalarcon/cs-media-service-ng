@@ -6,13 +6,11 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
 import lombok.Builder;
-import lombok.Data;
 
 /**
  * Encapsulated a MediaDerivative before store in the database
  */
 @Builder
-@Data
 @DynamoDBTable(tableName = "cs-mediadb-MediaDerivative")
 public class MediaDerivative {
     

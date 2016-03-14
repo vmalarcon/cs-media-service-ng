@@ -98,7 +98,8 @@ public class ThumbnailProcessorTest {
         ResourceLoader mockResourceLoader = mock(ResourceLoader.class);
         when(mockResourceLoader.getResource(anyString())).thenReturn(mockWritableResource);
         setFieldValue(thumbProcessor, "resourceLoader", mockResourceLoader);
-        TempDerivativeMessage tempDerivativeMessage = new TempDerivativeMessage("http://i.imgur.com/Ta3uP.jpg", "0", 180, 180);
+        TempDerivativeMessage tempDerivativeMessage =
+                TempDerivativeMessage.builder().height(180).width(180).fileUrl("http://i.imgur.com/Ta3uP.jpg").rotation("0").build();
         String thumbnailPath = thumbProcessor.createTempDerivativeThumbnail(tempDerivativeMessage);
         assertTrue(thumbnailPath.matches("https://s3-us-north-200.amazonaws.com/cs-media-bucket/test/thumbnails/tempderivative/(.*)"));
     }
@@ -116,8 +117,8 @@ public class ThumbnailProcessorTest {
         ResourceLoader mockResourceLoader = mock(ResourceLoader.class);
         when(mockResourceLoader.getResource(anyString())).thenReturn(mockWritableResource);
         setFieldValue(thumbProcessor, "resourceLoader", mockResourceLoader);
-        TempDerivativeMessage tempDerivativeMessage =
-                new TempDerivativeMessage("http://i.imgur.com/Ta3uP.jpg", "HELLO, IS IT ME YOU'RE LOOKING FOR?", 180, 180);
+        TempDerivativeMessage tempDerivativeMessage = TempDerivativeMessage.builder().fileUrl("http://i.imgur.com/Ta3uP.jpg")
+                .height(180).width(180).rotation("HELLO, IS IT ME YOU'RE LOOKING FOR?").build();
                 
         try {
             thumbProcessor.createTempDerivativeThumbnail(tempDerivativeMessage);
