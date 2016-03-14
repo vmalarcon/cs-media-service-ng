@@ -1,7 +1,12 @@
 package com.expedia.content.media.processing.services.util;
 
 import java.awt.image.BufferedImage;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -11,10 +16,14 @@ import javax.imageio.ImageIO;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.io.Resource;
 
+import com.amazonaws.util.IOUtils;
 import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.Metadata;
+
+import expedia.content.solutions.metrics.annotations.Timer;
 
 /**
  * Utility class for resolving file names
@@ -171,5 +180,4 @@ public class FileNameUtil {
         }
         return null;
     }
-    
 }

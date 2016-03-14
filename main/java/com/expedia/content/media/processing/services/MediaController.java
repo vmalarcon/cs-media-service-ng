@@ -275,11 +275,9 @@ public class MediaController extends CommonServiceController {
         final Map<String, String> response = new HashMap<>();
         response.put(RESPONSE_FIELD_MEDIA_GUID, imageMessageNew.getMediaGuid());
         response.put(RESPONSE_FIELD_STATUS, "RECEIVED");
-        final Thumbnail thumbnail = imageMessageNew.isGenerateThumbnail()
-                ? thumbnailProcessor.createThumbnail(imageMessageNew.getFileUrl(), imageMessageNew.getMediaGuid(),
-                        imageMessageNew.getOuterDomainData().getDomain().getDomain(), imageMessageNew.getOuterDomainData().getDomainId())
-                : null;
-        if (thumbnail != null) {
+        final Thumbnail thumbnail = thumbnailProcessor.createThumbnail(imageMessageNew.getFileUrl(), imageMessageNew.getMediaGuid(),
+                imageMessageNew.getOuterDomainData().getDomain().getDomain(), imageMessageNew.getOuterDomainData().getDomainId());
+        if (thumbnail.getLocation() != null) {
             response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnail.getLocation());
         }
         

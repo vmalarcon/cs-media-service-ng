@@ -10,7 +10,7 @@ import lombok.Data;
 @SuppressWarnings({"PMD.UnusedPrivateField"})
 public class Thumbnail {
     private Metadata thumbnailMetadata;
-    private final String location;
-    private final String type;
+    private String location;
+    private String type;
     private Metadata sourceMetadata;
 }

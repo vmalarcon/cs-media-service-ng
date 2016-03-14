@@ -118,10 +118,10 @@ public class ThumbnailProcessor {
             final WritableResource writableResource = (WritableResource) resourceLoader.getResource(thumbnailUrl);
             try (OutputStream out = writableResource.getOutputStream(); FileInputStream file = new FileInputStream(thumbnailPath.toFile())) {
                 out.write(IOUtils.toByteArray(file));
+                LOGGER.debug("Wrote thumbnail: " + thumbnailUrl);
+                thumbnailUrl = thumbnailUrl.replaceFirst(S3_PREFIX, "https://s3-" + this.regionName + ".amazonaws.com");
                 thumbnail = buildThumbnail(thumbnailPath, thumbnailUrl, sourcePath);
             }
-            LOGGER.debug("Wrote thumbnail: " + thumbnailUrl);
-            thumbnailUrl = thumbnailUrl.replaceFirst(S3_PREFIX, "https://s3-" + this.regionName + ".amazonaws.com");
         } catch (Exception e) {
             LOGGER.error("Unable to generate thumbnail with url: " + fileUrl, e);
             throw new RuntimeException("Unable to generate thumbnail with url: " + fileUrl + " and GUID: " + guid, e);
@@ -262,6 +262,6 @@ public class ThumbnailProcessor {
                     .type(DERIVATIVE_TYPE)
                     .build();
         }
-        return null;
+        return Thumbnail.builder().sourceMetadata(sourceMetadata).build();
     }
 }

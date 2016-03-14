@@ -20,7 +20,6 @@ import com.expedia.content.media.processing.services.dao.MediaDBException;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaDerivative;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
-import com.expedia.content.media.processing.services.util.FileNameUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
@@ -103,7 +102,7 @@ public class DynamoMediaRepository {
             LOGGER.info("Media successfully added in dynamodb : GUID=[{}], file url =[{}], RequestId=[{}] ", imageMessage.getMediaGuid(),
                     imageMessage.getFileUrl(),
                     imageMessage.getRequestId());
-            if (thumbnail != null) {
+            if (imageMessage.isGenerateThumbnail()) {
                 dynamoMapper.save(buildDerivative(imageMessage, thumbnail));
                 LOGGER.info("Thumbnail derivative successfully added in dynamodb : Derivatives=[{}], RequestId=[{}] ", thumbnail,
                         imageMessage.getRequestId());
@@ -125,7 +124,7 @@ public class DynamoMediaRepository {
         MediaDerivative mediaDerivative = null;
         Metadata basicMetadata = null;
         if (thumbnail != null) {
-            mediaDerivative = buildDerivative(imageMessage, thumbnail);
+            mediaDerivative = imageMessage.isGenerateThumbnail() ? buildDerivative(imageMessage, thumbnail) : null;
             basicMetadata = thumbnail.getSourceMetadata();
         }
         return Media.builder().active(imageMessage.isActive().toString())
@@ -151,7 +150,8 @@ public class DynamoMediaRepository {
      * @return returns the MediaDerivative.
      */
     private MediaDerivative buildDerivative(ImageMessage imageMessage, Thumbnail thumbnail) {
-        return MediaDerivative.builder().height(Integer.toString(thumbnail.getThumbnailMetadata().getHeight()))
+        return MediaDerivative.builder()
+                .height(Integer.toString(thumbnail.getThumbnailMetadata().getHeight()))
                 .width(Integer.toString(thumbnail.getThumbnailMetadata().getWidth()))
                 .fileSize(Integer.toString(thumbnail.getThumbnailMetadata().getFileSize()))
                 .location(thumbnail.getLocation())
