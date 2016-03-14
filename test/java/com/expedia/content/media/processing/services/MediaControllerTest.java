@@ -107,6 +107,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
+        setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -143,6 +144,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
+        setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -184,6 +186,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
+        setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -457,6 +460,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
+        setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -493,6 +497,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
+        setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
