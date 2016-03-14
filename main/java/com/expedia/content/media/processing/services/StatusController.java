@@ -78,7 +78,7 @@ public class StatusController extends CommonServiceController {
             return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
         } catch (RequestMessageException ex) {
             LOGGER.error("ERROR - url=[{}], imageMessage=[{}], error=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_STATUS.getUrl(), message,
-                    ex.getMessage(), ex, requestID);
+                    ex.getMessage(), requestID, ex);
             return buildErrorResponse(ex.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl(), BAD_REQUEST);
         }
     }

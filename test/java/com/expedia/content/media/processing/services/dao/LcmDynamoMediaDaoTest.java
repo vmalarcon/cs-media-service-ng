@@ -83,7 +83,8 @@ public class LcmDynamoMediaDaoTest {
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         List<Media> dynamoMediaList = new ArrayList<>();
         String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
-        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234")
+        Media dynamoMedia1 = Media.builder()
+                .mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234").fileUrl("s3://fileUrl")
                 .domainFields("{\"categoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
         Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").build();
@@ -115,11 +116,14 @@ public class LcmDynamoMediaDaoTest {
         assertEquals("true", testMedia1.getDomainData().get("propertyHero"));
         assertEquals("4321", testMedia1.getDomainData().get("categoryId"));
         assertEquals("VirtualTour", testMedia1.getDomainDerivativeCategory());
+        assertEquals("s3://fileUrl", testMedia1.getFileUrl());
         Media testMedia2 = testMediaList.get(1);
         assertNull(testMedia2.getMediaGuid());
         assertNull(testMedia2.getCommentList());
+        assertNull(testMedia2.getFileUrl());
         Media testMedia3 = testMediaList.get(2);
         assertEquals(dynamoMedia3.getMediaGuid(), testMedia3.getMediaGuid());
+        assertNull(testMedia3.getFileUrl());
     }
 
     @Test
@@ -415,10 +419,10 @@ public class LcmDynamoMediaDaoTest {
         Map<String, Object> mediaResult1 = new HashMap<>();
         mediaResult1.put(SQLMediaGetSproc.MEDIA_SET, mediaList1);
         List<LcmMediaDerivative> derivativeList1 = new ArrayList<>();
-        LcmMediaDerivative derivative11 = LcmMediaDerivative.builder().mediaId(mediaId).fileProcessed(published1).mediSizeTypeId(type1).fileName(fileName1)
+        LcmMediaDerivative derivative11 = LcmMediaDerivative.builder().mediaId(mediaId).fileProcessed(published1).mediaSizeTypeId(type1).fileName(fileName1)
                 .width(10).height(11).fileSize(100).build();
         derivativeList1.add(derivative11);
-        LcmMediaDerivative derivative12 = LcmMediaDerivative.builder().mediaId(mediaId).fileProcessed(published2).mediSizeTypeId(type2).fileName(fileName2)
+        LcmMediaDerivative derivative12 = LcmMediaDerivative.builder().mediaId(mediaId).fileProcessed(published2).mediaSizeTypeId(type2).fileName(fileName2)
                 .width(20).height(21).fileSize(200).build();
         derivativeList1.add(derivative12);
         mediaResult1.put(SQLMediaGetSproc.MEDIA_DERIVATIVES_SET, derivativeList1);

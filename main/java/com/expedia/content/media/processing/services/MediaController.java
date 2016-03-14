@@ -59,9 +59,9 @@ import com.expedia.content.media.processing.services.reqres.MediaByDomainIdRespo
 import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.FileNameUtil;
 import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.util.MediaReplacement;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
-import com.expedia.content.media.processing.services.validator.MediaReplacement;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 
@@ -131,7 +131,7 @@ public class MediaController extends CommonServiceController {
             final String userName = "Multisource";
             return processRequest(mediaCommonMessage, requestID, serviceUrl, userName, OK);
         } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}], error=[{}], requestID=[{}] .", serviceUrl, message, ex, requestID);
+            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}], error=[{}], requestID=[{}] .", serviceUrl, message, ex.getMessage(), requestID, ex);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         }
     }
@@ -158,7 +158,7 @@ public class MediaController extends CommonServiceController {
             final String clientId = auth.getName();
             return processRequest(message, requestID, serviceUrl, clientId, ACCEPTED);
         } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex, requestID, message);
+            LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         }
     }
@@ -305,13 +305,8 @@ public class MediaController extends CommonServiceController {
         final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
         imageMessageBuilder.outerDomainData(outerDomain);
         
-        if (mediaReplacement.isReplacement(imageMessage)) {
-            // This will update the GUID to the old one.
-            processReplacement(imageMessage, imageMessageBuilder);
-        } else {
-            imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(imageMessageBuilder.build()));
-        }
-        
+        processReplacement(imageMessage, imageMessageBuilder);
+        imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(imageMessageBuilder.build()));
         return imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).build();
     }
     
@@ -340,7 +335,7 @@ public class MediaController extends CommonServiceController {
             LOGGER.info("The replacement information is: mediaGuid=[{}], filename=[{}], requestId=[{}], lcmMediaId=[{}]", media.getMediaGuid(),
                     imageMessage.getFileName(), imageMessage.getRequestId(), media.getDomainId());
         } else {
-            LOGGER.warn("Could not find the best media for the filename=[{}] on the list: [{}]. Will create a new GUID.", imageMessage.getFileName(),
+            LOGGER.info("Could not find the best media for the filename=[{}] on the list: [{}]. Will create a new GUID.", imageMessage.getFileName(),
                     Joiner.on("; ").join(mediaList));
         }
     }

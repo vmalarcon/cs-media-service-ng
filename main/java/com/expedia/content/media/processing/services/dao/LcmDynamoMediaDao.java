@@ -59,6 +59,7 @@ public class LcmDynamoMediaDao implements MediaDao {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LcmDynamoMediaDao.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final Integer FORMAT_ID_2 = 2;
 
     @Autowired
     private SQLMediaIdListSproc lcmMediaIdSproc;
@@ -104,14 +105,15 @@ public class LcmDynamoMediaDao implements MediaDao {
             domainIdMedia.addAll(0, lcmMediaList);
 
         }
-        domainIdMedia =
-                domainIdMedia.stream()
-                        .filter(media -> (activeFilter == null || activeFilter.isEmpty() || activeFilter.equals(ACTIVE_FILTER_ALL)
-                                || (activeFilter.equals(ACTIVE_FILTER_TRUE) && media.getActive() != null && media.getActive().equals(ACTIVE_FILTER_TRUE))
-                                || (activeFilter.equals(ACTIVE_FILTER_FALSE)
-                                && (media.getActive() == null || media.getActive().equals(ACTIVE_FILTER_FALSE)))) ? true : false)
-                        .sorted((media1, media2) -> compareMedia(media1, media2, domain))
-                        .collect(Collectors.toList());
+        final boolean isActiveFilterAll = activeFilter == null || activeFilter.isEmpty() || activeFilter.equals(ACTIVE_FILTER_ALL);
+        if (!isActiveFilterAll) {
+            domainIdMedia =
+                    domainIdMedia.stream()
+                            .filter(media -> ((activeFilter.equals(ACTIVE_FILTER_TRUE) && ACTIVE_FILTER_TRUE.equals(media.getActive()))
+                                    || (activeFilter.equals(ACTIVE_FILTER_FALSE) && (media.getActive() == null || media.getActive().equals(ACTIVE_FILTER_FALSE)))))
+                            .sorted((media1, media2) -> compareMedia(media1, media2, domain))
+                            .collect(Collectors.toList());
+        }
         final List<String> fileNames =
                 domainIdMedia.stream().filter(media -> media.getFileName() != null).map(media -> media.getFileName()).distinct()
                         .collect(Collectors.toList());
@@ -182,11 +184,11 @@ public class LcmDynamoMediaDao implements MediaDao {
     private Function<Integer, LcmMedia> buildLcmMedia(String domainId, String derivativeFilter) {
         /* @formatter:off */
         return mediaId -> {
+            final boolean skipDerivativeFiltering = derivativeFilter == null || derivativeFilter.isEmpty();
             final Map<String, Object> mediaResult = lcmMediaSproc.execute(Integer.parseInt(domainId), mediaId);
             final LcmMedia media = ((List<LcmMedia>) mediaResult.get(SQLMediaGetSproc.MEDIA_SET)).get(0);
             media.setDerivatives(((List<LcmMediaDerivative>) mediaResult.get(SQLMediaGetSproc.MEDIA_DERIVATIVES_SET)).stream()
-                    .filter(derivative -> (derivativeFilter == null || derivativeFilter.isEmpty() ||
-                                           derivativeFilter.contains(derivative.getMediSizeType())) ? true : false)
+                    .filter(derivative -> (skipDerivativeFiltering || derivativeFilter.contains(derivative.getMediaSizeType())))
                     .collect(Collectors.toList()));
             return media;
         };
@@ -199,34 +201,39 @@ public class LcmDynamoMediaDao implements MediaDao {
      * @param mediaEidMap A map of media DB items that have an EID.
      * @return The converted LCM media.
      */
-    @SuppressWarnings("PMD.NPathComplexity")
     private Function<LcmMedia, Media> convertMedia(final Map<String, Media> mediaEidMap) {
         return lcmMedia -> {
             final Media dynamoMedia = mediaEidMap.get(lcmMedia.getMediaId().toString());
             /* @formatter:off */
-            return Media.builder()
+            final Media.MediaBuilder mediaBuilder = Media.builder()
                     .active(lcmMedia.getActive().toString())
-                    .clientId((dynamoMedia == null) ? null : dynamoMedia.getClientId())
                     .derivativesList(extractDerivatives(lcmMedia))
-                    .domain((dynamoMedia == null) ? null : dynamoMedia.getDomain())
                     .domainData(extractDomainFields(lcmMedia, dynamoMedia))
-                    .domainId((dynamoMedia == null) ? String.valueOf(lcmMedia.getDomainId()) : dynamoMedia.getDomainId())
                     .fileName(lcmMedia.getFileName())
                     .fileSize(lcmMedia.getFileSize() * KB_TO_BYTES_CONVERTER)
                     .width(lcmMedia.getWidth())
                     .height(lcmMedia.getHeight())
                     .lastUpdated(lcmMedia.getLastUpdateDate())
                     .lcmMediaId(lcmMedia.getMediaId().toString())
-                    .mediaGuid((dynamoMedia == null) ? null : dynamoMedia.getMediaGuid())
-                    .provider((dynamoMedia == null) ? (lcmMedia.getProvider() == null ? null
-                                                                    : providerProperties.getProperty(lcmMedia.getProvider().toString()))
-                                                    : dynamoMedia.getProvider())
-                    .sourceUrl((dynamoMedia == null) ? null : dynamoMedia.getSourceUrl())
                     .userId(lcmMedia.getLastUpdatedBy())
                     .commentList(extractCommentList(lcmMedia))
-                    .domainDerivativeCategory(lcmMedia.getFormatId() == null || !lcmMedia.getFormatId().equals(2) ?
-                                                                                  null : LODGING_VIRTUAL_TOUR_DERIVATIVE_TYPE)
-                    .build();
+                    .domainDerivativeCategory(FORMAT_ID_2.equals(lcmMedia.getFormatId()) ? LODGING_VIRTUAL_TOUR_DERIVATIVE_TYPE : null);
+
+            if (dynamoMedia == null) {
+                mediaBuilder.domainId(String.valueOf(lcmMedia.getDomainId()))
+                        .provider(lcmMedia.getProvider() == null ? null
+                                : providerProperties.getProperty(lcmMedia.getProvider().toString()));
+            } else {
+                mediaBuilder.fileUrl(dynamoMedia.getFileUrl())
+                        .clientId(dynamoMedia.getClientId())
+                        .domain(dynamoMedia.getDomain())
+                        .domainId(dynamoMedia.getDomainId())
+                        .mediaGuid(dynamoMedia.getMediaGuid())
+                        .provider(dynamoMedia.getProvider())
+                        .sourceUrl(dynamoMedia.getSourceUrl());
+            }
+
+            return mediaBuilder.build();
             /* @formatter:on */
         };
     }
@@ -367,7 +374,7 @@ public class LcmDynamoMediaDao implements MediaDao {
                     .map(derivative -> {
                         final Map<String, Object> derivativeData = new HashMap<>();
                         derivativeData.put(FIELD_DERIVATIVE_LOCATION, imageRootPath + derivative.getFileName());
-                        derivativeData.put(FIELD_DERIVATIVE_TYPE, derivative.getMediSizeType());
+                        derivativeData.put(FIELD_DERIVATIVE_TYPE, derivative.getMediaSizeType());
                         derivativeData.put(FIELD_DERIVATIVE_WIDTH, derivative.getWidth());
                         derivativeData.put(FIELD_DERIVATIVE_HEIGHT, derivative.getHeight());
                         derivativeData.put(FIELD_DERIVATIVE_FILE_SIZE, derivative.getFileSize() * KB_TO_BYTES_CONVERTER);
