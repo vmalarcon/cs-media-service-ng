@@ -21,7 +21,6 @@ import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepos
 
 public class DynamoMediaRepositoryTest {
     
-    
     @Test
     public void testStoreMediaAddMessageWithThumbnail() throws Exception {
         
@@ -58,11 +57,10 @@ public class DynamoMediaRepositoryTest {
                 .location(thumbnailUrl)
                 .type("t")
                 .build();
-                
         final DynamoMediaRepository dynamoMediaRepository = new DynamoMediaRepository(dynamoMapper, "Dev");
         dynamoMediaRepository.storeMediaAddMessage(message, thumbnail);
         verify(dynamoMapper, times(2)).save(any());
-    }
+     }
     
     @Test
     public void testStoreMediaAddMessageWithoutThumbnail() throws Exception {
