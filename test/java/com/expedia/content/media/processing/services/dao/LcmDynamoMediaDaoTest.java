@@ -85,7 +85,7 @@ public class LcmDynamoMediaDaoTest {
         String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
         Media dynamoMedia1 = Media.builder()
                 .mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234").fileUrl("s3://fileUrl")
-                .domainFields("{\"categoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
+                .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
         Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").build();
         dynamoMediaList.add(dynamoMedia1);
@@ -114,7 +114,7 @@ public class LcmDynamoMediaDaoTest {
         assertEquals(media1.getComment(), testMedia1.getCommentList().get(0));
         assertTrue((media1.getFileSize() * 1024L) == testMedia1.getFileSize());
         assertEquals("true", testMedia1.getDomainData().get("propertyHero"));
-        assertEquals("4321", testMedia1.getDomainData().get("categoryId"));
+        assertEquals("4321", testMedia1.getDomainData().get("subcategoryId"));
         assertEquals("VirtualTour", testMedia1.getDomainDerivativeCategory());
         assertEquals("s3://fileUrl", testMedia1.getFileUrl());
         Media testMedia2 = testMediaList.get(1);
@@ -168,7 +168,7 @@ public class LcmDynamoMediaDaoTest {
         List<Media> dynamoMediaList = new ArrayList<>();
         String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
         Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234")
-                .domainFields("{\"categoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
+                .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
         String guid2 = "f2d4d480-9627-47f9-86c6-1874c18d3bbc";
         Media dynamoMedia2 = Media.builder().mediaGuid(guid2).domain("Lodging").domainId("1234").build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
@@ -224,7 +224,7 @@ public class LcmDynamoMediaDaoTest {
         List<Media> dynamoMediaList = new ArrayList<>();
         String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
         Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234")
-                .domainFields("{\"categoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
+                .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
         Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").build();
         dynamoMediaList.add(dynamoMedia1);
@@ -293,7 +293,7 @@ public class LcmDynamoMediaDaoTest {
         List<Media> dynamoMediaList = new ArrayList<>();
         String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
         Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234")
-                .domainFields("{\"categoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
+                .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
         Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").build();
         dynamoMediaList.add(dynamoMedia1);
@@ -348,7 +348,7 @@ public class LcmDynamoMediaDaoTest {
         List<Media> dynamoMediaList = new ArrayList<>();
         String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
         Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234")
-                .domainFields("{\"categoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
+                .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
         Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").build();
         dynamoMediaList.add(dynamoMedia1);
@@ -372,7 +372,7 @@ public class LcmDynamoMediaDaoTest {
         assertTrue((media1.getFileSize() * 1024L) == testMedia1.getFileSize());
         assertEquals(0, testMedia1.getDerivativesList().size());
         assertEquals("true", testMedia1.getDomainData().get("propertyHero"));
-        assertEquals("4321", testMedia1.getDomainData().get("categoryId"));
+        assertEquals("4321", testMedia1.getDomainData().get("subcategoryId"));
         assertEquals("VirtualTour", testMedia1.getDomainDerivativeCategory());
         Media testMedia2 = testMediaList.get(1);
         assertNull(testMedia2.getMediaGuid());

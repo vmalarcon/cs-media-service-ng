@@ -270,7 +270,7 @@ public class MediaControllerTest {
     public void testAlphanumericStringExpediaIdInJsonMessage() throws Exception {
         String jsonMessage = "{  \n" + "   \"mediaProviderId\":\"1001\",\n" + "   \"fileUrl\":\"http://images.com/dir1/img1.jpg\",\n"
                 + "   \"imageType\":\"Lodging\",\n" + "   \"stagingKey\":{  \n" + "      \"externalId\":\"222\",\n" + "      \"providerId\":\"300\",\n"
-                + "      \"sourceId\":\"99\"\n" + "   },\n" + "   \"expediaId\":\"NOT_A_NUMBER\",\n" + "   \"categoryId\":\"801\",\n"
+                + "      \"sourceId\":\"99\"\n" + "   },\n" + "   \"expediaId\":\"NOT_A_NUMBER\",\n" + "   \"subcategoryId\":\"801\",\n"
                 + "   \"callback\":\"http://multi.source.callback/callback\",\n" + "   \"caption\":\"caption\"\n" + "}";
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();

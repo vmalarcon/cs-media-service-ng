@@ -405,10 +405,8 @@ public class MediaController extends CommonServiceController {
      * @param outerDomain
      * @return outerDomain with domainProvider replaced by the exact domainProvider from the mapping
      */
-    @SuppressWarnings("PMD.UnnecessaryLocalBeforeReturn")
     private OuterDomain getDomainProviderFromMapping(OuterDomain outerDomain) {
         final String domainProvider =  DomainDataUtil.getDomainProvider(outerDomain.getProvider(), providerProperties);
-        final OuterDomain newOuterDomain = OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
-        return newOuterDomain;
+        return OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
     }
 }

@@ -46,7 +46,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     private static final String ACTIVE_FILTER_ALL = "all";
     private static final String ACTIVE_FILTER_TRUE = "true";
     private static final String ACTIVE_FILTER_FALSE = "false";
-    private static final String FIELD_CATEGORY_ID = "categoryId";
+    private static final String FIELD_CATEGORY_ID = "subcategoryId";
     private static final String FIELD_PROPERTY_HERO = "propertyHero";
     private static final String FIELD_ROOM_ID = "roomId";
     private static final String FIELD_ROOM_HERO = "roomHero";
