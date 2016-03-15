@@ -102,6 +102,8 @@ public class MediaController extends CommonServiceController {
     @Autowired
     private DynamoMediaRepository dynamoMediaRepository;
     
+    private boolean isReprocessing;
+    
     /**
      * web service interface to consume media message.
      * Note that the {@code @Meter} {@code @Timer} {@code @Retryable} annotations introduce aspects from metrics-support and spring-retry
@@ -277,8 +279,9 @@ public class MediaController extends CommonServiceController {
         if (thumbnail.getLocation() != null) {
             response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnail.getLocation());
         }
-        
-        dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);
+        if (!isReprocessing) {
+            dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);
+        }
         publishMsg(imageMessageNew);
         LOGGER.info("SUCCESS - messageName={}, requestId=[{}], mediaGuid=[{}], JSONMessage=[{}]", serviceUrl, requestID, imageMessageNew.getMediaGuid(),
                 message);
@@ -302,7 +305,7 @@ public class MediaController extends CommonServiceController {
         final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
         imageMessageBuilder.outerDomainData(outerDomain);
         
-        processReplacement(imageMessage, imageMessageBuilder);
+        isReprocessing = isProcessReplacement(imageMessage, imageMessageBuilder);
         imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(imageMessageBuilder.build()));
         return imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).build();
     }
@@ -316,8 +319,9 @@ public class MediaController extends CommonServiceController {
      *
      * @param imageMessage Original message received.
      * @param imageMessageBuilder Builder for the new/mutated ImageMessage.
+     * @return returns true if reprocessing and false if not.
      */
-    private void processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder) {
+    private boolean isProcessReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder) {
         LOGGER.info("This is a replacement: mediaGuid=[{}], filename=[{}], requestId=[{}]", imageMessage.getMediaGuid(), imageMessage.getFileName(),
                 imageMessage.getRequestId());
         final List<Media> mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
@@ -331,10 +335,12 @@ public class MediaController extends CommonServiceController {
             imageMessageBuilder.mediaGuid(media.getMediaGuid());
             LOGGER.info("The replacement information is: mediaGuid=[{}], filename=[{}], requestId=[{}], lcmMediaId=[{}]", media.getMediaGuid(),
                     imageMessage.getFileName(), imageMessage.getRequestId(), media.getDomainId());
+            return true;
         } else {
             LOGGER.info("Could not find the best media for the filename=[{}] on the list: [{}]. Will create a new GUID.", imageMessage.getFileName(),
                     Joiner.on("; ").join(mediaList));
         }
+        return false;
     }
     
     /**

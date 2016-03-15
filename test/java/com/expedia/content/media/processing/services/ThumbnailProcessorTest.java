@@ -76,9 +76,9 @@ public class ThumbnailProcessorTest {
                         .outerDomainData(domainData)
                         .generateThumbnail(true)
                         .build();
-       
-        String thumbnailPath =thumbProcessor.createThumbnail(message).getLocation();
-         if (OSDetector.detectOS() == OSDetector.OS.WINDOWS) {
+                        
+        String thumbnailPath = thumbProcessor.createThumbnail(message).getLocation();
+        if (OSDetector.detectOS() == OSDetector.OS.WINDOWS) {
             thumbnailPath = thumbnailPath.replace('\\', '/');
         }
         
@@ -121,7 +121,7 @@ public class ThumbnailProcessorTest {
                         .outerDomainData(domainData)
                         .generateThumbnail(true)
                         .build();
-
+                        
         try {
             thumbProcessor.createThumbnail(message);
             fail("Should throw exception");
@@ -175,7 +175,7 @@ public class ThumbnailProcessorTest {
     }
     
     @Test
-    public void testBuildThumbnail() throws Exception {
+    public void testBuildThumbnailWithThumbnailGeneration() throws Exception {
         ThumbnailProcessor thumbProcessor = new ThumbnailProcessor();
         File workFolder = tempFolder.newFolder();
         setFieldValue(thumbProcessor, "tempWorkFolder", workFolder.getAbsolutePath());
@@ -208,10 +208,10 @@ public class ThumbnailProcessorTest {
                         .outerDomainData(domainData)
                         .generateThumbnail(true)
                         .build();
-
+                        
         String expectedLocation =
                 "https://s3-us-north-200.amazonaws.com/cs-media-bucket/test/thumbnails/lodging/1000000/10000/1300/1234/1234_29e6394d-760a-4526-b2dd-b70d312679b7_t.jpg";
-        Thumbnail actualThumbnail =thumbProcessor.createThumbnail(message);
+        Thumbnail actualThumbnail = thumbProcessor.createThumbnail(message);
         String thumbnailPath = actualThumbnail.getLocation();
         
         if (OSDetector.detectOS() == OSDetector.OS.WINDOWS) {
@@ -228,6 +228,55 @@ public class ThumbnailProcessorTest {
         assertTrue(actualThumbnail.getSourceMetadata().getWidth() > 0);
         assertTrue(actualThumbnail.getSourceMetadata().getFileSize() > 0);
         
+    }
+    
+    @Test
+    public void testBuildThumbnailWithoutThumbnailGeneration() throws Exception {
+        ThumbnailProcessor thumbProcessor = new ThumbnailProcessor();
+        File workFolder = tempFolder.newFolder();
+        setFieldValue(thumbProcessor, "tempWorkFolder", workFolder.getAbsolutePath());
+        setFieldValue(thumbProcessor, "regionName", "us-north-200");
+        setFieldValue(thumbProcessor, "thumbnailOuputLocation", "s3://cs-media-bucket/test/thumbnails/");
+        
+        WritableResource mockWritableResource = mock(WritableResource.class);
+        when(mockWritableResource.getOutputStream()).thenReturn(new BufferedOutputStream(new FileOutputStream(tempFolder.newFile())));
+        ResourceLoader mockResourceLoader = mock(ResourceLoader.class);
+        when(mockResourceLoader.getResource(anyString())).thenReturn(mockWritableResource);
+        setFieldValue(thumbProcessor, "resourceLoader", mockResourceLoader);
+        
+        final Map<String, Object> domainDataFields = new LinkedHashMap<>();
+        domainDataFields.put("categoryId", "71013");
+        final OuterDomain domainData = new OuterDomain(Domain.LODGING, "1234", "Comics", "VirtualTour", domainDataFields);
+        final ImageMessage message =
+                ImageMessage.builder()
+                        .mediaGuid("29e6394d-760a-4526-b2dd-b70d312679b7")
+                        .requestId("bbbbbb-1010-bbbb-292929229")
+                        .clientId("EPC")
+                        .userId("you")
+                        .rotation("90")
+                        .active(true)
+                        .fileUrl("s3://bucket/source/Ta3uP.jpg")
+                        .fileName("original_file_name.png")
+                        .sourceUrl("s3://bucket/source/aaaaaaa-1010-bbbb-292929229.jpg")
+                        .rejectedFolder("rejected")
+                        .callback(new URL("http://multi.source.callback/callback"))
+                        .comment("test comment!")
+                        .outerDomainData(domainData)
+                        .generateThumbnail(false)
+                        .build();
+                        
+        Thumbnail actualThumbnail = thumbProcessor.createThumbnail(message);
+        String thumbnailPath = actualThumbnail.getLocation();
+        
+        if (OSDetector.detectOS() == OSDetector.OS.WINDOWS) {
+            thumbnailPath = actualThumbnail.getLocation().replace('\\', '/');
+        }
+        assertNull(thumbnailPath);
+        assertNull(actualThumbnail.getThumbnailMetadata());
+        assertNotNull(actualThumbnail.getSourceMetadata());
+        assertTrue(actualThumbnail.getSourceMetadata().getHeight() > 0);
+        assertTrue(actualThumbnail.getSourceMetadata().getWidth() > 0);
+        assertTrue(actualThumbnail.getSourceMetadata().getFileSize() > 0);       
     }
     
 }
