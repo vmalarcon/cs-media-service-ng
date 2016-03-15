@@ -3,6 +3,7 @@ package com.expedia.content.media.processing.services.dao;
 import java.util.List;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 
 public interface MediaDao {
@@ -25,4 +26,11 @@ public interface MediaDao {
      * @return List of Media with the requested Filename.
      */
     List<Media> getMediaByFilename(String fileName);
+
+    /**
+     * get the domainId and ContentProviderMediaName from DB by derivative file name.
+     * @param fileName
+     * @return
+     */
+    LcmMedia getContentProviderName(String fileName);
 }
