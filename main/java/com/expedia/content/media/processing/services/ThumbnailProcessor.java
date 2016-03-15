@@ -30,6 +30,7 @@ import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.util.IOUtils;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.Metadata;
 import com.expedia.content.media.processing.pipeline.util.LodgingUtil;
 import com.expedia.content.media.processing.pipeline.util.TemporaryWorkFolder;
@@ -68,8 +69,10 @@ public class ThumbnailProcessor {
      * @param domainId DomainId for the image.
      * @return URL Path for the resulting thumbnail on S3.
      */
-    public Thumbnail createThumbnail(final String url, final String guid, final String domain, final String domainId) {
-        return createGenericThumbnail(url, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, "0", guid, domain, domainId);
+    public Thumbnail createThumbnail(ImageMessage imageMessage) {
+        return createGenericThumbnail(imageMessage.getFileUrl(), THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, "0", imageMessage.getMediaGuid(),
+                imageMessage.getOuterDomainData().getDomain().getDomain(), imageMessage.getOuterDomainData().getDomainId(),
+                imageMessage.isGenerateThumbnail());
     }
     
     /**
@@ -82,7 +85,7 @@ public class ThumbnailProcessor {
         final String guid = UUID.randomUUID().toString();
         
         return createGenericThumbnail(tempDerivativeMessage.getFileUrl(), tempDerivativeMessage.getWidth(),
-                tempDerivativeMessage.getHeight(), tempDerivativeMessage.getRotation(), guid, "tempderivative", null).getLocation();
+                tempDerivativeMessage.getHeight(), tempDerivativeMessage.getRotation(), guid, "tempderivative", null, true).getLocation();
     }
     
     /**
@@ -98,7 +101,7 @@ public class ThumbnailProcessor {
      * @return thumbnailUrl the url of the generated thumbnail
      */
     private Thumbnail createGenericThumbnail(final String fileUrl, final int width, final int height, final String rotation, final String guid,
-            final String domain, final String domainId) {
+            final String domain, final String domainId, final boolean generateThumbnail) {
             
         LOGGER.debug("Creating thumbnail url=[{}] guid=[{}]", fileUrl, guid);
         String thumbnailUrl;
@@ -111,6 +114,9 @@ public class ThumbnailProcessor {
                 sourcePath = fetchS3(fileUrl, guid, workFolder.getWorkPath());
             } else {
                 sourcePath = fetchUrl(fileUrl, guid, workFolder.getWorkPath());
+            }
+            if (!generateThumbnail) {
+                return buildThumbnail(null, null, sourcePath);
             }
             thumbnailPath = generateThumbnail(sourcePath, width, height, (rotation == null) ? "0" : rotation, (domainId != null));
             thumbnailUrl = computeS3thumbnailPath(thumbnailPath, guid, domain, domainId);
@@ -253,15 +259,16 @@ public class ThumbnailProcessor {
      * @return
      */
     private Thumbnail buildThumbnail(Path thumbnailPath, String url, Path sourcePath) {
-        final Metadata thumbnailMetadata = FileNameUtil.getBasicMetadata(thumbnailPath);
+        
         final Metadata sourceMetadata = FileNameUtil.getBasicMetadata(sourcePath);
-        if (thumbnailMetadata != null) {
-            return Thumbnail.builder().thumbnailMetadata(thumbnailMetadata)
-                    .sourceMetadata(sourceMetadata)
-                    .location(url)
-                    .type(DERIVATIVE_TYPE)
-                    .build();
+        if (thumbnailPath == null) {
+            return Thumbnail.builder().sourceMetadata(sourceMetadata).build();
         }
-        return Thumbnail.builder().sourceMetadata(sourceMetadata).build();
+        final Metadata thumbnailMetadata = FileNameUtil.getBasicMetadata(thumbnailPath);
+        return Thumbnail.builder().thumbnailMetadata(thumbnailMetadata)
+                .sourceMetadata(sourceMetadata)
+                .location(url)
+                .type(DERIVATIVE_TYPE)
+                .build();
     }
 }

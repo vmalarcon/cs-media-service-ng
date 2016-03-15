@@ -10,6 +10,9 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URL;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
@@ -21,6 +24,9 @@ import org.junit.rules.TemporaryFolder;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.WritableResource;
 
+import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.pipeline.util.OSDetector;
 
 public class ThumbnailProcessorTest {
@@ -50,10 +56,29 @@ public class ThumbnailProcessorTest {
         when(mockResourceLoader.getResource(anyString())).thenReturn(mockWritableResource);
         setFieldValue(thumbProcessor, "resourceLoader", mockResourceLoader);
         
-        String thumbnailPath =
-                thumbProcessor.createThumbnail("http://i.imgur.com/Ta3uP.jpg", "29e6394d-760a-4526-b2dd-b70d312679b7", "lodging", "1234").getLocation();
-                
-        if (OSDetector.detectOS() == OSDetector.OS.WINDOWS) {
+        final Map<String, Object> domainDataFields = new LinkedHashMap<>();
+        domainDataFields.put("categoryId", "71013");
+        final OuterDomain domainData = new OuterDomain(Domain.LODGING, "1234", "Comics", "VirtualTour", domainDataFields);
+        final ImageMessage message =
+                ImageMessage.builder()
+                        .mediaGuid("29e6394d-760a-4526-b2dd-b70d312679b7")
+                        .requestId("bbbbbb-1010-bbbb-292929229")
+                        .clientId("EPC")
+                        .userId("you")
+                        .rotation("90")
+                        .active(true)
+                        .fileUrl("http://i.imgur.com/Ta3uP.jpg")
+                        .fileName("original_file_name.png")
+                        .sourceUrl("s3://bucket/source/aaaaaaa-1010-bbbb-292929229.jpg")
+                        .rejectedFolder("rejected")
+                        .callback(new URL("http://multi.source.callback/callback"))
+                        .comment("test comment!")
+                        .outerDomainData(domainData)
+                        .generateThumbnail(true)
+                        .build();
+       
+        String thumbnailPath =thumbProcessor.createThumbnail(message).getLocation();
+         if (OSDetector.detectOS() == OSDetector.OS.WINDOWS) {
             thumbnailPath = thumbnailPath.replace('\\', '/');
         }
         
@@ -76,8 +101,29 @@ public class ThumbnailProcessorTest {
         when(mockResourceLoader.getResource(anyString())).thenReturn(mockWritableResource);
         setFieldValue(thumbProcessor, "resourceLoader", mockResourceLoader);
         
+        final Map<String, Object> domainDataFields = new LinkedHashMap<>();
+        domainDataFields.put("categoryId", "71013");
+        final OuterDomain domainData = new OuterDomain(Domain.CARS, "tx_tx", "Comics", "VirtualTour", domainDataFields);
+        final ImageMessage message =
+                ImageMessage.builder()
+                        .mediaGuid("29e6394d-760a-4526-b2dd-b70d312679b7")
+                        .requestId("bbbbbb-1010-bbbb-292929229")
+                        .clientId("EPC")
+                        .userId("you")
+                        .rotation("90")
+                        .active(true)
+                        .fileUrl("http://i.imgur.com/Ta3uP.jpg")
+                        .fileName("original_file_name.png")
+                        .sourceUrl("s3://bucket/source/aaaaaaa-1010-bbbb-292929229.jpg")
+                        .rejectedFolder("rejected")
+                        .callback(new URL("http://multi.source.callback/callback"))
+                        .comment("test comment!")
+                        .outerDomainData(domainData)
+                        .generateThumbnail(true)
+                        .build();
+
         try {
-            thumbProcessor.createThumbnail("http://i.imgur.com/Ta3uP.jpg", "29e6394d-760a-4526-b2dd-b70d312679b7", "cars", "tx_tx");
+            thumbProcessor.createThumbnail(message);
             fail("Should throw exception");
         } catch (Exception e) {
             assertEquals("Unable to generate thumbnail with url: http://i.imgur.com/Ta3uP.jpg and GUID: 29e6394d-760a-4526-b2dd-b70d312679b7",
@@ -141,10 +187,31 @@ public class ThumbnailProcessorTest {
         ResourceLoader mockResourceLoader = mock(ResourceLoader.class);
         when(mockResourceLoader.getResource(anyString())).thenReturn(mockWritableResource);
         setFieldValue(thumbProcessor, "resourceLoader", mockResourceLoader);
+        
+        final Map<String, Object> domainDataFields = new LinkedHashMap<>();
+        domainDataFields.put("categoryId", "71013");
+        final OuterDomain domainData = new OuterDomain(Domain.LODGING, "1234", "Comics", "VirtualTour", domainDataFields);
+        final ImageMessage message =
+                ImageMessage.builder()
+                        .mediaGuid("29e6394d-760a-4526-b2dd-b70d312679b7")
+                        .requestId("bbbbbb-1010-bbbb-292929229")
+                        .clientId("EPC")
+                        .userId("you")
+                        .rotation("90")
+                        .active(true)
+                        .fileUrl("http://i.imgur.com/Ta3uP.jpg")
+                        .fileName("original_file_name.png")
+                        .sourceUrl("s3://bucket/source/aaaaaaa-1010-bbbb-292929229.jpg")
+                        .rejectedFolder("rejected")
+                        .callback(new URL("http://multi.source.callback/callback"))
+                        .comment("test comment!")
+                        .outerDomainData(domainData)
+                        .generateThumbnail(true)
+                        .build();
+
         String expectedLocation =
                 "https://s3-us-north-200.amazonaws.com/cs-media-bucket/test/thumbnails/lodging/1000000/10000/1300/1234/1234_29e6394d-760a-4526-b2dd-b70d312679b7_t.jpg";
-        Thumbnail actualThumbnail =
-                thumbProcessor.createThumbnail("http://i.imgur.com/Ta3uP.jpg", "29e6394d-760a-4526-b2dd-b70d312679b7", "lodging", "1234");
+        Thumbnail actualThumbnail =thumbProcessor.createThumbnail(message);
         String thumbnailPath = actualThumbnail.getLocation();
         
         if (OSDetector.detectOS() == OSDetector.OS.WINDOWS) {
