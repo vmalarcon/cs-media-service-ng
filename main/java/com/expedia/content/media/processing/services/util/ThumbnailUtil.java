@@ -25,7 +25,7 @@ import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
  */
 public   class ThumbnailUtil {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(FileNameUtil.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ThumbnailUtil.class);
     private static final String S3_PREFIX = "s3:/";
     private static final String DERIVATIVE_TYPE = "t";
 
@@ -53,7 +53,7 @@ public   class ThumbnailUtil {
                 LOGGER.debug("Media size: " + sourceSize);
                 return Metadata.builder().fileSize((int) sourcePath.toFile().length()).width(width).height(height).build();
             } catch (Exception e) {
-                LOGGER.debug("Unable to extract the metadas for the given url file: " + sourcePath.getFileName());
+                LOGGER.debug("Unable to extract the metadas for the given url file: " + sourcePath.getFileName(),e);
             }
         }
         return null;

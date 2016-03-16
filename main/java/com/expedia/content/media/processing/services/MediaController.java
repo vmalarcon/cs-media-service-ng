@@ -295,10 +295,12 @@ public class MediaController extends CommonServiceController {
         final Map<String, String> response = new HashMap<>();
         response.put(RESPONSE_FIELD_MEDIA_GUID, imageMessageNew.getMediaGuid());
         response.put(RESPONSE_FIELD_STATUS, "RECEIVED");
-        final Thumbnail thumbnail =
-                (imageMessageNew.isGenerateThumbnail()) ? thumbnailProcessor.createThumbnail(imageMessageNew) : getDefaultThumbnail(imageMessageNew);
-        if (thumbnail.getLocation() != null) {
+        Thumbnail thumbnail = null;
+        if (imageMessageNew.isGenerateThumbnail()) {
+            thumbnail = thumbnailProcessor.createThumbnail(imageMessageNew);
             response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnail.getLocation());
+        } else {
+            thumbnail = getDefaultThumbnail(imageMessageNew);
         }
         if (!isReprocessing) {
             dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);

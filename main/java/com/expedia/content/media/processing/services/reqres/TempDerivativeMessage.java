@@ -13,7 +13,7 @@ import lombok.Getter;
 @SuppressWarnings({"PMD.UnusedPrivateField"})
 public class TempDerivativeMessage {
     private final String fileUrl;
-    private final String rotation;
+    private final Integer rotation;
     private final Integer width;
     private final Integer height;
 }
