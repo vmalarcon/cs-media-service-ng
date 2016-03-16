@@ -46,7 +46,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     private static final String ACTIVE_FILTER_ALL = "all";
     private static final String ACTIVE_FILTER_TRUE = "true";
     private static final String ACTIVE_FILTER_FALSE = "false";
-    private static final String FIELD_CATEGORY_ID = "subcategoryId";
+    private static final String FIELD_SUBCATEGORY_ID = "subcategoryId";
     private static final String FIELD_PROPERTY_HERO = "propertyHero";
     private static final String FIELD_ROOM_ID = "roomId";
     private static final String FIELD_ROOM_HERO = "roomHero";
@@ -330,11 +330,11 @@ public class LcmDynamoMediaDao implements MediaDao {
         if (lcmMedia.getCategory() != null) {
             if (lcmMedia.getCategory().equals(LCM_HERO_CATEGORY)) {
                 lcmDomainData.put(FIELD_PROPERTY_HERO, "true");
-                if (dynamoMedia != null && dynamoMedia.getDomainData() != null && dynamoMedia.getDomainData().get(FIELD_CATEGORY_ID) != null) {
-                    lcmDomainData.put(FIELD_CATEGORY_ID, String.valueOf(dynamoMedia.getDomainData().get(FIELD_CATEGORY_ID)));
+                if (dynamoMedia != null && dynamoMedia.getDomainData() != null && dynamoMedia.getDomainData().get(FIELD_SUBCATEGORY_ID) != null) {
+                    lcmDomainData.put(FIELD_SUBCATEGORY_ID, String.valueOf(dynamoMedia.getDomainData().get(FIELD_SUBCATEGORY_ID)));
                 }
             } else {
-                lcmDomainData.put(FIELD_CATEGORY_ID, lcmMedia.getCategory().toString());
+                lcmDomainData.put(FIELD_SUBCATEGORY_ID, lcmMedia.getCategory().toString());
             }
         }
     }
