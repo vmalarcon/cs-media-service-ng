@@ -229,21 +229,17 @@ public class MediaController extends CommonServiceController {
             if (media.getDomainData() != null) {
                 media.getDomainData().put(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
             }
+            /* @formatter:off */
             return DomainIdMedia.builder().mediaGuid(media.getMediaGuid()).fileUrl(media.getFileUrl()).fileName(media.getFileName())
                     .active(media.getActive()).width(media.getWidth()).height(media.getHeight()).fileSize(media.getFileSize()).status(media.getStatus())
                     .lastUpdatedBy(media.getUserId()).lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
-                    .domainProvider(media.getProvider()).domainFields(media.getDomainData())
-                    .derivatives(
-                            media.getDerivativesList())
-                    .domainDerivativeCategory(
-                            media.getDomainDerivativeCategory())
-                    .comments((media.getCommentList() == null) ? null
-                                                               : media.getCommentList().stream()
-                                                                       .map(comment -> new Comment(comment,
-                                                                                                   DATE_FORMATTER.print(media.getLastUpdated().getTime())))
-                                                                       .collect(Collectors.toList()))
-                    .build();
+                    .domainProvider(media.getProvider()).domainFields(media.getDomainData()).derivatives(media.getDerivativesList())
+                    .domainDerivativeCategory(media.getDomainDerivativeCategory())
+                    .comments((media.getCommentList() == null) ? null: media.getCommentList().stream()
+                    .map(comment -> new Comment(comment,DATE_FORMATTER.print(media.getLastUpdated().getTime())))
+                    .collect(Collectors.toList())) .build();
         }).collect(Collectors.toList());
+        /* @formatter:on */
     }
 
     /**
