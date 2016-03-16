@@ -233,7 +233,7 @@ public class JSONUtilTest {
                 + "      \"sourceId\":\"99\"\n"
                 + "   },\n"
                 + "   \"expediaId\":4608680,\n"
-                + "   \"category\":\"801\",\n"
+                + "   \"categoryId\":\"801\",\n"
                 + "   \"callback\":\"http://multi.source.callback/callback\"\n"
                 + "}";
                 
