@@ -20,17 +20,18 @@ import com.expedia.content.media.processing.pipeline.domain.Metadata;
 import com.expedia.content.media.processing.pipeline.util.TemporaryWorkFolder;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 
-import expedia.content.solutions.metrics.annotations.Timer;
-
 /**
  * Utility class for thumbnail manipulation.
  */
-public final class ThumbnailUtil {
+public   class ThumbnailUtil {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FileNameUtil.class);
     private static final String S3_PREFIX = "s3:/";
     private static final String DERIVATIVE_TYPE = "t";
 
+    private ThumbnailUtil(){
+        
+    }
     /**
      * Retrieve basic metadata for a file.
      * 
@@ -88,9 +89,6 @@ public final class ThumbnailUtil {
     public static Thumbnail buildThumbnail(Path thumbnailPath, String url, Path sourcePath) {
 
         final Metadata sourceMetadata = getBasicMetadata(sourcePath);
-        if (thumbnailPath == null) {
-            return Thumbnail.builder().sourceMetadata(sourceMetadata).build();
-        }
         final Metadata thumbnailMetadata = getBasicMetadata(thumbnailPath);
         return Thumbnail.builder().thumbnailMetadata(thumbnailMetadata).sourceMetadata(sourceMetadata).location(url).type(DERIVATIVE_TYPE).build();
     }
@@ -105,7 +103,6 @@ public final class ThumbnailUtil {
      * @throws IOException
      *             When unable to fetch the HTTP URL.
      */
-    @Timer(name = "FetchHttpUrlTimer")
     private static Path fetchUrl(final String url, final String guid, final Path workPath) throws IOException {
         LOGGER.debug("Fetching HTTP URL -> " + url);
         final URL validUrl = new URL(url);
@@ -126,7 +123,6 @@ public final class ThumbnailUtil {
      * @return Path where the image is downloaded.
      * @throws IOException When unable to fetch the S3 URL.
      */
-    @Timer(name = "FetchS3UrlTimer")
     private static Path fetchS3(final String url, final String guid, final Path workPath, ResourceLoader resourceLoader) throws IOException {
         LOGGER.debug("Fetching S3 URL -> " + url);
         final Resource resource = resourceLoader.getResource(url);

@@ -60,6 +60,7 @@ public class ThumbnailProcessor {
      * @param imageMessage imageMessage to use.
      * @return
      */
+    @Timer(name = "FetchUrlTimer")
     public Thumbnail createThumbnail(ImageMessage imageMessage) {
         return createGenericThumbnail(imageMessage.getFileUrl(), THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, "0", imageMessage.getMediaGuid(),
                 imageMessage.getOuterDomainData().getDomain().getDomain(), imageMessage.getOuterDomainData().getDomainId());
