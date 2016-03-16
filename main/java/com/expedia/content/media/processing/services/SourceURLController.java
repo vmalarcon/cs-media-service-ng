@@ -30,7 +30,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 /**
- * Web service controller for get Source URL by derivative file name..
+ * Web service controller to get Source URL by derivative file name..
  */
 @Component
 @RestController
@@ -43,7 +43,6 @@ public class SourceURLController extends CommonServiceController {
     private String bucketName;
     @Value("${media.bucket.prefix.name}")
     private String bucketPrefix;
-
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
@@ -71,24 +70,24 @@ public class SourceURLController extends CommonServiceController {
             final boolean fileExists = verifyUrlExistence(fileUrl);
             if (!fileExists) {
                 LOGGER.info("Response bad request provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
-                return this.buildErrorResponse("Provided fileUrl does not exist.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
+                //return this.buildErrorResponse("Provided fileUrl does not exist.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
             }
             final LcmMedia lcmMedia = mediaDao.getContentProviderName(FileSourceFinder.getFileNameFromUrl(fileUrl));
             if (!checkDBResultValid(lcmMedia)) {
-                return buildErrorResponse(fileUrl + " not found.", MediaServiceUrl.MEDIA_STATUS.getUrl(), NOT_FOUND);
+                return buildErrorResponse(fileUrl + " not found.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
             }
             final String sourcePath = FileSourceFinder.getSourcePath(bucketName, bucketPrefix, fileUrl, lcmMedia.getDomainId());
             final Map<String, String> response = new HashMap<>();
             response.put("contentProviderMediaName", lcmMedia.getFileName());
             response.put("mediaSourceUrl", sourcePath);
             final String jsonResponse = OBJECT_MAPPER.writeValueAsString(response);
-            LOGGER.info("RESPONSE - url=[{}], responseMsg=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_STATUS.getUrl(), jsonResponse,
+            LOGGER.info("RESPONSE - url=[{}], responseMsg=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), jsonResponse,
                     requestID);
             return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
         } catch (RequestMessageException ex) {
-            LOGGER.error("ERROR - url=[{}], imageMessage=[{}], error=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_STATUS.getUrl(), message,
+            LOGGER.error("ERROR - url=[{}], imageMessage=[{}], error=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message,
                     ex.getMessage(), ex, requestID);
-            return buildErrorResponse(ex.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl(), BAD_REQUEST);
+            return buildErrorResponse(ex.getMessage(), MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), BAD_REQUEST);
         }
     }
 

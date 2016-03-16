@@ -15,7 +15,11 @@ public class FileSourceFinder {
 
     public static final String S3_PREFIX = "s3://";
     public static final String HOTELS = "/hotels";
-    public static final int MILLON_FOLDER_LIMIT = 6000000;
+    public static final int MILLION_FOLDER_LIMIT = 6000000;
+    public static final String SOURCE_DIR = "\\\\CHE-FILIDXIMG01\\GSO_media\\lodging";
+    public static final String SOURCE_DIR_NEW = "\\\\CHE-FILIDXIMG01\\GSO_MediaNew\\lodging";
+
+
 
     private FileSourceFinder() {
     }
@@ -59,10 +63,10 @@ public class FileSourceFinder {
         if (matchGuid(fileName)) {
             return getGUIDFilePath(bucketName, prefix, millonFolder, fileName);
         } else {
-            if (domainId < MILLON_FOLDER_LIMIT) {
-                return "\\\\CHE-FILIDXIMG01\\GSO_media\\lodging" + millonFolder.replace("/", "\\") + fileName.replaceFirst(pattern, ".jpg");
+            if (domainId < MILLION_FOLDER_LIMIT) {
+                return SOURCE_DIR + millonFolder.replace("/", "\\") + fileName.replaceFirst(pattern, ".jpg");
             } else {
-                return "\\\\CHE-FILIDXIMG01\\GSO_MediaNew\\lodging" + millonFolder.replace("/", "\\") + fileName.replaceFirst(pattern, ".jpg");
+                return SOURCE_DIR_NEW + millonFolder.replace("/", "\\") + fileName.replaceFirst(pattern, ".jpg");
             }
         }
     }
