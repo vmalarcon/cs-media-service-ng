@@ -4,7 +4,11 @@ import com.expedia.content.media.processing.pipeline.domain.Metadata;
 
 import lombok.Builder;
 import lombok.Getter;
-
+/**
+ * 
+ * Represent a thumbnail object.
+ *
+ */
 @Builder
 @Getter
 @SuppressWarnings({"PMD.UnusedPrivateField"})

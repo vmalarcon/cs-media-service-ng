@@ -150,7 +150,7 @@ public class FileNameUtil {
 	}
 
 	/**
-	 * Retrieve basic metadatas for a file.
+	 * Retrieve basic metadata for a file.
 	 * 
 	 * @param sourcePath
 	 *            source path.
@@ -178,7 +178,17 @@ public class FileNameUtil {
 		return null;
 	}
 
-	public static Path getSourcePath(final String fileUrl, final String guid, TemporaryWorkFolder workFolder,
+	/**
+	 * Retrieve the source path base on the fileUrl.
+	 * 
+	 * @param fileUrl
+	 * @param guid
+	 * @param workFolder
+	 * @param resourceLoader
+	 * @return
+	 * @throws IOException
+	 */
+	public static Path retrieveSourcePath(final String fileUrl, final String guid, TemporaryWorkFolder workFolder,
 			ResourceLoader resourceLoader) throws IOException {
 		if (fileUrl.toLowerCase(Locale.US).startsWith(S3_PREFIX)) {
 			return fetchS3(fileUrl, guid, workFolder.getWorkPath(), resourceLoader);
@@ -190,12 +200,9 @@ public class FileNameUtil {
 	/**
 	 * Build a thumbnail from the given path
 	 * 
-	 * @param thumbnailPath
-	 *            path for the thumbnail.
-	 * @param url
-	 *            thumbnail location url;
-	 * @param sourcePath
-	 *            path for the source image.
+	 * @param thumbnailPath  path for the thumbnail.
+	 * @param url thumbnail location url;
+	 * @param sourcePath path for the source image.
 	 * @return
 	 */
 	public static Thumbnail buildThumbnail(Path thumbnailPath, String url, Path sourcePath) {
@@ -212,12 +219,9 @@ public class FileNameUtil {
 	/**
 	 * Fetch HTTP URL. Starts with {@code http://} or {@code https://}.
 	 *
-	 * @param url
-	 *            Image URL to fetch.
-	 * @param guid
-	 *            GUID for the image.
-	 * @param workPath
-	 *            Temporary working folder to use for downloading the image.
+	 * @param url Image URL to fetch.
+	 * @param guid GUID for the image.
+	 * @param workPath Temporary working folder to use for downloading the image.
 	 * @return Path where the image is downloaded.
 	 * @throws IOException
 	 *             When unable to fetch the HTTP URL.
@@ -237,15 +241,11 @@ public class FileNameUtil {
 	/**
 	 * Fetch S3 URL. Starts with {@code s3://}.
 	 *
-	 * @param url
-	 *            Image URL to fetch from S3.
-	 * @param guid
-	 *            GUID for the image.
-	 * @param workPath
-	 *            Temporary working folder to use for downloading the image.
+	 * @param url Image URL to fetch from S3.
+	 * @param guid  GUID for the image.
+	 * @param workPath  Temporary working folder to use for downloading the image.
 	 * @return Path where the image is downloaded.
-	 * @throws IOException
-	 *             When unable to fetch the S3 URL.
+	 * @throws IOException When unable to fetch the S3 URL.
 	 */
 	@Timer(name = "FetchS3UrlTimer")
 	private static Path fetchS3(final String url, final String guid, final Path workPath, ResourceLoader resourceLoader)

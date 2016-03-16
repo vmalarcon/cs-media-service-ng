@@ -121,11 +121,9 @@ public class MediaController extends CommonServiceController {
 	 * be applied in order, Metrics being outside (outer) and retry being inside
 	 * (inner).
 	 *
-	 * @param message
-	 *            is json format media message,fileUrl and expedia is required.
+	 * @param message  is json format media message,fileUrl and expedia is required.
 	 * @return ResponseEntity Standard spring response object.
-	 * @throws Exception
-	 *             Thrown if processing the message fails.
+	 * @throws Exception Thrown if processing the message fails.
 	 */
 	@Meter(name = "acquireMessageCounter")
 	@Timer(name = "acquireMessageTimer")
@@ -159,11 +157,9 @@ public class MediaController extends CommonServiceController {
 	 * Web service interface to push a media file into the media processing
 	 * pipeline.
 	 *
-	 * @param message
-	 *            JSON formated ImageMessage.
+	 * @param message JSON formated ImageMessage.
 	 * @return headers Request headers.
-	 * @throws Exception
-	 *             Thrown if processing the message fails.
+	 * @throws Exception Thrown if processing the message fails.
 	 * @see com.expedia.content.media.processing.pipeline.domain.ImageMessage
 	 */
 	@Meter(name = "addMessageCounter")
@@ -192,23 +188,16 @@ public class MediaController extends CommonServiceController {
 	 * Web services interface to retrieve media information by domain name and
 	 * id.
 	 * 
-	 * @param domainName
-	 *            Name of the domain the domain id belongs to.
-	 * @param domainId
-	 *            Identification of the domain item the media is required.
-	 * @param activeFilter
-	 *            Filter determining what images to return. When true only
-	 *            active are returned. When false only inactive media is
-	 *            returned. When all then all are returned. All is set a
-	 *            default.
-	 * @param derivativeTypeFilter
-	 *            Inclusive filter to use to only return certain types of
+	 * @param domainName Name of the domain the domain id belongs to.
+	 * @param domainId Identification of the domain item the media is required.
+	 * @param activeFilter Filter determining what images to return. When true only
+	 *            active are returned. When false only inactive media is  returned. 
+	 *            When all then all are returned. All is set a default.
+	 * @param derivativeTypeFilter  Inclusive filter to use to only return certain types of
 	 *            derivatives. Returns all derivatives if not specified.
-	 * @param headers
-	 *            Headers of the request.
+	 * @param headers Headers of the request.
 	 * @return The list of media data belonging to the domain item.
-	 * @throws Exception
-	 *             Thrown if processing the message fails.
+	 * @throws Exception Thrown if processing the message fails.
 	 */
 	@Meter(name = "getMediaByDomainIdMessageCounter")
 	@Timer(name = "getMediaByDomainIdMessageTimer")
@@ -242,8 +231,7 @@ public class MediaController extends CommonServiceController {
 	/**
 	 * Transforms a media list for a media get response format.
 	 * 
-	 * @param mediaList
-	 *            List of media to transform.
+	 * @param mediaList List of media to transform.
 	 * @return The transformed list.
 	 */
 	private List<DomainIdMedia> transformMediaForResponse(List<Media> mediaList) {
@@ -272,10 +260,8 @@ public class MediaController extends CommonServiceController {
 	/**
 	 * Validates the media by domain id request.
 	 *
-	 * @param domainName
-	 *            Domain to validate.
-	 * @param activeFilter
-	 *            Active filter to validate.
+	 * @param domainName Domain to validate.
+	 * @param activeFilter Active filter to validate.
 	 * @return Returns a response if the validation fails; null otherwise.
 	 */
 	private ResponseEntity<String> validateMediaByDomainIdRequest(final String domainName, final String activeFilter) {
@@ -293,20 +279,13 @@ public class MediaController extends CommonServiceController {
 	 * Common processing between mediaAdd and the AWS portion of aquireMedia.
 	 * Can be transfered into mediaAdd once aquireMedia is removed.
 	 *
-	 * @param message
-	 *            JSON formated ImageMessage.
-	 * @param requestID
-	 *            The id of the request. Used for tracking purposes.
-	 * @param serviceUrl
-	 *            URL of the message called.
-	 * @param clientId
-	 *            Web service client id.
-	 * @param successStatus
-	 *            Status to return when successful.
+	 * @param message JSON formated ImageMessage.
+	 * @param requestID The id of the request. Used for tracking purposes.
+	 * @param serviceUrl URL of the message called.
+	 * @param clientId Web service client id.
+	 * @param successStatus Status to return when successful.
 	 * @return The response for the service call.
-	 * @throws Exception
-	 *             Thrown if the message can't be validated or the response
-	 *             can't be serialized.
+	 * @throws Exception Thrown if the message can't be validated or the response can't be serialized.
 	 */
 	private ResponseEntity<String> processRequest(final String message, final String requestID, final String serviceUrl,
 			final String clientId, HttpStatus successStatus) throws Exception {
@@ -351,12 +330,9 @@ public class MediaController extends CommonServiceController {
 	 * Updates the image message for the next step. Must be done before being
 	 * published to the next work queue.
 	 *
-	 * @param imageMessage
-	 *            The incoming image message.
-	 * @param requestID
-	 *            The id of the request. Used for tracking purposes.
-	 * @param clientId
-	 *            Web service client id.
+	 * @param imageMessage  The incoming image message.
+	 * @param requestID The id of the request. Used for tracking purposes.
+	 * @param clientId  Web service client id.
 	 * @return A Map contains the reprocessing state and the updated message
 	 *         with request and other data added .
 	 */
@@ -391,10 +367,8 @@ public class MediaController extends CommonServiceController {
 	 * populate the replacement mediaId and GUID on the ImageMessageBuilder.
 	 * </p>
 	 *
-	 * @param imageMessage
-	 *            Original message received.
-	 * @param imageMessageBuilder
-	 *            Builder for the new/mutated ImageMessage.
+	 * @param imageMessage Original message received.
+	 * @param imageMessageBuilder Builder for the new/mutated ImageMessage.
 	 * @return returns true if reprocessing and false if not.
 	 */
 	private boolean processReplacement(ImageMessage imageMessage,
@@ -429,8 +403,7 @@ public class MediaController extends CommonServiceController {
 	 * metrics-support and spring-retry modules. The aspects should be applied
 	 * in order, Metrics being outside (outer) and retry being inside (inner).
 	 *
-	 * @param message
-	 *            is the received json format message from main application
+	 * @param message is the received json format message from main application
 	 */
 	@Meter(name = "publishMessageCounter")
 	@Timer(name = "publishMessageTimer")
@@ -453,13 +426,10 @@ public class MediaController extends CommonServiceController {
 	 * DAO validator (later) return the validation error list that combine all
 	 * of the error result.
 	 *
-	 * @param message
-	 *            input json message.
-	 * @param clientId
-	 *            Web service client id.
+	 * @param message input json message.
+	 * @param clientId Web service client id.
 	 * @return JSON string contains fileName and error description.
-	 * @throws Exception
-	 *             when message to ImageMessage and convert java list to json.
+	 * @throws Exception when message to ImageMessage and convert java list to json.
 	 */
 	@SuppressWarnings("PMD.SignatureDeclareThrowsException")
 	private String validateImageMessage(final String message, final String clientId) throws Exception {
@@ -484,10 +454,8 @@ public class MediaController extends CommonServiceController {
 	 * Logs a completed activity and its time. and exepdiaId is appended before
 	 * the file name
 	 *
-	 * @param imageMessage
-	 *            The imageMessage of the file being processed.
-	 * @param activity
-	 *            The activity to log.
+	 * @param imageMessage The imageMessage of the file being processed.
+	 * @param activity The activity to log.
 	 */
 	private void logActivity(final ImageMessage imageMessage, final Activity activity) throws URISyntaxException {
 		final LogEntry logEntry = new LogEntry(imageMessage.getFileName(), imageMessage.getMediaGuid(), activity,
@@ -502,8 +470,7 @@ public class MediaController extends CommonServiceController {
 	 * case-sensitivity if the exact text is not passed, datamanager fails to
 	 * find it and defaults it to 1
 	 * 
-	 * @param outerDomain
-	 * @return outerDomain with domainProvider replaced by the exact
+	 * @param outerDomain @return outerDomain with domainProvider replaced by the exact
 	 *         domainProvider from the mapping
 	 */
 	@SuppressWarnings("PMD.UnnecessaryLocalBeforeReturn")
@@ -515,17 +482,16 @@ public class MediaController extends CommonServiceController {
 	}
 
 	/**
-	 * Build a default thumbnail object with the source metadatas.
+	 * Build a default thumbnail object with the source metadata.
 	 * 
-	 * @param imageMessageimageMessage
-	 *            to use.
+	 * @param imageMessageIncoming message.
 	 * @return A thumbnail object with source metadatas.
 	 */
 	private Thumbnail getDefaultThumbnail(ImageMessage imageMessage) {
 		final Path workPath = Paths.get(tempWorkFolder);
 		Path sourcePath;
 		try (TemporaryWorkFolder workFolder = new TemporaryWorkFolder(workPath)) {
-			sourcePath = FileNameUtil.getSourcePath(imageMessage.getFileUrl(), imageMessage.getMediaGuid(), workFolder,
+			sourcePath = FileNameUtil.retrieveSourcePath(imageMessage.getFileUrl(), imageMessage.getMediaGuid(), workFolder,
 					resourceLoader);
 			return FileNameUtil.buildThumbnail(null, null, sourcePath);
 		} catch (Exception e) {
