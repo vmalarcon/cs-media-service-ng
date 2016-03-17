@@ -13,6 +13,7 @@ import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
  * Utility class for resolving file names --ALL PROVIDERS ADDED TO THE ENUM
  * SHOULD USE THE FUNCTION guidProviderNameToFileNameFunction--
  */
+@SuppressWarnings({"PMD.UseUtilityClass"})
 public class FileNameUtil {
 
     /**

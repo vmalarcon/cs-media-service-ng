@@ -40,7 +40,7 @@ public class TempDerivativeControllerTest {
     TempDerivativeController tempDerivativeController;
 
     @Before
-    public void setSecurityContext() {
+    public void setSecurityContext() throws IllegalAccessException {
         Authentication authentication = mock(Authentication.class);
         when(authentication.getName()).thenReturn(TEST_CLIENT_ID);
         SecurityContext securityContext = mock(SecurityContext.class);
@@ -55,13 +55,10 @@ public class TempDerivativeControllerTest {
 
     @Test
     public void testSuccessfulTemporaryDerivativeRequest() throws Exception {
-        String jsonMessage = "{ "
-                + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg/why/would/someone/name/all/of/their/files/original.jpg\", "
-                + "\"rotation\": \"90\", "
-                + "\"width\": 180, "
-                + "\"height\": 180"
-                + "}";
+        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg/why/would/someone/name/all/of/their/files/original.jpg\", "
+                + "\"rotation\": \"90\", " + "\"width\": 180, " + "\"height\": 180" + "}";
         TempDerivativeMVELValidator tempDerivativeMVELValidator = mock(TempDerivativeMVELValidator.class);
+        when(tempDerivativeMVELValidator.validateTempDerivativeMessage(any())).thenReturn("");
         setFieldValue(tempDerivativeController, "tempDerivativeMVELValidator", tempDerivativeMVELValidator);
 
         ThumbnailProcessor thumbnailProcessor = mock(ThumbnailProcessor.class);
@@ -72,8 +69,7 @@ public class TempDerivativeControllerTest {
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
-
-        when(tempDerivativeMVELValidator.validateTempDerivativeMessage(any())).thenReturn("");
+      
         ResponseEntity<String> responseEntity = tempDerivativeController.getTempDerivative(jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
