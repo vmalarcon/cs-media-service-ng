@@ -139,8 +139,9 @@ public class ThumbnailProcessor {
         operation.limit("thread");
         operation.addRawArgs("2");
         operation.units("PixelsPerInch");
-        operation.resize(width, height, "!");
         operation.rotate(Double.valueOf(rotation));
+        operation.resize(width, height, "!");
+        operation.orient("top-left");
         operation.addImage(sourcePath.toString());
         operation.addImage(thumbnailPath.toString());
 

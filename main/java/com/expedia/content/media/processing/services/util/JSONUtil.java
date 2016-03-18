@@ -268,7 +268,7 @@ public final class JSONUtil {
             mapMessage.put(MessageConstants.OUTER_DOMAIN_ID, imageMessage.getExpediaId().toString());
         }
         if (imageMessage.getCategoryId() != null) {
-            domainMapMessage.put("category", imageMessage.getCategoryId());
+            domainMapMessage.put("subcategoryId", imageMessage.getCategoryId() );
             mapMessage.put(MessageConstants.OUTER_DOMAIN_FIELDS, domainMapMessage);
         }
         if (imageMessage.getCaption() != null) {

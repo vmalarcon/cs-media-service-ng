@@ -4,7 +4,7 @@ import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 
 /**
  * Validates an image message content.
- * rules like: numeric: mediaProviderId, expediaId,categoryId,
+ * rules like: numeric: mediaProviderId, expediaId, subcategoryId,
  * required: expediaId, fileUrl
  * URL pattern: fileURL, callback
  */
