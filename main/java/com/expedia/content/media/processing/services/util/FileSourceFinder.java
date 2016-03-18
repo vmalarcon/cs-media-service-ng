@@ -3,7 +3,9 @@ package com.expedia.content.media.processing.services.util;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.*;
+import com.amazonaws.services.s3.model.ListObjectsRequest;
+import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.S3ObjectSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,8 +20,6 @@ public class FileSourceFinder {
     public static final int MILLION_FOLDER_LIMIT = 6000000;
     public static final String SOURCE_DIR = "\\\\CHE-FILIDXIMG01\\GSO_media\\lodging";
     public static final String SOURCE_DIR_NEW = "\\\\CHE-FILIDXIMG01\\GSO_MediaNew\\lodging";
-
-
 
     private FileSourceFinder() {
     }
@@ -109,7 +109,7 @@ public class FileSourceFinder {
      */
     public static String getFileNameFromUrl(String fileUrl) {
         //http://images.trvl-media.com/hotels/1000000/10000/8400/8393/4a8a5b92_t.jpg
-        if (fileUrl.contains(HOTELS) && fileUrl.contains("/")) {
+        if (fileUrl.contains(HOTELS)) {
             final int lastLoc = fileUrl.lastIndexOf('/');
             return fileUrl.substring(lastLoc + 1);
         }
