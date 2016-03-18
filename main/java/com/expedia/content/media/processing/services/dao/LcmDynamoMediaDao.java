@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.annotation.Resource;
 
@@ -105,15 +106,15 @@ public class LcmDynamoMediaDao implements MediaDao {
             domainIdMedia.addAll(0, lcmMediaList);
 
         }
+
         final boolean isActiveFilterAll = activeFilter == null || activeFilter.isEmpty() || activeFilter.equals(ACTIVE_FILTER_ALL);
+        Stream<Media> mediaStream = domainIdMedia.stream();
         if (!isActiveFilterAll) {
-            domainIdMedia =
-                    domainIdMedia.stream()
-                            .filter(media -> ((activeFilter.equals(ACTIVE_FILTER_TRUE) && ACTIVE_FILTER_TRUE.equals(media.getActive()))
-                                    || (activeFilter.equals(ACTIVE_FILTER_FALSE) && (media.getActive() == null || media.getActive().equals(ACTIVE_FILTER_FALSE)))))
-                            .sorted((media1, media2) -> compareMedia(media1, media2, domain))
-                            .collect(Collectors.toList());
+            mediaStream = mediaStream.filter(media -> ((activeFilter.equals(ACTIVE_FILTER_TRUE) && ACTIVE_FILTER_TRUE.equals(media.getActive()))
+                                    || (activeFilter.equals(ACTIVE_FILTER_FALSE) && (media.getActive() == null || media.getActive().equals(ACTIVE_FILTER_FALSE)))));
         }
+        domainIdMedia = mediaStream.sorted((media1, media2) -> compareMedia(media1, media2, domain)).collect(Collectors.toList());
+
         final List<String> fileNames =
                 domainIdMedia.stream().filter(media -> media.getFileName() != null).map(media -> media.getFileName()).distinct()
                         .collect(Collectors.toList());
