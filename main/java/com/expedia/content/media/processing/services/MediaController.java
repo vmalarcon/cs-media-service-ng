@@ -6,8 +6,6 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
 import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -27,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.support.MessageBuilder;
@@ -52,7 +49,6 @@ import com.expedia.content.media.processing.pipeline.reporting.LogActivityProces
 import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
-import com.expedia.content.media.processing.pipeline.util.TemporaryWorkFolder;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
@@ -65,7 +61,6 @@ import com.expedia.content.media.processing.services.util.FileNameUtil;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaReplacement;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
-import com.expedia.content.media.processing.services.util.ThumbnailUtil;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
@@ -109,11 +104,6 @@ public class MediaController extends CommonServiceController {
 
     @Autowired
     private DynamoMediaRepository dynamoMediaRepository;
-
-    @Autowired
-    private ResourceLoader resourceLoader;
-    @Value("${service.temp.work.folder}")
-    private String tempWorkFolder;
 
     /**
      * web service interface to consume media message. Note that the
@@ -299,9 +289,7 @@ public class MediaController extends CommonServiceController {
         if (imageMessageNew.isGenerateThumbnail()) {
             thumbnail = thumbnailProcessor.createThumbnail(imageMessageNew);
             response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnail.getLocation());
-        } else {
-            thumbnail = getDefaultThumbnail(imageMessageNew);
-        }
+         }
         if (!isReprocessing) {
             dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);
         }
@@ -454,23 +442,5 @@ public class MediaController extends CommonServiceController {
     private OuterDomain getDomainProviderFromMapping(OuterDomain outerDomain) {
         final String domainProvider =  DomainDataUtil.getDomainProvider(outerDomain.getProvider(), providerProperties);
         return OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
-    }
-
-    /**
-     * Build a default thumbnail object with the source metadata.
-     * 
-     * @param imageMessage Incoming message.
-     * @return A thumbnail object with source metadatas.
-     */
-    private Thumbnail getDefaultThumbnail(ImageMessage imageMessage) {
-        final Path workPath = Paths.get(tempWorkFolder);
-        Path sourcePath;
-        try (TemporaryWorkFolder workFolder = new TemporaryWorkFolder(workPath)) {
-            sourcePath = ThumbnailUtil.retrieveSourcePath(imageMessage.getFileUrl(), imageMessage.getMediaGuid(), workFolder, resourceLoader);
-            return ThumbnailUtil.buildThumbnail(null, null, sourcePath);
-        } catch (Exception e) {
-            LOGGER.error("Unable to build the default thumbnail object from " + imageMessage.getFileUrl(), e);
-        }
-        return Thumbnail.builder().build();
     }
 }

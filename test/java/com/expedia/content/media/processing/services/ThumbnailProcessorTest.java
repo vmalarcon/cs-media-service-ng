@@ -14,7 +14,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -32,7 +31,7 @@ import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.pipeline.util.OSDetector;
 import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
-import com.expedia.content.media.processing.services.util.ThumbnailUtil;
+import com.expedia.content.media.processing.services.util.ImageUtil;
 
 public class ThumbnailProcessorTest {
 
@@ -70,7 +69,7 @@ public class ThumbnailProcessorTest {
                 .callback(new URL("http://multi.source.callback/callback")).comment("test comment!").outerDomainData(domainData).generateThumbnail(true)
                 .build();
 
-        File sourceFile = ThumbnailUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));
+        File sourceFile = ImageUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));
         InputStream inputStream = new FileInputStream(sourceFile);
         when(mockWritableResource.getInputStream()).thenReturn(inputStream);
 
@@ -128,7 +127,7 @@ public class ThumbnailProcessorTest {
         when(mockResourceLoader.getResource(anyString())).thenReturn(mockWritableResource);
         setFieldValue(thumbProcessor, "resourceLoader", mockResourceLoader);
 
-        File sourceFile = ThumbnailUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));
+        File sourceFile = ImageUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));
         InputStream inputStream = new FileInputStream(sourceFile);
         when(mockWritableResource.getInputStream()).thenReturn(inputStream);
 

@@ -46,7 +46,7 @@ public class ThumbnailUtilTest {
 
     @Test
     public void testGeBasicMetadataWith() throws Exception {
-        File fileName = ThumbnailUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));
+        File fileName = ImageUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));
         Metadata metadata = ThumbnailUtil.getBasicMetadata(Paths.get(fileName.getAbsolutePath()));
         assertNotNull(metadata);
         assertEquals(new Integer(500), metadata.getWidth());
@@ -77,8 +77,8 @@ public class ThumbnailUtilTest {
 
     @Test
     public void testBuildThumbnail() throws Exception {
-        File thumbnailFile = ThumbnailUtil.buildTestImage(70, 70, tempFolder.newFile("guid_t.jpg"));
-        File sourceFile = ThumbnailUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));
+        File thumbnailFile = ImageUtil.buildTestImage(70, 70, tempFolder.newFile("guid_t.jpg"));
+        File sourceFile = ImageUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));
         String url = "https://cs-media-bucket/guid_t.jpg";
         Path sourcePath = Paths.get(sourceFile.getAbsolutePath());
         Path thumbnailPath = Paths.get(thumbnailFile.getAbsolutePath());
