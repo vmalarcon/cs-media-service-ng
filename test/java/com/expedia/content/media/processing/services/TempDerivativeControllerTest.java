@@ -25,6 +25,7 @@ import org.springframework.util.MultiValueMap;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
+import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.expedia.content.media.processing.services.validator.TempDerivativeMVELValidator;
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
@@ -56,14 +57,17 @@ public class TempDerivativeControllerTest {
     @Test
     public void testSuccessfulTemporaryDerivativeRequest() throws Exception {
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg/why/would/someone/name/all/of/their/files/original.jpg\", "
-                + "\"rotation\": \"90\", " + "\"width\": 180, " + "\"height\": 180" + "}";
+                + "\"rotation\": 90, " + "\"width\": 180, " + "\"height\": 180" + "}";
         TempDerivativeMVELValidator tempDerivativeMVELValidator = mock(TempDerivativeMVELValidator.class);
         when(tempDerivativeMVELValidator.validateTempDerivativeMessage(any())).thenReturn("");
         setFieldValue(tempDerivativeController, "tempDerivativeMVELValidator", tempDerivativeMVELValidator);
-
+        
         ThumbnailProcessor thumbnailProcessor = mock(ThumbnailProcessor.class);
         String thumbnailUrl = "http://url.net/thumbnail.jpg";
-        when(thumbnailProcessor.createThumbnail(any(ImageMessage.class)).getLocation()).thenReturn(thumbnailUrl);
+        Thumbnail thumbnail = mock(Thumbnail.class);
+        when(thumbnail.getLocation()).thenReturn(thumbnailUrl);
+        
+        when(thumbnailProcessor.createThumbnail(any())).thenReturn(thumbnail);
         setFieldValue(tempDerivativeController, "thumbnailProcessor", thumbnailProcessor);
 
         String requestId = "test-request-id";

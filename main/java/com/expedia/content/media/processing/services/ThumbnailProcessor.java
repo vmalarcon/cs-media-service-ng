@@ -86,6 +86,7 @@ public class ThumbnailProcessor {
      * @param domainId domainId of an imageMessage
      * @return thumbnailUrl the url of the generated thumbnail
      */
+    @Timer(name = "ThumbnailGenerationTimer")
     private Thumbnail createGenericThumbnail(final String fileUrl, final int width, final int height, final Integer rotation, final String guid,
                                              final String domain, final String domainId) {
 
@@ -94,6 +95,7 @@ public class ThumbnailProcessor {
         Path thumbnailPath;
         Path sourcePath;
         Thumbnail thumbnail = null;
+        
         final Path workPath = Paths.get(tempWorkFolder);
         try (TemporaryWorkFolder workFolder = new TemporaryWorkFolder(workPath)) {
             sourcePath = ThumbnailUtil.retrieveSourcePath(fileUrl, guid, workFolder, resourceLoader);
@@ -128,11 +130,11 @@ public class ThumbnailProcessor {
      * @throws InterruptedException Thrown if the convert command fails.
      * @throws IOException Thrown if the convert command fails to read or write.
      */
-    @Timer(name = "ThumbnailGenerationTimer")
     private Path generateThumbnail(final Path sourcePath, int width, int height, Integer rotation) throws IOException, InterruptedException,
                                                                                                    IM4JavaException {
         LOGGER.debug("Generating thumbnail -> " + sourcePath);
         final Path thumbnailPath = Paths.get(sourcePath.toString());
+
         final IMOperation operation = new IMOperation();
         operation.limit("thread");
         operation.addRawArgs("2");

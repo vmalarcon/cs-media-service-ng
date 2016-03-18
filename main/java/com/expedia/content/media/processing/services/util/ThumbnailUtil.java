@@ -1,6 +1,7 @@
 package com.expedia.content.media.processing.services.util;
 
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -38,7 +39,7 @@ public final class ThumbnailUtil {
         int height = 0;
         int width = 0;
         Long sourceSize = 0L;
-        if(sourcePath!=null){
+        if (sourcePath != null) {
             bufferedImage = ImageIO.read(sourcePath.toFile());
             height = bufferedImage.getHeight();
             width = bufferedImage.getWidth();
@@ -47,7 +48,7 @@ public final class ThumbnailUtil {
             LOGGER.debug("Media size: " + sourceSize);
             return Metadata.builder().fileSize((int) sourcePath.toFile().length()).width(width).height(height).build();
         }
-         return null;
+        return null;
     }
 
     /**
@@ -81,9 +82,34 @@ public final class ThumbnailUtil {
      * @return
      */
     public static Thumbnail buildThumbnail(Path thumbnailPath, String url, Path sourcePath) throws Exception {
-        
+
         final Metadata sourceMetadata = getBasicMetadata(sourcePath);
         final Metadata thumbnailMetadata = getBasicMetadata(thumbnailPath);
         return Thumbnail.builder().thumbnailMetadata(thumbnailMetadata).sourceMetadata(sourceMetadata).location(url).type(DERIVATIVE_TYPE).build();
+    }
+
+    /**
+     * Build a test file Image
+     * source from http://stackoverflow.com/questions/12674064/how-to-save-a-bufferedimage-as-a-file
+     * 
+     * @return
+     * @throws Exception
+     */
+    public static File buildTestImage(int widht, int height, File fileName) throws Exception {
+        try {
+            final BufferedImage img = new BufferedImage(widht, height, BufferedImage.TYPE_INT_RGB);
+            final int red = 5;
+            final int green = 25;
+            final int blue = 255;
+            final int color = (red << 16) | (green << 8) | blue;
+            for (int x = 0; x < widht; x++) {
+                for (int y = 20; y < height; y++) {
+                    img.setRGB(x, y, color);
+                }
+            }
+            ImageIO.write(img, "jpg", fileName);
+        } catch (Exception e) {
+        }
+        return fileName;
     }
 }

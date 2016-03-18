@@ -9,14 +9,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import javax.imageio.ImageIO;
 
 import org.im4java.process.ProcessStarter;
 import org.junit.Before;
@@ -49,7 +46,7 @@ public class ThumbnailUtilTest {
 
     @Test
     public void testGeBasicMetadataWith() throws Exception {
-        File fileName = buildTestImage(500, 500,"source.jpg");
+        File fileName = ThumbnailUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));
         Metadata metadata = ThumbnailUtil.getBasicMetadata(Paths.get(fileName.getAbsolutePath()));
         assertNotNull(metadata);
         assertEquals(new Integer(500), metadata.getWidth());
@@ -80,8 +77,8 @@ public class ThumbnailUtilTest {
 
     @Test
     public void testBuildThumbnail() throws Exception {
-        File thumbnailFile = buildTestImage(70, 70,"guid_t.jpg");
-        File sourceFile = buildTestImage(500, 500,"source.jpg");
+        File thumbnailFile = ThumbnailUtil.buildTestImage(70, 70, tempFolder.newFile("guid_t.jpg"));
+        File sourceFile = ThumbnailUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));
         String url = "https://cs-media-bucket/guid_t.jpg";
         Path sourcePath = Paths.get(sourceFile.getAbsolutePath());
         Path thumbnailPath = Paths.get(thumbnailFile.getAbsolutePath());
@@ -93,35 +90,9 @@ public class ThumbnailUtilTest {
         assertEquals(new Integer(70), thumbnail.getThumbnailMetadata().getHeight());
         assertEquals(new Integer(70), thumbnail.getThumbnailMetadata().getWidth());
 
-       thumbnail = ThumbnailUtil.buildThumbnail(null, null, sourcePath);
+        thumbnail = ThumbnailUtil.buildThumbnail(null, null, sourcePath);
         assertNull(thumbnail.getThumbnailMetadata());
         assertEquals(new Integer(500), thumbnail.getSourceMetadata().getHeight());
         assertEquals(new Integer(500), thumbnail.getSourceMetadata().getWidth());
-    }
-
-    /**
-     * Build a test file Image
-     * source from http://stackoverflow.com/questions/12674064/how-to-save-a-bufferedimage-as-a-file
-     * 
-     * @return
-     * @throws Exception
-     */
-    private File buildTestImage(int widht, int height, String name) throws Exception {
-        File fileName = tempFolder.newFile(name);
-        try {
-            BufferedImage img = new BufferedImage(widht, height, BufferedImage.TYPE_INT_RGB);
-            int red = 5;
-            int green = 25;
-            int blue = 255;
-            int color = (red << 16) | (green << 8) | blue;
-            for (int x = 0; x < widht; x++) {
-                for (int y = 20; y < height; y++) {
-                    img.setRGB(x, y, color);
-                }
-            }
-            ImageIO.write(img, "jpg", fileName);
-        } catch (Exception e) {
-        }
-        return fileName;
     }
 }
