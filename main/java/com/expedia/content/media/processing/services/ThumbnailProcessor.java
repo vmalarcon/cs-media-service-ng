@@ -1,13 +1,19 @@
 package com.expedia.content.media.processing.services;
 
+import static com.expedia.content.media.processing.pipeline.domain.Domain.LODGING;
+
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
+import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
 import org.im4java.core.ConvertCmd;
 import org.im4java.core.IM4JavaException;
 import org.im4java.core.IMOperation;
@@ -15,16 +21,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
 
 import com.amazonaws.util.IOUtils;
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.util.LodgingUtil;
 import com.expedia.content.media.processing.pipeline.util.TemporaryWorkFolder;
-import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
-import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
-import com.expedia.content.media.processing.services.util.ThumbnailUtil;
 import com.google.common.base.Joiner;
 
 import expedia.content.solutions.metrics.annotations.Timer;
@@ -52,13 +56,15 @@ public class ThumbnailProcessor {
 
     /**
      * Create the thumbnail and save it in S3.
-     * 
-     * @param imageMessage imageMessage to use.
-     * @return
+     *
+     * @param url Input URL for the image (HTTP and s3 supported).
+     * @param guid GUID to use for the image.
+     * @param domain Domain the image image belongs to.
+     * @param domainId DomainId for the image.
+     * @return URL Path for the resulting thumbnail on S3.
      */
-    public Thumbnail createThumbnail(ImageMessage imageMessage) {
-        return createGenericThumbnail(imageMessage.getFileUrl(), THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, 0, imageMessage.getMediaGuid(),
-                imageMessage.getOuterDomainData().getDomain().getDomain(), imageMessage.getOuterDomainData().getDomainId());
+    public String createThumbnail(final String url, final String guid, final String domain, final String domainId) {
+        return createGenericThumbnail(url, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, "0", guid, domain, domainId);
     }
 
     /**
@@ -69,13 +75,13 @@ public class ThumbnailProcessor {
      */
     public String createTempDerivativeThumbnail(TempDerivativeMessage tempDerivativeMessage) {
         final String guid = UUID.randomUUID().toString();
-        return createGenericThumbnail(tempDerivativeMessage.getFileUrl(), tempDerivativeMessage.getWidth(), tempDerivativeMessage.getHeight(),
-                tempDerivativeMessage.getRotation(), guid, "tempderivative", null).getLocation();
+
+        return createGenericThumbnail(tempDerivativeMessage.getFileUrl(), tempDerivativeMessage.getWidth(),
+                tempDerivativeMessage.getHeight(), tempDerivativeMessage.getRotation(), guid, "tempderivative", null);
     }
 
     /**
-     * Generic method for creating a Thumbnail for an imageMessage or creating a
-     * temporary derivative
+     * Generic method for creating a Thumbnail for an imageMessage or creating a temporary derivative
      *
      * @param fileUrl the url of the sent file
      * @param width the width of the returned thumbnail
@@ -86,55 +92,92 @@ public class ThumbnailProcessor {
      * @param domainId domainId of an imageMessage
      * @return thumbnailUrl the url of the generated thumbnail
      */
-    @Timer(name = "ThumbnailGenerationTimer")
-    private Thumbnail createGenericThumbnail(final String fileUrl, final int width, final int height, final Integer rotation, final String guid,
-                                             final String domain, final String domainId) {
+    private String createGenericThumbnail(final String fileUrl, final int width, final int height, final String rotation, final String guid, final String domain, final String domainId) {
 
         LOGGER.debug("Creating thumbnail url=[{}] guid=[{}]", fileUrl, guid);
         String thumbnailUrl;
-        Path thumbnailPath;
-        Path sourcePath;
-        Thumbnail thumbnail = null;
-        
         final Path workPath = Paths.get(tempWorkFolder);
         try (TemporaryWorkFolder workFolder = new TemporaryWorkFolder(workPath)) {
-            sourcePath = ThumbnailUtil.retrieveSourcePath(fileUrl, guid, workFolder, resourceLoader);
-            thumbnailPath = generateThumbnail(sourcePath, width, height, (rotation == null) ? 0 : rotation);
-            thumbnailUrl = computeS3thumbnailPath(guid, domain, domainId);
+            Path thumbnailPath;
+            if (fileUrl.toLowerCase(Locale.US).startsWith(S3_PREFIX)) {
+                thumbnailPath = fetchS3(fileUrl, guid, workFolder.getWorkPath());
+            } else {
+                thumbnailPath = fetchUrl(fileUrl, guid, workFolder.getWorkPath());
+            }
+            thumbnailPath = generateThumbnail(thumbnailPath, width, height, (rotation == null) ? "0" : rotation, (domainId != null));
+            thumbnailUrl = computeS3thumbnailPath(thumbnailPath, guid, domain, domainId);
             LOGGER.debug("Writing thumbnail: " + thumbnailUrl);
             final WritableResource writableResource = (WritableResource) resourceLoader.getResource(thumbnailUrl);
-            try (OutputStream out = writableResource.getOutputStream(); FileInputStream file = new FileInputStream(thumbnailPath.toFile())) {
-                out.write(IOUtils.toByteArray(file));
-                LOGGER.debug("Wrote thumbnail: " + thumbnailUrl);
-                thumbnailUrl = thumbnailUrl.replaceFirst(S3_PREFIX, "https://s3-" + this.regionName + ".amazonaws.com");
-                thumbnail = ThumbnailUtil.buildThumbnail(thumbnailPath, thumbnailUrl, sourcePath);
+            try (OutputStream out = writableResource.getOutputStream()) {
+                out.write(IOUtils.toByteArray(new FileInputStream(thumbnailPath.toFile())));
             }
+            LOGGER.debug("Wrote thumbnail: " + thumbnailUrl);
+            thumbnailUrl = thumbnailUrl.replaceFirst(S3_PREFIX, "https://s3-" + this.regionName + ".amazonaws.com");
         } catch (Exception e) {
             LOGGER.error("Unable to generate thumbnail with url: " + fileUrl, e);
             throw new RuntimeException("Unable to generate thumbnail with url: " + fileUrl + " and GUID: " + guid, e);
         }
         LOGGER.debug("Created thumbnail url=[{}] guid=[{}]", fileUrl, guid);
-        return thumbnail == null ? Thumbnail.builder().build() : thumbnail;
+        return thumbnailUrl;
+    }
+
+
+    /**
+     * Fetch HTTP URL. Starts with {@code http://} or {@code https://}.
+     *
+     * @param url Image URL to fetch.
+     * @param guid GUID for the image.
+     * @param workPath Temporary working folder to use for downloading the image.
+     * @return Path where the image is downloaded.
+     * @throws IOException When unable to fetch the HTTP URL.
+     */
+    @Timer(name = "FetchHttpUrlTimer")
+    private Path fetchUrl(final String url, final String guid, final Path workPath) throws IOException {
+        LOGGER.debug("Fetching HTTP URL -> " + url);
+        final URL validUrl = new URL(url);
+        final Path filePath = Paths.get(workPath.toString(), guid + ".jpg");
+        IOUtils.copy(validUrl.openStream(), new FileOutputStream(filePath.toString()));
+        LOGGER.debug("Fetched HTTP URL -> " + url);
+        return filePath;
+    }
+
+    /**
+     * Fetch S3 URL. Starts with {@code s3://}.
+     *
+     * @param url Image URL to fetch from S3.
+     * @param newFileName new fileName for the image.
+     * @param workPath Temporary working folder to use for downloading the image.
+     * @return Path where the image is downloaded.
+     * @throws IOException When unable to fetch the S3 URL.
+     */
+    @Timer(name = "FetchS3UrlTimer")
+    private Path fetchS3(final String url, final String newFileName, final Path workPath) throws IOException {
+        LOGGER.debug("Fetching S3 URL -> " + url);
+        final Resource resource = resourceLoader.getResource(url);
+        final Path filePath = Paths.get(workPath.toString(), newFileName + ".jpg");
+        IOUtils.copy(resource.getInputStream(), new FileOutputStream(filePath.toString()));
+        LOGGER.debug("Fetched S3 URL -> " + url);
+        return filePath;
     }
 
     /**
      * Generates the thumbnail using ImageMagick.
-     * 
-     * @param sourcePath Locally saved image to convert to thumbnail.
+     *  @param sourcePath Locally saved image to convert to thumbnail.
      * @param width
      * @param height
-     * @param rotation
-     * @return Path to the thumbnail stored locally.
+     * @param rotation @return Path to the thumbnail stored locally.
      * @param addThumbnailExtension boolean value to determine wheter to a a _t extension to the file
      * @throws IM4JavaException Thrown when the thumbnail generation fails.
      * @throws InterruptedException Thrown if the convert command fails.
      * @throws IOException Thrown if the convert command fails to read or write.
      */
-    private Path generateThumbnail(final Path sourcePath, int width, int height, Integer rotation) throws IOException, InterruptedException,
-                                                                                                   IM4JavaException {
+    @Timer(name = "TumbnailGenerationTimer")
+    private Path generateThumbnail(final Path sourcePath, int width, int height, String rotation, boolean addThumbnailExtension) throws IOException, InterruptedException, IM4JavaException {
         LOGGER.debug("Generating thumbnail -> " + sourcePath);
-        final Path thumbnailPath = Paths.get(sourcePath.toString());
-
+        Path thumbnailPath = Paths.get(sourcePath.toString());
+        if (addThumbnailExtension) {
+            thumbnailPath = Paths.get(sourcePath.toString().replace(".jpg", "_t.jpg"));
+        }
         final IMOperation operation = new IMOperation();
         operation.limit("thread");
         operation.addRawArgs("2");
@@ -177,12 +220,13 @@ public class ThumbnailProcessor {
      * @param domainId The id, in the domain, of the item the media belongs to.
      * @return The storage location of the thumbnail.
      */
-    private String computeS3thumbnailPath(final String guid, final String domain, final String domainId) {
-        if (domainId == null) {
-            return thumbnailOuputLocation + domain + "/" + guid + ".jpg";
+    private String computeS3thumbnailPath(final Path thumbnailPath, final String guid, final String domain, final String domainId) {
+        if (domainId ==  null) {
+            return thumbnailOuputLocation + domain + "/" + guid;
         } else {
-            return thumbnailOuputLocation + domain + "/" + domainId + "/" + guid + ".jpg";
+            final String fileName = thumbnailPath.getFileName().toString();
+            final String domainPath = LODGING.name().equalsIgnoreCase(domain) ? LodgingUtil.buildFolderPath(Integer.parseInt(domainId)) : domainId;
+            return thumbnailOuputLocation + domain.toLowerCase(Locale.US) + domainPath + domainId + (fileName.contains(guid) ? "" : "_" + guid) + "_" + fileName;
         }
     }
-
 }

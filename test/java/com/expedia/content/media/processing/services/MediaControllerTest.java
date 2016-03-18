@@ -1,32 +1,15 @@
 package com.expedia.content.media.processing.services;
 
-import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-import static com.expedia.content.media.processing.services.util.MediaReplacementTest.createByFileNameMedia;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
+import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
+import com.expedia.content.media.processing.pipeline.reporting.Reporting;
+import com.expedia.content.media.processing.services.dao.LcmDynamoMediaDao;
+import com.expedia.content.media.processing.services.dao.MediaDao;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.util.MediaReplacement;
+import com.expedia.content.media.processing.services.validator.MapMessageValidator;
+import com.google.common.collect.Lists;
 import org.codehaus.plexus.util.ReflectionUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,16 +28,32 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.MultiValueMap;
 
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
-import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
-import com.expedia.content.media.processing.pipeline.reporting.Reporting;
-import com.expedia.content.media.processing.services.dao.LcmDynamoMediaDao;
-import com.expedia.content.media.processing.services.dao.MediaDao;
-import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
-import com.expedia.content.media.processing.services.validator.MapMessageValidator;
-import com.google.common.collect.Lists;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
+import static com.expedia.content.media.processing.services.util.MediaReplacementTest.createByFileNameMedia;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
 @RunWith(MockitoJUnitRunner.class)
@@ -180,7 +179,7 @@ public class MediaControllerTest {
 
         ThumbnailProcessor thumbnailProcessor = mock(ThumbnailProcessor.class);
         String thumbnailUrl = "http://url.net/thumbnail.jpg";
-        when(thumbnailProcessor.createThumbnail(any(ImageMessage.class)).getLocation()).thenReturn(thumbnailUrl);
+        when(thumbnailProcessor.createThumbnail(anyString(), anyString(), anyString(), anyString())).thenReturn(thumbnailUrl);
         setFieldValue(mediaController, "thumbnailProcessor", thumbnailProcessor);
 
         LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
@@ -345,9 +344,17 @@ public class MediaControllerTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testReplaceImageSuccess() throws Exception {
-        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"123_1_NASA_ISS-4.jpg\", "
-                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"ReplaceProvider\", "
-                + "\"domainFields\": { " + "    \"replace\": \"true\" " + "  } " + "}";
+        String jsonMessage = "{ " +
+                "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " +
+                "\"fileName\": \"123_1_NASA_ISS-4.jpg\", " +
+                "\"userId\": \"bobthegreat\", " +
+                "\"domain\": \"Lodging\", " +
+                "\"domainId\": \"1238\", " +
+                "\"domainProvider\": \"ReplaceProvider\", " +
+                "\"domainFields\": { " +
+                "    \"replace\": \"true\" " +
+                "  } " +
+                "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -358,10 +365,11 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "reporting", reporting);
 
         MediaDao mockMediaDao = mock(MediaDao.class);
-        when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg")))
-                .thenReturn(Lists.newArrayList(createByFileNameMedia("old-guid", "456", "true", DATE_FORMAT.parse("2016-02-17 12:00:00"), "456"),
-                        createByFileNameMedia("old-but-inactive", "567", "false", DATE_FORMAT.parse("2016-10-10 12:00:00"), "456"),
-                        createByFileNameMedia("too-old", "890", "true", DATE_FORMAT.parse("2016-02-17 11:59:59"), "456")));
+        when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"))).thenReturn(Lists.newArrayList(
+                createByFileNameMedia("old-guid", "456", "true", DATE_FORMAT.parse("2016-02-17 12:00:00"),"456"),
+                createByFileNameMedia("old-but-inactive", "567", "false", DATE_FORMAT.parse("2016-10-10 12:00:00"),"456"),
+                createByFileNameMedia("too-old", "890", "true", DATE_FORMAT.parse("2016-02-17 11:59:59"),"456")
+        ));
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
 
         String requestId = "test-request-id";
@@ -390,9 +398,17 @@ public class MediaControllerTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testReplaceImageButNoOldFound() throws Exception {
-        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"123_1_NASA_ISS-4.jpg\", "
-                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"ReplaceProvider\", "
-                + "\"domainFields\": { " + "    \"replace\": \"true\" " + "  } " + "}";
+        String jsonMessage = "{ " +
+                "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " +
+                "\"fileName\": \"123_1_NASA_ISS-4.jpg\", " +
+                "\"userId\": \"bobthegreat\", " +
+                "\"domain\": \"Lodging\", " +
+                "\"domainId\": \"1238\", " +
+                "\"domainProvider\": \"ReplaceProvider\", " +
+                "\"domainFields\": { " +
+                "    \"replace\": \"true\" " +
+                "  } " +
+                "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -433,8 +449,9 @@ public class MediaControllerTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testCaseInsensitiveMediaProvider() throws Exception {
-        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", "
-                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"ScoRE\" " + "}";
+        String jsonMessage =
+                "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", " + "\"userId\": \"bobthegreat\", "
+                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"ScoRE\" " + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -470,9 +487,9 @@ public class MediaControllerTest {
 
     @Test
     public void testFreeToBookFileNameExtraction() throws Exception {
-        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg/why/would/someone/name/all/of/their/files/original.jpg\", "
-                + "\"fileName\": \"original.jpg\", " + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", "
-                + "\"domainProvider\": \"freetobook\" " + "}";
+        String jsonMessage =
+                "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg/why/would/someone/name/all/of/their/files/original.jpg\", " + "\"fileName\": \"original.jpg\", " + "\"userId\": \"bobthegreat\", "
+                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"freetobook\" " + "}";
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
@@ -500,45 +517,6 @@ public class MediaControllerTest {
         final Message<String> publishedMessageValue = publishedMessage.getValue();
         assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_freetobook_(.*).jpg\"(.*)"));
 
-    }
-
-    @Test
-    public void testValidateImageSuccessWithoutThumbnail() throws Exception {
-        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", "
-                + "\"userId\": \"bobthegreat\", " + "\"generateThumbnail\": \"false\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", "
-                + "\"domainProvider\": \"EPC Internal User\" " + "}";
-
-        Map<String, List<MapMessageValidator>> validators = getMockValidators();
-        setFieldValue(mediaController, "mapValidatorList", validators);
-
-        ThumbnailProcessor thumbnailProcessor = mock(ThumbnailProcessor.class);
-        String thumbnailUrl = "http://url.net/thumbnail.jpg";
-        Thumbnail thumbnail = mock(Thumbnail.class);
-        when(thumbnail.getLocation()).thenReturn(thumbnailUrl);
-        when(thumbnailProcessor.createThumbnail(any())).thenReturn(thumbnail);
-        setFieldValue(mediaController, "thumbnailProcessor", thumbnailProcessor);
-
-        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
-        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
-        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
-        setFieldValue(mediaController, "reporting", reporting);
-        setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
-
-        String requestId = "test-request-id";
-        MultiValueMap<String, String> mockHeader = new HttpHeaders();
-        mockHeader.add("request-id", requestId);
-
-        ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
-        assertNotNull(responseEntity);
-        assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
-        assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
-        assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
-        assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
-        assertFalse(responseEntity.getBody().contains("\"thumbnailUrl\":\"" + thumbnailUrl + "\""));
-
-        ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
-        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
-        verify(queueMessagingTemplateMock, times(1)).send(anyString(), any());
     }
 
     @SuppressWarnings({"unchecked"})

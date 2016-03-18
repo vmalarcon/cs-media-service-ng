@@ -6,8 +6,6 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
 import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -27,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.support.MessageBuilder;
@@ -52,11 +49,8 @@ import com.expedia.content.media.processing.pipeline.reporting.LogActivityProces
 import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
-import com.expedia.content.media.processing.pipeline.util.TemporaryWorkFolder;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
-import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
 import com.expedia.content.media.processing.services.reqres.Comment;
 import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
@@ -65,7 +59,6 @@ import com.expedia.content.media.processing.services.util.FileNameUtil;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaReplacement;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
-import com.expedia.content.media.processing.services.util.ThumbnailUtil;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
@@ -87,9 +80,6 @@ public class MediaController extends CommonServiceController {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
 
-    private static final String IMAGE_MESSAGE_FIELD = "message";
-    private static final String REPROCESSING_STATE_FIELD = "processState";
-
     @Resource(name = "providerProperties")
     private Properties providerProperties;
     @Autowired
@@ -107,20 +97,10 @@ public class MediaController extends CommonServiceController {
     @Autowired
     private MediaDao mediaDao;
 
-    @Autowired
-    private DynamoMediaRepository dynamoMediaRepository;
-
-    @Autowired
-    private ResourceLoader resourceLoader;
-    @Value("${service.temp.work.folder}")
-    private String tempWorkFolder;
-
     /**
-     * web service interface to consume media message. Note that the
-     * {@code @Meter} {@code @Timer} {@code @Retryable} annotations introduce
-     * aspects from metrics-support and spring-retry modules. The aspects should
-     * be applied in order, Metrics being outside (outer) and retry being inside
-     * (inner).
+     * web service interface to consume media message.
+     * Note that the {@code @Meter} {@code @Timer} {@code @Retryable} annotations introduce aspects from metrics-support and spring-retry
+     * modules. The aspects should be applied in order, Metrics being outside (outer) and retry being inside (inner).
      *
      * @param message is json format media message,fileUrl and expedia is required.
      * @return ResponseEntity Standard spring response object.
@@ -150,8 +130,7 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * Web service interface to push a media file into the media processing
-     * pipeline.
+     * Web service interface to push a media file into the media processing pipeline.
      *
      * @param message JSON formated ImageMessage.
      * @return headers Request headers.
@@ -178,16 +157,13 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * Web services interface to retrieve media information by domain name and
-     * id.
+     * Web services interface to retrieve media information by domain name and id.
      * 
      * @param domainName Name of the domain the domain id belongs to.
      * @param domainId Identification of the domain item the media is required.
-     * @param activeFilter Filter determining what images to return. When true only
-     *            active are returned. When false only inactive media is returned.
-     *            When all then all are returned. All is set a default.
-     * @param derivativeTypeFilter Inclusive filter to use to only return certain types of
-     *            derivatives. Returns all derivatives if not specified.
+     * @param activeFilter Filter determining what images to return. When true only active are returned. When false only inactive media is returned. When
+     *            all then all are returned. All is set a default.
+     * @param derivativeTypeFilter Inclusive filter to use to only return certain types of derivatives. Returns all derivatives if not specified.
      * @param headers Headers of the request.
      * @return The list of media data belonging to the domain item.
      * @throws Exception Thrown if processing the message fails.
@@ -229,17 +205,18 @@ public class MediaController extends CommonServiceController {
             if (media.getDomainData() != null) {
                 media.getDomainData().put(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
             }
-            /* @formatter:off */
             return DomainIdMedia.builder().mediaGuid(media.getMediaGuid()).fileUrl(media.getFileUrl()).fileName(media.getFileName())
                     .active(media.getActive()).width(media.getWidth()).height(media.getHeight()).fileSize(media.getFileSize()).status(media.getStatus())
-                    .lastUpdatedBy(media.getUserId()).lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
+                    .lastUpdatedBy(media.getUserId())
+                    .lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
                     .domainProvider(media.getProvider()).domainFields(media.getDomainData()).derivatives(media.getDerivativesList())
                     .domainDerivativeCategory(media.getDomainDerivativeCategory())
-                    .comments((media.getCommentList() == null) ? null: media.getCommentList().stream()
-                    .map(comment -> new Comment(comment,DATE_FORMATTER.print(media.getLastUpdated().getTime())))
-                    .collect(Collectors.toList())) .build();
+                    .comments( (media.getCommentList() == null) ? null :
+                            media.getCommentList().stream()
+                                    .map(comment -> new Comment(comment, DATE_FORMATTER.print(media.getLastUpdated().getTime())))
+                                    .collect(Collectors.toList()))
+                    .build();
         }).collect(Collectors.toList());
-        /* @formatter:on */
     }
 
     /**
@@ -261,8 +238,7 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * Common processing between mediaAdd and the AWS portion of aquireMedia.
-     * Can be transfered into mediaAdd once aquireMedia is removed.
+     * Common processing between mediaAdd and the AWS portion of aquireMedia. Can be transfered into mediaAdd once aquireMedia is removed.
      *
      * @param message JSON formated ImageMessage.
      * @param requestID The id of the request. Used for tracking purposes.
@@ -281,47 +257,39 @@ public class MediaController extends CommonServiceController {
             return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
         }
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
-        final boolean fileExists = verifyUrlExistence(imageMessage.getFileUrl());
 
+        final boolean fileExists = verifyUrlExistence(imageMessage.getFileUrl());
         if (!fileExists) {
             LOGGER.info("Response bad request provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
             return this.buildErrorResponse("Provided fileUrl does not exist.", serviceUrl, NOT_FOUND);
         }
 
-        final Map<String, Object> messageState = updateImageMessage(imageMessage, requestID, clientId);
-        final ImageMessage imageMessageNew = (ImageMessage) messageState.get(IMAGE_MESSAGE_FIELD);
-        final Boolean isReprocessing = (Boolean) messageState.get(REPROCESSING_STATE_FIELD);
+        final ImageMessage imageMessageNew = updateImageMessage(imageMessage, requestID, clientId);
 
         final Map<String, String> response = new HashMap<>();
         response.put(RESPONSE_FIELD_MEDIA_GUID, imageMessageNew.getMediaGuid());
         response.put(RESPONSE_FIELD_STATUS, "RECEIVED");
-        Thumbnail thumbnail = null;
         if (imageMessageNew.isGenerateThumbnail()) {
-            thumbnail = thumbnailProcessor.createThumbnail(imageMessageNew);
-            response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnail.getLocation());
-        } else {
-            thumbnail = getDefaultThumbnail(imageMessageNew);
+            response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnailProcessor.createThumbnail(imageMessageNew.getFileUrl(), imageMessageNew.getMediaGuid(),
+                    imageMessageNew.getOuterDomainData().getDomain().getDomain(), imageMessageNew.getOuterDomainData().getDomainId()));
         }
-        if (!isReprocessing) {
-            dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);
-        }
+
         publishMsg(imageMessageNew);
         LOGGER.info("SUCCESS - messageName={}, requestId=[{}], mediaGuid=[{}], JSONMessage=[{}]", serviceUrl, requestID, imageMessageNew.getMediaGuid(),
                 message);
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
     }
 
+
     /**
-     * Updates the image message for the next step. Must be done before being
-     * published to the next work queue.
+     * Updates the image message for the next step. Must be done before being published to the next work queue.
      *
      * @param imageMessage The incoming image message.
      * @param requestID The id of the request. Used for tracking purposes.
      * @param clientId Web service client id.
-     * @return A Map contains the reprocessing state and the updated message
-     *         with request and other data added .
+     * @return The updated message with request and other data added.
      */
-    private Map<String, Object> updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId) {
+    private ImageMessage updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId) {
         ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
         imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
 
@@ -330,31 +298,23 @@ public class MediaController extends CommonServiceController {
         final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
         imageMessageBuilder.outerDomainData(outerDomain);
 
-        final Boolean isReprocessing = processReplacement(imageMessage, imageMessageBuilder);
+        processReplacement(imageMessage, imageMessageBuilder);
         imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(imageMessageBuilder.build()));
-        final ImageMessage imageMessageNew = imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).build();
 
-        final Map<String, Object> messageState = new HashMap<>();
-        messageState.put(IMAGE_MESSAGE_FIELD, imageMessageNew);
-        messageState.put(REPROCESSING_STATE_FIELD, isReprocessing);
-
-        return messageState;
+        return imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).build();
     }
 
     /**
-     * This method processes the replacement changes needed on the
-     * ImageMessageBuilder for the provided ImageMessage.
+     * This method processes the replacement changes needed on the ImageMessageBuilder for the provided ImageMessage.
      * <p>
-     * The method will first try to find the media that have the same file name.
-     * If multiple, it will choose the best one for replacement. It will finally
-     * populate the replacement mediaId and GUID on the ImageMessageBuilder.
+     * The method will first try to find the media that have the same file name. If multiple, it will choose the
+     * best one for replacement. It will finally populate the replacement mediaId and GUID on the ImageMessageBuilder.
      * </p>
      *
      * @param imageMessage Original message received.
      * @param imageMessageBuilder Builder for the new/mutated ImageMessage.
-     * @return returns true if reprocessing and false if not.
      */
-    private boolean processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder) {
+    private void processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder) {
         LOGGER.info("This is a replacement: mediaGuid=[{}], filename=[{}], requestId=[{}]", imageMessage.getMediaGuid(), imageMessage.getFileName(),
                 imageMessage.getRequestId());
         final List<Media> mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
@@ -368,19 +328,16 @@ public class MediaController extends CommonServiceController {
             imageMessageBuilder.mediaGuid(media.getMediaGuid());
             LOGGER.info("The replacement information is: mediaGuid=[{}], filename=[{}], requestId=[{}], lcmMediaId=[{}]", media.getMediaGuid(),
                     imageMessage.getFileName(), imageMessage.getRequestId(), media.getDomainId());
-            return true;
         } else {
             LOGGER.info("Could not find the best media for the filename=[{}] on the list: [{}]. Will create a new GUID.", imageMessage.getFileName(),
                     Joiner.on("; ").join(mediaList));
         }
-        return false;
     }
 
     /**
-     * publish message to jms queue Note that the {@code @Meter} {@code @Timer}
-     * {@code @RetryableMethod} annotations introduce aspects from
-     * metrics-support and spring-retry modules. The aspects should be applied
-     * in order, Metrics being outside (outer) and retry being inside (inner).
+     * publish message to jms queue
+     * Note that the {@code @Meter} {@code @Timer} {@code @RetryableMethod} annotations introduce aspects from metrics-support and spring-retry
+     * modules. The aspects should be applied in order, Metrics being outside (outer) and retry being inside (inner).
      *
      * @param message is the received json format message from main application
      */
@@ -401,9 +358,8 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * Get validator list by different client, and do validation by rules and
-     * DAO validator (later) return the validation error list that combine all
-     * of the error result.
+     * Get validator list by different client, and do validation by rules and DAO validator (later)
+     * return the validation error list that combine all of the error result.
      *
      * @param message input json message.
      * @param clientId Web service client id.
@@ -430,8 +386,7 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * Logs a completed activity and its time. and exepdiaId is appended before
-     * the file name
+     * Logs a completed activity and its time. and exepdiaId is appended before the file name
      *
      * @param imageMessage The imageMessage of the file being processed.
      * @param activity The activity to log.
@@ -444,33 +399,14 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * get the domainProvider text from the mapping regardless of
-     * case-sensitivity if the exact text is not passed, datamanager fails to
-     * find it and defaults it to 1
-     * 
-     * @param outerDomain @return outerDomain with domainProvider replaced by the exact
-     *            domainProvider from the mapping
+     * get the domainProvider text from the mapping regardless of case-sensitivity
+     * if the exact text is not passed, datamanager fails to find it and defaults it
+     * to 1
+     * @param outerDomain
+     * @return outerDomain with domainProvider replaced by the exact domainProvider from the mapping
      */
     private OuterDomain getDomainProviderFromMapping(OuterDomain outerDomain) {
         final String domainProvider =  DomainDataUtil.getDomainProvider(outerDomain.getProvider(), providerProperties);
         return OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
-    }
-
-    /**
-     * Build a default thumbnail object with the source metadata.
-     * 
-     * @param imageMessage Incoming message.
-     * @return A thumbnail object with source metadatas.
-     */
-    private Thumbnail getDefaultThumbnail(ImageMessage imageMessage) {
-        final Path workPath = Paths.get(tempWorkFolder);
-        Path sourcePath;
-        try (TemporaryWorkFolder workFolder = new TemporaryWorkFolder(workPath)) {
-            sourcePath = ThumbnailUtil.retrieveSourcePath(imageMessage.getFileUrl(), imageMessage.getMediaGuid(), workFolder, resourceLoader);
-            return ThumbnailUtil.buildThumbnail(null, null, sourcePath);
-        } catch (Exception e) {
-            LOGGER.error("Unable to build the default thumbnail object from " + imageMessage.getFileUrl(), e);
-        }
-        return Thumbnail.builder().build();
     }
 }
