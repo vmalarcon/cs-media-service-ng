@@ -52,6 +52,7 @@ import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.services.dao.LcmDynamoMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.google.common.collect.Lists;
 
@@ -344,17 +345,9 @@ public class MediaControllerTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testReplaceImageSuccess() throws Exception {
-        String jsonMessage = "{ " +
-                "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " +
-                "\"fileName\": \"123_1_NASA_ISS-4.jpg\", " +
-                "\"userId\": \"bobthegreat\", " +
-                "\"domain\": \"Lodging\", " +
-                "\"domainId\": \"1238\", " +
-                "\"domainProvider\": \"ReplaceProvider\", " +
-                "\"domainFields\": { " +
-                "    \"replace\": \"true\" " +
-                "  } " +
-                "}";
+        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"123_1_NASA_ISS-4.jpg\", "
+                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"ReplaceProvider\", "
+                + "\"domainFields\": { " + "    \"replace\": \"true\" " + "  } " + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -365,11 +358,10 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "reporting", reporting);
 
         MediaDao mockMediaDao = mock(MediaDao.class);
-        when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"))).thenReturn(Lists.newArrayList(
-                createByFileNameMedia("old-guid", "456", "true", DATE_FORMAT.parse("2016-02-17 12:00:00"),"456"),
-                createByFileNameMedia("old-but-inactive", "567", "false", DATE_FORMAT.parse("2016-10-10 12:00:00"),"456"),
-                createByFileNameMedia("too-old", "890", "true", DATE_FORMAT.parse("2016-02-17 11:59:59"),"456")
-        ));
+        when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg")))
+                .thenReturn(Lists.newArrayList(createByFileNameMedia("old-guid", "456", "true", DATE_FORMAT.parse("2016-02-17 12:00:00"), "456"),
+                        createByFileNameMedia("old-but-inactive", "567", "false", DATE_FORMAT.parse("2016-10-10 12:00:00"), "456"),
+                        createByFileNameMedia("too-old", "890", "true", DATE_FORMAT.parse("2016-02-17 11:59:59"), "456")));
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
 
         String requestId = "test-request-id";
@@ -398,17 +390,9 @@ public class MediaControllerTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testReplaceImageButNoOldFound() throws Exception {
-        String jsonMessage = "{ " +
-                "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " +
-                "\"fileName\": \"123_1_NASA_ISS-4.jpg\", " +
-                "\"userId\": \"bobthegreat\", " +
-                "\"domain\": \"Lodging\", " +
-                "\"domainId\": \"1238\", " +
-                "\"domainProvider\": \"ReplaceProvider\", " +
-                "\"domainFields\": { " +
-                "    \"replace\": \"true\" " +
-                "  } " +
-                "}";
+        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"123_1_NASA_ISS-4.jpg\", "
+                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"ReplaceProvider\", "
+                + "\"domainFields\": { " + "    \"replace\": \"true\" " + "  } " + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -449,9 +433,8 @@ public class MediaControllerTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testCaseInsensitiveMediaProvider() throws Exception {
-        String jsonMessage =
-                "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", " + "\"userId\": \"bobthegreat\", "
-                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"ScoRE\" " + "}";
+        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", "
+                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"ScoRE\" " + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -487,9 +470,9 @@ public class MediaControllerTest {
 
     @Test
     public void testFreeToBookFileNameExtraction() throws Exception {
-        String jsonMessage =
-                "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg/why/would/someone/name/all/of/their/files/original.jpg\", " + "\"fileName\": \"original.jpg\", " + "\"userId\": \"bobthegreat\", "
-                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"freetobook\" " + "}";
+        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg/why/would/someone/name/all/of/their/files/original.jpg\", "
+                + "\"fileName\": \"original.jpg\", " + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", "
+                + "\"domainProvider\": \"freetobook\" " + "}";
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
@@ -530,7 +513,9 @@ public class MediaControllerTest {
 
         ThumbnailProcessor thumbnailProcessor = mock(ThumbnailProcessor.class);
         String thumbnailUrl = "http://url.net/thumbnail.jpg";
-        when(thumbnailProcessor.createThumbnail(any(ImageMessage.class)).getLocation()).thenReturn(thumbnailUrl);
+        Thumbnail thumbnail = mock(Thumbnail.class);
+        when(thumbnail.getLocation()).thenReturn(thumbnailUrl);
+        when(thumbnailProcessor.createThumbnail(any())).thenReturn(thumbnail);
         setFieldValue(mediaController, "thumbnailProcessor", thumbnailProcessor);
 
         LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
