@@ -5,7 +5,7 @@ import java.io.File;
 
 import javax.imageio.ImageIO;
 
-public class ImageUtil {
+public class TestImageUtil {
 
     /**
      * Build a test file Image
