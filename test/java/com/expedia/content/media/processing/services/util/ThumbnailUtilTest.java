@@ -21,6 +21,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import com.amazonaws.util.IOUtils;
 import com.expedia.content.media.processing.pipeline.domain.Metadata;
 import com.expedia.content.media.processing.pipeline.util.OSDetector;
+import com.expedia.content.media.processing.services.testing.TestingUtil;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ThumbnailUtilTest {
@@ -38,7 +39,7 @@ public class ThumbnailUtilTest {
 
     @Test
     public void testGeBasicMetadataWith() throws Exception {
-        File fileName = TestImageUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));
+        File fileName = TestingUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));
         Metadata metadata = ImageUtil.getBasicImageMetadata(Paths.get(fileName.getAbsolutePath()));
         assertNotNull(metadata);
         assertEquals(new Integer(500), metadata.getWidth());

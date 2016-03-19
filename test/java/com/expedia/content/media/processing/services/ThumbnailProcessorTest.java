@@ -31,7 +31,7 @@ import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.pipeline.util.OSDetector;
 import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
-import com.expedia.content.media.processing.services.util.TestImageUtil;
+import com.expedia.content.media.processing.services.testing.TestingUtil;
 
 public class ThumbnailProcessorTest {
 
@@ -69,10 +69,10 @@ public class ThumbnailProcessorTest {
                 .callback(new URL("http://multi.source.callback/callback")).comment("test comment!").outerDomainData(domainData).generateThumbnail(true)
                 .build();
 
-        File sourceFile = TestImageUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));
+        File sourceFile = TestingUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));
         InputStream inputStream = new FileInputStream(sourceFile);
         when(mockWritableResource.getInputStream()).thenReturn(inputStream);
-
+        
         String thumbnailPath = thumbProcessor.createThumbnail(message).getLocation();
         if (OSDetector.detectOS() == OSDetector.OS.WINDOWS) {
             thumbnailPath = thumbnailPath.replace('\\', '/');
@@ -127,7 +127,7 @@ public class ThumbnailProcessorTest {
         when(mockResourceLoader.getResource(anyString())).thenReturn(mockWritableResource);
         setFieldValue(thumbProcessor, "resourceLoader", mockResourceLoader);
 
-        File sourceFile = TestImageUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));
+        File sourceFile = TestingUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));
         InputStream inputStream = new FileInputStream(sourceFile);
         when(mockWritableResource.getInputStream()).thenReturn(inputStream);
 

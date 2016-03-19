@@ -64,8 +64,7 @@ public class TempDerivativeControllerTest {
         ThumbnailProcessor thumbnailProcessor = mock(ThumbnailProcessor.class);
         String thumbnailUrl = "http://url.net/thumbnail.jpg";
         Thumbnail thumbnail = mock(Thumbnail.class);
-        when(thumbnail.getLocation()).thenReturn(thumbnailUrl);
-        
+        when(thumbnail.getLocation()).thenReturn(thumbnailUrl);       
         when(thumbnailProcessor.createThumbnail(any())).thenReturn(thumbnail);
         setFieldValue(tempDerivativeController, "thumbnailProcessor", thumbnailProcessor);
 
