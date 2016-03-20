@@ -212,6 +212,7 @@ public class MediaController extends CommonServiceController {
             if (media.getDomainData() != null) {
                 media.getDomainData().put(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
             }
+            /* @formatter:off */
             return DomainIdMedia.builder().mediaGuid(media.getMediaGuid()).fileUrl(media.getFileUrl()).fileName(media.getFileName())
                     .active(media.getActive()).width(media.getWidth()).height(media.getHeight()).fileSize(media.getFileSize()).status(media.getStatus())
                     .lastUpdatedBy(media.getUserId()).lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
@@ -220,12 +221,13 @@ public class MediaController extends CommonServiceController {
                             media.getDerivativesList())
                     .domainDerivativeCategory(media.getDomainDerivativeCategory())
                     .comments((media.getCommentList() == null) ? null
-                                                               : media.getCommentList().stream()
-                                                                       .map(comment -> Comment.builder().note(comment)
-                                                                               .timestamp(DATE_FORMATTER.print(media.getLastUpdated().getTime())).build())
-                                                                       .collect(Collectors.toList()))
+                    : media.getCommentList().stream()
+                    .map(comment -> Comment.builder().note(comment)
+                    .timestamp(DATE_FORMATTER.print(media.getLastUpdated().getTime())).build())
+                    .collect(Collectors.toList()))
                     .build();
         }).collect(Collectors.toList());
+        /* @formatter:on */
     }
 
     /**
@@ -306,16 +308,12 @@ public class MediaController extends CommonServiceController {
     private Map<String, Object> updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId) {
         ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
         imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
-
         imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
-
         final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
         imageMessageBuilder.outerDomainData(outerDomain);
-
         final Boolean isReprocessing = processReplacement(imageMessage, imageMessageBuilder);
         imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(imageMessageBuilder.build()));
         final ImageMessage imageMessageNew = imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).build();
-
         final Map<String, Object> messageState = new HashMap<>();
         messageState.put(IMAGE_MESSAGE_FIELD, imageMessageNew);
         messageState.put(REPROCESSING_STATE_FIELD, isReprocessing);

@@ -48,14 +48,12 @@ public class DynamoMediaRepository {
      */
     public List<Media> getMediaByFilename(String fileName) {
         final HashMap<String, AttributeValue> params = new HashMap<>();
-        params.put(":mfn", new AttributeValue().withS(fileName));
-        
+        params.put(":mfn", new AttributeValue().withS(fileName));       
         final DynamoDBQueryExpression<Media> expression = new DynamoDBQueryExpression<Media>()
                 .withIndexName("cs-mediadb-index-Media-MediaFileName")
                 .withConsistentRead(false)
                 .withKeyConditionExpression("MediaFileName = :mfn")
-                .withExpressionAttributeValues(params);
-                
+                .withExpressionAttributeValues(params);               
         return dynamoMapper.query(Media.class, expression);
     }
     
@@ -69,19 +67,16 @@ public class DynamoMediaRepository {
         List<Media> mediaList = null;
         try {
             final HashMap<String, String> names = new HashMap<>();
-            names.put("#domain", "Domain");
-            
+            names.put("#domain", "Domain");           
             final Map<String, AttributeValue> params = new HashMap<>();
             params.put(":pDomainId", new AttributeValue().withS(domainId));
-            params.put(":pDomain", new AttributeValue().withS(domain.getDomain()));
-            
+            params.put(":pDomain", new AttributeValue().withS(domain.getDomain()));            
             final DynamoDBQueryExpression<Media> query = new DynamoDBQueryExpression<Media>()
                     .withIndexName("cs-mediadb-index-Media-DomainID-Domain")
                     .withConsistentRead(false)
                     .withKeyConditionExpression("DomainID = :pDomainId and #domain = :pDomain")
                     .withExpressionAttributeNames(names)
-                    .withExpressionAttributeValues(params);
-                    
+                    .withExpressionAttributeValues(params);                   
             mediaList = dynamoMapper.query(Media.class, query);
         } catch (Exception e) {
             LOGGER.error("ERROR - message={}.", e.getMessage(), e);
