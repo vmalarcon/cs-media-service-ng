@@ -101,16 +101,13 @@ public class MediaController extends CommonServiceController {
     private ThumbnailProcessor thumbnailProcessor;
     @Autowired
     private MediaDao mediaDao;
-
     @Autowired
     private DynamoMediaRepository dynamoMediaRepository;
 
     /**
-     * web service interface to consume media message. Note that the
-     * {@code @Meter} {@code @Timer} {@code @Retryable} annotations introduce
-     * aspects from metrics-support and spring-retry modules. The aspects should
-     * be applied in order, Metrics being outside (outer) and retry being inside
-     * (inner).
+     * web service interface to consume media message.
+     * Note that the {@code @Meter} {@code @Timer} {@code @Retryable} annotations introduce aspects from metrics-support and spring-retry
+     * modules. The aspects should be applied in order, Metrics being outside (outer) and retry being inside (inner).
      *
      * @param message is json format media message,fileUrl and expedia is required.
      * @return ResponseEntity Standard spring response object.
@@ -140,8 +137,7 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * Web service interface to push a media file into the media processing
-     * pipeline.
+     * Web service interface to push a media file into the media processing pipeline.
      *
      * @param message JSON formated ImageMessage.
      * @return headers Request headers.
@@ -168,16 +164,13 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * Web services interface to retrieve media information by domain name and
-     * id.
+     * Web services interface to retrieve media information by domain name and id.
      * 
      * @param domainName Name of the domain the domain id belongs to.
      * @param domainId Identification of the domain item the media is required.
-     * @param activeFilter Filter determining what images to return. When true only
-     *            active are returned. When false only inactive media is returned.
-     *            When all then all are returned. All is set a default.
-     * @param derivativeTypeFilter Inclusive filter to use to only return certain types of
-     *            derivatives. Returns all derivatives if not specified.
+     * @param activeFilter Filter determining what images to return. When true only active are returned. When false only inactive media is returned. When
+     *            all then all are returned. All is set a default.
+     * @param derivativeTypeFilter Inclusive filter to use to only return certain types of derivatives. Returns all derivatives if not specified.
      * @param headers Headers of the request.
      * @return The list of media data belonging to the domain item.
      * @throws Exception Thrown if processing the message fails.
@@ -219,18 +212,20 @@ public class MediaController extends CommonServiceController {
             if (media.getDomainData() != null) {
                 media.getDomainData().put(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
             }
-            /* @formatter:off */
             return DomainIdMedia.builder().mediaGuid(media.getMediaGuid()).fileUrl(media.getFileUrl()).fileName(media.getFileName())
                     .active(media.getActive()).width(media.getWidth()).height(media.getHeight()).fileSize(media.getFileSize()).status(media.getStatus())
                     .lastUpdatedBy(media.getUserId()).lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
-                    .domainProvider(media.getProvider()).domainFields(media.getDomainData()).derivatives(media.getDerivativesList())
+                    .domainProvider(media.getProvider()).domainFields(media.getDomainData())
+                    .derivatives(
+                            media.getDerivativesList())
                     .domainDerivativeCategory(media.getDomainDerivativeCategory())
-                    .comments((media.getCommentList() == null) ? null: media.getCommentList().stream()
-                    .map(comment -> Comment.builder().note(comment).timestamp(DATE_FORMATTER.print(media.getLastUpdated().getTime())).build())
-                    .collect(Collectors.toList())) .build();
-            
+                    .comments((media.getCommentList() == null) ? null
+                                                               : media.getCommentList().stream()
+                                                                       .map(comment -> Comment.builder().note(comment)
+                                                                               .timestamp(DATE_FORMATTER.print(media.getLastUpdated().getTime())).build())
+                                                                       .collect(Collectors.toList()))
+                    .build();
         }).collect(Collectors.toList());
-        /* @formatter:on */
     }
 
     /**
@@ -252,8 +247,7 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * Common processing between mediaAdd and the AWS portion of aquireMedia.
-     * Can be transfered into mediaAdd once aquireMedia is removed.
+     * Common processing between mediaAdd and the AWS portion of aquireMedia. Can be transfered into mediaAdd once aquireMedia is removed.
      *
      * @param message JSON formated ImageMessage.
      * @param requestID The id of the request. Used for tracking purposes.
@@ -265,7 +259,6 @@ public class MediaController extends CommonServiceController {
      */
     private ResponseEntity<String> processRequest(final String message, final String requestID, final String serviceUrl, final String clientId,
                                                   HttpStatus successStatus) throws Exception {
-
         final String json = validateImageMessage(message, clientId);
         if (!"[]".equals(json)) {
             LOGGER.warn("Returning BAD_REQUEST for messageName={}, requestId=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, requestID, message, json);
@@ -290,7 +283,7 @@ public class MediaController extends CommonServiceController {
         if (imageMessageNew.isGenerateThumbnail()) {
             thumbnail = thumbnailProcessor.createThumbnail(imageMessageNew);
             response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnail.getLocation());
-         }
+        }
         if (!isReprocessing) {
             dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);
         }
@@ -366,10 +359,9 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * publish message to jms queue Note that the {@code @Meter} {@code @Timer}
-     * {@code @RetryableMethod} annotations introduce aspects from
-     * metrics-support and spring-retry modules. The aspects should be applied
-     * in order, Metrics being outside (outer) and retry being inside (inner).
+     * publish message to jms queue
+     * Note that the {@code @Meter} {@code @Timer} {@code @RetryableMethod} annotations introduce aspects from metrics-support and spring-retry
+     * modules. The aspects should be applied in order, Metrics being outside (outer) and retry being inside (inner).
      *
      * @param message is the received json format message from main application
      */
@@ -390,9 +382,8 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * Get validator list by different client, and do validation by rules and
-     * DAO validator (later) return the validation error list that combine all
-     * of the error result.
+     * Get validator list by different client, and do validation by rules and DAO validator (later)
+     * return the validation error list that combine all of the error result.
      *
      * @param message input json message.
      * @param clientId Web service client id.
@@ -419,8 +410,7 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * Logs a completed activity and its time. and exepdiaId is appended before
-     * the file name
+     * Logs a completed activity and its time. and exepdiaId is appended before the file name
      *
      * @param imageMessage The imageMessage of the file being processed.
      * @param activity The activity to log.
@@ -433,15 +423,15 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * get the domainProvider text from the mapping regardless of
-     * case-sensitivity if the exact text is not passed, datamanager fails to
-     * find it and defaults it to 1
+     * get the domainProvider text from the mapping regardless of case-sensitivity
+     * if the exact text is not passed, datamanager fails to find it and defaults it
+     * to 1
      * 
-     * @param outerDomain @return outerDomain with domainProvider replaced by the exact
-     *            domainProvider from the mapping
+     * @param outerDomain
+     * @return outerDomain with domainProvider replaced by the exact domainProvider from the mapping
      */
     private OuterDomain getDomainProviderFromMapping(OuterDomain outerDomain) {
-        final String domainProvider =  DomainDataUtil.getDomainProvider(outerDomain.getProvider(), providerProperties);
+        final String domainProvider = DomainDataUtil.getDomainProvider(outerDomain.getProvider(), providerProperties);
         return OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
     }
 }

@@ -166,7 +166,7 @@ public class LcmDynamoMediaDaoTest {
 
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         List<Media> dynamoMediaList = new ArrayList<>();
-        String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
+        String guid1 = "imspecial-9627-47f9-86c6-1874c18d3aaa";
         Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234")
                 .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
         String guid2 = "f2d4d480-9627-47f9-86c6-1874c18d3bbc";
@@ -190,6 +190,7 @@ public class LcmDynamoMediaDaoTest {
         List<Media> testMediaList = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null);
         verify(lcmProcessLogDao, times(2)).findMediaStatus(any());
         assertEquals(guid1, testMediaList.get(0).getMediaGuid());
+        assertEquals("true", testMediaList.get(0).getDomainData().get("propertyHero"));
     }
 
     @Test

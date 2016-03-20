@@ -1,7 +1,8 @@
 package com.expedia.content.media.processing.services.validator;
 
-import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
-import com.expedia.content.media.processing.services.TempDerivativeController;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -9,8 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 // For faster tests, uncomment the following line

@@ -311,4 +311,4 @@
 
     <bean id="lcmValidator" class="com.expedia.content.media.processing.services.validator.LCMValidator" />
 
-</beans>
+</beans
