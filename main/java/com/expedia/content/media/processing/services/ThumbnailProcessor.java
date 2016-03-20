@@ -57,7 +57,7 @@ public class ThumbnailProcessor {
     /**
      * Create the thumbnail and save it in S3.
      * 
-     * @param imageMessage imageMessage to use.
+     * @param imageMessage incoming message.
      * @return
      */
     public Thumbnail createThumbnail(ImageMessage imageMessage) {
@@ -118,7 +118,7 @@ public class ThumbnailProcessor {
             throw new RuntimeException("Unable to generate thumbnail with url: " + fileUrl + " and GUID: " + guid, e);
         }
         LOGGER.debug("Created thumbnail url=[{}] guid=[{}]", fileUrl, guid);
-        return thumbnail == null ? Thumbnail.builder().build() : thumbnail;
+        return thumbnail;
     }
 
     /**

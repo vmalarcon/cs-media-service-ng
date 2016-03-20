@@ -124,7 +124,7 @@ public class DynamoMediaRepository {
         MediaDerivative mediaDerivative = null;
         Metadata basicMetadata = null;
         if (thumbnail != null) {
-            mediaDerivative = imageMessage.isGenerateThumbnail() ? buildDerivative(imageMessage, thumbnail) : null;
+            mediaDerivative = buildDerivative(imageMessage, thumbnail);
             basicMetadata = thumbnail.getSourceMetadata();
         }
         return Media.builder().active(imageMessage.isActive().toString())

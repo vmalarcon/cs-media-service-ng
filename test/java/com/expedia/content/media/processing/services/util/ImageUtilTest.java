@@ -24,19 +24,12 @@ import com.expedia.content.media.processing.pipeline.util.OSDetector;
 import com.expedia.content.media.processing.services.testing.TestingUtil;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ThumbnailUtilTest {
+public class ImageUtilTest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
-    @Before
-    public void testSetUp() throws Exception {
-        if (OSDetector.detectOS() == OSDetector.OS.WINDOWS) {
-            final String path = System.getenv("PATH").replace('\\', '/');
-            ProcessStarter.setGlobalSearchPath(path);
-        }
-    }
-
+  
     @Test
     public void testGeBasicMetadataWith() throws Exception {
         File fileName = TestingUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));

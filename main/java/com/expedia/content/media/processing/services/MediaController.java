@@ -226,8 +226,9 @@ public class MediaController extends CommonServiceController {
                     .domainProvider(media.getProvider()).domainFields(media.getDomainData()).derivatives(media.getDerivativesList())
                     .domainDerivativeCategory(media.getDomainDerivativeCategory())
                     .comments((media.getCommentList() == null) ? null: media.getCommentList().stream()
-                    .map(comment -> new Comment(comment,DATE_FORMATTER.print(media.getLastUpdated().getTime())))
+                    .map(comment -> Comment.builder().note(comment).timestamp(DATE_FORMATTER.print(media.getLastUpdated().getTime())).build())
                     .collect(Collectors.toList())) .build();
+            
         }).collect(Collectors.toList());
         /* @formatter:on */
     }
