@@ -217,8 +217,7 @@ public class MediaController extends CommonServiceController {
                     .active(media.getActive()).width(media.getWidth()).height(media.getHeight()).fileSize(media.getFileSize()).status(media.getStatus())
                     .lastUpdatedBy(media.getUserId()).lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
                     .domainProvider(media.getProvider()).domainFields(media.getDomainData())
-                    .derivatives(
-                            media.getDerivativesList())
+                    .derivatives(media.getDerivativesList())
                     .domainDerivativeCategory(media.getDomainDerivativeCategory())
                     .comments((media.getCommentList() == null) ? null
                     : media.getCommentList().stream()
@@ -302,8 +301,8 @@ public class MediaController extends CommonServiceController {
      * @param imageMessage The incoming image message.
      * @param requestID The id of the request. Used for tracking purposes.
      * @param clientId Web service client id.
-     * @return A Map contains the reprocessing state and the updated message
-     *         with request and other data added .
+     * @return A Map contains the updated message with request and other data added 
+     *         and if the file is checked for reprocessing .
      */
     private Map<String, Object> updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId) {
         ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
