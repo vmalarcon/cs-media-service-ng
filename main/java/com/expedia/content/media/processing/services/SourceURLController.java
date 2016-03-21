@@ -44,6 +44,8 @@ public class SourceURLController extends CommonServiceController {
     private static final Logger LOGGER = LoggerFactory.getLogger(SourceURLController.class);
     @Autowired
     private MediaDao mediaDao;
+    @Autowired
+    FileSourceFinder fileSourceFinder;
     @Value("${media.bucket.name}")
     private String bucketName;
     @Value("${media.bucket.prefix.name}")
@@ -77,11 +79,11 @@ public class SourceURLController extends CommonServiceController {
                 LOGGER.info("Response bad request provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
                 return this.buildErrorResponse("Provided fileUrl does not exist.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
             }
-            final LcmMedia lcmMedia = mediaDao.getContentProviderName(FileSourceFinder.getFileNameFromUrl(fileUrl));
+            final LcmMedia lcmMedia = mediaDao.getContentProviderName(fileSourceFinder.getFileNameFromUrl(fileUrl));
             if (!checkDBResultValid(lcmMedia)) {
                 return buildErrorResponse(fileUrl + " not found.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
             }
-            final String sourcePath = FileSourceFinder.getSourcePath(bucketName, bucketPrefix, fileUrl, lcmMedia.getDomainId());
+            final String sourcePath = fileSourceFinder.getSourcePath(bucketName, bucketPrefix, fileUrl, lcmMedia.getDomainId());
             final Map<String, String> response = new HashMap<>();
             response.put("contentProviderMediaName", lcmMedia.getFileName());
             response.put("mediaSourceUrl", sourcePath);
