@@ -21,7 +21,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestHeader;
+
 
 import java.util.HashMap;
 import java.util.Map;
@@ -70,7 +75,7 @@ public class SourceURLController extends CommonServiceController {
             final boolean fileExists = verifyUrlExistence(fileUrl);
             if (!fileExists) {
                 LOGGER.info("Response bad request provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
-                //return this.buildErrorResponse("Provided fileUrl does not exist.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
+                return this.buildErrorResponse("Provided fileUrl does not exist.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
             }
             final LcmMedia lcmMedia = mediaDao.getContentProviderName(FileSourceFinder.getFileNameFromUrl(fileUrl));
             if (!checkDBResultValid(lcmMedia)) {
