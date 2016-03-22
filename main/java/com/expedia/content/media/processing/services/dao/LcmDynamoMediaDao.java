@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.Map;
 import java.util.Properties;
 import java.util.function.Function;
@@ -17,6 +18,7 @@ import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivati
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaContentProviderNameGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetSproc;
 
 import org.slf4j.Logger;
@@ -68,6 +70,8 @@ public class LcmDynamoMediaDao implements MediaDao {
     private SQLMediaGetSproc lcmMediaSproc;
     @Autowired
     private SQLRoomGetSproc roomGetSproc;
+    @Autowired
+    private SQLMediaContentProviderNameGetSproc mediaContentProviderNameGetSproc;
     @Autowired
     private DynamoMediaRepository mediaRepo;
     @Autowired
@@ -359,6 +363,19 @@ public class LcmDynamoMediaDao implements MediaDao {
             }).collect(Collectors.toList());
             lcmDomainData.put(FIELD_ROOMS, roomList);
         }
+    }
+
+    @Override
+    public LcmMedia getContentProviderName(final String dcpFileName) {
+        final Map<String, Object> fileResult = mediaContentProviderNameGetSproc.execute(dcpFileName);
+        final List<LcmMedia> lcmMediaList = (List<LcmMedia>) fileResult.get(SQLMediaContentProviderNameGetSproc.MEDIA_ATTRS);
+        if (!lcmMediaList.isEmpty()) {
+            final Optional<LcmMedia> lcmMediaOptional = lcmMediaList.stream().filter(media -> media.getFilProcessedBool()).findFirst();
+            if (lcmMediaOptional.isPresent()) {
+                return lcmMediaOptional.get();
+            }
+        }
+        return null;
     }
 
     /**
