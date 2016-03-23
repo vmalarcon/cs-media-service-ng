@@ -64,12 +64,24 @@ public class StatusControllerTest {
         activityMapping6.setMediaType("Cars");
         activityMapping6.setStatusMessage("PUBLISHED");
 
+        ActivityMapping activityMapping7 = new ActivityMapping();
+        activityMapping7.setActivityType("MediaMessageReceived");
+        activityMapping7.setMediaType(".*");
+        activityMapping7.setStatusMessage("RECEIVED");
+
+        ActivityMapping activityMapping8 = new ActivityMapping();
+        activityMapping8.setActivityType("CollectorDupMediaFound");
+        activityMapping8.setMediaType(".*");
+        activityMapping8.setStatusMessage("DUPLICATE");
+
         whitelist.add(activityMapping1);
         whitelist.add(activityMapping2);
         whitelist.add(activityMapping3);
         whitelist.add(activityMapping4);
         whitelist.add(activityMapping5);
         whitelist.add(activityMapping6);
+        whitelist.add(activityMapping7);
+        whitelist.add(activityMapping8);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -98,6 +110,41 @@ public class StatusControllerTest {
         assertEquals(200, response.getStatusCode().value());
         assertEquals(
                 "{\"mediaStatuses\":[{\"mediaName\":\"1037678_109010ice.jpg\",\"status\":\"PUBLISHED\",\"time\":\"2014-07-29 10:08:12.6890000 -07:00\"}]}",
+                response.getBody());
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Test
+    public void testGetMediaStatusAWS() throws Exception {
+        List<RequestMessageValidator> validators = new ArrayList<>();
+        List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
+        MediaProcessLog mediaLogStatus1 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "MediaMessageReceived", "Lodging");
+        MediaProcessLog mediaLogStatus2 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1234567_891011ice.jpg", "MediaMessageReceived", "Lodging");
+        MediaProcessLog mediaLogStatus3 = new MediaProcessLog("2014-08-01 10:08:12.6890000 -07:00", "1234567_891011ice.jpg", "CollectorDupMediaFound", "Lodging");
+        mediaLogStatuses.add(mediaLogStatus1);
+        mediaLogStatuses.add(mediaLogStatus2);
+        mediaLogStatuses.add(mediaLogStatus3);
+        List<String> fileNameList = new ArrayList<>();
+        fileNameList.add("1037678_109010ice.jpg");
+        fileNameList.add("1234567_891011ice.jpg");
+        when(lcmProcessLogDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
+
+        StatusController statusController = new StatusController();
+        setFieldValue(statusController, "mediaStatusValidatorList", validators);
+        setFieldValue(statusController, "activityWhiteList", whitelist);
+        setFieldValue(statusController, "processLogDao", lcmProcessLogDao);
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        String message = "{\"mediaNames\":[\"1037678_109010ice.jpg\",\"1234567_891011ice.jpg\"]}";
+        ResponseEntity response = statusController.getMediaLatestStatus(message, mockHeader);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(
+                "{\"mediaStatuses\":[{\"mediaName\":\"1037678_109010ice.jpg\",\"status\":\"RECEIVED\",\"time\":\"2014-07-29 10:08:12.6890000 -07:00\"}," +
+                        "{\"mediaName\":\"1234567_891011ice.jpg\",\"status\":\"DUPLICATE\",\"time\":\"2014-08-01 10:08:12.6890000 -07:00\"}]}",
                 response.getBody());
     }
 
@@ -166,7 +213,7 @@ public class StatusControllerTest {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
-    public void testGetMediaStatusCarDeriCreated() throws Exception {
+    public void testGetMediaStatusCarDerivCreated() throws Exception {
         List<RequestMessageValidator> validators = new ArrayList<>();
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
 
