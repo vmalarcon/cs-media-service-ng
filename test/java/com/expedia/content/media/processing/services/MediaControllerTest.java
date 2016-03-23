@@ -50,7 +50,9 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -71,6 +73,7 @@ public class MediaControllerTest {
 
     private Set<Map.Entry<Object, Object>> providerMapping;
     private MediaController mediaController;
+    private MediaController mediaControllerSpy;
 
     @Before
     public void setSecurityContext() {
@@ -84,10 +87,12 @@ public class MediaControllerTest {
     @Before
     public void initialize() throws IllegalAccessException {
         mediaController = new MediaController();
+
         ReflectionUtils.setVariableValueInObject(mediaController, "providerProperties", mockProviderProperties);
         providerMapping = new HashSet<>();
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("1", "EPC Internal User"));
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("6", "SCORE"));
+        providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("3", "EPC Legacy"));
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("53", "freetobook"));
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("56", "ReplaceProvider"));
         when(mockProviderProperties.entrySet()).thenReturn(providerMapping);
@@ -98,7 +103,7 @@ public class MediaControllerTest {
     public void testValidateImageSuccess() throws Exception {
         String jsonMessage =
                 "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", " + "\"userId\": \"bobthegreat\", "
-                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Internal User\" " + "}";
+                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Legacy\" " + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -125,7 +130,7 @@ public class MediaControllerTest {
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
-        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"NASA_ISS-4.jpg\""));
+        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_EPCInternalUser_(.*).jpg\"(.*)"));
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
@@ -135,7 +140,7 @@ public class MediaControllerTest {
     @Test
     public void testValidateImageSuccessWithoutFileName() throws Exception {
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", "
-                + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Internal User\" " + "}";
+                + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Legacy\" " + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -172,7 +177,7 @@ public class MediaControllerTest {
     public void testValidateImageSuccessWithThumbnail() throws Exception {
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", "
                 + "\"userId\": \"bobthegreat\", " + "\"generateThumbnail\": \"true\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", "
-                + "\"domainProvider\": \"EPC Internal User\" " + "}";
+                + "\"domainProvider\": \"EPC Legacy\" " + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -210,7 +215,7 @@ public class MediaControllerTest {
     public void testClientNotValid() throws Exception {
         String jsonMessage =
                 "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", " + "\"userId\": \"bobthegreat\", "
-                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Internal User\" " + "}";
+                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Legacy\" " + "}";
 
         Map<String, List<MapMessageValidator>> validators = new HashMap<>();
         List<MapMessageValidator> messageValidator = new ArrayList<>();
@@ -242,7 +247,7 @@ public class MediaControllerTest {
     @Test
     public void testURLNotFound() throws Exception {
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgasdfasdfasdfur.com/3PRGFasdfasdfasdfii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", "
-                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Internal User\" "
+                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Legacy\" "
                 + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
@@ -478,7 +483,7 @@ public class MediaControllerTest {
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
-        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"NASA_ISS-4.jpg\""));
+        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_SCORE_(.*).jpg\"(.*)"));
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
@@ -517,6 +522,46 @@ public class MediaControllerTest {
         final Message<String> publishedMessageValue = publishedMessage.getValue();
         assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_freetobook_(.*).jpg\"(.*)"));
 
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Test
+    public void testEPCFileFormat() throws Exception {
+        String jsonMessage =
+                "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", " + "\"userId\": \"bobthegreat\", "
+                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Internal User\" " + "}";
+
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+        setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        mediaControllerSpy = spy(mediaController);
+        doReturn(Boolean.TRUE).when(mediaControllerSpy).verifyUrlExistence(anyString());
+        ResponseEntity<String> responseEntity = mediaControllerSpy.mediaAdd(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
+        assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
+        assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+
+        ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
+        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
+        verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
+        final Message<String> publishedMessageValue = publishedMessage.getValue();
+        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_EPCInternalUser_(.*).jpg\"(.*)"));
+        assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
+        assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
+        assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
     }
 
     @SuppressWarnings({"unchecked"})

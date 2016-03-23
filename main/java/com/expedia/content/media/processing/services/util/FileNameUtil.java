@@ -5,6 +5,7 @@ import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 
 import org.apache.commons.io.FilenameUtils;
 
+
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -22,7 +23,7 @@ public class FileNameUtil {
      *
      */
     private static final Function<ImageMessage, String> guidProviderNameToFileNameFunction = (consumedImageMessage) -> {
-        final String fileNameFromMediaGUID = consumedImageMessage.getOuterDomainData().getDomainId() + "_" + consumedImageMessage.getOuterDomainData().getProvider()
+        final String fileNameFromMediaGUID = consumedImageMessage.getOuterDomainData().getDomainId() + "_" + StringUtils.replace(consumedImageMessage.getOuterDomainData().getProvider(), " ", "")
                 + "_" + consumedImageMessage.getMediaGuid() + "." + FilenameUtils.getExtension(consumedImageMessage.getFileUrl());
         return fileNameFromMediaGUID;
     };
@@ -47,12 +48,12 @@ public class FileNameUtil {
      */
     public enum MediaProvider {
         FREETOBOOK("freetobook", guidProviderNameToFileNameFunction),
-        EPC_INTERNAL_USER("epc internal user"),
-        EPC_EXTERNAL_USER("epc external user"),
+        EPC_INTERNAL_USER("epc internal user", guidProviderNameToFileNameFunction),
+        EPC_EXTERNAL_USER("epc external user", guidProviderNameToFileNameFunction),
         EPC_LEGACY("epc legacy"),
         MOBILE("mobile"),
         EEM_MIGRATION("eem migration"),
-        SCORE("score"),
+        SCORE("score", guidProviderNameToFileNameFunction),
         OTHER("other"),
         GIGWALK("gigwalk"),
         TV_TRIP("tv trip"),
