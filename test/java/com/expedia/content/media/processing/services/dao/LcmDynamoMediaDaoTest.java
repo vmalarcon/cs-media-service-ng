@@ -7,6 +7,7 @@ import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaContentProviderNameGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaIdListSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetSproc;
@@ -35,9 +36,6 @@ import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-
-
-
 public class LcmDynamoMediaDaoTest {
 
     SQLRoomGetSproc roomGetSproc =null;
@@ -51,6 +49,8 @@ public class LcmDynamoMediaDaoTest {
         lcmMediaRoomList.add(lcmMediaRoom);
         roomResult.put("room", lcmMediaRoomList);
         when(roomGetSproc.execute(anyInt())).thenReturn(roomResult);
+
+
     }
     @Test
     public void testGetMediaByDomainIdNoFilter() throws Exception {
@@ -191,6 +191,26 @@ public class LcmDynamoMediaDaoTest {
         verify(lcmProcessLogDao, times(2)).findMediaStatus(any());
         assertEquals(guid1, testMediaList.get(0).getMediaGuid());
         assertEquals("true", testMediaList.get(0).getDomainData().get("propertyHero"));
+    }
+
+    @Test
+    public void testGetContentProviderName() throws Exception {
+        SQLMediaContentProviderNameGetSproc mockMediaContentProviderNameGetSproc =mock(SQLMediaContentProviderNameGetSproc.class);
+        LcmMedia lcmMedia = LcmMedia.builder().fileName("4600417_IMG0010.jpg").domainId(4600417).filProcessedBool(true).build();
+        List<LcmMedia> lcmMedias = new ArrayList<>();
+        lcmMedias.add(lcmMedia);
+        Map<String, Object> mediaResult = new HashMap<>();
+        mediaResult.put(SQLMediaContentProviderNameGetSproc.MEDIA_ATTRS,lcmMedias);
+
+        when(mockMediaContentProviderNameGetSproc.execute(anyString())).thenReturn(mediaResult);
+        MediaDao mediaDao = new LcmDynamoMediaDao();
+        setFieldValue(mediaDao, "mediaContentProviderNameGetSproc", mockMediaContentProviderNameGetSproc);
+
+        LcmMedia lcmMediaResult = mediaDao.getContentProviderName("test.jpg");
+        assertEquals("4600417_IMG0010.jpg", lcmMediaResult.getFileName());
+        assertTrue(4600417 ==lcmMediaResult.getDomainId());
+
+
     }
 
     @Test

@@ -42,7 +42,7 @@
                 <value>tempDerivativeMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
                 <value>(tempDerivativeMessage.fileUrl != null &amp;&amp; !tempDerivativeMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
                 <value>(tempDerivativeMessage.fileUrl != null &amp;&amp; (!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".jpg") &amp;&amp;!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".jpeg") &amp;&amp;!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".png")&amp;&amp;!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".bmp")&amp;&amp;!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".gif"))) ? "fileUrl extension is malformed." : "valid"</value>
-                <value>(tempDerivativeMessage.rotation == null) ? "valid" : (Integer.parseInt(tempDerivativeMessage.rotation)%90 == 0  &amp;&amp; Integer.parseInt(tempDerivativeMessage.rotation) &lt;= 270) ? "valid" : "rotation accepted values are 0, 90, 180, and 270."</value>
+                <value>(tempDerivativeMessage.rotation == null) ? "valid" : (tempDerivativeMessage.rotation%90 == 0  &amp;&amp; tempDerivativeMessage.rotation &lt;= 270) ? "valid" : "rotation accepted values are 0, 90, 180, and 270."</value>
                 <value>tempDerivativeMessage.width != null ? "valid" : "width is required."</value>
                 <value>tempDerivativeMessage.height != null ? "valid" : "height is required."</value>
             </list>

@@ -41,12 +41,12 @@ public class MediaDomainCategoriesDaoTest {
         String domain = "lodging";
         String localeId = "1033";
         List<MediaCategory> mockMediaCategories = new ArrayList<>();
-        mockMediaCategories.add(new MediaCategory("3", "1033", "Primary Image"));
         mockMediaCategories.add(new MediaCategory("4", "1033", "Lobby"));
+        mockMediaCategories.add(new MediaCategory("5", "1033", "Guestroom"));
         List<MediaSubCategory> mockMediaSubCategories = new ArrayList<>();
-        mockMediaSubCategories.add(new MediaSubCategory("3", "3", "1033", "Featured Image"));
         mockMediaSubCategories.add(new MediaSubCategory("4", "10000", "1033", "Interior Entrance"));
         mockMediaSubCategories.add(new MediaSubCategory("4", "10001", "1033", "Lobby"));
+        mockMediaSubCategories.add(new MediaSubCategory("5", "22022", "1033", "Minibar"));
         MediaDomainCategoriesDao mediaDomainCategoriesDao = new MediaDomainCategoriesDao(mockSQLMediaDomainCategoriesSproc);
         when(mockSQLMediaDomainCategoriesSproc.execute(localeId)).thenReturn(mockResults);
         when(mockResults.get(SQLMediaDomainCategoriesSproc.MEDIA_CATEGORY_RESULT_SET)).thenReturn(mockMediaCategories);
@@ -60,8 +60,8 @@ public class MediaDomainCategoriesDaoTest {
         String domain = "lodging";
         String localeId = "1033";
         List<MediaCategory> mockMediaCategories = new ArrayList<>();
-        mockMediaCategories.add(new MediaCategory("3", "1033", "Primary Image"));
         mockMediaCategories.add(new MediaCategory("4", "1033", "Lobby"));
+        mockMediaCategories.add(new MediaCategory("5", "1033", "Guestroom"));
         List<MediaSubCategory> mockMediaSubCategories = new ArrayList<>();
         MediaDomainCategoriesDao mediaDomainCategoriesDao = new MediaDomainCategoriesDao(mockSQLMediaDomainCategoriesSproc);
         when(mockSQLMediaDomainCategoriesSproc.execute(localeId)).thenReturn(mockResults);
@@ -81,9 +81,9 @@ public class MediaDomainCategoriesDaoTest {
         String localeId = "1033";
         List<MediaCategory> mockMediaCategories = new ArrayList<>();
         List<MediaSubCategory> mockMediaSubCategories = new ArrayList<>();
-        mockMediaSubCategories.add(new MediaSubCategory("3", "3", "1033", "Featured Image"));
         mockMediaSubCategories.add(new MediaSubCategory("4", "10000", "1033", "Interior Entrance"));
         mockMediaSubCategories.add(new MediaSubCategory("4", "10001", "1033", "Lobby"));
+        mockMediaSubCategories.add(new MediaSubCategory("5", "22022", "1033", "Minibar"));
         MediaDomainCategoriesDao mediaDomainCategoriesDao = new MediaDomainCategoriesDao(mockSQLMediaDomainCategoriesSproc);
         when(mockSQLMediaDomainCategoriesSproc.execute(localeId)).thenReturn(mockResults);
         when(mockResults.get(SQLMediaDomainCategoriesSproc.MEDIA_CATEGORY_RESULT_SET)).thenReturn(mockMediaCategories);
@@ -102,16 +102,16 @@ public class MediaDomainCategoriesDaoTest {
 
     @Test
     public  void testCategoryIdExists() {
-        domainField.put("category", "3");
+        domainField.put("category", "22022");
         domainField.put("propertyHero", "true");
         String localeId = "1033";
         List<MediaCategory> mockMediaCategories = new ArrayList<>();
-        mockMediaCategories.add(new MediaCategory("3", "1033", "Primary Image"));
         mockMediaCategories.add(new MediaCategory("4", "1033", "Lobby"));
+        mockMediaCategories.add(new MediaCategory("5", "1033", "Guestroom"));
         List<MediaSubCategory> mockMediaSubCategories = new ArrayList<>();
-        mockMediaSubCategories.add(new MediaSubCategory("3", "3", "1033", "Featured Image"));
         mockMediaSubCategories.add(new MediaSubCategory("4", "10000", "1033", "Interior Entrance"));
         mockMediaSubCategories.add(new MediaSubCategory("4", "10001", "1033", "Lobby"));
+        mockMediaSubCategories.add(new MediaSubCategory("5", "22022", "1033", "Minibar"));
         MediaDomainCategoriesDao mediaDomainCategoriesDao = new MediaDomainCategoriesDao(mockSQLMediaDomainCategoriesSproc);
         when(mockSQLMediaDomainCategoriesSproc.execute(localeId)).thenReturn(mockResults);
         when(mockResults.get(SQLMediaDomainCategoriesSproc.MEDIA_CATEGORY_RESULT_SET)).thenReturn(mockMediaCategories);
@@ -127,12 +127,12 @@ public class MediaDomainCategoriesDaoTest {
         domainField.put("propertyHero", "true");
         String localeId = "1033";
         List<MediaCategory> mockMediaCategories = new ArrayList<>();
-        mockMediaCategories.add(new MediaCategory("3", "1033", "Primary Image"));
         mockMediaCategories.add(new MediaCategory("4", "1033", "Lobby"));
+        mockMediaCategories.add(new MediaCategory("5", "1033", "Guestroom"));
         List<MediaSubCategory> mockMediaSubCategories = new ArrayList<>();
-        mockMediaSubCategories.add(new MediaSubCategory("3", "3", "1033", "Featured Image"));
         mockMediaSubCategories.add(new MediaSubCategory("4", "10000", "1033", "Interior Entrance"));
         mockMediaSubCategories.add(new MediaSubCategory("4", "10001", "1033", "Lobby"));
+        mockMediaSubCategories.add(new MediaSubCategory("5", "22022", "1033", "Minibar"));
         MediaDomainCategoriesDao mediaDomainCategoriesDao = new MediaDomainCategoriesDao(mockSQLMediaDomainCategoriesSproc);
         when(mockSQLMediaDomainCategoriesSproc.execute(localeId)).thenReturn(mockResults);
         when(mockResults.get(SQLMediaDomainCategoriesSproc.MEDIA_CATEGORY_RESULT_SET)).thenReturn(mockMediaCategories);

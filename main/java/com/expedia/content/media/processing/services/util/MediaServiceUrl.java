@@ -9,7 +9,8 @@ public enum MediaServiceUrl {
     MEDIA_BY_DOMAIN("/media/v1/imagesbydomain"),
     MEDIA_STATUS("/media/v1/lateststatus"),
     MEDIA_DOMAIN_CATEGORIES("/media/v1/domaincategories"),
-    MEDIA_TEMP_DERIVATIVE("/media/v1/tempderivative");
+    MEDIA_TEMP_DERIVATIVE("/media/v1/tempderivative"),
+    MEDIA_SOURCEURL("/media/v1/sourceurl");
 
     private String url;
 

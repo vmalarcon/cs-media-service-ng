@@ -51,6 +51,8 @@ import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
+import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
 import com.expedia.content.media.processing.services.reqres.Comment;
 import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
@@ -80,6 +82,9 @@ public class MediaController extends CommonServiceController {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
 
+    private static final String IMAGE_MESSAGE_FIELD = "message";
+    private static final String REPROCESSING_STATE_FIELD = "processState";
+
     @Resource(name = "providerProperties")
     private Properties providerProperties;
     @Autowired
@@ -96,6 +101,8 @@ public class MediaController extends CommonServiceController {
     private ThumbnailProcessor thumbnailProcessor;
     @Autowired
     private MediaDao mediaDao;
+    @Autowired
+    private DynamoMediaRepository dynamoMediaRepository;
 
     /**
      * web service interface to consume media message.
@@ -205,18 +212,20 @@ public class MediaController extends CommonServiceController {
             if (media.getDomainData() != null) {
                 media.getDomainData().put(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
             }
+            /* @formatter:off */
             return DomainIdMedia.builder().mediaGuid(media.getMediaGuid()).fileUrl(media.getFileUrl()).fileName(media.getFileName())
                     .active(media.getActive()).width(media.getWidth()).height(media.getHeight()).fileSize(media.getFileSize()).status(media.getStatus())
-                    .lastUpdatedBy(media.getUserId())
-                    .lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
-                    .domainProvider(media.getProvider()).domainFields(media.getDomainData()).derivatives(media.getDerivativesList())
+                    .lastUpdatedBy(media.getUserId()).lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
+                    .domainProvider(media.getProvider()).domainFields(media.getDomainData())
+                    .derivatives(media.getDerivativesList())
                     .domainDerivativeCategory(media.getDomainDerivativeCategory())
-                    .comments( (media.getCommentList() == null) ? null :
-                            media.getCommentList().stream()
-                                    .map(comment -> new Comment(comment, DATE_FORMATTER.print(media.getLastUpdated().getTime())))
-                                    .collect(Collectors.toList()))
+                    .comments((media.getCommentList() == null) ? null: media.getCommentList().stream()
+                    .map(comment -> Comment.builder().note(comment)
+                    .timestamp(DATE_FORMATTER.print(media.getLastUpdated().getTime())).build())
+                    .collect(Collectors.toList()))
                     .build();
         }).collect(Collectors.toList());
+        /* @formatter:on */
     }
 
     /**
@@ -250,71 +259,80 @@ public class MediaController extends CommonServiceController {
      */
     private ResponseEntity<String> processRequest(final String message, final String requestID, final String serviceUrl, final String clientId,
                                                   HttpStatus successStatus) throws Exception {
-
         final String json = validateImageMessage(message, clientId);
         if (!"[]".equals(json)) {
             LOGGER.warn("Returning BAD_REQUEST for messageName={}, requestId=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, requestID, message, json);
             return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
         }
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
-
         final boolean fileExists = verifyUrlExistence(imageMessage.getFileUrl());
+
         if (!fileExists) {
             LOGGER.info("Response bad request provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
             return this.buildErrorResponse("Provided fileUrl does not exist.", serviceUrl, NOT_FOUND);
         }
 
-        final ImageMessage imageMessageNew = updateImageMessage(imageMessage, requestID, clientId);
+        final Map<String, Object> messageState = updateImageMessage(imageMessage, requestID, clientId);
+        final ImageMessage imageMessageNew = (ImageMessage) messageState.get(IMAGE_MESSAGE_FIELD);
+        final Boolean isReprocessing = (Boolean) messageState.get(REPROCESSING_STATE_FIELD);
 
         final Map<String, String> response = new HashMap<>();
         response.put(RESPONSE_FIELD_MEDIA_GUID, imageMessageNew.getMediaGuid());
         response.put(RESPONSE_FIELD_STATUS, "RECEIVED");
+        Thumbnail thumbnail = null;
         if (imageMessageNew.isGenerateThumbnail()) {
-            response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnailProcessor.createThumbnail(imageMessageNew.getFileUrl(), imageMessageNew.getMediaGuid(),
-                    imageMessageNew.getOuterDomainData().getDomain().getDomain(), imageMessageNew.getOuterDomainData().getDomainId()));
+            thumbnail = thumbnailProcessor.createThumbnail(imageMessageNew);
+            response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnail.getLocation());
         }
-
+        if (!isReprocessing) {
+            dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);
+        }
         publishMsg(imageMessageNew);
         LOGGER.info("SUCCESS - messageName={}, requestId=[{}], mediaGuid=[{}], JSONMessage=[{}]", serviceUrl, requestID, imageMessageNew.getMediaGuid(),
                 message);
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
     }
 
-
     /**
-     * Updates the image message for the next step. Must be done before being published to the next work queue.
+     * Updates the image message for the next step. Must be done before being
+     * published to the next work queue.
      *
      * @param imageMessage The incoming image message.
      * @param requestID The id of the request. Used for tracking purposes.
      * @param clientId Web service client id.
-     * @return The updated message with request and other data added.
+     * @return A Map contains the updated message with request and other data added 
+     *         and if the file is checked for reprocessing .
      */
-    private ImageMessage updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId) {
+    private Map<String, Object> updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId) {
         ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
         imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
-
         imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
-
         final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
         imageMessageBuilder.outerDomainData(outerDomain);
-
-        processReplacement(imageMessage, imageMessageBuilder);
+        final Boolean isReprocessing = processReplacement(imageMessage, imageMessageBuilder);
         imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(imageMessageBuilder.build()));
+        final ImageMessage imageMessageNew = imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).build();
+        final Map<String, Object> messageState = new HashMap<>();
+        messageState.put(IMAGE_MESSAGE_FIELD, imageMessageNew);
+        messageState.put(REPROCESSING_STATE_FIELD, isReprocessing);
 
-        return imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).build();
+        return messageState;
     }
 
     /**
-     * This method processes the replacement changes needed on the ImageMessageBuilder for the provided ImageMessage.
+     * This method processes the replacement changes needed on the
+     * ImageMessageBuilder for the provided ImageMessage.
      * <p>
-     * The method will first try to find the media that have the same file name. If multiple, it will choose the
-     * best one for replacement. It will finally populate the replacement mediaId and GUID on the ImageMessageBuilder.
+     * The method will first try to find the media that have the same file name.
+     * If multiple, it will choose the best one for replacement. It will finally
+     * populate the replacement mediaId and GUID on the ImageMessageBuilder.
      * </p>
      *
      * @param imageMessage Original message received.
      * @param imageMessageBuilder Builder for the new/mutated ImageMessage.
+     * @return returns true if reprocessing and false if not.
      */
-    private void processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder) {
+    private boolean processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder) {
         LOGGER.info("This is a replacement: mediaGuid=[{}], filename=[{}], requestId=[{}]", imageMessage.getMediaGuid(), imageMessage.getFileName(),
                 imageMessage.getRequestId());
         final List<Media> mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
@@ -328,10 +346,12 @@ public class MediaController extends CommonServiceController {
             imageMessageBuilder.mediaGuid(media.getMediaGuid());
             LOGGER.info("The replacement information is: mediaGuid=[{}], filename=[{}], requestId=[{}], lcmMediaId=[{}]", media.getMediaGuid(),
                     imageMessage.getFileName(), imageMessage.getRequestId(), media.getDomainId());
+            return true;
         } else {
             LOGGER.info("Could not find the best media for the filename=[{}] on the list: [{}]. Will create a new GUID.", imageMessage.getFileName(),
                     Joiner.on("; ").join(mediaList));
         }
+        return false;
     }
 
     /**
@@ -402,11 +422,12 @@ public class MediaController extends CommonServiceController {
      * get the domainProvider text from the mapping regardless of case-sensitivity
      * if the exact text is not passed, datamanager fails to find it and defaults it
      * to 1
+     * 
      * @param outerDomain
      * @return outerDomain with domainProvider replaced by the exact domainProvider from the mapping
      */
     private OuterDomain getDomainProviderFromMapping(OuterDomain outerDomain) {
-        final String domainProvider =  DomainDataUtil.getDomainProvider(outerDomain.getProvider(), providerProperties);
+        final String domainProvider = DomainDataUtil.getDomainProvider(outerDomain.getProvider(), providerProperties);
         return OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
     }
 }
