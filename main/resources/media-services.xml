@@ -240,6 +240,12 @@
     </bean>
 
     <!-- Status Controller -->
+    <bean id="AWSReceptionActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="MediaMessageReceived"/>
+        <property name="statusMessage" value="RECEIVED"/>
+        <property name="mediaType" value=".*"/>
+    </bean>
+
     <bean id="receptionActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
         <!-- this will work -->
         <property name="activityType" value="Reception"/>
@@ -252,6 +258,12 @@
         <property name="activityType" value="DerivativeCreation"/>
         <property name="statusMessage" value="DERIVATIVES_CREATED"/>
         <property name="mediaType" value="VirtualTour|Lodging"/>
+    </bean>
+
+    <bean id="duplicateFoundActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="CollectorDupMediaFound"/>
+        <property name="statusMessage" value="DUPLICATE"/>
+        <property name="mediaType" value=".*"/>
     </bean>
 
     <bean id="rejectActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
