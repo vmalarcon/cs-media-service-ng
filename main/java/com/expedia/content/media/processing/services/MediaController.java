@@ -163,6 +163,28 @@ public class MediaController extends CommonServiceController {
         }
     }
 
+
+    @Meter(name = "updateMessageCounter")
+    @Timer(name = "updateMessageTimer")
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
+    @RequestMapping(value = "/media/v1/images/{mediaId}", method = RequestMethod.PUT)
+    public ResponseEntity<String> mediaUpdate(@PathVariable("mediaId") final String mediaId,@RequestBody final String message,
+            @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+        final String requestID = this.getRequestId(headers);
+        final String serviceUrl = MediaServiceUrl.MEDIA_ADD.getUrl()+"/"+mediaId;
+        LOGGER.info("RECEIVED update REQUEST - messageName={}, requestId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
+        try {
+            final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            final String clientId = auth.getName();
+            final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
+
+            return processRequest(message, requestID, serviceUrl, clientId, ACCEPTED);
+        } catch (IllegalStateException | ImageMessageException ex) {
+            LOGGER.error("ERROR when update media -messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
+            return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
+        }
+    }
+
     /**
      * Web services interface to retrieve media information by domain name and id.
      * 
