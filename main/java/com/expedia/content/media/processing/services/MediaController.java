@@ -309,8 +309,8 @@ public class MediaController extends CommonServiceController {
         imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
         final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
         imageMessageBuilder.outerDomainData(outerDomain);
-        final Boolean isReprocessing = processReplacement(imageMessage, imageMessageBuilder);
         imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(imageMessageBuilder.build()));
+        final Boolean isReprocessing = processReplacement(imageMessage, imageMessageBuilder);
         final ImageMessage imageMessageNew = imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).build();
         final Map<String, Object> messageState = new HashMap<>();
         messageState.put(IMAGE_MESSAGE_FIELD, imageMessageNew);
@@ -430,4 +430,5 @@ public class MediaController extends CommonServiceController {
         final String domainProvider = DomainDataUtil.getDomainProvider(outerDomain.getProvider(), providerProperties);
         return OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
     }
+    
 }
