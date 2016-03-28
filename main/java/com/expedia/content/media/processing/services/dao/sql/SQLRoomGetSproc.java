@@ -16,6 +16,7 @@ import java.sql.Types;
 
 /**
  * Call a MSSQL Sproc [RoomTypeGetByMediaID] in LCM in order to retrieve data from the Media,RoomTypeCatalogItemID, CatalogItemMedia, and Paragraph (derivatives) tables
+ * get current rooms of the media id.
  */
 @Repository
 public class SQLRoomGetSproc extends StoredProcedure {
@@ -38,6 +39,7 @@ public class SQLRoomGetSproc extends StoredProcedure {
         public LcmMediaRoom mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
             return LcmMediaRoom.builder()
                     .roomId(resultSet.getInt("RoomTypeCatalogItemID"))
+                    //IsAHeroMediaForRoom 1 means hero, 0 means not hero.
                     .roomHero(resultSet.getBoolean("IsAHeroMediaForRoom"))
                     .build();
         }

@@ -103,6 +103,8 @@ public class MediaController extends CommonServiceController {
     private MediaDao mediaDao;
     @Autowired
     private DynamoMediaRepository dynamoMediaRepository;
+    @Autowired
+    private MediaUpdateProcesser mediaUpdateProcesser;
 
     /**
      * web service interface to consume media message.
@@ -176,10 +178,16 @@ public class MediaController extends CommonServiceController {
         try {
             final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             final String clientId = auth.getName();
+            //todo check mediaID is numeric, then we assume domain is Lodging
+            //todo get expediaId by media
             final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
-
-            return processRequest(message, requestID, serviceUrl, clientId, ACCEPTED);
-        } catch (IllegalStateException | ImageMessageException ex) {
+            final String json = validateImageMessage(message, "EPCUpdate");
+            if (!"[]".equals(json)) {
+                LOGGER.warn("Returning BAD_REQUEST for messageName={}, requestId=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, requestID, message, json);
+                return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
+            }
+            return mediaUpdateProcesser.processRequest(imageMessage,serviceUrl,requestID,clientId,mediaId);
+        } catch (Exception ex) {
             LOGGER.error("ERROR when update media -messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         }

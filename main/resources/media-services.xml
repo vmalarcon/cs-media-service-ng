@@ -47,6 +47,11 @@
 	            <ref bean="multisourceValidator"/>
 	        </list>
 	    </entry>
+        <entry key="EPCUpdate">
+            <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                <ref bean="lcmUpdateValidator"/>
+            </list>
+        </entry>
 	</util:map>
 
     <aws-messaging:queue-messaging-template id="queueMessagingTemplate" />
@@ -322,5 +327,8 @@
     </bean>
 
     <bean id="lcmValidator" class="com.expedia.content.media.processing.services.validator.LCMValidator" />
+
+    <bean id="lcmUpdateValidator" class="com.expedia.content.media.processing.services.validator.LCMUpdateValidator" />
+
 
 </beans>
