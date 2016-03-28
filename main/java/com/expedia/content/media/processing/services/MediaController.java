@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
@@ -103,6 +104,8 @@ public class MediaController extends CommonServiceController {
     private MediaDao mediaDao;
     @Autowired
     private DynamoMediaRepository dynamoMediaRepository;
+    @Autowired
+    private SKUGroupCatalogItemDao skuGroupCatalogItemDao;
 
     /**
      * web service interface to consume media message.
@@ -195,10 +198,15 @@ public class MediaController extends CommonServiceController {
                     serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
             return validationResponse;
         }
+        if (!skuGroupCatalogItemDao.skuGroupExists(Integer.parseInt(domainId))) {
+            LOGGER.warn("DOMAIN_ID NOT FOUND - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+                    serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
+            return new ResponseEntity<>("DomainId not found: " + domainId, NOT_FOUND);
+        }
         final List<DomainIdMedia> images =
                 transformMediaForResponse(mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter));
         final MediaByDomainIdResponse response = MediaByDomainIdResponse.builder().domain(domainName).domainId(domainId).images(images).build();
-        return new ResponseEntity<String>(OBJECT_MAPPER.writeValueAsString(response), OK);
+        return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);
     }
 
     /**
