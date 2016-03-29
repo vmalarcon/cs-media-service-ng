@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import org.apache.commons.lang.StringUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
@@ -123,7 +124,7 @@ public class MediaController extends CommonServiceController {
     public ResponseEntity<String> acquireMedia(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.ACQUIRE_MEDIA.getUrl();
-        LOGGER.info("RECEIVED REQUEST - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl, message, requestID);
+        LOGGER.info("RECEIVED REQUEST - messageName={}, JSONMessage=[{}], queryId=[{}]", serviceUrl, message, requestID);
         try {
             final ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
             final Map messageMap = JSONUtil.buildMapFromJson(message);
@@ -151,57 +152,95 @@ public class MediaController extends CommonServiceController {
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST)
     public ResponseEntity<String> mediaAdd(@RequestBody final String message,
-                                           @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+            @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_ADD.getUrl();
-        LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
+        LOGGER.info("RECEIVED REQUEST - messageName={}, queryId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
         try {
             final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             final String clientId = auth.getName();
             return processRequest(message, requestID, serviceUrl, clientId, ACCEPTED);
         } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
+            LOGGER.error("ERROR - messageName={}, error=[{}], queryId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         }
     }
 
-
     @Meter(name = "updateMessageCounter")
     @Timer(name = "updateMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/images/{mediaId}", method = RequestMethod.PUT)
-    public ResponseEntity<String> mediaUpdate(@PathVariable("mediaId") final String mediaId,@RequestBody final String message,
+    @RequestMapping(value = "/media/v1/images/{queryId}", method = RequestMethod.PUT)
+    public ResponseEntity<String> mediaUpdate(@PathVariable("queryId") final String queryId, @RequestBody final String message,
             @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
-        final String serviceUrl = MediaServiceUrl.MEDIA_ADD.getUrl()+"/"+mediaId;
-        LOGGER.info("RECEIVED update REQUEST - messageName={}, requestId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
+        final String serviceUrl = MediaServiceUrl.MEDIA_ADD.getUrl() + "/" + queryId;
+        LOGGER.info("RECEIVED update REQUEST - messageName={}, queryId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
         try {
-            final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            final String clientId = auth.getName();
-            //todo check mediaID is numeric, then we assume domain is Lodging
-            //todo get expediaId by media
-            final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
-            final String json = validateImageMessage(message, "EPCUpdate");
+            String lcmMediaId = "";
+            String domainId = "";
+            Media dynamoMedia = null;
+            if (matchGuid(queryId)) {
+                dynamoMedia = getMediaByGuid(queryId);
+                if (dynamoMedia == null) {
+                    return this.buildErrorResponse("input Guid does not exist ind DB", serviceUrl, BAD_REQUEST);
+                }
+                lcmMediaId = dynamoMedia.getLcmMediaId();
+                domainId = dynamoMedia.getDomainId();
+            } else if (StringUtils.isNumeric(queryId)) {
+                lcmMediaId = queryId;
+                final List<Media> mediaList = mediaDao.getMediaByMediaId(queryId);
+                if (!mediaList.isEmpty()) {
+                    return this.buildErrorResponse("GUID exist, please use GUID to update.", serviceUrl, BAD_REQUEST);
+                }
+            } else {
+                return this.buildErrorResponse("input queryId is invalid", serviceUrl, BAD_REQUEST);
+            }
+            final String newJson = appendDomain(message);
+            final String json = validateImageMessage(newJson, "EPCUpdate");
             if (!"[]".equals(json)) {
-                LOGGER.warn("Returning BAD_REQUEST for messageName={}, requestId=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, requestID, message, json);
+                LOGGER.warn("Returning BAD_REQUEST for messageName={}, queryId=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, requestID, message,
+                        json);
                 return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
             }
-            return mediaUpdateProcesser.processRequest(imageMessage,serviceUrl,requestID,clientId,mediaId);
+            final ImageMessage imageMessage = ImageMessage.parseJsonMessage(newJson);
+            return mediaUpdateProcesser.processRequest(imageMessage, lcmMediaId, domainId, dynamoMedia);
         } catch (Exception ex) {
-            LOGGER.error("ERROR when update media -messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
+            LOGGER.error("ERROR when update media -messageName={}, error=[{}], queryId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID,
+                    message, ex);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
+        }
+    }
+
+    private boolean matchGuid(String id) {
+        final String regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+        return id.matches(regex);
+    }
+
+    private String appendDomain(String message) throws Exception {
+        final Map<String, Object> jsonMap = JSONUtil.buildMapFromJson(message);
+        jsonMap.put("domain", "Lodging");
+        return new ObjectMapper().writeValueAsString(jsonMap);
+    }
+
+    private Media getMediaByGuid(String guid) {
+        final List<Media> mediaList = mediaDao.getMediaByGuid(guid);
+        final Optional<Media> bestMedia = MediaReplacement.selectLatestMedia(mediaList);
+        if (bestMedia.isPresent()) {
+            return bestMedia.get();
+        } else {
+            return null;
         }
     }
 
     /**
      * Web services interface to retrieve media information by domain name and id.
-     * 
-     * @param domainName Name of the domain the domain id belongs to.
-     * @param domainId Identification of the domain item the media is required.
-     * @param activeFilter Filter determining what images to return. When true only active are returned. When false only inactive media is returned. When
-     *            all then all are returned. All is set a default.
+     *
+     * @param domainName           Name of the domain the domain id belongs to.
+     * @param domainId             Identification of the domain item the media is required.
+     * @param activeFilter         Filter determining what images to return. When true only active are returned. When false only inactive media is returned. When
+     *                             all then all are returned. All is set a default.
      * @param derivativeTypeFilter Inclusive filter to use to only return certain types of derivatives. Returns all derivatives if not specified.
-     * @param headers Headers of the request.
+     * @param headers              Headers of the request.
      * @return The list of media data belonging to the domain item.
      * @throws Exception Thrown if processing the message fails.
      */
@@ -211,17 +250,17 @@ public class MediaController extends CommonServiceController {
     @RequestMapping(value = "/media/v1/imagesbydomain/{domainName}/domainId/{domainId}", method = RequestMethod.GET)
     @Transactional
     public ResponseEntity<String> getMediaByDomainId(@PathVariable("domainName") final String domainName, @PathVariable("domainId") final String domainId,
-                                                     @RequestParam(value = "activeFilter", required = false,
-                                                                   defaultValue = "all") final String activeFilter,
-                                                     @RequestParam(value = "derivativeTypeFilter", required = false) final String derivativeTypeFilter,
-                                                     @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+            @RequestParam(value = "activeFilter", required = false,
+                    defaultValue = "all") final String activeFilter,
+            @RequestParam(value = "derivativeTypeFilter", required = false) final String derivativeTypeFilter,
+            @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
-        LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+        LOGGER.info("RECEIVED REQUEST - messageName={}, queryId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                 serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
         final ResponseEntity<String> validationResponse = validateMediaByDomainIdRequest(domainName, activeFilter);
         if (validationResponse != null) {
-            LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+            LOGGER.warn("INVALID REQUEST - messageName={}, queryId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                     serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
             return validationResponse;
         }
@@ -233,7 +272,7 @@ public class MediaController extends CommonServiceController {
 
     /**
      * Transforms a media list for a media get response format.
-     * 
+     *
      * @param mediaList List of media to transform.
      * @return The transformed list.
      */
@@ -261,7 +300,7 @@ public class MediaController extends CommonServiceController {
     /**
      * Validates the media by domain id request.
      *
-     * @param domainName Domain to validate.
+     * @param domainName   Domain to validate.
      * @param activeFilter Active filter to validate.
      * @return Returns a response if the validation fails; null otherwise.
      */
@@ -279,26 +318,26 @@ public class MediaController extends CommonServiceController {
     /**
      * Common processing between mediaAdd and the AWS portion of aquireMedia. Can be transfered into mediaAdd once aquireMedia is removed.
      *
-     * @param message JSON formated ImageMessage.
-     * @param requestID The id of the request. Used for tracking purposes.
-     * @param serviceUrl URL of the message called.
-     * @param clientId Web service client id.
+     * @param message       JSON formated ImageMessage.
+     * @param requestID     The id of the request. Used for tracking purposes.
+     * @param serviceUrl    URL of the message called.
+     * @param clientId      Web service client id.
      * @param successStatus Status to return when successful.
      * @return The response for the service call.
      * @throws Exception Thrown if the message can't be validated or the response can't be serialized.
      */
     private ResponseEntity<String> processRequest(final String message, final String requestID, final String serviceUrl, final String clientId,
-                                                  HttpStatus successStatus) throws Exception {
+            HttpStatus successStatus) throws Exception {
         final String json = validateImageMessage(message, clientId);
         if (!"[]".equals(json)) {
-            LOGGER.warn("Returning BAD_REQUEST for messageName={}, requestId=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, requestID, message, json);
+            LOGGER.warn("Returning BAD_REQUEST for messageName={}, queryId=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, requestID, message, json);
             return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
         }
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
         final boolean fileExists = verifyUrlExistence(imageMessage.getFileUrl());
 
         if (!fileExists) {
-            LOGGER.info("Response bad request provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
+            LOGGER.info("Response bad request provided 'fileUrl does not exist' for queryId=[{}], message=[{}]", requestID, message);
             return this.buildErrorResponse("Provided fileUrl does not exist.", serviceUrl, NOT_FOUND);
         }
 
@@ -318,7 +357,7 @@ public class MediaController extends CommonServiceController {
             dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);
         }
         publishMsg(imageMessageNew);
-        LOGGER.info("SUCCESS - messageName={}, requestId=[{}], mediaGuid=[{}], JSONMessage=[{}]", serviceUrl, requestID, imageMessageNew.getMediaGuid(),
+        LOGGER.info("SUCCESS - messageName={}, queryId=[{}], mediaGuid=[{}], JSONMessage=[{}]", serviceUrl, requestID, imageMessageNew.getMediaGuid(),
                 message);
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
     }
@@ -328,10 +367,10 @@ public class MediaController extends CommonServiceController {
      * published to the next work queue.
      *
      * @param imageMessage The incoming image message.
-     * @param requestID The id of the request. Used for tracking purposes.
-     * @param clientId Web service client id.
-     * @return A Map contains the updated message with request and other data added 
-     *         and if the file is checked for reprocessing .
+     * @param requestID    The id of the request. Used for tracking purposes.
+     * @param clientId     Web service client id.
+     * @return A Map contains the updated message with request and other data added
+     * and if the file is checked for reprocessing .
      */
     private Map<String, Object> updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId) {
         ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
@@ -355,15 +394,15 @@ public class MediaController extends CommonServiceController {
      * <p>
      * The method will first try to find the media that have the same file name.
      * If multiple, it will choose the best one for replacement. It will finally
-     * populate the replacement mediaId and GUID on the ImageMessageBuilder.
+     * populate the replacement queryId and GUID on the ImageMessageBuilder.
      * </p>
      *
-     * @param imageMessage Original message received.
+     * @param imageMessage        Original message received.
      * @param imageMessageBuilder Builder for the new/mutated ImageMessage.
      * @return returns true if reprocessing and false if not.
      */
     private boolean processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder) {
-        LOGGER.info("This is a replacement: mediaGuid=[{}], filename=[{}], requestId=[{}]", imageMessage.getMediaGuid(), imageMessage.getFileName(),
+        LOGGER.info("This is a replacement: mediaGuid=[{}], filename=[{}], queryId=[{}]", imageMessage.getMediaGuid(), imageMessage.getFileName(),
                 imageMessage.getRequestId());
         final List<Media> mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
         final Optional<Media> bestMedia = MediaReplacement.selectBestMedia(mediaList);
@@ -374,7 +413,7 @@ public class MediaController extends CommonServiceController {
             domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
             imageMessageBuilder.outerDomainData(domainBuilder.build());
             imageMessageBuilder.mediaGuid(media.getMediaGuid());
-            LOGGER.info("The replacement information is: mediaGuid=[{}], filename=[{}], requestId=[{}], lcmMediaId=[{}]", media.getMediaGuid(),
+            LOGGER.info("The replacement information is: mediaGuid=[{}], filename=[{}], queryId=[{}], lcmMediaId=[{}]", media.getMediaGuid(),
                     imageMessage.getFileName(), imageMessage.getRequestId(), media.getDomainId());
             return true;
         } else {
@@ -411,7 +450,7 @@ public class MediaController extends CommonServiceController {
      * Get validator list by different client, and do validation by rules and DAO validator (later)
      * return the validation error list that combine all of the error result.
      *
-     * @param message input json message.
+     * @param message  input json message.
      * @param clientId Web service client id.
      * @return JSON string contains fileName and error description.
      * @throws Exception when message to ImageMessage and convert java list to json.
@@ -439,12 +478,12 @@ public class MediaController extends CommonServiceController {
      * Logs a completed activity and its time. and exepdiaId is appended before the file name
      *
      * @param imageMessage The imageMessage of the file being processed.
-     * @param activity The activity to log.
+     * @param activity     The activity to log.
      */
     private void logActivity(final ImageMessage imageMessage, final Activity activity) throws URISyntaxException {
         final LogEntry logEntry =
                 new LogEntry(imageMessage.getFileName(), imageMessage.getMediaGuid(), activity, new Date(), imageMessage.getOuterDomainData().getDomain(),
-                             imageMessage.getOuterDomainData().getDomainId(), imageMessage.getOuterDomainData().getDerivativeCategory());
+                        imageMessage.getOuterDomainData().getDomainId(), imageMessage.getOuterDomainData().getDerivativeCategory());
         logActivityProcess.log(logEntry, reporting);
     }
 
@@ -452,7 +491,7 @@ public class MediaController extends CommonServiceController {
      * get the domainProvider text from the mapping regardless of case-sensitivity
      * if the exact text is not passed, datamanager fails to find it and defaults it
      * to 1
-     * 
+     *
      * @param outerDomain
      * @return outerDomain with domainProvider replaced by the exact domainProvider from the mapping
      */

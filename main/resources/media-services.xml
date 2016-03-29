@@ -49,6 +49,7 @@
 	    </entry>
         <entry key="EPCUpdate">
             <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                <ref bean="mediaUpdateValidator"/>
                 <ref bean="lcmUpdateValidator"/>
             </list>
         </entry>
@@ -96,6 +97,21 @@
                         <value>(domainData.domain.domain.endsWith('Lodging') &amp;&amp; domainData.domainId != null &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
                         <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
                         <value>(domainData != null &amp;&amp; domainData.provider == null) ? "domainProvider is required." : "valid"</value>
+                    </list>
+                </entry>
+            </map>
+        </property>
+    </bean>
+
+
+    <bean id="mediaUpdateValidator" class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
+        <property name="clientRule" value="EPCUpdate" />
+        <property name="ruleMaps">
+            <map>
+                <entry key="EPCUpdate">
+                    <list>
+                       <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
+                        <value>(imageMessage.active == null &amp;&amp; imageMessage.comment == null) ? "active or comment is required." : "valid"</value>
                     </list>
                 </entry>
             </map>

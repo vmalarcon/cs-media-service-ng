@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,13 +49,48 @@ public class DynamoMediaRepository {
      */
     public List<Media> getMediaByFilename(String fileName) {
         final HashMap<String, AttributeValue> params = new HashMap<>();
-        params.put(":mfn", new AttributeValue().withS(fileName));       
+        params.put(":mfn", new AttributeValue().withS(fileName));
         final DynamoDBQueryExpression<Media> expression = new DynamoDBQueryExpression<Media>()
                 .withIndexName("cs-mediadb-index-Media-MediaFileName")
                 .withConsistentRead(false)
                 .withKeyConditionExpression("MediaFileName = :mfn")
                 .withExpressionAttributeValues(params);               
         return dynamoMapper.query(Media.class, expression);
+    }
+
+    public List<Media> getMediaByGuid(String guid) {
+        final HashMap<String, AttributeValue> params = new HashMap<>();
+        params.put(":mfn", new AttributeValue().withS(guid));
+        final DynamoDBQueryExpression<Media> expression = new DynamoDBQueryExpression<Media>()
+                .withConsistentRead(false)
+                .withKeyConditionExpression("MediaGUID = :mfn")
+                .withExpressionAttributeValues(params);
+        final List<Media> results = dynamoMapper.query(Media.class, expression);
+        return results.stream()
+                .filter(item -> environment.equals(item.getEnvironment()))
+                .collect(Collectors.toList());
+    }
+    public List<Media> getMediaByMediaId(String mediaId) {
+        final HashMap<String, AttributeValue> params = new HashMap<>();
+        params.put(":mfn", new AttributeValue().withS(mediaId));
+        final DynamoDBQueryExpression<Media> expression = new DynamoDBQueryExpression<Media>()
+                .withIndexName("cs-mediadb-index-Media-lcmMediaId")
+                .withConsistentRead(false)
+                .withKeyConditionExpression("lcmMediaId = :mfn")
+                .withExpressionAttributeValues(params);
+        final List<Media> results = dynamoMapper.query(Media.class, expression);
+        return results.stream()
+                .filter(item -> environment.equals(item.getEnvironment()))
+                .collect(Collectors.toList());
+    }
+
+    public void saveMedia(Media media) {
+        try {
+            dynamoMapper.save(media);
+        } catch (Exception e) {
+            LOGGER.error("ERROR when trying to save in dynamodb - error message={}.", e.getMessage(), e);
+            throw new MediaDBException(e.getMessage(), e);
+        }
     }
     
     /**

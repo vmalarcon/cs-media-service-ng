@@ -33,4 +33,12 @@ public interface MediaDao {
      * @return
      */
     LcmMedia getContentProviderName(String fileName);
+
+    List<Media> getMediaByGuid(String guid);
+
+    List<Media> getMediaByMediaId(String mediaId);
+
+    void saveMedia(Media media);
+
+
 }

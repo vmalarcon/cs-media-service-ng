@@ -2,9 +2,15 @@ package com.expedia.content.media.processing.services;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.CatalogitemMediaDao;
+import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
-import org.apache.commons.collections.ListUtils;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.util.MediaRoomUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang.reflect.FieldUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+
 
 @Component
 public class MediaUpdateProcesser {
@@ -23,144 +29,103 @@ public class MediaUpdateProcesser {
     private MediaUpdateDao mediaUpdateDao;
     @Autowired
     private CatalogitemMediaDao catalogitemMediaDao;
+    @Autowired
+    private MediaDao mediaDao;
 
     @Transactional
-    public ResponseEntity<String> processRequest(final ImageMessage imageMessage, final String requestID, final String serviceUrl, final String clientId,
-            final String mediaId
+    public ResponseEntity<String> processRequest(final ImageMessage imageMessage,
+            final String mediaId, String domainId, Media dynamoMedia
     ) throws Exception {
-
-        //check guid or mediaId
-        //validation logic here todo
-        // if guid, get mediaID from dynamo, if mediaId, check GUID exist in Dynamo. and how to get expedia id?
-
+        Integer expediaId = null;
+        if (domainId.isEmpty()) {
+            final LcmMedia lcmMedia = mediaUpdateDao.getMediaByMediaId(Integer.valueOf(mediaId));
+            expediaId = lcmMedia.getDomainId();
+        } else {
+            expediaId = Integer.valueOf(domainId);
+        }
         //step1. update media table, if commented and active is not null
         if (imageMessage.getComment() != null || imageMessage.isActive() != null) {
             mediaUpdateDao.updateMedia(imageMessage, Integer.valueOf(mediaId));
         }
-
-        //todo get expediaId from dynamo
-        int domainId = 41098;
         //step2 update subcategory id
         if (imageMessage.getOuterDomainData().getDomainFieldValue("subcategoryId") != null) {
-            catalogitemMediaDao.updateCatalogItem(imageMessage, Integer.valueOf(mediaId), domainId);
+            catalogitemMediaDao.updateCatalogItem(imageMessage, Integer.valueOf(mediaId), expediaId);
         }
         //step 3 update room table.
         processRooms(imageMessage, mediaId);
-        return new ResponseEntity<>("Update Room Successfully.", HttpStatus.OK);
+        //step 4. save media to dynamo
+        if (dynamoMedia != null) {
+            setDynamMedia(imageMessage, dynamoMedia);
+            mediaDao.saveMedia(dynamoMedia);
+        }
+        return new ResponseEntity<>("OK", HttpStatus.OK);
+    }
+
+    private void setDynamMedia(ImageMessage imageMessage, Media dynamoMedia) throws Exception {
+
+        List<String> commentList = null;
+        if (imageMessage.getComment() != null) {
+            commentList = new ArrayList<>();
+            commentList.add(imageMessage.getComment());
+            FieldUtils.writeField(dynamoMedia, "commentList", commentList, true);
+        }
+        if (imageMessage.isActive() != null) {
+            FieldUtils.writeField(dynamoMedia, "active", imageMessage.isActive() ? "true" : "false", true);
+        }
+        if (imageMessage.getUserId() != null) {
+            FieldUtils.writeField(dynamoMedia, "userId", imageMessage.getUserId(), true);
+        }
+        final Map<String, Object> domainFieldsDynamo = JSONUtil.buildMapFromJson(dynamoMedia.getDomainFields());
+        final Map<String, Object> domainFieldsNew = imageMessage.getOuterDomainData().getDomainFields();
+        final Map<String, Object> domainFieldsCombine = combineDomainFields(domainFieldsDynamo, domainFieldsNew);
+        FieldUtils.writeField(dynamoMedia, "domainFields", new ObjectMapper().writeValueAsString(domainFieldsCombine), true);
+
+    }
+
+    private Map<String, Object> combineDomainFields(Map<String, Object> domainFieldsDynamo, Map<String, Object> domainFieldsNew) {
+        if (domainFieldsNew.isEmpty()) {
+            return domainFieldsDynamo;
+        } else if (domainFieldsDynamo.isEmpty()) {
+            return domainFieldsNew;
+        } else {
+            if (domainFieldsNew.get("rooms") != null) {
+                domainFieldsDynamo.put("rooms", domainFieldsNew.get("rooms"));
+            }
+            if (domainFieldsNew.get("subcategoryId") != null) {
+                domainFieldsDynamo.put("subcategoryId", domainFieldsNew.get("subcategoryId"));
+            }
+            if (domainFieldsNew.get("propertyHero") != null) {
+                domainFieldsDynamo.put("propertyHero", domainFieldsNew.get("propertyHero"));
+            }
+            return domainFieldsDynamo;
+        }
     }
 
     private void processRooms(ImageMessage imageMessage, String mediaId) {
-        List<Map> roomList = (List<Map>) imageMessage.getOuterDomainData().getDomainFieldValue("rooms");
-        List<LcmMediaRoom> jsonRoomList = convert(roomList);
+        final List<Map> roomList = (List<Map>) imageMessage.getOuterDomainData().getDomainFieldValue("rooms");
+        final List<LcmMediaRoom> jsonRoomList = convert(roomList);
         //rooms from LCM DB.
-        List<LcmMediaRoom> lcmMediaRoomList = catalogitemMediaDao.getLcmRoomsByMediaId(Integer.valueOf(mediaId));
+        final List<LcmMediaRoom> lcmMediaRoomList = catalogitemMediaDao.getLcmRoomsByMediaId(Integer.valueOf(mediaId));
+        //room to be delete
+        final List<LcmMediaRoom> deleteRoomListCata = new ArrayList<>();
+        final List<LcmMediaRoom> deleteRoomListPara = new ArrayList<>();
+        //room need to be add
+        final List<LcmMediaRoom> addedRoomListCata = new ArrayList<>();
+        final List<LcmMediaRoom> addedRoomListPara = new ArrayList<>();
 
-        List<LcmMediaRoom> deleteRoomListCata = new ArrayList<>();
-        List<LcmMediaRoom> addedRoomListCata = new ArrayList<>();
-        //add hero room
-        List<LcmMediaRoom> deleteRoomListPara = new ArrayList<>();
-        //for delete hero room
-        List<LcmMediaRoom> addedRoomListPara = new ArrayList<>();
+        MediaRoomUtil.initDataList(jsonRoomList, lcmMediaRoomList, deleteRoomListCata, addedRoomListCata, deleteRoomListPara, addedRoomListPara);
 
-        initDataList(jsonRoomList, lcmMediaRoomList, deleteRoomListCata, addedRoomListCata, deleteRoomListPara, addedRoomListPara);
         deleteParagraph(deleteRoomListPara);
         deleteCatalogForRoom(deleteRoomListCata, Integer.valueOf(mediaId));
         addCatalogForRoom(addedRoomListCata, Integer.valueOf(mediaId), imageMessage);
         addParagraph(addedRoomListPara, Integer.valueOf(mediaId));
     }
 
-    private static void initDataList(List<LcmMediaRoom> jsonRoomList, List<LcmMediaRoom> lcmMediaRoomList,
-            List<LcmMediaRoom> deleteRoomListCata, List<LcmMediaRoom> addedRoomListCata,
-            List<LcmMediaRoom> deleteRoomListPara, List<LcmMediaRoom> addedRoomListPara) {
 
-        for (LcmMediaRoom jsonRoom : jsonRoomList) {
-            Boolean containAndEqual = containRoom(lcmMediaRoomList, jsonRoom);
-            if (containAndEqual != null && containAndEqual == false) {
-                if (jsonRoom.getRoomHero() == true) {
-                    addedRoomListPara.add(jsonRoom);
-                } else {
-                    deleteRoomListPara.add(jsonRoom);
-                }
-            }
-        }
-        List<LcmMediaRoom> remainJsonRoomList = ListUtils.subtract(jsonRoomList, addedRoomListPara);
-        remainJsonRoomList = ListUtils.subtract(remainJsonRoomList, deleteRoomListPara);
-        List<LcmMediaRoom> newRoomList = ListUtils.subtract(remainJsonRoomList, lcmMediaRoomList);
 
-        List<LcmMediaRoom> remainDBList =
-                lcmMediaRoomList.stream().filter(lcmMediaRoom1 -> containSameId(deleteRoomListPara, lcmMediaRoom1.getRoomId()) == false)
-                        .filter(lcmMediaRoom1 -> containSameId(addedRoomListPara, lcmMediaRoom1.getRoomId()) == false)
-                        .collect(Collectors.toList());
-        List<LcmMediaRoom> removeRoomList = ListUtils.subtract(remainDBList, remainJsonRoomList);
 
-        addedRoomListCata.addAll(newRoomList);
-        addedRoomListPara.addAll(newRoomList.stream().filter(lcmMediaRoom -> lcmMediaRoom.getRoomHero() == true).collect(Collectors.toList()));
-        deleteRoomListCata.addAll(removeRoomList);
-        deleteRoomListPara.addAll(removeRoomList.stream().filter(lcmMediaRoom -> lcmMediaRoom.getRoomHero() == true).collect(Collectors.toList()));
 
-    }
 
-    private static boolean containSameId(List<LcmMediaRoom> lcmMediaRoomList, int roomid) {
-        for (LcmMediaRoom lcmMediaRoom : lcmMediaRoomList) {
-            if (lcmMediaRoom.getRoomId() == roomid) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * null means does not exist, true means contail and value is the same
-     *
-     * @param lcmMediaRoomList
-     * @param jsonRoom
-     * @return
-     */
-    private static Boolean containRoom(List<LcmMediaRoom> lcmMediaRoomList, LcmMediaRoom jsonRoom) {
-        for (LcmMediaRoom dbRoom : lcmMediaRoomList) {
-            //exactly the same, that means we do not need to update.
-            if (jsonRoom.getRoomId() == dbRoom.getRoomId() && jsonRoom.getRoomHero() == dbRoom.getRoomHero()) {
-                return true;
-            }
-            if (jsonRoom.getRoomId() == dbRoom.getRoomId() && jsonRoom.getRoomHero() != dbRoom.getRoomHero()) {
-                return false;
-            }
-        }
-        return null;
-    }
-
-    public static void main(String[] args) {
-        LcmMediaRoom req1 = LcmMediaRoom.builder().roomHero(true).roomId(1).build();
-        LcmMediaRoom req2 = LcmMediaRoom.builder().roomHero(false).roomId(2).build();
-        LcmMediaRoom req3 = LcmMediaRoom.builder().roomHero(true).roomId(3).build();
-        LcmMediaRoom req7 = LcmMediaRoom.builder().roomHero(false).roomId(5).build();
-
-        List<LcmMediaRoom> lcmMediaReqList = new ArrayList<>();
-        lcmMediaReqList.add(req1);
-        lcmMediaReqList.add(req2);
-        lcmMediaReqList.add(req3);
-        lcmMediaReqList.add(req7);
-
-        LcmMediaRoom req4 = LcmMediaRoom.builder().roomHero(true).roomId(4).build();
-        LcmMediaRoom req5 = LcmMediaRoom.builder().roomHero(true).roomId(2).build();
-        LcmMediaRoom req6 = LcmMediaRoom.builder().roomHero(false).roomId(3).build();
-        LcmMediaRoom req8 = LcmMediaRoom.builder().roomHero(false).roomId(6).build();
-
-        List<LcmMediaRoom> lcmMediaDbList = new ArrayList<>();
-        lcmMediaDbList.add(req4);
-        lcmMediaDbList.add(req5);
-        lcmMediaDbList.add(req6);
-        lcmMediaDbList.add(req8);
-
-        List<LcmMediaRoom> deleteRoomListCata = new ArrayList<>();
-        List<LcmMediaRoom> addedRoomListCata = new ArrayList<>();
-
-        List<LcmMediaRoom> deleteRoomListPara = new ArrayList<>();
-        List<LcmMediaRoom> addedRoomListPara = new ArrayList<>();
-
-        initDataList(lcmMediaReqList, lcmMediaDbList, deleteRoomListCata, addedRoomListCata, deleteRoomListPara, addedRoomListPara);
-
-    }
 
     private void deleteParagraph(List<LcmMediaRoom> deleteRoomListPara) {
         deleteRoomListPara.stream().forEach(lcmMediaRoom -> {
@@ -187,10 +152,10 @@ public class MediaUpdateProcesser {
     }
 
     private List<LcmMediaRoom> convert(List<Map> roomList) {
-        List<LcmMediaRoom> lcmMediaRoomList = new ArrayList<>();
+        final List<LcmMediaRoom> lcmMediaRoomList = new ArrayList<>();
         roomList.stream().forEach(room -> {
-            boolean hero = (room.get("roomHero")).equals("true") ? true : false;
-            LcmMediaRoom lcmMediaRoom = LcmMediaRoom.builder().roomId(Integer.valueOf((String) room.get("roomId")))
+            final boolean hero = (room.get("roomHero")).equals("true") ? true : false;
+            final LcmMediaRoom lcmMediaRoom = LcmMediaRoom.builder().roomId(Integer.valueOf((String) room.get("roomId")))
                     .roomHero(hero).build();
             lcmMediaRoomList.add(lcmMediaRoom);
         });

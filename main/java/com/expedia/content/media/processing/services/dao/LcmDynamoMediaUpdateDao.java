@@ -1,26 +1,15 @@
 package com.expedia.content.media.processing.services.dao;
 
-import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.domain.*;
-import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
 import com.expedia.content.media.processing.services.dao.sql.*;
-import com.expedia.content.media.processing.services.util.ActivityMapping;
-import com.expedia.content.media.processing.services.util.JSONUtil;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
-import java.io.IOException;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Media data access operations through LCM and the Dynamo MediaDB.
@@ -37,27 +26,29 @@ public class LcmDynamoMediaUpdateDao implements MediaUpdateDao {
     @Autowired
     private MediaChgSproc mediaChgSproc;
     @Autowired
-    private MediaTableGetSproc mediaTableGetSproc;
+    private MediaGetByMediaIdSproc mediaTableGetSproc;
 
     @Autowired
-    private DynamoMediaRepository mediaRepo;
-    @Autowired
-    private LcmProcessLogDao processLogDao;
-    @Autowired
-    private List<ActivityMapping> activityWhiteList;
-    @Resource(name = "providerProperties")
-    private Properties providerProperties;
-    @Value("${image.root.path}")
-    private String imageRootPath;
-    @Value("${media.status.sproc.param.limit}")
-    private int paramLimit;
+    private MediaGetByMediaIdSproc mediaGetByMediaIdSproc;
 
     public void updateMedia(ImageMessage imageMessage, int mediaId) {
-        LcmMedia lcmMedia = getMedia(mediaId);
+        final LcmMedia lcmMedia = getMedia(mediaId);
+        String statusCode = "";
         LOGGER.info("update media media[{}]" + mediaId);
-        final String statusCode = lcmMedia.getActive() ? "A" : "I";
+        if(imageMessage.isActive()==null){
+            statusCode = lcmMedia.getActive() ? "A" : "I";
+        }else {
+            statusCode = imageMessage.isActive() ? "A" : "I";
+        }
+        String comments = "";
+        if(imageMessage.getComment()==null){
+            comments = lcmMedia.getComment();
+        }else{
+            comments = imageMessage.getComment();
+        }
+
         mediaChgSproc.updateMedia(mediaId, DEFAULT_LODGING_LOCALE, lcmMedia.getFormatId(), DEFAULT_CONTENT_PROVIDER_ID, lcmMedia.getMediaCreditTxt(),
-                imageMessage.getComment(), lcmMedia.getFileName(), statusCode, lcmMedia.getMediaStartHorizontalPct(),
+                comments, lcmMedia.getFileName(), statusCode, lcmMedia.getMediaStartHorizontalPct(),
                 lcmMedia.getMediaDisplayMethodSeqNbr() == 0 ? null : lcmMedia.getMediaDisplayMethodSeqNbr(), lcmMedia.getMediaCaptionTxt(),
                 lcmMedia.getMediaDisplayName(), imageMessage.getUserId(),
                 UPDATED_BY);
@@ -65,8 +56,12 @@ public class LcmDynamoMediaUpdateDao implements MediaUpdateDao {
 
     private LcmMedia getMedia(int mediaId) {
         final Map<String, Object> mediaResult = mediaTableGetSproc.execute(mediaId, DEFAULT_LODGING_LOCALE);
-        final LcmMedia media = ((List<LcmMedia>) mediaResult.get(MediaTableGetSproc.MEDIA_SET)).get(0);
-        return media;
+        return ((List<LcmMedia>) mediaResult.get(MediaTableGetSproc.MEDIA_SET)).get(0);
+    }
+
+    public LcmMedia getMediaByMediaId(int mediaId) {
+        final Map<String, Object> mediaResult = mediaGetByMediaIdSproc.execute(mediaId);
+        return ((List<LcmMedia>) mediaResult.get(MediaTableGetSproc.MEDIA_SET)).get(0);
     }
 
 }

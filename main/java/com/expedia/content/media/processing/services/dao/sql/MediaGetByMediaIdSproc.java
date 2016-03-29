@@ -17,16 +17,14 @@ import java.sql.Types;
  * Call a MSSQL Sproc [MediaItemGet] in LCM in order to retrieve data from the Media, CatalogItemMedia, and MediaFileName (derivatives) tables
  */
 @Repository
-public class MediaTableGetSproc extends StoredProcedure {
+public class MediaGetByMediaIdSproc extends StoredProcedure {
 
     public static final String MEDIA_SET = "media";
 
     @Autowired
-    public MediaTableGetSproc(final DataSource dataSource) {
-        super(dataSource, "MediaGet#18");
+    public MediaGetByMediaIdSproc(final DataSource dataSource) {
+        super(dataSource, "MediaGet#19");
         declareParameter(new SqlParameter("@pMediaID", Types.INTEGER));
-        declareParameter(new SqlParameter("@pLangID", Types.INTEGER));
-
         declareParameter(new SqlReturnResultSet(MEDIA_SET, new MediaRowMapper()));
     }
 
@@ -39,18 +37,12 @@ public class MediaTableGetSproc extends StoredProcedure {
         public LcmMedia mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
             final String activeFlag = resultSet.getString("StatusCode");
             return LcmMedia.builder()
+                    .domainId(resultSet.getInt("SKUGroupCatalogItemID"))
                     .mediaId(resultSet.getInt("MediaID"))
-                    .formatId(resultSet.getInt("MediaFormatID"))
-                    .mediaCreditTxt(resultSet.getString("MediaCreditTxt"))
-                    .comment(resultSet.getString("MediaCommentTxt"))
-                    .mediaDisplayName(resultSet.getString("MediaDisplayName"))
-                    .mediaCaptionTxt(resultSet.getString("MediaCaptionTxt"))
-                    .fileName(resultSet.getString("ContentProviderMediaName"))
                     .active(activeFlag != null && "A".equals(activeFlag))
                     .fileName(resultSet.getString("ContentProviderMediaName"))
-                    .mediaStartHorizontalPct(resultSet.getDouble("MediaStartHorizontalPct"))
-                    .mediaDisplayMethodSeqNbr(resultSet.getShort("MediaDisplayMethodSeqNbr"))
-                    //todo sen get updatelocation.
+                    .comment(resultSet.getString("MediaCommentTxt"))
+                    .formatId(resultSet.getInt("MediaFormatID"))
                     .build();
         }
     }
