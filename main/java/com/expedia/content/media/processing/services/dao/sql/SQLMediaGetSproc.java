@@ -39,7 +39,7 @@ public class SQLMediaGetSproc extends StoredProcedure {
         public LcmMedia mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
             final String activeFlag = resultSet.getString("StatusCode");
             return LcmMedia.builder()
-                    .domainId(resultSet.getInt("SkuGroupCatalogItemID"))
+                    .domainId(resultSet.getInt("SKUGroupCatalogItemID"))
                     .mediaId(resultSet.getInt("MediaID"))
                     .active(activeFlag != null && "A".equals(activeFlag))
                     .fileName(resultSet.getString("ContentProviderMediaName"))
