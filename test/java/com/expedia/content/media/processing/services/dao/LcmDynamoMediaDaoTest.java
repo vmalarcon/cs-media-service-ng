@@ -8,7 +8,7 @@ import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaContentProviderNameGetSproc;
-import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaItemGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaIdListSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetSproc;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
@@ -64,7 +64,7 @@ public class LcmDynamoMediaDaoTest {
         idResult.put(SQLMediaIdListSproc.MEDIA_ID_SET, mediaIds);
         when(mediaIdSproc.execute(anyInt(), anyString())).thenReturn(idResult);
 
-        SQLMediaGetSproc mediaSproc = mock(SQLMediaGetSproc.class);
+        SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
         List<LcmMedia> mediaList1 = new ArrayList<>();
         LcmMedia media1 = LcmMedia.builder().domainId(1234).mediaId(1).fileName("image1.jpg").active(true).width(20).height(21).fileSize(200)
                 .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(3).comment("Comment").formatId(2).build();
@@ -141,7 +141,7 @@ public class LcmDynamoMediaDaoTest {
         idResult.put(SQLMediaIdListSproc.MEDIA_ID_SET, mediaIds);
         when(mediaIdSproc.execute(anyInt(), anyString())).thenReturn(idResult);
 
-        SQLMediaGetSproc mediaSproc = mock(SQLMediaGetSproc.class);
+        SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
         List<LcmMedia> mediaList1 = new ArrayList<>();
         LcmMedia media1 = LcmMedia.builder().domainId(1234).mediaId(1).fileName("image1.jpg").active(true).width(20).height(21).fileSize(200)
                 .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(3).comment("Comment").formatId(2).build();
@@ -225,7 +225,7 @@ public class LcmDynamoMediaDaoTest {
         idResult.put(SQLMediaIdListSproc.MEDIA_ID_SET, mediaIds);
         when(mediaIdSproc.execute(anyInt(), anyString())).thenReturn(idResult);
 
-        SQLMediaGetSproc mediaSproc = mock(SQLMediaGetSproc.class);
+        SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
         LcmMedia media1 = LcmMedia.builder().domainId(1234).mediaId(1).fileName("image1.jpg").active(true).width(20).height(21).fileSize(200)
                 .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(3).comment("Comment").build();
         List<LcmMedia> mediaList1 = new ArrayList<>();
@@ -294,7 +294,7 @@ public class LcmDynamoMediaDaoTest {
         idResult.put(SQLMediaIdListSproc.MEDIA_ID_SET, mediaIds);
         when(mediaIdSproc.execute(anyInt(), anyString())).thenReturn(idResult);
 
-        SQLMediaGetSproc mediaSproc = mock(SQLMediaGetSproc.class);
+        SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
         LcmMedia media1 = LcmMedia.builder().domainId(1234).mediaId(1).fileName("image1.jpg").active(true).width(20).height(21).fileSize(200)
                 .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(3).comment("Comment").build();
         List<LcmMedia> mediaList1 = new ArrayList<>();
@@ -349,7 +349,7 @@ public class LcmDynamoMediaDaoTest {
         idResult.put(SQLMediaIdListSproc.MEDIA_ID_SET, mediaIds);
         when(mediaIdSproc.execute(anyInt(), anyString())).thenReturn(idResult);
 
-        SQLMediaGetSproc mediaSproc = mock(SQLMediaGetSproc.class);
+        SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
         List<LcmMedia> mediaList1 = new ArrayList<>();
         LcmMedia media1 = LcmMedia.builder().domainId(1234).mediaId(1).fileName("image1.jpg").active(true).width(20).height(21).fileSize(200)
                 .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(3).comment("Comment").formatId(2).build();
@@ -410,7 +410,7 @@ public class LcmDynamoMediaDaoTest {
         assertNull(testMedia3.getDerivativesList());
     }
 
-    private MediaDao makeMockMediaDao(SQLMediaIdListSproc mediaIdSproc, SQLMediaGetSproc mediaSproc, DynamoMediaRepository mockMediaDBRepo,
+    private MediaDao makeMockMediaDao(SQLMediaIdListSproc mediaIdSproc, SQLMediaItemGetSproc mediaSproc, DynamoMediaRepository mockMediaDBRepo,
                                       final Properties properties) throws NoSuchFieldException, IllegalAccessException {
         MediaDao mediaDao = new LcmDynamoMediaDao();
         setFieldValue(mediaDao, "lcmMediaIdSproc", mediaIdSproc);
@@ -438,7 +438,7 @@ public class LcmDynamoMediaDaoTest {
     private Map<String, Object> make2DerivativeMediaResult(List<LcmMedia> mediaList1, int mediaId, int type1, int type2, boolean published1,
                                                            boolean published2, String fileName1, String fileName2) {
         Map<String, Object> mediaResult1 = new HashMap<>();
-        mediaResult1.put(SQLMediaGetSproc.MEDIA_SET, mediaList1);
+        mediaResult1.put(SQLMediaItemGetSproc.MEDIA_SET, mediaList1);
         List<LcmMediaDerivative> derivativeList1 = new ArrayList<>();
         LcmMediaDerivative derivative11 = LcmMediaDerivative.builder().mediaId(mediaId).fileProcessed(published1).mediaSizeTypeId(type1).fileName(fileName1)
                 .width(10).height(11).fileSize(100).build();
@@ -446,7 +446,7 @@ public class LcmDynamoMediaDaoTest {
         LcmMediaDerivative derivative12 = LcmMediaDerivative.builder().mediaId(mediaId).fileProcessed(published2).mediaSizeTypeId(type2).fileName(fileName2)
                 .width(20).height(21).fileSize(200).build();
         derivativeList1.add(derivative12);
-        mediaResult1.put(SQLMediaGetSproc.MEDIA_DERIVATIVES_SET, derivativeList1);
+        mediaResult1.put(SQLMediaItemGetSproc.MEDIA_DERIVATIVES_SET, derivativeList1);
         return mediaResult1;
     }
 

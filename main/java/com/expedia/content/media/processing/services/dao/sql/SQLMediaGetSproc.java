@@ -1,7 +1,11 @@
 package com.expedia.content.media.processing.services.dao.sql;
 
-import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
-import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
+
+import javax.sql.DataSource;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.SqlParameter;
@@ -9,28 +13,21 @@ import org.springframework.jdbc.core.SqlReturnResultSet;
 import org.springframework.jdbc.object.StoredProcedure;
 import org.springframework.stereotype.Repository;
 
-import javax.sql.DataSource;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.util.Date;
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 
 /**
- * Call a MSSQL Sproc [MediaItemGet] in LCM in order to retrieve data from the Media, CatalogItemMedia, and MediaFileName (derivatives) tables
+ * Call a MSSQL Sproc [MediaGet] in LCM in order to retrieve data from the Media, CatalogItemMedia, and MediaFileName (derivatives) tables
  */
 @Repository
 public class SQLMediaGetSproc extends StoredProcedure {
 
     public static final String MEDIA_SET = "media";
-    public static final String MEDIA_DERIVATIVES_SET = "mediaDerivatives";
 
     @Autowired
     public SQLMediaGetSproc(final DataSource dataSource) {
-        super(dataSource, "MediaItemGet#05");
-        declareParameter(new SqlParameter("@pContentOwnerID", Types.INTEGER));
+        super(dataSource, "MediaGet#19");
         declareParameter(new SqlParameter("@pMediaID", Types.INTEGER));
         declareParameter(new SqlReturnResultSet(MEDIA_SET, new MediaRowMapper()));
-        declareParameter(new SqlReturnResultSet(MEDIA_DERIVATIVES_SET, new MediaDerivativeRowMapper()));
     }
 
     /**
@@ -42,39 +39,14 @@ public class SQLMediaGetSproc extends StoredProcedure {
         public LcmMedia mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
             final String activeFlag = resultSet.getString("StatusCode");
             return LcmMedia.builder()
-                    .domainId(resultSet.getInt("CatalogItemID"))
+                    .domainId(resultSet.getInt("SkuGroupCatalogItemID"))
                     .mediaId(resultSet.getInt("MediaID"))
-                    .provider(resultSet.getInt("MediaProviderID"))
                     .active(activeFlag != null && "A".equals(activeFlag))
                     .fileName(resultSet.getString("ContentProviderMediaName"))
-                    .width(resultSet.getInt("MediaWidth"))
-                    .height(resultSet.getInt("MediaHeight"))
-                    .lastUpdatedBy(resultSet.getString("LastUpdatedBy"))
-                    .fileSize(resultSet.getInt("FileSizeKb"))
-                    .lastUpdateDate(new Date(resultSet.getTimestamp("UpdateDate").getTime()))
-                    .category(resultSet.getInt("MediaUseRank"))
                     .comment(resultSet.getString("MediaCommentTxt"))
                     .formatId(resultSet.getInt("MediaFormatID"))
                     .build();
         }
     }
 
-    /**
-     * Spring {@link RowMapper} implementation to converts a result set to a object
-     * {@link LcmMediaDerivative}
-     */
-    private class MediaDerivativeRowMapper implements RowMapper<LcmMediaDerivative> {
-        @Override
-        public LcmMediaDerivative mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
-            return LcmMediaDerivative.builder()
-                    .fileName(resultSet.getString("MediaFileName"))
-                    .mediaId(resultSet.getInt("MediaID"))
-                    .mediaSizeTypeId(resultSet.getInt("MediaSizeTypeID"))
-                    .fileProcessed(resultSet.getBoolean("FileProcessedBool"))
-                    .width(resultSet.getInt("MediaFileWidth"))
-                    .height(resultSet.getInt("MediaFileHeight"))
-                    .fileSize(resultSet.getInt("FileSizeKb"))
-                    .build();
-        }
-    }
 }
