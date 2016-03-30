@@ -325,8 +325,10 @@ public class MediaController extends CommonServiceController {
 
     /**
      * This method processes the replacement changes needed on the
-     * ImageMessageBuilder for the provided ImageMessage.
+     * ImageMessageBuilder for the provided ImageMessage . Reprocessing
+     * happens only if the request comes from Media Cloud Router (as clientId)
      * <p>
+     *
      * The method will first try to find the media that have the same file name.
      * If multiple, it will choose the best one for replacement. It will finally
      * populate the replacement mediaId and GUID on the ImageMessageBuilder.
@@ -338,7 +340,7 @@ public class MediaController extends CommonServiceController {
      * @return returns true if reprocessing and false if not.
      */
     private boolean processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder, String clientId) {
-        if (clientId.equals(MEDIA_CLOUD_ROUTER_CLIENT_ID)) {
+        if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
             LOGGER.info("This is a replacement: mediaGuid=[{}], filename=[{}], requestId=[{}]", imageMessage.getMediaGuid(), imageMessage.getFileName(),
                     imageMessage.getRequestId());
             final List<Media> mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
