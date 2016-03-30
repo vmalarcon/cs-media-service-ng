@@ -293,8 +293,10 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * TODO JavaDoc
-     * @param media
+     * Sets the LCM media id in the media object. The LCM id is put as a field of the domain data since it's
+     * expected there in the response JSON payload.
+     * 
+     * @param media The media object to update.
      */
     private void setResponseLcmMediaId(Media media) {
         if (media.getLcmMediaId() != null) {
