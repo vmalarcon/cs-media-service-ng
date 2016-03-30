@@ -6,6 +6,7 @@ import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.services.dao.LcmDynamoMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDao;
+import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
@@ -48,6 +49,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -225,6 +227,46 @@ public class MediaControllerTest {
         verifyZeroInteractions(mockLcmDynamoMediaDao);
     }
 
+    @Test
+    public void testValidateImageSuccessWithThumbnailAndRotation() throws Exception {
+        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", "
+                + "\"rotation\": \"90\", " + "\"userId\": \"bobthegreat\", " + "\"generateThumbnail\": \"true\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", "
+                + "\"domainProvider\": \"EPC Internal User\" " + "}";
+
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        ThumbnailProcessor thumbnailProcessor = mock(ThumbnailProcessor.class);
+        String thumbnailUrl = "http://url.net/thumbnail.jpg";
+        Thumbnail thumbnail = mock(Thumbnail.class);
+        when(thumbnail.getLocation()).thenReturn(thumbnailUrl);
+        when(thumbnailProcessor.createThumbnail(any())).thenReturn(thumbnail);
+        setFieldValue(mediaController, "thumbnailProcessor", thumbnailProcessor);
+
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+        setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
+        assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
+        assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+        assertTrue(responseEntity.getBody().contains("\"thumbnailUrl\":\"" + thumbnailUrl + "\""));
+
+        ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
+        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        verify(queueMessagingTemplateMock, times(1)).send(anyString(), any());
+    }
+
+
     @SuppressWarnings("unchecked")
     @Test
     public void testClientNotValid() throws Exception {
@@ -336,8 +378,11 @@ public class MediaControllerTest {
 
         MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
         when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString())).thenReturn(mediaValues);
+        SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
+        when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
 
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
         ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", "true", null, headers);
@@ -359,6 +404,20 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\":\"ea868d7d-c4ce-41a8-be43-19fff0ce5ad4\""));
         assertTrue(responseEntity.getBody().contains("\"lcmMediaId\":\"4321\""));
         assertTrue(responseEntity.getBody().contains("\"domainFields\":{"));
+    }
+
+    @Test
+    public void testMediaByDomainIdLodgingNotFound() throws Exception {
+        SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
+        when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(false);
+
+        setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
+
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", "true", null, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+        assertEquals("DomainId not found: 1234", responseEntity.getBody());
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
