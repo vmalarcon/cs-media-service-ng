@@ -192,16 +192,11 @@ public class MediaController extends CommonServiceController {
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                 serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
-        final ResponseEntity<String> validationResponse = validateMediaByDomainIdRequest(domainName, activeFilter);
+        final ResponseEntity<String> validationResponse = validateMediaByDomainIdRequest(domainName, domainId, activeFilter);
         if (validationResponse != null) {
             LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                     serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
             return validationResponse;
-        }
-        if (!skuGroupCatalogItemDao.skuGroupExists(Integer.parseInt(domainId))) {
-            LOGGER.warn("DOMAIN_ID NOT FOUND - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
-                    serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
-            return new ResponseEntity<>("DomainId not found: " + domainId, NOT_FOUND);
         }
         final List<DomainIdMedia> images =
                 transformMediaForResponse(mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter));
@@ -243,13 +238,16 @@ public class MediaController extends CommonServiceController {
      * @param activeFilter Active filter to validate.
      * @return Returns a response if the validation fails; null otherwise.
      */
-    private ResponseEntity<String> validateMediaByDomainIdRequest(final String domainName, final String activeFilter) {
+    private ResponseEntity<String> validateMediaByDomainIdRequest(final String domainName, final String domainId, final String activeFilter) {
         if (activeFilter != null && !activeFilter.equalsIgnoreCase("all") && !activeFilter.equalsIgnoreCase("true")
                 && !activeFilter.equalsIgnoreCase("false")) {
-            return new ResponseEntity<String>("Unsupported active filter " + activeFilter, BAD_REQUEST);
+            return new ResponseEntity<>("Unsupported active filter " + activeFilter, BAD_REQUEST);
         }
         if (Domain.findDomain(domainName, true) == null) {
-            return new ResponseEntity<String>("Domain not found " + domainName, NOT_FOUND);
+            return new ResponseEntity<>("Domain not found " + domainName, NOT_FOUND);
+        }
+        if (!skuGroupCatalogItemDao.skuGroupExists(Integer.parseInt(domainId))) {
+            return new ResponseEntity<>("DomainId not found: " + domainId, NOT_FOUND);
         }
         return null;
     }
