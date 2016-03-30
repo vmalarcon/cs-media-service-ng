@@ -336,7 +336,7 @@ public class MediaController extends CommonServiceController {
      *
      * @param imageMessage Original message received.
      * @param imageMessageBuilder Builder for the new/mutated ImageMessage.
-     * @param clientId
+     * @param clientId Existing in the message header, represents the client (EPC, Media Cloud Router, Multisource, GSO Media Tools)
      * @return returns true if reprocessing and false if not.
      */
     private boolean processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder, String clientId) {
