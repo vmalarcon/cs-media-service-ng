@@ -161,6 +161,14 @@ public class LcmDynamoMediaDao implements MediaDao {
                 guidMedia = convertMedia(mediaLcmMediaIdMap).apply(buildLcmMedia(domainId, nullFilter).apply(lcmMediaId));
             }
         }
+        if (guidMedia != null) {
+            final List<String> fileNames = new ArrayList<>();
+            fileNames.add(guidMedia.getFileName());
+            final String status = getLatestStatus(fileNames).get(guidMedia.getFileName());
+            if (status != null) {
+                guidMedia.setStatus(status);
+            }
+        }
         return guidMedia;
     }
 
@@ -182,7 +190,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     }
 
     /**
-     * because of the parameter length limitation in Sproc 'MediaProcessLogGetByFilename', if the fileNames lengh is bigger than the limitation
+     * because of the parameter length limitation in Sproc 'MediaProcessLogGetByFilename', if the fileNames length is bigger than the limitation
      * we call the sproc multiple times to get the result.
      *
      * @param limit Sproc parameter limitation.
@@ -284,7 +292,7 @@ public class LcmDynamoMediaDao implements MediaDao {
      * Builds a comment list from the LCM media comment. There is only one comment in LCM, but the response expects a list.
      *
      * @param lcmMedia Data object containing media data from LCM.
-     * @return The latest status of a media file.
+     * @return The comments of a media file.
      */
     private List<String> extractCommentList(final LcmMedia lcmMedia) {
         if (lcmMedia.getComment() != null && !lcmMedia.getComment().isEmpty()) {
@@ -300,7 +308,7 @@ public class LcmDynamoMediaDao implements MediaDao {
      * considered old and therefore published.
      *
      * @param fileNames File names for which the status is required.
-     * @return The latest status of a media filesS.
+     * @return The latest status of a media file.
      */
     private Map<String, String> getLatestStatus(List<String> fileNames) {
         List<MediaProcessLog> logs = processLogDao.findMediaStatus(fileNames);

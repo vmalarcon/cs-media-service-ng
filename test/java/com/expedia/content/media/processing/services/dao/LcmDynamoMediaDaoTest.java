@@ -435,7 +435,7 @@ public class LcmDynamoMediaDaoTest {
         mockProperties.put("1", "EPC Internal User");
 
         String guid = "d2d4d480-9627-47f9-86c6-1874c18d34t6";
-        Media guidMedia = Media.builder().active("true").mediaGuid(guid).build();
+        Media guidMedia = Media.builder().active("true").mediaGuid(guid).fileName("super_potato.jpg").build();
         DynamoMediaRepository mediaDynamo = mock(DynamoMediaRepository.class);
         when(mediaDynamo.getMedia(guid)).thenReturn(guidMedia);
         
@@ -488,7 +488,7 @@ public class LcmDynamoMediaDaoTest {
         
         String guid = "d2d4d480-9627-47f9-86c6-1874c18d34t6";
         Media guidMedia = Media.builder().active("true").mediaGuid(guid).domain(Domain.LODGING.getDomain()).domainId(domainId.toString())
-                .lcmMediaId(lcmMediaId.toString()).build();
+                .lcmMediaId(lcmMediaId.toString()).fileName("super_potato.jpg").build();
         DynamoMediaRepository mediaDynamo = mock(DynamoMediaRepository.class);
         when(mediaDynamo.getMedia(guid)).thenReturn(guidMedia);
 
