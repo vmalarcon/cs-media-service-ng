@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
 
+import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
@@ -103,6 +104,8 @@ public class MediaController extends CommonServiceController {
     private MediaDao mediaDao;
     @Autowired
     private DynamoMediaRepository dynamoMediaRepository;
+    @Autowired
+    private SKUGroupCatalogItemDao skuGroupCatalogItemDao;
 
     /**
      * web service interface to consume media message.
@@ -189,7 +192,7 @@ public class MediaController extends CommonServiceController {
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                 serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
-        final ResponseEntity<String> validationResponse = validateMediaByDomainIdRequest(domainName, activeFilter);
+        final ResponseEntity<String> validationResponse = validateMediaByDomainIdRequest(domainName, domainId, activeFilter);
         if (validationResponse != null) {
             LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                     serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
@@ -198,7 +201,7 @@ public class MediaController extends CommonServiceController {
         final List<DomainIdMedia> images =
                 transformMediaForResponse(mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter));
         final MediaByDomainIdResponse response = MediaByDomainIdResponse.builder().domain(domainName).domainId(domainId).images(images).build();
-        return new ResponseEntity<String>(OBJECT_MAPPER.writeValueAsString(response), OK);
+        return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);
     }
 
     /**
@@ -235,13 +238,16 @@ public class MediaController extends CommonServiceController {
      * @param activeFilter Active filter to validate.
      * @return Returns a response if the validation fails; null otherwise.
      */
-    private ResponseEntity<String> validateMediaByDomainIdRequest(final String domainName, final String activeFilter) {
+    private ResponseEntity<String> validateMediaByDomainIdRequest(final String domainName, final String domainId, final String activeFilter) {
         if (activeFilter != null && !activeFilter.equalsIgnoreCase("all") && !activeFilter.equalsIgnoreCase("true")
                 && !activeFilter.equalsIgnoreCase("false")) {
-            return new ResponseEntity<String>("Unsupported active filter " + activeFilter, BAD_REQUEST);
+            return new ResponseEntity<>("Unsupported active filter " + activeFilter, BAD_REQUEST);
         }
         if (Domain.findDomain(domainName, true) == null) {
-            return new ResponseEntity<String>("Domain not found " + domainName, NOT_FOUND);
+            return new ResponseEntity<>("Domain not found " + domainName, NOT_FOUND);
+        }
+        if (!skuGroupCatalogItemDao.skuGroupExists(Integer.parseInt(domainId))) {
+            return new ResponseEntity<>("DomainId not found: " + domainId, NOT_FOUND);
         }
         return null;
     }
