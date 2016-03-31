@@ -61,7 +61,7 @@ public class MediaUpdateProcesser {
         if (imageMessage.getComment() != null || imageMessage.isActive() != null) {
             mediaUpdateDao.updateMedia(imageMessage, Integer.valueOf(mediaId));
         }
-        //not categoryId.
+        //step 2 update property hero in catalotItemMedia
         if (imageMessage.getOuterDomainData() != null &&
                 (imageMessage.getOuterDomainData().getDomainFieldValue("propertyHero") != null
                         || imageMessage.getOuterDomainData().getDomainFieldValue("subcategoryId") != null)) {
@@ -71,26 +71,7 @@ public class MediaUpdateProcesser {
             } else {
                 handleDynamoAndLCMPropertyHero(imageMessage, Integer.valueOf(mediaId), expediaId, dynamoMedia.getMediaGuid());
             }
-
-//            //has record in dynamo, update catelogItem to old value in dynamo.
-//            boolean updateValueWithDynamo = false;
-//            if (dynamoMedia != null) {
-//                updateValueWithDynamo = catelogHeroProcesser.setOldCategoryForHeroPropertyMedia(imageMessage, domainId, dynamoMedia.getMediaGuid());
-//            } else if (dynamoMedia == null || !updateValueWithDynamo) {
-//                //set old hero to zero? todo need to get to other media Id of this property and set to zero
-//                //[CatalogItemMediaLst#01]
-////                catalogItemMediaChgSproc.updateCategory(Integer.valueOf(domainId), Integer.valueOf(mediaId), DEFAULT_USER_RANK, imageMessage.getUserId(),
-////                        ROOM_UPDATED_BY);
-//            }
         }
-//        //step2 update subcategory id
-//        if (imageMessage.getOuterDomainData() != null && imageMessage.getOuterDomainData().getDomainFieldValue("subcategoryId") != null) {
-//            if (dynamoMedia != null) {
-//              //  setOldCategoryForHeroPropertyMedia(imageMessage, domainId, dynamoMedia.getMediaGuid());
-//            }
-//            catalogitemMediaDao.updateCatalogItem(imageMessage, Integer.valueOf(mediaId), expediaId);
-//        }
-
         //step 3 update room table.
         processRooms(imageMessage, mediaId);
         //step 4. save media to dynamo
@@ -104,9 +85,9 @@ public class MediaUpdateProcesser {
     private void handleLCMPropertyHero(ImageMessage imageMessage, int mediaId, int domainId) {
         if (imageMessage.getOuterDomainData().getDomainFieldValue("subcategoryId") == null
                 && imageMessage.getOuterDomainData().getDomainFieldValue("propertyHero") != null) {
-            catelogHeroProcesser.unSetOtherMediaHero(domainId, mediaId);
+            catelogHeroProcesser.unSetOtherMediaHero(domainId, imageMessage.getUserId());
         } else if (imageMessage.getOuterDomainData().getDomainFieldValue("subcategoryId") != null) {
-            catelogHeroProcesser.unSetOtherMediaHero(domainId, mediaId);
+            catelogHeroProcesser.unSetOtherMediaHero(domainId, imageMessage.getUserId());
             catelogHeroProcesser.updateCurrentMediaHero(imageMessage, domainId, mediaId);
         }
     }
@@ -114,20 +95,16 @@ public class MediaUpdateProcesser {
     private void handleDynamoAndLCMPropertyHero(ImageMessage imageMessage, int mediaId, int domainId, String guid) {
         if (imageMessage.getOuterDomainData().getDomainFieldValue("subcategoryId") == null
                 && imageMessage.getOuterDomainData().getDomainFieldValue("propertyHero") != null) {
-            boolean updateValueWithDynamo = false;
-            updateValueWithDynamo = catelogHeroProcesser.setOldCategoryForHeroPropertyMedia(imageMessage, Integer.toString(domainId), guid);
+            boolean updateValueWithDynamo = catelogHeroProcesser.setOldCategoryForHeroPropertyMedia(imageMessage, Integer.toString(domainId), guid);
             //if update dynamo fail.
             if (!updateValueWithDynamo) {
-                catelogHeroProcesser.unSetOtherMediaHero(domainId, mediaId);
+                catelogHeroProcesser.unSetOtherMediaHero(domainId, imageMessage.getUserId());
             }
-
-            catelogHeroProcesser.unSetOtherMediaHero(domainId, mediaId);
         } else if (imageMessage.getOuterDomainData().getDomainFieldValue("subcategoryId") != null) {
-            boolean updateValueWithDynamo = false;
-            updateValueWithDynamo = catelogHeroProcesser.setOldCategoryForHeroPropertyMedia(imageMessage, Integer.toString(domainId), guid);
+            boolean updateValueWithDynamo = catelogHeroProcesser.setOldCategoryForHeroPropertyMedia(imageMessage, Integer.toString(domainId), guid);
             //if update dynamo fail.
             if (!updateValueWithDynamo) {
-                catelogHeroProcesser.unSetOtherMediaHero(domainId, mediaId);
+                catelogHeroProcesser.unSetOtherMediaHero(domainId, imageMessage.getUserId());
             }
             catelogHeroProcesser.updateCurrentMediaHero(imageMessage, domainId, mediaId);
         }

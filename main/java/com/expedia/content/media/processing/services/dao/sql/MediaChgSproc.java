@@ -36,7 +36,7 @@ public class MediaChgSproc extends StoredProcedure {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MediaChgSproc.class);
 
-    private static final String PROC_NAME = "MediaSet#02";
+    private static final String PROC_NAME = "MediaSet#03";
 
     @Autowired
     public MediaChgSproc(DataSource dataSource) {
@@ -51,8 +51,9 @@ public class MediaChgSproc extends StoredProcedure {
         declareParameter(new SqlParameter("@pStatusCode", Types.CHAR));
         declareParameter(new SqlParameter("@pMediaStartHorizontalPct", Types.DECIMAL));
         declareParameter(new SqlParameter("@pMediaDisplayMethodSeqNbr", Types.TINYINT));
-        declareParameter(new SqlParameter("@pMediaCaptionTxt", Types.VARCHAR));
         declareParameter(new SqlParameter("@pMediaDisplayName", Types.VARCHAR));
+        declareParameter(new SqlParameter("@pMediaCaptionTxt", Types.VARCHAR));
+        declareParameter(new SqlParameter("@MediaProviderID", Types.INTEGER));
         declareParameter(new SqlParameter("@pLastUpdatedBy", Types.VARCHAR));
         declareParameter(new SqlParameter("@pLastUpdateLocation", Types.VARCHAR));
 
@@ -61,18 +62,19 @@ public class MediaChgSproc extends StoredProcedure {
     /**
      * Update LCM media table.
      */
-    public void updateMedia(int mediaId, int langId, int mediaFormatId, int contentProviderID, String mediaCreditTxt, String mediaCommentTxt,
-            String contentProviderMediaName, String statusCode, Double mediaStartHorizontalPct, Short mediaDisplayMethodSeqNbr, String mediaCaptionTxt,
-            String mediaDisplayName, String lastUpdateBy, String lastUpdateLocation) {
+
+    public void updateMedia(int mediaId, String mediaCommentTxt,
+            String statusCode, String lastUpdateBy, String lastUpdateLocation) {
         LOGGER.info(
-                "Calling: {} with:mediaId=[{}], langId=[{}], mediaFormatId=[{}], contentProviderID=[{}], mediaCreditTxt=[{}],mediaCommentTxt=[{}], "
-                        + "contentProviderMediaName=[{}], statusCode=[{}], mediaStartHorizontalPct=[{}], mediaDisplayMethodSeqNbr=[{}], "
-                        + "mediaCaptionTxt=[{}], mediaDisplayName=[{}],lastUpdateBy=[{}],lastUpdateLocation=[{}]",
-                PROC_NAME, mediaId, langId, mediaFormatId, contentProviderID, mediaCreditTxt, mediaCommentTxt, contentProviderMediaName, statusCode,
-                mediaStartHorizontalPct, mediaDisplayMethodSeqNbr, mediaCaptionTxt, mediaDisplayName, lastUpdateBy, lastUpdateLocation);
+                "Calling: {} with:mediaId=[{}],mediaCommentTxt=[{}], "
+                        + "statusCode=[{}], "
+                        + "lastUpdateBy=[{}],lastUpdateLocation=[{}]",
+                PROC_NAME, mediaId, mediaCommentTxt, statusCode,
+                lastUpdateBy, lastUpdateLocation);
         try {
-            execute(mediaId, langId, mediaFormatId, contentProviderID, mediaCreditTxt, mediaCommentTxt, contentProviderMediaName, statusCode,
-                    mediaStartHorizontalPct, mediaDisplayMethodSeqNbr, mediaCaptionTxt, mediaDisplayName, lastUpdateBy, lastUpdateLocation);
+
+            execute(mediaId, null, null, null, null, mediaCommentTxt, null, statusCode,
+                    null, null, null, null, null, lastUpdateBy, lastUpdateLocation);
         } catch (Exception e) {
             throw new MediaDBException("Error invoking: " + PROC_NAME, e);
         }

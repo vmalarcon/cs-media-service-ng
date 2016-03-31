@@ -32,25 +32,15 @@ public class LcmDynamoMediaUpdateDao implements MediaUpdateDao {
     private MediaGetByMediaIdSproc mediaGetByMediaIdSproc;
 
     public void updateMedia(ImageMessage imageMessage, int mediaId) {
-        final LcmMedia lcmMedia = getMedia(mediaId);
-        String statusCode = "";
+       // final LcmMedia lcmMedia = getMedia(mediaId);
+        String statusCode = null;
         LOGGER.info("update media media[{}]" + mediaId);
-        if(imageMessage.isActive()==null){
-            statusCode = lcmMedia.getActive() ? "A" : "I";
-        }else {
+        if(imageMessage.isActive()!=null) {
             statusCode = imageMessage.isActive() ? "A" : "I";
         }
-        String comments = "";
-        if(imageMessage.getComment()==null){
-            comments = lcmMedia.getComment();
-        }else{
-            comments = imageMessage.getComment();
-        }
-
-        mediaChgSproc.updateMedia(mediaId, DEFAULT_LODGING_LOCALE, lcmMedia.getFormatId(), DEFAULT_CONTENT_PROVIDER_ID, lcmMedia.getMediaCreditTxt(),
-                comments, lcmMedia.getFileName(), statusCode, lcmMedia.getMediaStartHorizontalPct(),
-                lcmMedia.getMediaDisplayMethodSeqNbr() == 0 ? null : lcmMedia.getMediaDisplayMethodSeqNbr(), lcmMedia.getMediaCaptionTxt(),
-                lcmMedia.getMediaDisplayName(), imageMessage.getUserId(),
+        mediaChgSproc.updateMedia(mediaId,
+                imageMessage.getComment(),  statusCode,
+                 imageMessage.getUserId(),
                 UPDATED_BY);
     }
 

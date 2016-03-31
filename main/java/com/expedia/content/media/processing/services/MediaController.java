@@ -188,6 +188,7 @@ public class MediaController extends CommonServiceController {
                 domainId = dynamoMedia.getDomainId();
             } else if (StringUtils.isNumeric(queryId)) {
                 lcmMediaId = queryId;
+
                 final List<Media> mediaList = mediaDao.getMediaByMediaId(queryId);
                 if (!mediaList.isEmpty()) {
                     return this.buildErrorResponse("GUID exist, please use GUID to update.", serviceUrl, BAD_REQUEST);
@@ -203,12 +204,25 @@ public class MediaController extends CommonServiceController {
                 return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
             }
             final ImageMessage imageMessage = ImageMessage.parseJsonMessage(newJson);
-            return mediaUpdateProcesser.processRequest(imageMessage, lcmMediaId, domainId, dynamoMedia);
+            if (!message.contains("active")) {
+                final ImageMessage imageMessageNew = removeActiveFromImageMessage(imageMessage);
+                return mediaUpdateProcesser.processRequest(imageMessageNew, lcmMediaId, domainId, dynamoMedia);
+            } else {
+                return mediaUpdateProcesser.processRequest(imageMessage, lcmMediaId, domainId, dynamoMedia);
+            }
         } catch (Exception ex) {
             LOGGER.error("ERROR when update media -messageName={}, error=[{}], queryId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID,
                     message, ex);
-            return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
+            return this.buildErrorResponse("Update fail with message=" + ex.getMessage(), serviceUrl, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private ImageMessage removeActiveFromImageMessage(final ImageMessage imageMessage) {
+        ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
+        imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
+        imageMessageBuilder.active(null);
+        final ImageMessage imageMessageNew = imageMessageBuilder.build();
+        return imageMessageNew;
     }
 
     private boolean matchGuid(String id) {
