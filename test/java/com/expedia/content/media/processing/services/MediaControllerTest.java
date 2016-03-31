@@ -684,6 +684,77 @@ public class MediaControllerTest {
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), any());
         verifyZeroInteractions(mockLcmDynamoMediaDao);
     }
+    
+    @Test
+    public void testGetMediaByGUIDInvalid() throws Exception {
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+        
+        ResponseEntity<String> responseEntity = mediaController.getMedia("hello potato", mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    public void testGetMediaByGUIDNotFound() throws Exception {
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+        MediaDao mockMediaDao = mock(MediaDao.class);
+        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(null);
+        setFieldValue(mediaController, "mediaDao", mock(MediaDao.class));
+        
+        ResponseEntity<String> responseEntity = mediaController.getMedia("d2d4d480-9627-47f9-86c6-1874c18d37f4", mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+    }
+
+    @Deprecated
+    @Test
+    public void testGetMediaByGUIDWithLcmId() throws Exception {
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
+                .lcmMediaId("123456").lastUpdated(new Date()).lcmMediaId("123456").build();
+        MediaDao mockMediaDao = mock(MediaDao.class);
+        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(resultMedia);
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        
+        ResponseEntity<String> responseEntity = mediaController.getMedia("123456", mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"domain\":\"Lodging\""));
+        assertTrue(responseEntity.getBody().contains("\"domainId\":\"" + resultMedia.getDomainId() + "\""));
+        assertTrue(responseEntity.getBody().contains("\"domainFields\":{"));
+        assertTrue(responseEntity.getBody().contains("\"lcmMediaId\":\"" + resultMedia.getLcmMediaId() + "\""));
+        assertTrue(responseEntity.getBody().contains("\"fileName\":\"" + resultMedia.getFileName() + "\""));
+    }
+
+    @Test
+    public void testGetMediaByGUID() throws Exception {
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
+                .lcmMediaId("123456").lastUpdated(new Date()).lcmMediaId("123456").mediaGuid("d2d4d480-9627-47f9-86c6-1874c18d37f4").build();
+        MediaDao mockMediaDao = mock(MediaDao.class);
+        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(resultMedia);
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        
+        ResponseEntity<String> responseEntity = mediaController.getMedia("d2d4d480-9627-47f9-86c6-1874c18d37f4", mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"domain\":\"Lodging\""));
+        assertTrue(responseEntity.getBody().contains("\"mediaGuid\":\"" + resultMedia.getMediaGuid() + "\""));
+        assertTrue(responseEntity.getBody().contains("\"domainId\":\"" + resultMedia.getDomainId() + "\""));
+        assertTrue(responseEntity.getBody().contains("\"domainFields\":{"));
+        assertTrue(responseEntity.getBody().contains("\"lcmMediaId\":\"" + resultMedia.getLcmMediaId() + "\""));
+        assertTrue(responseEntity.getBody().contains("\"fileName\":\"" + resultMedia.getFileName() + "\""));
+    }
 
     @SuppressWarnings({"unchecked"})
     private static Map<String, List<MapMessageValidator>> getMockValidators() {
