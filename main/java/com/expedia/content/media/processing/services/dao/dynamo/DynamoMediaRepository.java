@@ -92,6 +92,39 @@ public class DynamoMediaRepository {
             throw new MediaDBException(e.getMessage(), e);
         }
     }
+
+
+    /**
+     * Returns all property hero media for the domain id and domain name passed in the arguments.
+     * @param domainId The domain id for a media.
+     * @param domainName The domain name for a media.
+     */
+    public List<Media> retrieveHeroPropertyMedia(String domainId, String domainName) throws MediaDBException {
+        final HashMap<String, String> names = new HashMap<>();
+        names.put("#domain", "Domain");
+
+        final HashMap<String, AttributeValue> params = new HashMap<>();
+        params.put(":pDomainId", new AttributeValue().withS(domainId));
+        params.put(":pDomain", new AttributeValue().withS(domainName));
+
+        try {
+            final DynamoDBQueryExpression<Media> query = new DynamoDBQueryExpression<Media>()
+                    .withIndexName("cs-mediadb-index-Media-DomainID-Domain")
+                    .withConsistentRead(false)
+                    .withKeyConditionExpression( "DomainID = :pDomainId and #domain = :pDomain")
+                    .withExpressionAttributeNames(names)
+                    .withExpressionAttributeValues(params);
+
+            final List<Media> results = dynamoMapper.query(Media.class, query);
+            return results.stream()
+                    .filter(item -> environment.equals(item.getEnvironment()))
+                    .filter(item -> item.getPropertyHero() != null && item.getPropertyHero())
+                    .collect(Collectors.toList());
+        } catch (Exception ex) {
+            final String message = String.format("ERROR retrieving hero media for domainId=[%s], domainName=[%s]", domainId, domainName);
+            throw new MediaDBException(message, ex);
+        }
+    }
     
     /**
      * Loads a list of media items based on a domain id.
