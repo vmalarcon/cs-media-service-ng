@@ -336,7 +336,7 @@ public class EPCMVELValidatorTest {
     }
 
     @Test
-    public void testRotationIsValid() throws Exception {
+    public void testRotationIsInvalid() throws Exception {
         String jsonMsg =
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello.JpEg\"," +
