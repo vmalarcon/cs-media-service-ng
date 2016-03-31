@@ -136,31 +136,34 @@ public class LcmDynamoMediaDao implements MediaDao {
     @Override
     @SuppressWarnings("unchecked")
     public Media getMediaByGUID(String mediaGUID) {
-        Media guidMedia = mediaRepo.getMedia(mediaGUID);
-        final boolean isLodgingWithGuid = guidMedia != null && Domain.LODGING.equals(guidMedia.getDomain());
-        final boolean isLodgingNoGuid = guidMedia == null && mediaGUID.matches("\\d+");
-        if (isLodgingWithGuid || isLodgingNoGuid) {
-            final Map<String, Media> mediaLcmMediaIdMap = new HashMap<>();
-            Integer lcmMediaId = null;
-            String domainId = null;
-            if (isLodgingWithGuid) {
-                mediaLcmMediaIdMap.put(guidMedia.getLcmMediaId(), guidMedia);
-                lcmMediaId = guidMedia.getLcmMediaId() == null ? null : Integer.parseInt(guidMedia.getLcmMediaId());
-                domainId = guidMedia.getDomainId();
+        final boolean isLodgingNoGuid = mediaGUID.matches("\\d+");
+        Media guidMedia = null;
+        if (!isLodgingNoGuid) {
+            guidMedia = mediaRepo.getMedia(mediaGUID);
+        }
+        final boolean isLodgingWithGuid = guidMedia != null && Domain.LODGING.getDomain().equals(guidMedia.getDomain());
+        final Map<String, Media> mediaLcmMediaIdMap = new HashMap<>();
+        Integer lcmMediaId = null;
+        String domainId = null;
+        if (isLodgingWithGuid) {
+            mediaLcmMediaIdMap.put(guidMedia.getLcmMediaId(), guidMedia);
+            lcmMediaId = guidMedia.getLcmMediaId() == null ? null : Integer.parseInt(guidMedia.getLcmMediaId());
+            domainId = guidMedia.getDomainId();
+        }
+        if (isLodgingNoGuid) {
+            lcmMediaId = Integer.parseInt(mediaGUID);
+            final List<LcmMedia> lcmMediaList = (List<LcmMedia>) lcmMediaSproc.execute(lcmMediaId).get(SQLMediaGetSproc.MEDIA_SET);
+            if (lcmMediaList.isEmpty()) {
+                lcmMediaId = null;
             } else {
-                lcmMediaId = Integer.parseInt(mediaGUID);
-                final List<LcmMedia> lcmMediaList = (List<LcmMedia>) lcmMediaSproc.execute(lcmMediaId).get(SQLMediaGetSproc.MEDIA_SET);
-                if (lcmMediaList.isEmpty()) {
-                    lcmMediaId = null;
-                } else {
-                    domainId = lcmMediaList.get(0).getDomainId().toString();
-                }
-            }
-            if (lcmMediaId != null) {
-                final String nullFilter = null;
-                guidMedia = convertMedia(mediaLcmMediaIdMap).apply(buildLcmMedia(domainId, nullFilter).apply(lcmMediaId));
+                domainId = lcmMediaList.get(0).getDomainId().toString();
             }
         }
+        if (lcmMediaId != null) {
+            final String nullFilter = null;
+            guidMedia = convertMedia(mediaLcmMediaIdMap).apply(buildLcmMedia(domainId, nullFilter).apply(lcmMediaId));
+        }
+
         if (guidMedia != null) {
             final List<String> fileNames = new ArrayList<>();
             fileNames.add(guidMedia.getFileName());

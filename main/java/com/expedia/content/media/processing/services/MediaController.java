@@ -86,7 +86,7 @@ public class MediaController extends CommonServiceController {
     private static final String IMAGE_MESSAGE_FIELD = "message";
     private static final String REPROCESSING_STATE_FIELD = "processState";
     private static final String REG_EX_NUMERIC = "\\d+";
-    private static final String REG_EX_GUID = "[a-zA-Z0-9]{8}(-[a-zA-Z0-9]{4}){3}-[a-zA-Z0-9]{12}";
+    private static final String REG_EX_GUID = "[a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12}";
 
     @Resource(name = "providerProperties")
     private Properties providerProperties;
@@ -154,7 +154,7 @@ public class MediaController extends CommonServiceController {
     public ResponseEntity<String> mediaAdd(@RequestBody final String message,
                                            @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
-        final String serviceUrl = MediaServiceUrl.MEDIA_ADD.getUrl();
+        final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
         try {
             final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -166,6 +166,37 @@ public class MediaController extends CommonServiceController {
         }
     }
 
+    /**
+     * Web services interface to retrieve media information by its GUID.
+     * 
+     * @param mediaGUID The GUID of the requested media.
+     * @param headers Headers of the request.
+     * @return The requested media information.
+     * @throws Exception Thrown if processing the message fails.
+     */
+    @Meter(name = "getMediaByDomainIdMessageCounter")
+    @Timer(name = "getMediaByDomainIdMessageTimer")
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
+    @RequestMapping(value = "/media/v1/images/{mediaGUID}", method = RequestMethod.GET)
+    @Transactional
+    public ResponseEntity<String> getMedia(@PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+        final String requestID = this.getRequestId(headers);
+        final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
+        LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
+        //TODO Once lodging data transfered to media DB the second condition, numeric, will need to be removed.
+        if (!mediaGUID.matches(REG_EX_GUID) && !mediaGUID.matches(REG_EX_NUMERIC)) {
+            LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
+            return this.buildErrorResponse("Invalid media GUID provided.", serviceUrl, BAD_REQUEST);
+        }
+        final Media media = mediaDao.getMediaByGUID(mediaGUID);
+        if (media == null) {
+            LOGGER.info("Response not found. Provided media GUID does not exist' for requestId=[{}], mediaGUID=[{}]", requestID, mediaGUID);
+            return this.buildErrorResponse("Provided media GUID does not exist.", serviceUrl, NOT_FOUND);
+        }
+        final MediaGetResponse mediaResponse = transformSingleMediaForResponse(media);
+        return new ResponseEntity<String>(OBJECT_MAPPER.writeValueAsString(mediaResponse), OK);
+    }
+    
     /**
      * Web services interface to retrieve media information by domain name and id.
      * 
@@ -204,40 +235,6 @@ public class MediaController extends CommonServiceController {
         return new ResponseEntity<String>(OBJECT_MAPPER.writeValueAsString(response), OK);
     }
 
-    /**
-     * Web services interface to retrieve media information by domain name and id.
-     * 
-     * @param domainName Name of the domain the domain id belongs to.
-     * @param domainId Identification of the domain item the media is required.
-     * @param activeFilter Filter determining what images to return. When true only active are returned. When false only inactive media is returned. When
-     *            all then all are returned. All is set a default.
-     * @param derivativeTypeFilter Inclusive filter to use to only return certain types of derivatives. Returns all derivatives if not specified.
-     * @param headers Headers of the request.
-     * @return The list of media data belonging to the domain item.
-     * @throws Exception Thrown if processing the message fails.
-     */
-    @Meter(name = "getMediaByDomainIdMessageCounter")
-    @Timer(name = "getMediaByDomainIdMessageTimer")
-    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/images/{mediaGUID}", method = RequestMethod.GET)
-    @Transactional
-    public ResponseEntity<String> getMedia(@PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
-        final String requestID = this.getRequestId(headers);
-        final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
-        LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
-        //TODO Once lodging data transfered to media DB the second condition, numeric, will need to be removed.
-        if (!mediaGUID.matches(REG_EX_GUID) && !mediaGUID.matches(REG_EX_NUMERIC)) {
-            LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
-            return this.buildErrorResponse("Invalid media GUID provided.", serviceUrl, BAD_REQUEST);
-        }
-        final Media media = mediaDao.getMediaByGUID(mediaGUID);
-        if (media == null) {
-            LOGGER.info("Response not found. Provided media GUID does not exist' for requestId=[{}], mediaGUID=[{}]", requestID, mediaGUID);
-            return this.buildErrorResponse("Provided media GUID does not exist.", serviceUrl, NOT_FOUND);
-        }
-        final MediaGetResponse mediaResponse = transformSingleMediaForResponse(media);
-        return new ResponseEntity<String>(OBJECT_MAPPER.writeValueAsString(mediaResponse), OK);
-    }
 
     private MediaGetResponse transformSingleMediaForResponse(Media media) {
         /* @formatter:off */
@@ -277,16 +274,25 @@ public class MediaController extends CommonServiceController {
         return mediaList.stream().map(media -> {
             setResponseLcmMediaId(media);
             /* @formatter:off */
-            return DomainIdMedia.builder().mediaGuid(media.getMediaGuid()).fileUrl(media.getFileUrl()).fileName(media.getFileName())
-                    .active(media.getActive()).width(media.getWidth()).height(media.getHeight()).fileSize(media.getFileSize()).status(media.getStatus())
-                    .lastUpdatedBy(media.getUserId()).lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
-                    .domainProvider(media.getProvider()).domainFields(media.getDomainData())
+            return DomainIdMedia.builder()
+                    .mediaGuid(media.getMediaGuid())
+                    .fileUrl(media.getFileUrl())
+                    .fileName(media.getFileName())
+                    .active(media.getActive())
+                    .width(media.getWidth())
+                    .height(media.getHeight())
+                    .fileSize(media.getFileSize())
+                    .status(media.getStatus())
+                    .lastUpdatedBy(media.getUserId())
+                    .lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
+                    .domainProvider(media.getProvider())
+                    .domainFields(media.getDomainData())
                     .derivatives(media.getDerivativesList())
                     .domainDerivativeCategory(media.getDomainDerivativeCategory())
                     .comments((media.getCommentList() == null) ? null: media.getCommentList().stream()
-                    .map(comment -> Comment.builder().note(comment)
-                    .timestamp(DATE_FORMATTER.print(media.getLastUpdated().getTime())).build())
-                    .collect(Collectors.toList()))
+                            .map(comment -> Comment.builder().note(comment)
+                                    .timestamp(DATE_FORMATTER.print(media.getLastUpdated().getTime())).build())
+                            .collect(Collectors.toList()))
                     .build();
         }).collect(Collectors.toList());
         /* @formatter:on */
