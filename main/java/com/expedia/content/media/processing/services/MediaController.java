@@ -82,6 +82,7 @@ public class MediaController extends CommonServiceController {
     private static final Logger LOGGER = LoggerFactory.getLogger(MediaController.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
+    private static final String GUID_REG = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
     private static final String IMAGE_MESSAGE_FIELD = "message";
     private static final String REPROCESSING_STATE_FIELD = "processState";
@@ -179,8 +180,8 @@ public class MediaController extends CommonServiceController {
             String lcmMediaId = "";
             String domainId = "";
             Media dynamoMedia = null;
-            if (matchGuid(queryId)) {
-                dynamoMedia = getMediaByGuid(queryId);
+            if (queryId.matches(GUID_REG)) {
+                dynamoMedia = mediaDao.getMediaByGuid(queryId);
                 if (dynamoMedia == null) {
                     return this.buildErrorResponse("input Guid does not exist ind DB", serviceUrl, BAD_REQUEST);
                 }
@@ -204,11 +205,11 @@ public class MediaController extends CommonServiceController {
                 return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
             }
             final ImageMessage imageMessage = ImageMessage.parseJsonMessage(newJson);
-            if (!message.contains("active")) {
+            if (message.contains("active")) {
+                return mediaUpdateProcesser.processRequest(imageMessage, lcmMediaId, domainId, dynamoMedia);
+            } else {
                 final ImageMessage imageMessageNew = removeActiveFromImageMessage(imageMessage);
                 return mediaUpdateProcesser.processRequest(imageMessageNew, lcmMediaId, domainId, dynamoMedia);
-            } else {
-                return mediaUpdateProcesser.processRequest(imageMessage, lcmMediaId, domainId, dynamoMedia);
             }
         } catch (Exception ex) {
             LOGGER.error("ERROR when update media -messageName={}, error=[{}], queryId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID,
@@ -221,13 +222,7 @@ public class MediaController extends CommonServiceController {
         ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
         imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
         imageMessageBuilder.active(null);
-        final ImageMessage imageMessageNew = imageMessageBuilder.build();
-        return imageMessageNew;
-    }
-
-    private boolean matchGuid(String id) {
-        final String regex = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
-        return id.matches(regex);
+        return imageMessageBuilder.build();
     }
 
     private String appendDomain(String message) throws Exception {
@@ -236,15 +231,6 @@ public class MediaController extends CommonServiceController {
         return new ObjectMapper().writeValueAsString(jsonMap);
     }
 
-    private Media getMediaByGuid(String guid) {
-        final List<Media> mediaList = mediaDao.getMediaByGuid(guid);
-        final Optional<Media> bestMedia = MediaReplacement.selectLatestMedia(mediaList);
-        if (bestMedia.isPresent()) {
-            return bestMedia.get();
-        } else {
-            return null;
-        }
-    }
 
     /**
      * Web services interface to retrieve media information by domain name and id.

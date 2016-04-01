@@ -35,7 +35,6 @@ public class LcmDynamoCatalogAndParagraphDao implements CatalogitemMediaDao {
     private CatalogItemMediaChgSproc catalogItemMediaChgSproc;
     @Autowired
     private AddCatalogItemMediaForRoomsAndRatePlansSproc addCatalogItemMediaForRoom;
-
     @Autowired
     private SQLRoomGetSproc roomGetSproc;
     @Autowired

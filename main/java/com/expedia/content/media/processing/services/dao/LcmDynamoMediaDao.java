@@ -90,8 +90,8 @@ public class LcmDynamoMediaDao implements MediaDao {
         return mediaRepo.getMediaByFilename(fileName);
     }
     @Override
-    public List<Media> getMediaByGuid(String guid) {
-        return mediaRepo.getMediaByGuid(guid);
+    public Media getMediaByGuid(String guid) {
+        return mediaRepo.getMedia(guid);
     }
 
     @Override

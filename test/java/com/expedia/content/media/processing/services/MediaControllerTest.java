@@ -6,10 +6,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -27,12 +24,21 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import com.expedia.content.media.processing.services.dao.CatalogitemMediaDao;
+import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
+import com.expedia.content.media.processing.services.dao.domain.*;
+import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
+import com.expedia.content.media.processing.services.dao.sql.CatalogItemListSproc;
+import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaChgSproc;
+import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaGetSproc;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.codehaus.plexus.util.ReflectionUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
 import org.springframework.http.HttpHeaders;
@@ -51,8 +57,6 @@ import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.services.dao.LcmDynamoMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDao;
-import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.google.common.collect.Lists;
 
@@ -92,6 +96,9 @@ public class MediaControllerTest {
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("53", "freetobook"));
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("56", "ReplaceProvider"));
         when(mockProviderProperties.entrySet()).thenReturn(providerMapping);
+        DynamoMediaRepository dynamoMediaRepository = mock(DynamoMediaRepository.class);
+        Mockito.doNothing().when(dynamoMediaRepository).storeMediaAddMessage(anyObject(), anyObject());
+        FieldUtils.writeField(mediaController, "dynamoMediaRepository", dynamoMediaRepository, true);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -554,4 +561,188 @@ public class MediaControllerTest {
         validators.put(TEST_CLIENT_ID, messageValidator);
         return validators;
     }
+
+    @SuppressWarnings({"unchecked"})
+    private static Map<String, List<MapMessageValidator>> getMockValidatorsForUpdate() {
+        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
+        List<MapMessageValidator> messageValidator = new ArrayList<>();
+        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
+        List<Map<String, String>> validationErrorList = new ArrayList<>();
+        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
+        messageValidator.add(mockMessageValidator);
+        validators.put("EPCUpdate", messageValidator);
+        return validators;
+    }
+
+    @Test
+    public void testMediaUpdateByGuid() throws Exception {
+
+        String jsonMsg = "{  \n"
+                + "   \"userId\":\"bobthegreat\",\n"
+                + "   \"active\":\"true\",\n"
+                + "    \"domain\":\"Lodging\",\n"
+                + "   \"domainFields\":{  \n"
+                + "      \"subcategoryId\":\"22003\",\n"
+                + "      \"propertyHero\":\"true\",\n"
+                + "      \"rooms\":[  \n"
+                + "         {  \n"
+                + "            \"roomId\":\"934779\",\n"
+                + "            \"roomHero\":\"false\"\n"
+                + "         },\n"
+                + "         {\n"
+                + "             \"roomId\":\"928675\",\n"
+                + "            \"roomHero\":\"true\" \n"
+                + "         }\n"
+                + "      ]\n"
+                + "   },\n"
+                + "   \"comment\":\"note33\"\n"
+                + "}";
+
+        List<Media> emptyMediaList = new ArrayList<>();
+        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+        when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(emptyMediaList);
+        String dyNamoField ="{  \n"
+                + "      \"subcategoryId\":\"22003\",\n"
+                + "      \"propertyHero\":\"true\",\n"
+                + "      \"rooms\":[  \n"
+                + "         {  \n"
+                + "            \"roomId\":\"934779\",\n"
+                + "            \"roomHero\":\"true\"\n"
+                + "         },\n"
+                + "         {\n"
+                + "             \"roomId\":\"928675\",\n"
+                + "            \"roomHero\":\"false\" \n"
+                + "         }\n"
+                + "      ]\n"
+                + "   }";
+        Media dynamoMedia = Media.builder().lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dyNamoField).build();
+        when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
+
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        CatelogHeroProcesser catelogHeroProcesser = getCateLogMock();
+        MediaUpdateProcesser mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
+        setFieldValue(mediaController, "mediaUpdateProcesser", mockUpdateProcess);
+
+        MultiValueMap<String, String> headers = new HttpHeaders();
+
+        ResponseEntity<String> responseEntity = mediaController.mediaUpdate("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6", jsonMsg, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    public void testMediaUpdateByMediaId() throws Exception {
+
+        String jsonMsg = "{  \n"
+                + "   \"userId\":\"bobthegreat\",\n"
+                + "   \"active\":\"true\",\n"
+                + "    \"domain\":\"Lodging\",\n"
+                + "   \"domainFields\":{  \n"
+                + "      \"subcategoryId\":\"22003\",\n"
+                + "      \"propertyHero\":\"true\",\n"
+                + "      \"rooms\":[  \n"
+                + "         {  \n"
+                + "            \"roomId\":\"934779\",\n"
+                + "            \"roomHero\":\"false\"\n"
+                + "         },\n"
+                + "         {\n"
+                + "             \"roomId\":\"928675\",\n"
+                + "            \"roomHero\":\"true\" \n"
+                + "         }\n"
+                + "      ]\n"
+                + "   },\n"
+                + "   \"comment\":\"note33\"\n"
+                + "}";
+
+        List<Media> emptyMediaList = new ArrayList<>();
+        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+        when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(emptyMediaList);
+
+
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        CatelogHeroProcesser catelogHeroProcesser = getCateLogMock();
+        MediaUpdateProcesser mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
+        setFieldValue(mediaController, "mediaUpdateProcesser", mockUpdateProcess);
+
+        MultiValueMap<String, String> headers = new HttpHeaders();
+
+        ResponseEntity<String> responseEntity = mediaController.mediaUpdate("19671339", jsonMsg, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    private MediaUpdateProcesser getMediaUpdateProcesser(CatelogHeroProcesser catelogHeroProcesser) throws Exception {
+        MediaUpdateProcesser mockUpdateProcess = new MediaUpdateProcesser();
+        MediaUpdateDao mediaUpdateDao = mock(MediaUpdateDao.class);
+        CatalogitemMediaDao catalogitemMediaDao = mock(CatalogitemMediaDao.class);
+        MediaDao mediaDao = mock(MediaDao.class);
+
+        LcmMedia lcmMedia = LcmMedia.builder().domainId(41098).build();
+        when(mediaUpdateDao.getMediaByMediaId(anyInt())).thenReturn(lcmMedia);
+        Mockito.doNothing().when(mediaUpdateDao).updateMedia(any(), anyInt());
+        FieldUtils.writeField(mockUpdateProcess, "mediaUpdateDao", mediaUpdateDao, true);
+
+        Mockito.doNothing().when(mediaDao).saveMedia(any());
+        FieldUtils.writeField(mockUpdateProcess, "mediaDao", mediaDao, true);
+
+        LcmMediaRoom lcmMediaRoom = LcmMediaRoom.builder().roomId(928675).roomHero(true).build();
+        LcmMediaRoom lcmMediaRoom2 = LcmMediaRoom.builder().roomId(934779).roomHero(true).build();
+        LcmMediaRoom lcmMediaRoom3 = LcmMediaRoom.builder().roomId(928678).roomHero(true).build();
+
+        List<LcmMediaRoom> lcmMediaRoomList = new ArrayList<>();
+        lcmMediaRoomList.add(lcmMediaRoom);
+        lcmMediaRoomList.add(lcmMediaRoom2);
+        lcmMediaRoomList.add(lcmMediaRoom3);
+        when(catalogitemMediaDao.getLcmRoomsByMediaId(anyInt())).thenReturn(lcmMediaRoomList);
+        Mockito.doNothing().when(catalogitemMediaDao).deleteParagraph(anyInt());
+        Mockito.doNothing().when(catalogitemMediaDao).deleteCatalogItem(anyInt(), anyInt());
+        Mockito.doNothing().when(catalogitemMediaDao).addOrUpdateParagraph(anyInt(), anyInt());
+        Mockito.doNothing().when(catalogitemMediaDao).addCatalogItemForRoom(anyInt(), anyInt(), anyObject());
+        FieldUtils.writeField(mockUpdateProcess, "catalogitemMediaDao", catalogitemMediaDao, true);
+        FieldUtils.writeField(mockUpdateProcess, "catelogHeroProcesser", catelogHeroProcesser, true);
+        return mockUpdateProcess;
+    }
+
+    private CatelogHeroProcesser getCateLogMock() throws Exception {
+        CatelogHeroProcesser catelogHeroProcesser = mock(CatelogHeroProcesser.class);
+        CatalogItemListSproc catalogItemListSproc = mock(CatalogItemListSproc.class);
+        CatalogitemMediaDao catalogitemMediaDao = mock(CatalogitemMediaDao.class);
+        CatalogItemMediaChgSproc catalogItemMediaChgSproc = mock(CatalogItemMediaChgSproc.class);
+
+        List<LcmCatalogItemMedia> lcmCatalogItemMediaList = new ArrayList<>();
+        LcmCatalogItemMedia lcmCatalogItemMedia =
+                LcmCatalogItemMedia.builder().catalogItemId(41098).mediaId(19671339).mediaUseRank(3).lastUpdatedBy("test").lastUpdateDate(new Date())
+                        .build();
+        lcmCatalogItemMediaList.add(lcmCatalogItemMedia);
+        Map<String, Object> lcmCatMap = new HashMap<>();
+        lcmCatMap.put(CatalogItemListSproc.MEDIA_SET, lcmCatalogItemMediaList);
+        when(catalogItemListSproc.execute(anyInt())).thenReturn(lcmCatMap);
+
+        FieldUtils.writeField(catelogHeroProcesser, "catalogItemListSproc", catalogItemListSproc, true);
+        Mockito.doNothing().when(catalogItemMediaChgSproc).updateCategory(anyInt(), anyInt(), anyInt(), anyString(), anyString());
+        FieldUtils.writeField(catelogHeroProcesser, "catalogItemMediaChgSproc", catalogItemMediaChgSproc, true);
+        Mockito.doNothing().when(catalogitemMediaDao).updateCatalogItem(any(), anyInt(), anyInt());
+        FieldUtils.writeField(catelogHeroProcesser, "catalogitemMediaDao", catalogitemMediaDao, true);
+
+        List<Media> heroMedia = new ArrayList<>();
+        DynamoMediaRepository mediaRepo = mock(DynamoMediaRepository.class);
+        Media media =
+                Media.builder().lcmMediaId("19671338").mediaGuid("testGuid").domainId("41098").lastUpdated(new Date(new Date().getTime() - 10000)).build();
+        heroMedia.add(media);
+        when(mediaRepo.retrieveHeroPropertyMedia(anyString(), anyString())).thenReturn(heroMedia);
+        FieldUtils.writeField(catelogHeroProcesser, "mediaRepo", mediaRepo, true);
+
+        CatalogItemMediaGetSproc catalogItemMediaGetSproc = mock(CatalogItemMediaGetSproc.class);
+        when(catalogItemMediaGetSproc.getMedia(anyInt(), anyInt())).thenReturn(lcmCatalogItemMediaList);
+        FieldUtils.writeField(catelogHeroProcesser, "catalogItemMediaGetSproc", catalogItemMediaGetSproc, true);
+
+        return catelogHeroProcesser;
+    }
+
 }

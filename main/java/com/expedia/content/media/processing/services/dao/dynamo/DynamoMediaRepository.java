@@ -29,18 +29,18 @@ import com.fasterxml.jackson.databind.ObjectWriter;
  */
 @Repository
 public class DynamoMediaRepository {
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DynamoMediaRepository.class);
     private final static ObjectWriter WRITER = new ObjectMapper().writer();
     private final DynamoDBMapper dynamoMapper;
     private final String environment;
-    
+
     @Autowired
     public DynamoMediaRepository(DynamoDBMapper dynamoMapper, String environment) {
         this.dynamoMapper = dynamoMapper;
         this.environment = environment;
     }
-    
+
     /**
      * Given a fileName returns all the media that were saved with that name.
      *
@@ -54,10 +54,12 @@ public class DynamoMediaRepository {
                 .withIndexName("cs-mediadb-index-Media-MediaFileName")
                 .withConsistentRead(false)
                 .withKeyConditionExpression("MediaFileName = :mfn")
-                .withExpressionAttributeValues(params);               
+                .withExpressionAttributeValues(params);
         return dynamoMapper.query(Media.class, expression);
     }
 
+    /*
+    @Deprecated
     public List<Media> getMediaByGuid(String guid) {
         final HashMap<String, AttributeValue> params = new HashMap<>();
         params.put(":mfn", new AttributeValue().withS(guid));
@@ -69,7 +71,18 @@ public class DynamoMediaRepository {
         return results.stream()
                 .filter(item -> environment.equals(item.getEnvironment()))
                 .collect(Collectors.toList());
+    }*/
+
+    /**
+     * Retrieves a media by its GUID.
+     *
+     * @param mediaGUID GUID of the Media.
+     * @return Media with the requested GUID.
+     */
+    public Media getMedia(String mediaGUID) {
+        return dynamoMapper.load(Media.class, mediaGUID);
     }
+
     public List<Media> getMediaByMediaId(String mediaId) {
         final HashMap<String, AttributeValue> params = new HashMap<>();
         params.put(":mfn", new AttributeValue().withS(mediaId));
@@ -93,10 +106,10 @@ public class DynamoMediaRepository {
         }
     }
 
-
     /**
      * Returns all property hero media for the domain id and domain name passed in the arguments.
-     * @param domainId The domain id for a media.
+     *
+     * @param domainId   The domain id for a media.
      * @param domainName The domain name for a media.
      */
     public List<Media> retrieveHeroPropertyMedia(String domainId, String domainName) throws MediaDBException {
@@ -111,7 +124,7 @@ public class DynamoMediaRepository {
             final DynamoDBQueryExpression<Media> query = new DynamoDBQueryExpression<Media>()
                     .withIndexName("cs-mediadb-index-Media-DomainID-Domain")
                     .withConsistentRead(false)
-                    .withKeyConditionExpression( "DomainID = :pDomainId and #domain = :pDomain")
+                    .withKeyConditionExpression("DomainID = :pDomainId and #domain = :pDomain")
                     .withExpressionAttributeNames(names)
                     .withExpressionAttributeValues(params);
 
@@ -125,10 +138,10 @@ public class DynamoMediaRepository {
             throw new MediaDBException(message, ex);
         }
     }
-    
+
     /**
      * Loads a list of media items based on a domain id.
-     * 
+     *
      * @param domainId Id of the domain item the media is required.
      * @return The list of media attached to the domain id.
      */
@@ -136,16 +149,16 @@ public class DynamoMediaRepository {
         List<Media> mediaList = null;
         try {
             final HashMap<String, String> names = new HashMap<>();
-            names.put("#domain", "Domain");           
+            names.put("#domain", "Domain");
             final Map<String, AttributeValue> params = new HashMap<>();
             params.put(":pDomainId", new AttributeValue().withS(domainId));
-            params.put(":pDomain", new AttributeValue().withS(domain.getDomain()));            
+            params.put(":pDomain", new AttributeValue().withS(domain.getDomain()));
             final DynamoDBQueryExpression<Media> query = new DynamoDBQueryExpression<Media>()
                     .withIndexName("cs-mediadb-index-Media-DomainID-Domain")
                     .withConsistentRead(false)
                     .withKeyConditionExpression("DomainID = :pDomainId and #domain = :pDomain")
                     .withExpressionAttributeNames(names)
-                    .withExpressionAttributeValues(params);                   
+                    .withExpressionAttributeValues(params);
             mediaList = dynamoMapper.query(Media.class, query);
         } catch (Exception e) {
             LOGGER.error("ERROR - message={}.", e.getMessage(), e);
@@ -153,12 +166,12 @@ public class DynamoMediaRepository {
         }
         return mediaList;
     }
-    
+
     /**
      * Store the media Add message in dynamoDB
-     * 
+     *
      * @param imageMessage message to store.
-     * @param thumbnail Associated thumbnail.
+     * @param thumbnail    Associated thumbnail.
      */
     public void storeMediaAddMessage(ImageMessage imageMessage, Thumbnail thumbnail) {
         try {
@@ -176,12 +189,12 @@ public class DynamoMediaRepository {
             throw new MediaDBException(e.getMessage(), e);
         }
     }
-    
+
     /**
      * Build a media object from the imageMessage.
-     * 
+     *
      * @param imageMessage imageMessage to use.
-     * @param thumbnail generated thumbnail.
+     * @param thumbnail    generated thumbnail.
      * @return returns the media
      */
     private Media buildMedia(ImageMessage imageMessage, Thumbnail thumbnail) throws Exception {
@@ -205,12 +218,12 @@ public class DynamoMediaRepository {
                 .metadata(basicMetadata == null ? "" : WRITER.writeValueAsString(basicMetadata))
                 .mediaGuid(imageMessage.getMediaGuid()).build();
     }
-    
+
     /**
      * Build a MediaDerivative object from the imageMessage and thumbnail object.
-     * 
+     *
      * @param imageMessage imageMessage to use.
-     * @param thumbnail thumbnail to use.
+     * @param thumbnail    thumbnail to use.
      * @return returns the MediaDerivative.
      */
     private MediaDerivative buildDerivative(ImageMessage imageMessage, Thumbnail thumbnail) {
@@ -222,5 +235,5 @@ public class DynamoMediaRepository {
                 .mediaGuid(imageMessage.getMediaGuid())
                 .type(thumbnail.getType()).build();
     }
-    
+
 }
