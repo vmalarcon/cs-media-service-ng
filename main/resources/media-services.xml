@@ -69,6 +69,7 @@
                       <value>(domainData.domain.domain.equals('Lodging') &amp;&amp; domainData.domainFields != null &amp;&amp; domainData.domainFields.containsKey("category") &amp;&amp; !domainData.domainFields.get("category").toString.matches("[0-9]+")) ? "category is not numeric." : "valid"</value>
                       <value>(domainData.domain.domain.equals('Lodging') &amp;&amp; domainData.domainFields != null &amp;&amp; domainData.domainFields.containsKey("roomHero") &amp;&amp; !domainData.domainFields.get("roomHero").toString.matches("true|false")) ? "roomHero is not boolean." : "valid"</value>
                       <value>(domainData.domain.domain.equals('Lodging') &amp;&amp; domainData.domainFields != null &amp;&amp; domainData.domainFields.containsKey("rooms") &amp;&amp; domainData.domainFields.get("rooms").isEmpty) ? "rooms list is empty" : "valid"</value>
+                      <value>(imageMessage.rotation == null) ? "valid" : (Integer.parseInt(imageMessage.rotation)%90 == 0  &amp;&amp; Integer.parseInt(imageMessage.rotation) &lt;= 270) ? "valid" : "rotation accepted values are 0, 90, 180, and 270."</value>
                       <!-- TODO: Rooms validations would go here. How do we traverse lists? -->
                   </list>
               </entry>
@@ -91,6 +92,7 @@
                         <value>(domainData.domain.domain.endsWith('Lodging') &amp;&amp; domainData.domainId != null &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
                         <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
                         <value>(domainData != null &amp;&amp; domainData.provider == null) ? "domainProvider is required." : "valid"</value>
+                        <value>(imageMessage.rotation == null) ? "valid" : (Integer.parseInt(imageMessage.rotation)%90 == 0  &amp;&amp; Integer.parseInt(imageMessage.rotation) &lt;= 270) ? "valid" : "rotation accepted values are 0, 90, 180, and 270."</value>
                     </list>
                 </entry>
             </map>
@@ -112,6 +114,7 @@
                         <value>(domainData.domain.domain.endsWith('Lodging') &amp;&amp; domainData.domainId != null &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
                         <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
                         <value>(domainData != null &amp;&amp; domainData.provider == null) ? "domainProvider is required." : "valid"</value>
+                        <value>(imageMessage.rotation == null) ? "valid" : (Integer.parseInt(imageMessage.rotation)%90 == 0  &amp;&amp; Integer.parseInt(imageMessage.rotation) &lt;= 270) ? "valid" : "rotation accepted values are 0, 90, 180, and 270."</value>
                     </list>
                 </entry>
             </map>

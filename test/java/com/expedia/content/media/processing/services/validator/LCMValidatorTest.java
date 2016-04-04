@@ -94,11 +94,6 @@ public class LCMValidatorTest {
         mockRoomResults = new HashMap<>();
         mockRoomResults.put(PropertyRoomTypeGetIDSproc.ROOM_TYPE_RESULT_SET, mockRoomTypes);
         roomTypeDao = spy(new RoomTypeDao(mockPropertyRoomTypeGetIDSproc));
-        mockRoomTypes = new ArrayList<>();
-        mockRoomTypes.add(new RoomType(222, 555, new Timestamp(1339150200000L), "phoenix", "phoenix"));
-        mockRoomTypes.add(new RoomType(333, 444, new Timestamp(1339150200000L), "phoenix", "phoenix"));
-        mockRoomResults = new HashMap<>();
-        mockRoomResults.put(PropertyRoomTypeGetIDSproc.ROOM_TYPE_RESULT_SET, mockRoomTypes);
         ReflectionUtils.setVariableValueInObject(lcmValidator, "providerProperties", mockProviderProperties);
         ReflectionUtils.setVariableValueInObject(lcmValidator, "skuGroupCatalogItemDao", mockSKUGroupCatalogItemDao);
         ReflectionUtils.setVariableValueInObject(lcmValidator, "mediaDomainCategoriesDao", mockMediaDomainCategoriesDao);
@@ -423,5 +418,47 @@ public class LCMValidatorTest {
         verify(mockProviderProperties, times(1)).entrySet();
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
         verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
+    }
+
+    @Test
+    public void testDuplicateRoom() throws Exception {
+        final String jsonMsg =
+                "         { " +
+                        "    \"fileUrl\": \"http://well-formed-url/hello.jpg\"," +
+                        "    \"fileName\": \"Something\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
+                        "    \"domain\": \"Lodging\", " +
+                        "    \"domainId\": \"123\", " +
+                        "    \"userId\": \"user-id\", " +
+                        "    \"domainProvider\": \"EPC Internal User\", " +
+                        "    \"domainFields\": { " +
+                        "          \"category\": \"10000\"," +
+                        "          \"propertyHero\": \"true\"," +
+                        "          \"rooms\": [ " +
+                        "               {" +
+                        "                 \"roomId\": \"222\", " +
+                        "                 \"roomHero\": \"true\" " +
+                        "               }, " +
+                        "               {" +
+                        "                 \"roomId\": \"222\", " +
+                        "                 \"roomHero\": \"false\" " +
+                        "               }" +
+                        "                     ]" +
+                        "                       }" +
+                        " }";
+        final ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        final List<ImageMessage> imageMessageList = new ArrayList<>();
+        imageMessageList.add(imageMessage);
+        when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
+        when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
+        when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
+        final List<Map<String, String>> errorList = lcmValidator.validateImages(imageMessageList);
+        assertTrue(errorList.size() == 1);
+        assertTrue(errorList.get(0).get("error").equals("The request contains duplicate rooms."));
+        assertTrue(errorList.get(0).get("fileName").equals("Something"));
+        verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
+        verify(mockProviderProperties, times(1)).entrySet();
+        verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
+        verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(anyInt());
     }
 }

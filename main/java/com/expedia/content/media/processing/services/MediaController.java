@@ -1,23 +1,33 @@
 package com.expedia.content.media.processing.services;
 
-import static org.springframework.http.HttpStatus.ACCEPTED;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.OK;
-
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import javax.annotation.Resource;
-
+import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
+import com.expedia.content.media.processing.pipeline.reporting.Activity;
+import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
+import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
+import com.expedia.content.media.processing.pipeline.reporting.Reporting;
+import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
+import com.expedia.content.media.processing.services.dao.MediaDao;
+import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
+import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
+import com.expedia.content.media.processing.services.reqres.Comment;
+import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
+import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
+import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
+import com.expedia.content.media.processing.services.util.DomainDataUtil;
+import com.expedia.content.media.processing.services.util.FileNameUtil;
+import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.util.MediaReplacement;
+import com.expedia.content.media.processing.services.util.MediaServiceUrl;
+import com.expedia.content.media.processing.services.validator.MapMessageValidator;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Joiner;
+import expedia.content.solutions.metrics.annotations.Meter;
+import expedia.content.solutions.metrics.annotations.Timer;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
@@ -40,34 +50,22 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.expedia.content.media.processing.pipeline.domain.Domain;
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
-import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
-import com.expedia.content.media.processing.pipeline.reporting.Activity;
-import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
-import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
-import com.expedia.content.media.processing.pipeline.reporting.Reporting;
-import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
-import com.expedia.content.media.processing.services.dao.MediaDao;
-import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
-import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
-import com.expedia.content.media.processing.services.reqres.Comment;
-import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
-import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
-import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
-import com.expedia.content.media.processing.services.util.DomainDataUtil;
-import com.expedia.content.media.processing.services.util.FileNameUtil;
-import com.expedia.content.media.processing.services.util.JSONUtil;
-import com.expedia.content.media.processing.services.util.MediaReplacement;
-import com.expedia.content.media.processing.services.util.MediaServiceUrl;
-import com.expedia.content.media.processing.services.validator.MapMessageValidator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Joiner;
+import javax.annotation.Resource;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
-import expedia.content.solutions.metrics.annotations.Meter;
-import expedia.content.solutions.metrics.annotations.Timer;
+import static org.springframework.http.HttpStatus.ACCEPTED;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.OK;
 
 /**
  * Web service controller for media resources.
@@ -82,6 +80,7 @@ public class MediaController extends CommonServiceController {
     private static final Logger LOGGER = LoggerFactory.getLogger(MediaController.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
+    private static final String MEDIA_CLOUD_ROUTER_CLIENT_ID = "Media Cloud Router";
 
     private static final String IMAGE_MESSAGE_FIELD = "message";
     private static final String REPROCESSING_STATE_FIELD = "processState";
@@ -106,6 +105,8 @@ public class MediaController extends CommonServiceController {
     private MediaDao mediaDao;
     @Autowired
     private DynamoMediaRepository dynamoMediaRepository;
+    @Autowired
+    private SKUGroupCatalogItemDao skuGroupCatalogItemDao;
 
     /**
      * web service interface to consume media message.
@@ -223,7 +224,7 @@ public class MediaController extends CommonServiceController {
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                 serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
-        final ResponseEntity<String> validationResponse = validateMediaByDomainIdRequest(domainName, activeFilter);
+        final ResponseEntity<String> validationResponse = validateMediaByDomainIdRequest(domainName, domainId, activeFilter);
         if (validationResponse != null) {
             LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                     serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
@@ -232,7 +233,7 @@ public class MediaController extends CommonServiceController {
         final List<DomainIdMedia> images =
                 transformMediaListForResponse(mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter));
         final MediaByDomainIdResponse response = MediaByDomainIdResponse.builder().domain(domainName).domainId(domainId).images(images).build();
-        return new ResponseEntity<String>(OBJECT_MAPPER.writeValueAsString(response), OK);
+        return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);
     }
 
 
@@ -328,13 +329,16 @@ public class MediaController extends CommonServiceController {
      * @param activeFilter Active filter to validate.
      * @return Returns a response if the validation fails; null otherwise.
      */
-    private ResponseEntity<String> validateMediaByDomainIdRequest(final String domainName, final String activeFilter) {
+    private ResponseEntity<String> validateMediaByDomainIdRequest(final String domainName, final String domainId, final String activeFilter) {
         if (activeFilter != null && !activeFilter.equalsIgnoreCase("all") && !activeFilter.equalsIgnoreCase("true")
                 && !activeFilter.equalsIgnoreCase("false")) {
-            return new ResponseEntity<String>("Unsupported active filter " + activeFilter, BAD_REQUEST);
+            return new ResponseEntity<>("Unsupported active filter " + activeFilter, BAD_REQUEST);
         }
         if (Domain.findDomain(domainName, true) == null) {
-            return new ResponseEntity<String>("Domain not found " + domainName, NOT_FOUND);
+            return new ResponseEntity<>("Domain not found " + domainName, NOT_FOUND);
+        }
+        if (!skuGroupCatalogItemDao.skuGroupExists(Integer.parseInt(domainId))) {
+            return new ResponseEntity<>("DomainId not found: " + domainId, NOT_FOUND);
         }
         return null;
     }
@@ -402,8 +406,8 @@ public class MediaController extends CommonServiceController {
         imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
         final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
         imageMessageBuilder.outerDomainData(outerDomain);
-        final Boolean isReprocessing = processReplacement(imageMessage, imageMessageBuilder);
         imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(imageMessageBuilder.build()));
+        final Boolean isReprocessing = processReplacement(imageMessage, imageMessageBuilder, clientId);
         final ImageMessage imageMessageNew = imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).build();
         final Map<String, Object> messageState = new HashMap<>();
         messageState.put(IMAGE_MESSAGE_FIELD, imageMessageNew);
@@ -414,8 +418,10 @@ public class MediaController extends CommonServiceController {
 
     /**
      * This method processes the replacement changes needed on the
-     * ImageMessageBuilder for the provided ImageMessage.
+     * ImageMessageBuilder for the provided ImageMessage . Reprocessing
+     * happens only if the request comes from Media Cloud Router (as clientId)
      * <p>
+     *
      * The method will first try to find the media that have the same file name.
      * If multiple, it will choose the best one for replacement. It will finally
      * populate the replacement mediaId and GUID on the ImageMessageBuilder.
@@ -423,26 +429,29 @@ public class MediaController extends CommonServiceController {
      *
      * @param imageMessage Original message received.
      * @param imageMessageBuilder Builder for the new/mutated ImageMessage.
+     * @param clientId Existing in the message header, represents the client (EPC, Media Cloud Router, Multisource, GSO Media Tools)
      * @return returns true if reprocessing and false if not.
      */
-    private boolean processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder) {
-        LOGGER.info("This is a replacement: mediaGuid=[{}], filename=[{}], requestId=[{}]", imageMessage.getMediaGuid(), imageMessage.getFileName(),
-                imageMessage.getRequestId());
-        final List<Media> mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
-        final Optional<Media> bestMedia = MediaReplacement.selectBestMedia(mediaList);
-        // Replace the GUID and MediaId of the existing Media
-        if (bestMedia.isPresent()) {
-            final Media media = bestMedia.get();
-            final OuterDomain.OuterDomainBuilder domainBuilder = OuterDomain.builder().from(imageMessage.getOuterDomainData());
-            domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
-            imageMessageBuilder.outerDomainData(domainBuilder.build());
-            imageMessageBuilder.mediaGuid(media.getMediaGuid());
-            LOGGER.info("The replacement information is: mediaGuid=[{}], filename=[{}], requestId=[{}], lcmMediaId=[{}]", media.getMediaGuid(),
-                    imageMessage.getFileName(), imageMessage.getRequestId(), media.getDomainId());
-            return true;
-        } else {
-            LOGGER.info("Could not find the best media for the filename=[{}] on the list: [{}]. Will create a new GUID.", imageMessage.getFileName(),
-                    Joiner.on("; ").join(mediaList));
+    private boolean processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder, String clientId) {
+        if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
+            LOGGER.info("This is a replacement: mediaGuid=[{}], filename=[{}], requestId=[{}]", imageMessage.getMediaGuid(), imageMessage.getFileName(),
+                    imageMessage.getRequestId());
+            final List<Media> mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
+            final Optional<Media> bestMedia = MediaReplacement.selectBestMedia(mediaList);
+            // Replace the GUID and MediaId of the existing Media
+            if (bestMedia.isPresent()) {
+                final Media media = bestMedia.get();
+                final OuterDomain.OuterDomainBuilder domainBuilder = OuterDomain.builder().from(imageMessage.getOuterDomainData());
+                domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
+                imageMessageBuilder.outerDomainData(domainBuilder.build());
+                imageMessageBuilder.mediaGuid(media.getMediaGuid());
+                LOGGER.info("The replacement information is: mediaGuid=[{}], filename=[{}], requestId=[{}], lcmMediaId=[{}]", media.getMediaGuid(),
+                        imageMessage.getFileName(), imageMessage.getRequestId(), media.getDomainId());
+                return true;
+            } else {
+                LOGGER.info("Could not find the best media for the filename=[{}] on the list: [{}]. Will create a new GUID.", imageMessage.getFileName(),
+                        Joiner.on("; ").join(mediaList));
+            }
         }
         return false;
     }
@@ -523,4 +532,5 @@ public class MediaController extends CommonServiceController {
         final String domainProvider = DomainDataUtil.getDomainProvider(outerDomain.getProvider(), providerProperties);
         return OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
     }
+    
 }
