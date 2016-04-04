@@ -167,6 +167,15 @@ public class MediaController extends CommonServiceController {
         }
     }
 
+    /**
+     * web service interface to update media information
+     *
+     * @param queryId can be lcmMediaId or media GUID
+     * @param message JSON message
+     * @param headers
+     * @return
+     * @throws Exception
+     */
     @Meter(name = "updateMessageCounter")
     @Timer(name = "updateMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
@@ -175,7 +184,7 @@ public class MediaController extends CommonServiceController {
             @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_ADD.getUrl() + "/" + queryId;
-        LOGGER.info("RECEIVED update REQUEST - messageName={}, queryId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
+        LOGGER.info("RECEIVED update REQUEST - serviceUrl={}, queryId=[{}], requestID=[{}], JSONMessage=[{}]", serviceUrl, queryId, requestID, message);
         try {
             String lcmMediaId = "";
             String domainId = "";
@@ -189,10 +198,10 @@ public class MediaController extends CommonServiceController {
                 domainId = dynamoMedia.getDomainId();
             } else if (StringUtils.isNumeric(queryId)) {
                 lcmMediaId = queryId;
-
                 final List<Media> mediaList = mediaDao.getMediaByMediaId(queryId);
                 if (!mediaList.isEmpty()) {
-                    return this.buildErrorResponse("GUID exist, please use GUID to update.", serviceUrl, BAD_REQUEST);
+                    final String guid = mediaList.get(0).getMediaGuid();
+                    return this.buildErrorResponse("Media GUID " + guid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
                 }
             } else {
                 return this.buildErrorResponse("input queryId is invalid", serviceUrl, BAD_REQUEST);
@@ -211,10 +220,13 @@ public class MediaController extends CommonServiceController {
                 final ImageMessage imageMessageNew = removeActiveFromImageMessage(imageMessage);
                 return mediaUpdateProcesser.processRequest(imageMessageNew, lcmMediaId, domainId, dynamoMedia);
             }
+        } catch (IllegalStateException | ImageMessageException ex) {
+            LOGGER.error("ERROR - serviceUrl={}, error=[{}], queryId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), queryId, message, ex);
+            return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         } catch (Exception ex) {
-            LOGGER.error("ERROR when update media -messageName={}, error=[{}], queryId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID,
+            LOGGER.error("ERROR when update media -serviceUrl={}, error=[{}], queryId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), queryId,
                     message, ex);
-            return this.buildErrorResponse("Update fail with message=" + ex.getMessage(), serviceUrl, HttpStatus.INTERNAL_SERVER_ERROR);
+            return this.buildErrorResponse("update failure with message=" + ex.getMessage(), serviceUrl, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -230,7 +242,6 @@ public class MediaController extends CommonServiceController {
         jsonMap.put("domain", "Lodging");
         return new ObjectMapper().writeValueAsString(jsonMap);
     }
-
 
     /**
      * Web services interface to retrieve media information by domain name and id.

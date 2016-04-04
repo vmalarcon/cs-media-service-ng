@@ -35,10 +35,24 @@ public interface MediaDao {
      */
     LcmMedia getContentProviderName(String fileName);
 
+    /**
+     * get Media info from Dynamo by GUID
+     * @param guid
+     * @return
+     */
     Media getMediaByGuid(String guid);
 
+    /**
+     * get Media list from Dynamo by lcmMedia ID.
+     * @param mediaId
+     * @return
+     */
     List<Media> getMediaByMediaId(String mediaId);
 
+    /**
+     * save media info to dynamo Media table.
+     * @param media
+     */
     void saveMedia(Media media);
 
 }

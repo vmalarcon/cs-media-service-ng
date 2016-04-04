@@ -31,6 +31,7 @@ import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepos
 import com.expedia.content.media.processing.services.dao.sql.CatalogItemListSproc;
 import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaChgSproc;
 import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaGetSproc;
+import com.expedia.content.media.processing.services.dao.sql.MediaLstWithCatalogItemMediaAndMediaFileNameSproc;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.codehaus.plexus.util.ReflectionUtils;
 import org.junit.Before;
@@ -601,7 +602,7 @@ public class MediaControllerTest {
         List<Media> emptyMediaList = new ArrayList<>();
         MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
         when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(emptyMediaList);
-        String dyNamoField ="{  \n"
+        String dyNamoField = "{  \n"
                 + "      \"subcategoryId\":\"22003\",\n"
                 + "      \"propertyHero\":\"true\",\n"
                 + "      \"rooms\":[  \n"
@@ -615,7 +616,9 @@ public class MediaControllerTest {
                 + "         }\n"
                 + "      ]\n"
                 + "   }";
-        Media dynamoMedia = Media.builder().lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dyNamoField).build();
+        Media dynamoMedia =
+                Media.builder().lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dyNamoField)
+                        .build();
         when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
 
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
@@ -660,7 +663,6 @@ public class MediaControllerTest {
         List<Media> emptyMediaList = new ArrayList<>();
         MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
         when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(emptyMediaList);
-
 
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
@@ -710,7 +712,7 @@ public class MediaControllerTest {
     }
 
     private CatelogHeroProcesser getCateLogMock() throws Exception {
-        CatelogHeroProcesser catelogHeroProcesser = mock(CatelogHeroProcesser.class);
+        CatelogHeroProcesser catelogHeroProcesser = new CatelogHeroProcesser();
         CatalogItemListSproc catalogItemListSproc = mock(CatalogItemListSproc.class);
         CatalogitemMediaDao catalogitemMediaDao = mock(CatalogitemMediaDao.class);
         CatalogItemMediaChgSproc catalogItemMediaChgSproc = mock(CatalogItemMediaChgSproc.class);
@@ -741,6 +743,13 @@ public class MediaControllerTest {
         CatalogItemMediaGetSproc catalogItemMediaGetSproc = mock(CatalogItemMediaGetSproc.class);
         when(catalogItemMediaGetSproc.getMedia(anyInt(), anyInt())).thenReturn(lcmCatalogItemMediaList);
         FieldUtils.writeField(catelogHeroProcesser, "catalogItemMediaGetSproc", catalogItemMediaGetSproc, true);
+
+        MediaLstWithCatalogItemMediaAndMediaFileNameSproc mediaLstWithCatalogItemMediaAndMediaFileNameSproc =
+                mock(MediaLstWithCatalogItemMediaAndMediaFileNameSproc.class);
+        when(mediaLstWithCatalogItemMediaAndMediaFileNameSproc.getMedia(anyInt())).thenReturn(lcmCatalogItemMediaList);
+        FieldUtils.writeField(catelogHeroProcesser, "mediaLstWithCatalogItemMediaAndMediaFileNameSproc", mediaLstWithCatalogItemMediaAndMediaFileNameSproc,
+                true);
+        //when(catelogHeroProcesser.getCatalogItemMeida(anyInt(), anyInt())).thenReturn(lcmCatalogItemMedia);
 
         return catelogHeroProcesser;
     }
