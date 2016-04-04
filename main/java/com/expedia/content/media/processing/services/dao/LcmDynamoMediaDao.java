@@ -35,6 +35,7 @@ import com.expedia.content.media.processing.services.util.ActivityMapping;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
 
 /**
  * Media data access operations through LCM and the Dynamo MediaDB.
@@ -95,7 +96,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     @Override
     @SuppressWarnings("unchecked")
     public List<Media> getMediaByDomainId(Domain domain, String domainId, String activeFilter, String derivativeFilter) {
-        List<Media> domainIdMedia = mediaRepo.loadMedia(domain, domainId).stream().collect(Collectors.toList());
+        List<Media> domainIdMedia = mediaRepo.loadMedia(domain, domainId).stream().map(media -> completeMedia(media, derivativeFilter)).collect(Collectors.toList());
         if (Domain.LODGING.equals(domain)) {
             final Map<String, Media> mediaLcmMediaIdMap =
                     domainIdMedia.stream().filter(media -> media.getLcmMediaId() != null && !"null".equals(media.getLcmMediaId()))
@@ -130,24 +131,27 @@ public class LcmDynamoMediaDao implements MediaDao {
     }
 
     /*
-     * TODO Testing isLodgingNoGuid will not be necessary once all media from LCM is in the media DB. Once the data
-     * is migrated the inner if condition, along with all the else lines, in the Lodging condition should be removed.
+     * TODO Once all media from LCM is is migrated in the media DB only completeMedia(mediaRepo.getMedia(mediaGUID), nullFilter) and
+     * the latest status will be needed.
      */
     @Override
     @SuppressWarnings("unchecked")
     public Media getMediaByGUID(String mediaGUID) {
         final boolean isLodgingNoGuid = mediaGUID.matches("\\d+");
+        final String nullFilter = null;
         Media guidMedia = null;
         if (!isLodgingNoGuid) {
-            guidMedia = mediaRepo.getMedia(mediaGUID);
+            guidMedia = completeMedia(mediaRepo.getMedia(mediaGUID), nullFilter);
         }
         final boolean isLodgingWithGuid = guidMedia != null && Domain.LODGING.getDomain().equals(guidMedia.getDomain());
         final Map<String, Media> mediaLcmMediaIdMap = new HashMap<>();
         Integer lcmMediaId = null;
         String domainId = null;
         if (isLodgingWithGuid) {
-            mediaLcmMediaIdMap.put(guidMedia.getLcmMediaId(), guidMedia);
-            lcmMediaId = guidMedia.getLcmMediaId() == null ? null : Integer.parseInt(guidMedia.getLcmMediaId());
+            if (guidMedia.getLcmMediaId() != null) {
+                mediaLcmMediaIdMap.put(guidMedia.getLcmMediaId(), guidMedia);
+                lcmMediaId = Integer.parseInt(guidMedia.getLcmMediaId());
+            }
             domainId = guidMedia.getDomainId();
         }
         if (isLodgingNoGuid) {
@@ -160,7 +164,6 @@ public class LcmDynamoMediaDao implements MediaDao {
             }
         }
         if (lcmMediaId != null) {
-            final String nullFilter = null;
             guidMedia = convertMedia(mediaLcmMediaIdMap).apply(buildLcmMedia(domainId, nullFilter).apply(lcmMediaId));
         }
 
@@ -228,12 +231,12 @@ public class LcmDynamoMediaDao implements MediaDao {
     /**
      * From a domain id builds a media item from LCM data. Allows an inclusive filter for derivatives.
      *
-     * @param domainId         Id of the domain object for which the media is required.
+     * @param domainId Id of the domain object for which the media is required.
      * @param derivativeFilter Inclusive filter of derivatives. A null or empty string will not exclude any derivatives.
      * @return
      */
     @SuppressWarnings("unchecked")
-    private Function<Integer, LcmMedia> buildLcmMedia(String domainId, String derivativeFilter) {
+    private Function<Integer, LcmMedia> buildLcmMedia(final String domainId, final String derivativeFilter) {
         /* @formatter:off */
         return mediaId -> {
             final boolean skipDerivativeFiltering = derivativeFilter == null || derivativeFilter.isEmpty();
@@ -245,6 +248,44 @@ public class LcmDynamoMediaDao implements MediaDao {
             return media;
         };
         /* @formatter:on */
+    }
+
+    /**
+     * Completes values of the media object. Mostly converts JSON string fields and populates the related list or map fields.
+     * 
+     * @param media The media to update and complete. This object is modified and returned.
+     * @param derivativeFilter Inclusive filter of derivatives. A null or empty string will not exclude any derivatives.
+     * @return the updated passed media object.
+     */
+    @SuppressWarnings("unchecked")
+    private Media completeMedia(final Media media, final String derivativeFilter) {
+        if (media != null) {
+            if (media.getDomainFields() != null) {
+                try {
+                    media.setDomainData(OBJECT_MAPPER.readValue(media.getDomainFields(), new TypeReference<Map<String, Object>>() {}));
+                    final Object lcmMediaIdObject = media.getDomainData().get("lcmMediaId");
+                    if (lcmMediaIdObject != null) {
+                        final Integer lcmMediaId = lcmMediaIdObject instanceof Integer ? (Integer) lcmMediaIdObject : Integer.parseInt((String) lcmMediaIdObject);
+                        media.setLcmMediaId(lcmMediaId.toString());
+                    }
+                } catch (IOException e) {
+                    LOGGER.warn("Domain fields not stored in proper JSON format for media id {}.", media.getMediaGuid(), e);
+                }
+            }
+            if (media.getDerivatives() != null) {
+                try {
+                    final boolean skipDerivativeFiltering = derivativeFilter == null || derivativeFilter.isEmpty();
+                    final CollectionType collectionType = OBJECT_MAPPER.getTypeFactory().constructCollectionType(List.class, Map.class);
+                    final List<Map<String, Object>> mediaDerivatives = OBJECT_MAPPER.readValue(media.getDerivatives(), collectionType);
+                    media.setDerivativesList(mediaDerivatives.stream()
+                            .filter(derivative -> (skipDerivativeFiltering || derivativeFilter.contains((String) derivative.get("type"))))
+                            .collect(Collectors.toList()));
+                } catch (IOException e) {
+                    LOGGER.warn("Derivatives not stored in proper JSON format for media id {}.", media.getMediaGuid(), e);
+                }
+            }
+        }
+        return media;
     }
 
     /**

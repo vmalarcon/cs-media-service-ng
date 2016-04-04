@@ -6,12 +6,14 @@ import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
 
+/**
+ * Media response object.
+ */
 @Builder
 @SuppressWarnings({"PMD.UnusedPrivateField"})
 public class MediaGetResponse {
     
-    @Getter private final String domain;
-    @Getter private final String domainId;
+    @SuppressWarnings("CPD-START")
     @Getter private final String mediaGuid;
     @Getter private final String fileUrl;
     @Getter private final String fileName;
@@ -27,5 +29,8 @@ public class MediaGetResponse {
     @Getter private final Map<String, Object> domainFields;
     @Getter private final List<Map<String, Object>> derivatives;
     @Getter private final List<Comment> comments;
+    @SuppressWarnings("CPD-END")
+    @Getter private final String domain;
+    @Getter private final String domainId;
 
 }

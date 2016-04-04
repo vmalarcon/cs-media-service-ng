@@ -53,6 +53,7 @@ import com.expedia.content.media.processing.services.dao.LcmDynamoMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
+import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.google.common.collect.Lists;
 
@@ -109,6 +110,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
         setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -146,6 +148,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
         setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -190,6 +193,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
         setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -407,6 +411,7 @@ public class MediaControllerTest {
         MediaDao mockMediaDao = mock(MediaDao.class);
         when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"))).thenReturn(Lists.newArrayList());
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -446,6 +451,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
         setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -483,6 +489,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
         setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -525,6 +532,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
         setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();

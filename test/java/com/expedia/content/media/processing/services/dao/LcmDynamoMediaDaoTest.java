@@ -86,8 +86,10 @@ public class LcmDynamoMediaDaoTest {
         List<Media> dynamoMediaList = new ArrayList<>();
         String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
         Media dynamoMedia1 = Media.builder()
-                .mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234").fileUrl("s3://fileUrl")
-                .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
+                .mediaGuid(guid1).domain("Lodging").domainId("1234").fileUrl("s3://fileUrl")
+                .domainFields("{\"lcmMediaId\":\"1\",\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}")
+                .derivatives("[{\"type\":\"v\",\"width\":179,\"height\":240,\"fileSize\":10622,\"location\":\"s3://ewe-cs-media-test/test/derivative/lodging/1000000/10000/7200/7139/dfec2df8_v.jpg\"}]")
+                .build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
         Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").build();
         dynamoMediaList.add(dynamoMedia1);

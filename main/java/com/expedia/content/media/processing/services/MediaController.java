@@ -236,6 +236,13 @@ public class MediaController extends CommonServiceController {
     }
 
 
+    /**
+     * Transforms a media for a media get response format.
+     * 
+     * @param media The media to transform
+     * @return The media response with the transformed media.
+     */
+    @SuppressWarnings({"PMD.SignatureDeclareThrowsException", "CPD-START"})
     private MediaGetResponse transformSingleMediaForResponse(Media media) {
         /* @formatter:off */
         setResponseLcmMediaId(media);
@@ -270,6 +277,7 @@ public class MediaController extends CommonServiceController {
      * @param mediaList List of media to transform.
      * @return The transformed list.
      */
+    @SuppressWarnings("CPD-END")
     private List<DomainIdMedia> transformMediaListForResponse(List<Media> mediaList) {
         return mediaList.stream().map(media -> {
             setResponseLcmMediaId(media);

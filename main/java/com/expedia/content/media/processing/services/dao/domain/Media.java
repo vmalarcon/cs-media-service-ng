@@ -157,7 +157,7 @@ public class Media {
         return environment;
     }
 
-    @DynamoDBAttribute(attributeName = "lcmMediaId")
+    @DynamoDBAttribute(attributeName = "LcmMediaId")
     public String getLcmMediaId() {
         return lcmMediaId;
     }
@@ -182,7 +182,7 @@ public class Media {
         return status == null ? "RECEIVED" : status;
     }
 
-    @DynamoDBIgnore
+    @DynamoDBAttribute(attributeName = "DerivativeCategory")
     public String getDomainDerivativeCategory() {
         return domainDerivativeCategory;
     }
