@@ -42,6 +42,7 @@ public class CatalogItemMediaGetSproc extends StoredProcedure{
         @Override
         public LcmCatalogItemMedia mapRow(ResultSet resultSet, int i) throws SQLException {
             final LcmCatalogItemMedia media = LcmCatalogItemMedia.builder()
+                    .catalogItemId(resultSet.getInt("CatalogItemID"))
                     .mediaId(resultSet.getInt("MediaId"))
                     .mediaUseRank(resultSet.getInt("MediaUseRank"))
                     .lastUpdateDate(resultSet.getDate("UpdateDate"))

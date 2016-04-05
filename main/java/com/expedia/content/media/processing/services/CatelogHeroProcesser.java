@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.expedia.content.media.processing.pipeline.domain.Domain.LODGING;
 
@@ -92,20 +93,27 @@ public class CatelogHeroProcesser {
      *
      * @param imageMessage Image message to use
      */
-    public void setOldCategoryForHeroPropertyMedia(ImageMessage imageMessage, String domainId) throws MediaDBException {
+    public void setOldCategoryForHeroPropertyMedia(ImageMessage imageMessage, String domainId, String guid, int mediaId) throws MediaDBException {
         final String catalogItemId = domainId;
-        final List<Media> heroMedia = mediaRepo.retrieveHeroPropertyMedia(catalogItemId, LODGING.getDomain());
-        final List<LcmCatalogItemMedia> lcmHeroMedia = mediaLstWithCatalogItemMediaAndMediaFileNameSproc.getMedia(Integer.parseInt(catalogItemId));
-        final List<CategoryMedia> categoryMediaList = buildCategoryMediaList(lcmHeroMedia, heroMedia);
+        //final List<Media> heroMedia = mediaRepo.retrieveHeroPropertyMedia(catalogItemId, LODGING.getDomain());
+        final List<Media> dynamoHeroMedia = mediaRepo.retrieveHeroPropertyMedia(catalogItemId, LODGING.getDomain()).stream()
+                .filter(item -> !guid.equals(imageMessage.getMediaGuid()) &&
+                        !StringUtils.isEmpty(item.getLcmMediaId()) &&
+                        !item.getLcmMediaId().equalsIgnoreCase("null") &&
+                        item.getDomainFields() != null)
+                .collect(Collectors.toList());
+        final List<LcmCatalogItemMedia> lcmHeroMedia = mediaLstWithCatalogItemMediaAndMediaFileNameSproc.getMedia(Integer.parseInt(catalogItemId))
+                .stream().filter(item -> item.getMediaId() != mediaId).collect(Collectors.toList());
+        final List<CategoryMedia> categoryMediaList = buildCategoryMediaList(lcmHeroMedia, dynamoHeroMedia);
 
         try {
             for (final CategoryMedia categoryMedia : categoryMediaList) {
                 catalogItemMediaChgSproc.updateCategory(Integer.parseInt(catalogItemId), categoryMedia.getLcmMediaId(),
-                        categoryMedia.getSubcategoryId(), imageMessage.getClientId(), ROOM_UPDATED_BY);
+                        categoryMedia.getSubcategoryId(), imageMessage.getUserId(), ROOM_UPDATED_BY);
             }
         } catch (Exception ex) {
             final String error = String.format("ERROR updating previous category to hero image when processing GUID=[%s]",
-                    imageMessage.getMediaGuid());
+                    guid);
             throw new MediaDBException(error, ex);
         }
     }

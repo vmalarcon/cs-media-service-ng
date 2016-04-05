@@ -28,7 +28,6 @@ public class MediaLstWithCatalogItemMediaAndMediaFileNameSproc extends StoredPro
     public MediaLstWithCatalogItemMediaAndMediaFileNameSproc(DataSource dataSource) {
         super(dataSource, PROC_NAME);
         declareParameter(new SqlParameter("@pCatalogItemID", Types.INTEGER));
-        declareParameter(new SqlParameter("@pMediaID", Types.INTEGER));
         declareParameter(new SqlReturnResultSet(PROC_RESULT, new MediaLstRowMapper()));
     }
 
