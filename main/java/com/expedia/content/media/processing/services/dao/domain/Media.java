@@ -157,7 +157,7 @@ public class Media {
         return environment;
     }
 
-    @DynamoDBAttribute(attributeName = "LcmMediaId")
+    @DynamoDBAttribute(attributeName = "lcmMediaId")
     public String getLcmMediaId() {
         return lcmMediaId;
     }
