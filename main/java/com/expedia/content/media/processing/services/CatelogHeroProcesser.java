@@ -59,13 +59,19 @@ public class CatelogHeroProcesser {
         }
     }
 
-    public void setMediaToHero(String user, LcmCatalogItemMedia lcmCatalogItemMedia, boolean hero) {
+    public void setMediaToHero(String user, LcmCatalogItemMedia lcmCatalogItemMedia, boolean hero, String subCategoryId) {
         if (hero) {
             catalogItemMediaChgSproc.updateCategory(lcmCatalogItemMedia.getCatalogItemId(), lcmCatalogItemMedia.getMediaId(),
                     3, user, ROOM_UPDATED_BY);
         } else {
-            catalogItemMediaChgSproc.updateCategory(lcmCatalogItemMedia.getCatalogItemId(), lcmCatalogItemMedia.getMediaId(),
-                    DEFAULT_USER_RANK, user, ROOM_UPDATED_BY);
+            if ("".equals(subCategoryId)) {
+                catalogItemMediaChgSproc.updateCategory(lcmCatalogItemMedia.getCatalogItemId(), lcmCatalogItemMedia.getMediaId(),
+                        DEFAULT_USER_RANK, user, ROOM_UPDATED_BY);
+            } else {
+                catalogItemMediaChgSproc.updateCategory(lcmCatalogItemMedia.getCatalogItemId(), lcmCatalogItemMedia.getMediaId(),
+                        Integer.valueOf(subCategoryId), user, ROOM_UPDATED_BY);
+            }
+
         }
 
     }
@@ -97,7 +103,7 @@ public class CatelogHeroProcesser {
         final String catalogItemId = domainId;
         //final List<Media> heroMedia = mediaRepo.retrieveHeroPropertyMedia(catalogItemId, LODGING.getDomain());
         final List<Media> dynamoHeroMedia = mediaRepo.retrieveHeroPropertyMedia(catalogItemId, LODGING.getDomain()).stream()
-                .filter(item -> !guid.equals(imageMessage.getMediaGuid()) &&
+                .filter(item -> !guid.equals(item.getMediaGuid()) &&
                         !StringUtils.isEmpty(item.getLcmMediaId()) &&
                         !item.getLcmMediaId().equalsIgnoreCase("null") &&
                         item.getDomainFields() != null)
