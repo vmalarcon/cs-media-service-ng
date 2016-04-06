@@ -111,7 +111,6 @@
                 <entry key="EPCUpdate">
                     <list>
                        <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
-                        <value>(imageMessage.active == null &amp;&amp; imageMessage.comment == null) ? "active or comment is required." : "valid"</value>
                     </list>
                 </entry>
             </map>

@@ -37,7 +37,7 @@ public class MediaLstWithCatalogItemMediaAndMediaFileNameSproc extends StoredPro
             final LcmCatalogItemMedia media = LcmCatalogItemMedia.builder()
                     .mediaId(resultSet.getInt("MediaId"))
                     .mediaUseRank(resultSet.getInt("MediaUseRank"))
-                    .lastUpdateDate(resultSet.getDate("UpdateDate"))
+                    .lastUpdateDate(resultSet.getTimestamp("UpdateDate"))
                     .lastUpdatedBy(resultSet.getString("LastUpdatedBy"))
                     .build();
             return media;

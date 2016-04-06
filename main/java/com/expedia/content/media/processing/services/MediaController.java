@@ -106,7 +106,7 @@ public class MediaController extends CommonServiceController {
     @Autowired
     private DynamoMediaRepository dynamoMediaRepository;
     @Autowired
-    private MediaUpdateProcesser mediaUpdateProcesser;
+    private MediaUpdateProcessor mediaUpdateProcesser;
 
     /**
      * web service interface to consume media message.
@@ -156,7 +156,7 @@ public class MediaController extends CommonServiceController {
             @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_ADD.getUrl();
-        LOGGER.info("RECEIVED REQUEST - messageName={}, queryId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
+        LOGGER.info("RECEIVED REQUEST - messageName={}, requestID=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
         try {
             final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             final String clientId = auth.getName();
@@ -192,7 +192,7 @@ public class MediaController extends CommonServiceController {
             if (queryId.matches(GUID_REG)) {
                 dynamoMedia = mediaDao.getMediaByGuid(queryId);
                 if (dynamoMedia == null) {
-                    return this.buildErrorResponse("input Guid does not exist ind DB", serviceUrl, BAD_REQUEST);
+                    return this.buildErrorResponse("input GUID does not exist in DB", serviceUrl, BAD_REQUEST);
                 }
                 lcmMediaId = dynamoMedia.getLcmMediaId();
                 domainId = dynamoMedia.getDomainId();

@@ -1,19 +1,17 @@
 package com.expedia.content.media.processing.services.dao;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.services.dao.domain.*;
-import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
+import com.expedia.content.media.processing.services.dao.domain.Paragraph;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
 import com.expedia.content.media.processing.services.dao.sql.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
 import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;

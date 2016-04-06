@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class MediaUpdateProcesser {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MediaUpdateProcesser.class);
+public class MediaUpdateProcessor {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MediaUpdateProcessor.class);
     public static final String MESSAGE_PROPERTY_HERO = "propertyHero";
     public static final String MESSAGE_SUB_CATEGORY_ID = "subcategoryId";
     public static final String MESSAGE_ROOMS = "rooms";
@@ -38,7 +38,7 @@ public class MediaUpdateProcesser {
     @Autowired
     private MediaDao mediaDao;
     @Autowired
-    private CatelogHeroProcesser catelogHeroProcesser;
+    private CatalogHeroProcesser catelogHeroProcesser;
 
     /**
      * process media update, involve media table, catalogItemMedia table, and paragraph table in lcm.
@@ -53,8 +53,7 @@ public class MediaUpdateProcesser {
      */
     @Transactional
     public ResponseEntity<String> processRequest(final ImageMessage imageMessage,
-            final String mediaId, String domainId, Media dynamoMedia
-    ) throws Exception {
+            final String mediaId, String domainId, Media dynamoMedia) throws Exception {
         Integer expediaId;
         if (domainId.isEmpty()) {
             final LcmMedia lcmMedia = mediaUpdateDao.getMediaByMediaId(Integer.valueOf(mediaId));
@@ -71,11 +70,7 @@ public class MediaUpdateProcesser {
                 (imageMessage.getOuterDomainData().getDomainFieldValue(MESSAGE_PROPERTY_HERO) != null
                         || imageMessage.getOuterDomainData().getDomainFieldValue(MESSAGE_SUB_CATEGORY_ID) != null)) {
 
-            if (dynamoMedia == null) {
-                handleLCMPropertyHero(imageMessage, Integer.valueOf(mediaId), expediaId, dynamoMedia);
-            } else {
-                handleLCMPropertyHero(imageMessage, Integer.valueOf(mediaId), expediaId, dynamoMedia);
-            }
+            handleLCMPropertyHero(imageMessage, Integer.valueOf(mediaId), expediaId, dynamoMedia);
         }
         //step 3 update room table.
         processRooms(imageMessage, mediaId);
@@ -102,7 +97,7 @@ public class MediaUpdateProcesser {
         if (subCategoryId == null
                 && heroProperty != null) {
             //hero is true
-            handleSubIdNull(imageMessage, mediaId, domainId, dynamoMedia, heroProperty);
+            handleSubcategoryIdNull(imageMessage, mediaId, domainId, dynamoMedia, heroProperty);
         } else if (subCategoryId != null
                 && heroProperty == null) {
             handleHeroNull(imageMessage, mediaId, domainId);
@@ -112,11 +107,11 @@ public class MediaUpdateProcesser {
         }
     }
 
-    private void handleSubIdNull(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
+    private void handleSubcategoryIdNull(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
         if ("true".equalsIgnoreCase(heroProperty)) {
             setHeroImgage(imageMessage, mediaId, domainId);
-            unSetHeroImgage(imageMessage, mediaId, domainId, guid);
+            unSetHeroImage(imageMessage, mediaId, domainId, guid);
         } else {
             final LcmCatalogItemMedia lcmCatalogItemMedia = catelogHeroProcesser.getCatalogItemMeida(domainId, mediaId);
             String subcategory = "";
@@ -133,11 +128,19 @@ public class MediaUpdateProcesser {
         }
     }
 
+    /**
+     * handle the case both 'propertyHero' and 'subcategoryId' are not null case.
+     * @param imageMessage image Messge object from JSON
+     * @param mediaId
+     * @param domainId
+     * @param dynamoMedia media infomation from dynamo media table.
+     * @param heroProperty propertyHero from JSON message.
+     */
     private void handleBothNotNull(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
         if ("true".equalsIgnoreCase(heroProperty)) {
             setHeroImgage(imageMessage, mediaId, domainId);
-            unSetHeroImgage(imageMessage, mediaId, domainId, guid);
+            unSetHeroImage(imageMessage, mediaId, domainId, guid);
         } else {
             //set the subid from json.
             catelogHeroProcesser.updateCurrentMediaHero(imageMessage, domainId, mediaId);
@@ -159,10 +162,9 @@ public class MediaUpdateProcesser {
         }
     }
 
-    private void unSetHeroImgage(ImageMessage imageMessage, int mediaId, int domainId, String guid) {
+    private void unSetHeroImage(ImageMessage imageMessage, int mediaId, int domainId, String guid) {
         if (guid.isEmpty()) {
-            catelogHeroProcesser.unSetOtherMediaHero(domainId, imageMessage.getUserId(), mediaId);
-
+            catelogHeroProcesser.unsetOtherMediaHero(domainId, imageMessage.getUserId(), mediaId);
         } else {
             catelogHeroProcesser.setOldCategoryForHeroPropertyMedia(imageMessage, Integer.toString(domainId), guid, mediaId);
 

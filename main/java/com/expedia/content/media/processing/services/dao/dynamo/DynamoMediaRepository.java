@@ -58,21 +58,6 @@ public class DynamoMediaRepository {
         return dynamoMapper.query(Media.class, expression);
     }
 
-    /*
-    @Deprecated
-    public List<Media> getMediaByGuid(String guid) {
-        final HashMap<String, AttributeValue> params = new HashMap<>();
-        params.put(":mfn", new AttributeValue().withS(guid));
-        final DynamoDBQueryExpression<Media> expression = new DynamoDBQueryExpression<Media>()
-                .withConsistentRead(false)
-                .withKeyConditionExpression("MediaGUID = :mfn")
-                .withExpressionAttributeValues(params);
-        final List<Media> results = dynamoMapper.query(Media.class, expression);
-        return results.stream()
-                .filter(item -> environment.equals(item.getEnvironment()))
-                .collect(Collectors.toList());
-    }*/
-
     /**
      * Retrieves a media by its GUID.
      *
@@ -83,6 +68,11 @@ public class DynamoMediaRepository {
         return dynamoMapper.load(Media.class, mediaGUID);
     }
 
+    /**
+     * get the Media information from dynamo Media table.
+     * @param mediaId media Id from JSON
+     * @return list of Media
+     */
     public List<Media> getMediaByMediaId(String mediaId) {
         final HashMap<String, AttributeValue> params = new HashMap<>();
         params.put(":mfn", new AttributeValue().withS(mediaId));
@@ -97,6 +87,10 @@ public class DynamoMediaRepository {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * save the JSON message to Dynamo media table.
+     * @param media
+     */
     public void saveMedia(Media media) {
         try {
             dynamoMapper.save(media);

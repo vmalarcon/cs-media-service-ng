@@ -18,17 +18,26 @@ import org.springframework.stereotype.Component;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.*;
 import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Date;
+import java.util.Set;
+import java.util.Map;
+import java.util.HashSet;
+import java.util.HashMap;
+import java.util.ArrayList;
 
 import static com.expedia.content.media.processing.pipeline.domain.Domain.LODGING;
 
 @Component
-public class CatelogHeroProcesser {
+public class CatalogHeroProcesser {
 
     private static final String SUBCATEGORY_ID = "subcategoryId";
     private static final int DEFAULT_USER_RANK = 0;
+    private static final int HERO_USER_RANK = 0;
     private static final String ROOM_UPDATED_BY = "Media Service";
+    private static final String LCM_PST_TIMEZONE = "America/Los_Angeles";
+    private static final String DYNAMO_UTC_TIMEZONE = "UTC";
     @Autowired
     private DynamoMediaRepository mediaRepo;
     @Autowired
@@ -43,12 +52,12 @@ public class CatelogHeroProcesser {
     MediaLstWithCatalogItemMediaAndMediaFileNameSproc mediaLstWithCatalogItemMediaAndMediaFileNameSproc;
 
     /**
-     * //set all other media  userRank to 0 in LCM
+     * set all other media  userRank to 0 in LCM
      *
-     * @param domainId
-     * @param user
+     * @param domainId domainId that this media belongs to
+     * @param user     userId from JSON
      */
-    public void unSetOtherMediaHero(int domainId, String user, int mediaId) {
+    public void unsetOtherMediaHero(int domainId, String user, int mediaId) {
         final List<LcmCatalogItemMedia> lcmCatalogItemMediaList =
                 (List<LcmCatalogItemMedia>) catalogItemListSproc.execute(domainId).get(CatalogItemListSproc.MEDIA_SET);
         for (final LcmCatalogItemMedia lcmCatalogItemMedia : lcmCatalogItemMediaList) {
@@ -59,10 +68,18 @@ public class CatelogHeroProcesser {
         }
     }
 
+    /**
+     * set the current media userank to hero 3, or set to subcategoryid from json
+     *
+     * @param user                userId from Json
+     * @param lcmCatalogItemMedia catalogItemMedia from LCM DB
+     * @param hero                if true, set hero to 3, or else mean unset hero
+     * @param subCategoryId       subCategoryId from JSON
+     */
     public void setMediaToHero(String user, LcmCatalogItemMedia lcmCatalogItemMedia, boolean hero, String subCategoryId) {
         if (hero) {
             catalogItemMediaChgSproc.updateCategory(lcmCatalogItemMedia.getCatalogItemId(), lcmCatalogItemMedia.getMediaId(),
-                    3, user, ROOM_UPDATED_BY);
+                    HERO_USER_RANK, user, ROOM_UPDATED_BY);
         } else {
             if ("".equals(subCategoryId)) {
                 catalogItemMediaChgSproc.updateCategory(lcmCatalogItemMedia.getCatalogItemId(), lcmCatalogItemMedia.getMediaId(),
@@ -71,11 +88,16 @@ public class CatelogHeroProcesser {
                 catalogItemMediaChgSproc.updateCategory(lcmCatalogItemMedia.getCatalogItemId(), lcmCatalogItemMedia.getMediaId(),
                         Integer.valueOf(subCategoryId), user, ROOM_UPDATED_BY);
             }
-
         }
-
     }
 
+    /**
+     * get the CatalogItemMedia from LCM DB.
+     *
+     * @param catalogItemId here the catalogItemId is domainID
+     * @param mediaId
+     * @return LcmCatalogItemMedia
+     */
     public LcmCatalogItemMedia getCatalogItemMeida(int catalogItemId, int mediaId) {
         final LcmCatalogItemMedia catalogItemMedia =
                 catalogItemMediaGetSproc.getMedia(catalogItemId, mediaId).get(0);
@@ -85,7 +107,7 @@ public class CatelogHeroProcesser {
     /**
      * update the current media's useRank in catalogItemMedia table in LCM, if hero, set 3, if not hero, set the input subcategoryId.
      *
-     * @param imageMessage
+     * @param imageMessage json message
      * @param domainId
      * @param mediaId
      */
@@ -101,7 +123,6 @@ public class CatelogHeroProcesser {
      */
     public void setOldCategoryForHeroPropertyMedia(ImageMessage imageMessage, String domainId, String guid, int mediaId) throws MediaDBException {
         final String catalogItemId = domainId;
-        //final List<Media> heroMedia = mediaRepo.retrieveHeroPropertyMedia(catalogItemId, LODGING.getDomain());
         final List<Media> dynamoHeroMedia = mediaRepo.retrieveHeroPropertyMedia(catalogItemId, LODGING.getDomain()).stream()
                 .filter(item -> !guid.equals(item.getMediaGuid()) &&
                         !StringUtils.isEmpty(item.getLcmMediaId()) &&
@@ -124,6 +145,17 @@ public class CatelogHeroProcesser {
         }
     }
 
+    /**
+     * This method works in two parts
+     * 1) Filtering Dynamo propertyHero Media by only adding Media to update to the categoryMediaList if the Dynamo Media has a newer update date
+     * than it's counterpart in LCM.
+     * 2) Filtering LCM Media by only adding Media to update to the categoryMediaList if the LCM Media has mediaUseRank 3, and the MediaID
+     * hasn't already been added to the list above.
+     *
+     * @param lcmMediaList    list of all LCM media of a property
+     * @param dynamoMediaList list of Dynamo Media with propertyHero flag set to "true:
+     * @return a list of CategoryMedia to be updated in LCM
+     */
     private List<CategoryMedia> buildCategoryMediaList(List<LcmCatalogItemMedia> lcmMediaList, List<Media> dynamoMediaList) {
         final List<CategoryMedia> categoryMediaList = new ArrayList<>();
         final Map<Integer, Date> lcmMediaMap = new HashMap<>();
@@ -149,8 +181,8 @@ public class CatelogHeroProcesser {
     }
 
     private Boolean compareDates(Date lcmDate, Date dynamoDate) {
-        final ZonedDateTime lcmDateZoned = ZonedDateTime.ofInstant(lcmDate.toInstant(), ZoneId.of("America/Los_Angeles"));
-        final ZonedDateTime dynamoDateZoned = ZonedDateTime.ofInstant(dynamoDate.toInstant(), ZoneId.of("UTC"));
+        final ZonedDateTime lcmDateZoned = ZonedDateTime.ofInstant(lcmDate.toInstant(), ZoneId.of(LCM_PST_TIMEZONE));
+        final ZonedDateTime dynamoDateZoned = ZonedDateTime.ofInstant(dynamoDate.toInstant(), ZoneId.of(DYNAMO_UTC_TIMEZONE));
         return lcmDateZoned.isBefore(dynamoDateZoned);
     }
 

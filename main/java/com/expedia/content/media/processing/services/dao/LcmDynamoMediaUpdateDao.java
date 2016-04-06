@@ -1,8 +1,9 @@
 package com.expedia.content.media.processing.services.dao;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.services.dao.domain.*;
-import com.expedia.content.media.processing.services.dao.sql.*;
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.dao.sql.MediaChgSproc;
+import com.expedia.content.media.processing.services.dao.sql.MediaGetByMediaIdSproc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +38,7 @@ public class LcmDynamoMediaUpdateDao implements MediaUpdateDao {
 
     public LcmMedia getMediaByMediaId(int mediaId) {
         final Map<String, Object> mediaResult = mediaGetByMediaIdSproc.execute(mediaId);
-        return ((List<LcmMedia>) mediaResult.get(MediaTableGetSproc.MEDIA_SET)).get(0);
+        return ((List<LcmMedia>) mediaResult.get(MediaGetByMediaIdSproc.MEDIA_SET)).get(0);
     }
 
 }

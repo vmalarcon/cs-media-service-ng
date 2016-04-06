@@ -26,7 +26,11 @@ import java.util.Set;
 
 import com.expedia.content.media.processing.services.dao.CatalogitemMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
-import com.expedia.content.media.processing.services.dao.domain.*;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
+import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
 import com.expedia.content.media.processing.services.dao.sql.CatalogItemListSproc;
 import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaChgSproc;
@@ -625,8 +629,8 @@ public class MediaControllerTest {
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
-        CatelogHeroProcesser catelogHeroProcesser = getCateLogMock();
-        MediaUpdateProcesser mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
+        CatalogHeroProcesser catelogHeroProcesser = getCateLogMock();
+        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
         setFieldValue(mediaController, "mediaUpdateProcesser", mockUpdateProcess);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
@@ -668,8 +672,8 @@ public class MediaControllerTest {
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
-        CatelogHeroProcesser catelogHeroProcesser = getCateLogMock();
-        MediaUpdateProcesser mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
+        CatalogHeroProcesser catelogHeroProcesser = getCateLogMock();
+        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
         setFieldValue(mediaController, "mediaUpdateProcesser", mockUpdateProcess);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
@@ -679,8 +683,8 @@ public class MediaControllerTest {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
-    private MediaUpdateProcesser getMediaUpdateProcesser(CatelogHeroProcesser catelogHeroProcesser) throws Exception {
-        MediaUpdateProcesser mockUpdateProcess = new MediaUpdateProcesser();
+    private MediaUpdateProcessor getMediaUpdateProcesser(CatalogHeroProcesser catelogHeroProcesser) throws Exception {
+        MediaUpdateProcessor mockUpdateProcess = new MediaUpdateProcessor();
         MediaUpdateDao mediaUpdateDao = mock(MediaUpdateDao.class);
         CatalogitemMediaDao catalogitemMediaDao = mock(CatalogitemMediaDao.class);
         MediaDao mediaDao = mock(MediaDao.class);
@@ -711,8 +715,8 @@ public class MediaControllerTest {
         return mockUpdateProcess;
     }
 
-    private CatelogHeroProcesser getCateLogMock() throws Exception {
-        CatelogHeroProcesser catelogHeroProcesser = new CatelogHeroProcesser();
+    private CatalogHeroProcesser getCateLogMock() throws Exception {
+        CatalogHeroProcesser catelogHeroProcesser = new CatalogHeroProcesser();
         CatalogItemListSproc catalogItemListSproc = mock(CatalogItemListSproc.class);
         CatalogitemMediaDao catalogitemMediaDao = mock(CatalogitemMediaDao.class);
         CatalogItemMediaChgSproc catalogItemMediaChgSproc = mock(CatalogItemMediaChgSproc.class);
