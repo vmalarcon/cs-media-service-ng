@@ -316,6 +316,7 @@ public class EPCMVELValidatorTest {
                         "    \"fileUrl\": \"http://well-formed-url/hello.JpEg\"," +
                         "    \"fileName\": \"Something\", " +
                         "    \"mediaGuid\": \"media-uuid\", " +
+                        "    \"rotation\": \"180\", " +
                         "    \"domain\": \"Lodging\", " +
                         "    \"domainId\": \"123\", " +
                         "    \"userId\": \"user-id\", " +
@@ -332,5 +333,27 @@ public class EPCMVELValidatorTest {
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
         assertTrue(errorList.isEmpty());
+    }
+
+    @Test
+    public void testRotationIsInvalid() throws Exception {
+        String jsonMsg =
+                "         { " +
+                        "    \"fileUrl\": \"http://well-formed-url/hello.JpEg\"," +
+                        "    \"fileName\": \"Something\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
+                        "    \"rotation\": \"110\", " +
+                        "    \"domain\": \"Lodging\", " +
+                        "    \"domainId\": \"123\", " +
+                        "    \"userId\": \"user-id\", " +
+                        "    \"domainProvider\": \"test\", " +
+                        "    \"domainFields\": { " +
+                        "    } " +
+                        " }";
+        ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        List<ImageMessage> imageMessageList = new ArrayList<>();
+        imageMessageList.add(imageMessage);
+        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
+        assertTrue(errorList.get(0).get("error").contains("rotation accepted values are 0, 90, 180, and 270."));
     }
 }

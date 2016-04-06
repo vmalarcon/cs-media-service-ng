@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services;
 
+
 import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
 import static com.expedia.content.media.processing.services.util.MediaReplacementTest.createByFileNameMedia;
 import static org.junit.Assert.assertEquals;
@@ -24,8 +25,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import com.expedia.content.media.processing.services.dao.CatalogitemMediaDao;
-import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
+import com.expedia.content.media.processing.services.dao.*;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
@@ -37,6 +37,7 @@ import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaChg
 import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.MediaLstWithCatalogItemMediaAndMediaFileNameSproc;
 import org.apache.commons.lang3.reflect.FieldUtils;
+
 import org.codehaus.plexus.util.ReflectionUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -60,16 +61,25 @@ import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
-import com.expedia.content.media.processing.services.dao.LcmDynamoMediaDao;
-import com.expedia.content.media.processing.services.dao.MediaDao;
+
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.google.common.collect.Lists;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verifyZeroInteractions;
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
 @RunWith(MockitoJUnitRunner.class)
 public class MediaControllerTest {
 
     private static final String TEST_CLIENT_ID = "a-user";
+    private static final String MEDIA_CLOUD_ROUTER_CLIENT_ID = "Media Cloud Router";
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     @Mock
@@ -81,6 +91,7 @@ public class MediaControllerTest {
 
     private Set<Map.Entry<Object, Object>> providerMapping;
     private MediaController mediaController;
+    private MediaController mediaControllerSpy;
 
     @Before
     public void setSecurityContext() {
@@ -94,12 +105,15 @@ public class MediaControllerTest {
     @Before
     public void initialize() throws IllegalAccessException {
         mediaController = new MediaController();
+
         ReflectionUtils.setVariableValueInObject(mediaController, "providerProperties", mockProviderProperties);
         providerMapping = new HashSet<>();
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("1", "EPC Internal User"));
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("6", "SCORE"));
+        providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("3", "EPC Legacy"));
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("53", "freetobook"));
-        providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("56", "ReplaceProvider"));
+        providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("56", "ICE Portal"));
+        providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("56", "VFMLeonardo"));
         when(mockProviderProperties.entrySet()).thenReturn(providerMapping);
         DynamoMediaRepository dynamoMediaRepository = mock(DynamoMediaRepository.class);
         Mockito.doNothing().when(dynamoMediaRepository).storeMediaAddMessage(anyObject(), anyObject());
@@ -120,7 +134,9 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
-        setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
+        LcmDynamoMediaDao mockLcmDynamoMediaDao = mock(LcmDynamoMediaDao.class);
+        setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -138,17 +154,18 @@ public class MediaControllerTest {
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
-        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"NASA_ISS-4.jpg\""));
+        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_EPCInternalUser_(.*).jpg\"(.*)"));
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
+        verifyZeroInteractions(mockLcmDynamoMediaDao);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testValidateImageSuccessWithoutFileName() throws Exception {
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", "
-                + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Internal User\" " + "}";
+                + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Legacy\" " + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -157,7 +174,9 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
-        setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
+        LcmDynamoMediaDao mockLcmDynamoMediaDao = mock(LcmDynamoMediaDao.class);
+        setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -179,12 +198,55 @@ public class MediaControllerTest {
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
+        verifyZeroInteractions(mockLcmDynamoMediaDao);
     }
 
     @Test
     public void testValidateImageSuccessWithThumbnail() throws Exception {
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", "
                 + "\"userId\": \"bobthegreat\", " + "\"generateThumbnail\": \"true\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", "
+                + "\"domainProvider\": \"EPC Legacy\" " + "}";
+
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        ThumbnailProcessor thumbnailProcessor = mock(ThumbnailProcessor.class);
+        String thumbnailUrl = "http://url.net/thumbnail.jpg";
+        Thumbnail thumbnail = mock(Thumbnail.class);
+        when(thumbnail.getLocation()).thenReturn(thumbnailUrl);
+        when(thumbnailProcessor.createThumbnail(any())).thenReturn(thumbnail);
+        setFieldValue(mediaController, "thumbnailProcessor", thumbnailProcessor);
+
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+        LcmDynamoMediaDao mockLcmDynamoMediaDao = mock(LcmDynamoMediaDao.class);
+        setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
+        assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
+        assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+        assertTrue(responseEntity.getBody().contains("\"thumbnailUrl\":\"" + thumbnailUrl + "\""));
+
+        ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
+        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        verify(queueMessagingTemplateMock, times(1)).send(anyString(), any());
+        verifyZeroInteractions(mockLcmDynamoMediaDao);
+    }
+
+    @Test
+    public void testValidateImageSuccessWithThumbnailAndRotation() throws Exception {
+        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", "
+                + "\"rotation\": \"90\", " + "\"userId\": \"bobthegreat\", " + "\"generateThumbnail\": \"true\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", "
                 + "\"domainProvider\": \"EPC Internal User\" " + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
@@ -202,6 +264,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
         setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -220,12 +283,13 @@ public class MediaControllerTest {
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), any());
     }
 
+
     @SuppressWarnings("unchecked")
     @Test
     public void testClientNotValid() throws Exception {
         String jsonMessage =
                 "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", " + "\"userId\": \"bobthegreat\", "
-                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Internal User\" " + "}";
+                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Legacy\" " + "}";
 
         Map<String, List<MapMessageValidator>> validators = new HashMap<>();
         List<MapMessageValidator> messageValidator = new ArrayList<>();
@@ -257,7 +321,7 @@ public class MediaControllerTest {
     @Test
     public void testURLNotFound() throws Exception {
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgasdfasdfasdfur.com/3PRGFasdfasdfasdfii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", "
-                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Internal User\" "
+                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Legacy\" "
                 + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
@@ -331,8 +395,11 @@ public class MediaControllerTest {
 
         MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
         when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString())).thenReturn(mediaValues);
+        SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
+        when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
 
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
         ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", "true", null, headers);
@@ -356,11 +423,31 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"domainFields\":{"));
     }
 
+    @Test
+    public void testMediaByDomainIdLodgingNotFound() throws Exception {
+        SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
+        when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(false);
+
+        setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
+
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", "true", null, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+        assertEquals("DomainId not found: 1234", responseEntity.getBody());
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testReplaceImageSuccess() throws Exception {
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(MEDIA_CLOUD_ROUTER_CLIENT_ID);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"123_1_NASA_ISS-4.jpg\", "
-                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"ReplaceProvider\", "
+                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"ICE Portal\", "
                 + "\"domainFields\": { " + "    \"replace\": \"true\" " + "  } " + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
@@ -395,17 +482,24 @@ public class MediaControllerTest {
         final Message<String> publishedMessageValue = publishedMessage.getValue();
         assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"123_1_NASA_ISS-4.jpg\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
-        assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
+        assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + MEDIA_CLOUD_ROUTER_CLIENT_ID));
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
         assertTrue(publishedMessageValue.getPayload().contains("\"mediaGuid\":\"" + "old-guid"));
         assertTrue(publishedMessageValue.getPayload().contains("\"lcmMediaId\":\"" + "456"));
+        verify(mockMediaDao, times(1)).getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"));
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testReplaceImageButNoOldFound() throws Exception {
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(MEDIA_CLOUD_ROUTER_CLIENT_ID);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"123_1_NASA_ISS-4.jpg\", "
-                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"ReplaceProvider\", "
+                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"VFMLeonardo\", "
                 + "\"domainFields\": { " + "    \"replace\": \"true\" " + "  } " + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
@@ -419,6 +513,7 @@ public class MediaControllerTest {
         MediaDao mockMediaDao = mock(MediaDao.class);
         when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"))).thenReturn(Lists.newArrayList());
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -438,10 +533,11 @@ public class MediaControllerTest {
         final Message<String> publishedMessageValue = publishedMessage.getValue();
         assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"123_1_NASA_ISS-4.jpg\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
-        assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
+        assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + MEDIA_CLOUD_ROUTER_CLIENT_ID));
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
         assertTrue(publishedMessageValue.getPayload().contains("\"mediaGuid\":\"" + response.getMediaGuid() + "\""));
         assertFalse(publishedMessageValue.getPayload().contains("\"lcmMediaId\":"));
+        verify(mockMediaDao, times(1)).getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"));
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -457,7 +553,9 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
-        setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
+        LcmDynamoMediaDao mockLcmDynamoMediaDao = mock(LcmDynamoMediaDao.class);
+        setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -475,11 +573,12 @@ public class MediaControllerTest {
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
-        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"NASA_ISS-4.jpg\""));
+        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_SCORE_(.*).jpg\"(.*)"));
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
         assertTrue(publishedMessageValue.getPayload().contains("\"domainProvider\":\"SCORE\""));
+        verifyZeroInteractions(mockLcmDynamoMediaDao);
     }
 
     @Test
@@ -494,7 +593,9 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
-        setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
+        LcmDynamoMediaDao mockLcmDynamoMediaDao = mock(LcmDynamoMediaDao.class);
+        setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -513,17 +614,58 @@ public class MediaControllerTest {
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
         assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_freetobook_(.*).jpg\"(.*)"));
+        verifyZeroInteractions(mockLcmDynamoMediaDao);
+    }
 
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Test
+    public void testEPCFileFormat() throws Exception {
+        String jsonMessage =
+                "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", " + "\"userId\": \"bobthegreat\", "
+                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Internal User\" }";
+
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+        LcmDynamoMediaDao mockLcmDynamoMediaDao = mock(LcmDynamoMediaDao.class);
+        setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        mediaControllerSpy = spy(mediaController);
+        doReturn(Boolean.TRUE).when(mediaControllerSpy).verifyUrlExistence(anyString());
+        ResponseEntity<String> responseEntity = mediaControllerSpy.mediaAdd(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
+        assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
+        assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+
+        ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
+        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
+        verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
+        final Message<String> publishedMessageValue = publishedMessage.getValue();
+        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_EPCInternalUser_(.*).jpg\"(.*)"));
+        assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
+        assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
+        assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
+        verifyZeroInteractions(mockLcmDynamoMediaDao);
     }
 
     @Test
     public void testValidateImageSuccessWithoutThumbnail() throws Exception {
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", "
                 + "\"userId\": \"bobthegreat\", " + "\"generateThumbnail\": \"false\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", "
-                + "\"domainProvider\": \"EPC Internal User\" " + "}";
-
-        Map<String, List<MapMessageValidator>> validators = getMockValidators();
-        setFieldValue(mediaController, "mapValidatorList", validators);
+                + "\"domainProvider\": \"EPC Legacy\" " + "}";
 
         ThumbnailProcessor thumbnailProcessor = mock(ThumbnailProcessor.class);
         String thumbnailUrl = "http://url.net/thumbnail.jpg";
@@ -532,11 +674,16 @@ public class MediaControllerTest {
         when(thumbnailProcessor.createThumbnail(any())).thenReturn(thumbnail);
         setFieldValue(mediaController, "thumbnailProcessor", thumbnailProcessor);
 
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
         LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
         setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
-        setFieldValue(mediaController, "mediaDao", mock(LcmDynamoMediaDao.class));
+        LcmDynamoMediaDao mockLcmDynamoMediaDao = mock(LcmDynamoMediaDao.class);
+        setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -553,6 +700,78 @@ public class MediaControllerTest {
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
         verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), any());
+        verifyZeroInteractions(mockLcmDynamoMediaDao);
+    }
+    
+    @Test
+    public void testGetMediaByGUIDInvalid() throws Exception {
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+        
+        ResponseEntity<String> responseEntity = mediaController.getMedia("hello potato", mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    public void testGetMediaByGUIDNotFound() throws Exception {
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+        MediaDao mockMediaDao = mock(MediaDao.class);
+        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(null);
+        setFieldValue(mediaController, "mediaDao", mock(MediaDao.class));
+        
+        ResponseEntity<String> responseEntity = mediaController.getMedia("d2d4d480-9627-47f9-86c6-1874c18d37f4", mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+    }
+
+    @Deprecated
+    @Test
+    public void testGetMediaByGUIDWithLcmId() throws Exception {
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
+                .lcmMediaId("123456").lastUpdated(new Date()).lcmMediaId("123456").build();
+        MediaDao mockMediaDao = mock(MediaDao.class);
+        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(resultMedia);
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        
+        ResponseEntity<String> responseEntity = mediaController.getMedia("123456", mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"domain\":\"Lodging\""));
+        assertTrue(responseEntity.getBody().contains("\"domainId\":\"" + resultMedia.getDomainId() + "\""));
+        assertTrue(responseEntity.getBody().contains("\"domainFields\":{"));
+        assertTrue(responseEntity.getBody().contains("\"lcmMediaId\":\"" + resultMedia.getLcmMediaId() + "\""));
+        assertTrue(responseEntity.getBody().contains("\"fileName\":\"" + resultMedia.getFileName() + "\""));
+    }
+
+    @Test
+    public void testGetMediaByGUID() throws Exception {
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
+                .lcmMediaId("123456").lastUpdated(new Date()).lcmMediaId("123456").mediaGuid("d2d4d480-9627-47f9-86c6-1874c18d37f4").build();
+        MediaDao mockMediaDao = mock(MediaDao.class);
+        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(resultMedia);
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        
+        ResponseEntity<String> responseEntity = mediaController.getMedia("d2d4d480-9627-47f9-86c6-1874c18d37f4", mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"domain\":\"Lodging\""));
+        assertTrue(responseEntity.getBody().contains("\"mediaGuid\":\"" + resultMedia.getMediaGuid() + "\""));
+        assertTrue(responseEntity.getBody().contains("\"domainId\":\"" + resultMedia.getDomainId() + "\""));
+        assertTrue(responseEntity.getBody().contains("\"domainFields\":{"));
+        assertTrue(responseEntity.getBody().contains("\"lcmMediaId\":\"" + resultMedia.getLcmMediaId() + "\""));
+        assertTrue(responseEntity.getBody().contains("\"fileName\":\"" + resultMedia.getFileName() + "\""));
     }
 
     @SuppressWarnings({"unchecked"})
@@ -564,6 +783,7 @@ public class MediaControllerTest {
         when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
         messageValidator.add(mockMessageValidator);
         validators.put(TEST_CLIENT_ID, messageValidator);
+        validators.put(MEDIA_CLOUD_ROUTER_CLIENT_ID, messageValidator);
         return validators;
     }
 

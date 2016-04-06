@@ -187,7 +187,7 @@ public class Media {
         return status == null ? "RECEIVED" : status;
     }
 
-    @DynamoDBIgnore
+    @DynamoDBAttribute(attributeName = "DerivativeCategory")
     public String getDomainDerivativeCategory() {
         return domainDerivativeCategory;
     }

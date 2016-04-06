@@ -28,6 +28,14 @@ public interface MediaDao {
     List<Media> getMediaByFilename(String fileName);
 
     /**
+     * Retrieves a media by its GUID.
+     *
+     * @param mediaGUID GUID of the required media.
+     * @return Media with the requested GUID.
+     */
+    Media getMediaByGUID(String mediaGUID);
+
+    /**
      * get the domainId and ContentProviderMediaName from DB by derivative file name.
      *
      * @param fileName
@@ -54,5 +62,6 @@ public interface MediaDao {
      * @param media
      */
     void saveMedia(Media media);
+
 
 }

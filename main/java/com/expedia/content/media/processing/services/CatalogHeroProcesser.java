@@ -34,7 +34,7 @@ public class CatalogHeroProcesser {
 
     private static final String SUBCATEGORY_ID = "subcategoryId";
     private static final int DEFAULT_USER_RANK = 0;
-    private static final int HERO_USER_RANK = 0;
+    private static final int HERO_USER_RANK = 3;
     private static final String ROOM_UPDATED_BY = "Media Service";
     private static final String LCM_PST_TIMEZONE = "America/Los_Angeles";
     private static final String DYNAMO_UTC_TIMEZONE = "UTC";

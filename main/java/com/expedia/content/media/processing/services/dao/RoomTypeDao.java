@@ -7,7 +7,6 @@ import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -18,7 +17,6 @@ import java.util.stream.Collectors;
 @Component
 public class RoomTypeDao {
     private final PropertyRoomTypeGetIDSproc sproc;
-    private final static String ROOMS = "rooms";
 
     @Autowired
     public RoomTypeDao(PropertyRoomTypeGetIDSproc sproc) {
@@ -33,7 +31,7 @@ public class RoomTypeDao {
      */
     @SuppressWarnings("unchecked")
     public Boolean roomTypeCatalogItemIdExists(OuterDomain outerDomain) {
-        final List<Integer> roomIds = getRoomIds(outerDomain);
+        final List<Integer> roomIds = DomainDataUtil.getRoomIds(outerDomain);
         Boolean roomExists = Boolean.TRUE;
         if (outerDomain.getDomain().equals(Domain.LODGING) && !CollectionUtils.isNullOrEmpty(roomIds)) {
             //todo change back after get expedia id.
@@ -46,17 +44,5 @@ public class RoomTypeDao {
             roomExists = roomTypeCatalogItemIds.containsAll(roomIds);
         }
         return roomExists;
-    }
-
-    /**
-     * extracts roomIds from outerdomain
-     * @param outerDomain
-     * @return
-     */
-    private List<Integer> getRoomIds(OuterDomain outerDomain) {
-        final List<Integer> roomIds = outerDomain.getDomainFields() == null ||
-                outerDomain.getDomainFields().get(ROOMS) == null ? Collections.EMPTY_LIST :
-                DomainDataUtil.getRoomIds(outerDomain.getDomainFields().get(ROOMS));
-        return roomIds;
     }
 }

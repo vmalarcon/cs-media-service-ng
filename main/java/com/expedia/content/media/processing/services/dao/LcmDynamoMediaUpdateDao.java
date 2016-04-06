@@ -3,7 +3,7 @@ package com.expedia.content.media.processing.services.dao;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.sql.MediaChgSproc;
-import com.expedia.content.media.processing.services.dao.sql.MediaGetByMediaIdSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +22,7 @@ public class LcmDynamoMediaUpdateDao implements MediaUpdateDao {
     @Autowired
     private MediaChgSproc mediaChgSproc;
     @Autowired
-    private MediaGetByMediaIdSproc mediaGetByMediaIdSproc;
+    private SQLMediaGetSproc  mediaGetByMediaIdSproc;
 
     public void updateMedia(ImageMessage imageMessage, int mediaId) {
         String statusCode = null;
@@ -38,7 +38,7 @@ public class LcmDynamoMediaUpdateDao implements MediaUpdateDao {
 
     public LcmMedia getMediaByMediaId(int mediaId) {
         final Map<String, Object> mediaResult = mediaGetByMediaIdSproc.execute(mediaId);
-        return ((List<LcmMedia>) mediaResult.get(MediaGetByMediaIdSproc.MEDIA_SET)).get(0);
+        return ((List<LcmMedia>) mediaResult.get(SQLMediaGetSproc.MEDIA_SET)).get(0);
     }
 
 }
