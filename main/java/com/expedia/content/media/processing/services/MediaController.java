@@ -467,7 +467,7 @@ public class MediaController extends CommonServiceController {
             dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);
         }
         publishMsg(imageMessageNew);
-        LOGGER.info("SUCCESS - messageName={}, queryId=[{}], mediaGuid=[{}], JSONMessage=[{}]", serviceUrl, requestID, imageMessageNew.getMediaGuid(),
+        LOGGER.info("SUCCESS - messageName={}, requestId=[{}], mediaGuid=[{}], JSONMessage=[{}]", serviceUrl, requestID, imageMessageNew.getMediaGuid(),
                 message);
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
     }

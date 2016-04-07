@@ -111,7 +111,7 @@ public class MediaUpdateProcessor {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
         if ("true".equalsIgnoreCase(heroProperty)) {
             setHeroImgage(imageMessage, mediaId, domainId);
-            unSetHeroImage(imageMessage, mediaId, domainId, guid);
+            unsetHeroImage(imageMessage, mediaId, domainId, guid);
         } else {
             final LcmCatalogItemMedia lcmCatalogItemMedia = catelogHeroProcesser.getCatalogItemMeida(domainId, mediaId);
             String subcategory = "";
@@ -133,7 +133,7 @@ public class MediaUpdateProcessor {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
         if ("true".equalsIgnoreCase(heroProperty)) {
             setHeroImgage(imageMessage, mediaId, domainId);
-            unSetHeroImage(imageMessage, mediaId, domainId, guid);
+            unsetHeroImage(imageMessage, mediaId, domainId, guid);
         } else {
             //set the subid from json.
             catelogHeroProcesser.updateCurrentMediaHero(imageMessage, domainId, mediaId);
@@ -155,7 +155,7 @@ public class MediaUpdateProcessor {
         }
     }
 
-    private void unSetHeroImage(ImageMessage imageMessage, int mediaId, int domainId, String guid) {
+    private void unsetHeroImage(ImageMessage imageMessage, int mediaId, int domainId, String guid) {
         if (guid.isEmpty()) {
             catelogHeroProcesser.unsetOtherMediaHero(domainId, imageMessage.getUserId(), mediaId);
         } else {
