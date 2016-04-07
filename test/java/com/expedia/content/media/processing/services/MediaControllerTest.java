@@ -846,7 +846,7 @@ public class MediaControllerTest {
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
-        CatalogHeroProcesser catelogHeroProcesser = getCateLogMock();
+        CatalogHeroProcessor catelogHeroProcesser = getCateLogMock();
         MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
         setFieldValue(mediaController, "mediaUpdateProcesser", mockUpdateProcess);
 
@@ -907,7 +907,7 @@ public class MediaControllerTest {
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
-        CatalogHeroProcesser catelogHeroProcesser = getCateLogMock();
+        CatalogHeroProcessor catelogHeroProcesser = getCateLogMock();
         MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
         setFieldValue(mediaController, "mediaUpdateProcesser", mockUpdateProcess);
 
@@ -968,7 +968,7 @@ public class MediaControllerTest {
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
-        CatalogHeroProcesser catelogHeroProcesser = getCateLogMockHeroFalse();
+        CatalogHeroProcessor catelogHeroProcesser = getCateLogMockHeroFalse();
         MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
         setFieldValue(mediaController, "mediaUpdateProcesser", mockUpdateProcess);
 
@@ -1011,7 +1011,7 @@ public class MediaControllerTest {
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
-        CatalogHeroProcesser catelogHeroProcesser = getCateLogMockHeroFalse();
+        CatalogHeroProcessor catelogHeroProcesser = getCateLogMockHeroFalse();
         MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
         setFieldValue(mediaController, "mediaUpdateProcesser", mockUpdateProcess);
 
@@ -1054,7 +1054,7 @@ public class MediaControllerTest {
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
-        CatalogHeroProcesser catelogHeroProcesser = getCateLogMock();
+        CatalogHeroProcessor catelogHeroProcesser = getCateLogMock();
         MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
         setFieldValue(mediaController, "mediaUpdateProcesser", mockUpdateProcess);
 
@@ -1096,7 +1096,7 @@ public class MediaControllerTest {
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
-        CatalogHeroProcesser catelogHeroProcesser = getCateLogMock();
+        CatalogHeroProcessor catelogHeroProcesser = getCateLogMock();
         MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
         setFieldValue(mediaController, "mediaUpdateProcesser", mockUpdateProcess);
 
@@ -1107,7 +1107,7 @@ public class MediaControllerTest {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
-    private MediaUpdateProcessor getMediaUpdateProcesser(CatalogHeroProcesser catelogHeroProcesser) throws Exception {
+    private MediaUpdateProcessor getMediaUpdateProcesser(CatalogHeroProcessor catelogHeroProcesser) throws Exception {
         MediaUpdateProcessor mockUpdateProcess = new MediaUpdateProcessor();
         MediaUpdateDao mediaUpdateDao = mock(MediaUpdateDao.class);
         CatalogitemMediaDao catalogitemMediaDao = mock(CatalogitemMediaDao.class);
@@ -1139,8 +1139,8 @@ public class MediaControllerTest {
         return mockUpdateProcess;
     }
 
-    private CatalogHeroProcesser getCateLogMock() throws Exception {
-        CatalogHeroProcesser catelogHeroProcesser = new CatalogHeroProcesser();
+    private CatalogHeroProcessor getCateLogMock() throws Exception {
+        CatalogHeroProcessor catelogHeroProcesser = new CatalogHeroProcessor();
         CatalogItemListSproc catalogItemListSproc = mock(CatalogItemListSproc.class);
         CatalogitemMediaDao catalogitemMediaDao = mock(CatalogitemMediaDao.class);
         CatalogItemMediaChgSproc catalogItemMediaChgSproc = mock(CatalogItemMediaChgSproc.class);
@@ -1197,8 +1197,8 @@ public class MediaControllerTest {
         return catelogHeroProcesser;
     }
 
-    private CatalogHeroProcesser getCateLogMockHeroFalse() throws Exception {
-        CatalogHeroProcesser catelogHeroProcesser = new CatalogHeroProcesser();
+    private CatalogHeroProcessor getCateLogMockHeroFalse() throws Exception {
+        CatalogHeroProcessor catelogHeroProcesser = new CatalogHeroProcessor();
         CatalogItemListSproc catalogItemListSproc = mock(CatalogItemListSproc.class);
         CatalogitemMediaDao catalogitemMediaDao = mock(CatalogitemMediaDao.class);
         CatalogItemMediaChgSproc catalogItemMediaChgSproc = mock(CatalogItemMediaChgSproc.class);

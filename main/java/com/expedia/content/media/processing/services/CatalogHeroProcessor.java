@@ -30,11 +30,11 @@ import java.util.ArrayList;
 import static com.expedia.content.media.processing.pipeline.domain.Domain.LODGING;
 
 @Component
-public class CatalogHeroProcesser {
+public class CatalogHeroProcessor {
 
     private static final String SUBCATEGORY_ID = "subcategoryId";
     private static final int DEFAULT_USER_RANK = 0;
-    private static final int HERO_USER_RANK = 3;
+    private static final int HERO_USE_RANK = 3;
     private static final String ROOM_UPDATED_BY = "Media Service";
     private static final String LCM_PST_TIMEZONE = "America/Los_Angeles";
     private static final String DYNAMO_UTC_TIMEZONE = "UTC";
@@ -79,7 +79,7 @@ public class CatalogHeroProcesser {
     public void setMediaToHero(String user, LcmCatalogItemMedia lcmCatalogItemMedia, boolean hero, String subCategoryId) {
         if (hero) {
             catalogItemMediaChgSproc.updateCategory(lcmCatalogItemMedia.getCatalogItemId(), lcmCatalogItemMedia.getMediaId(),
-                    HERO_USER_RANK, user, ROOM_UPDATED_BY);
+                    HERO_USE_RANK, user, ROOM_UPDATED_BY);
         } else {
             if ("".equals(subCategoryId)) {
                 catalogItemMediaChgSproc.updateCategory(lcmCatalogItemMedia.getCatalogItemId(), lcmCatalogItemMedia.getMediaId(),

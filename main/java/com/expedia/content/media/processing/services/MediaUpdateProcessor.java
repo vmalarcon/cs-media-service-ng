@@ -38,7 +38,7 @@ public class MediaUpdateProcessor {
     @Autowired
     private MediaDao mediaDao;
     @Autowired
-    private CatalogHeroProcesser catelogHeroProcesser;
+    private CatalogHeroProcessor catelogHeroProcesser;
 
     /**
      * process media update, involve media table, catalogItemMedia table, and paragraph table in lcm.
@@ -103,7 +103,7 @@ public class MediaUpdateProcessor {
             handleHeroNull(imageMessage, mediaId, domainId);
         } else if (subCategoryId != null
                 && heroProperty != null) {
-            handleBothNotNull(imageMessage, mediaId, domainId, dynamoMedia, heroProperty);
+            handleHeroAndSubcategoryIdValid(imageMessage, mediaId, domainId, dynamoMedia, heroProperty);
         }
     }
 
@@ -128,15 +128,8 @@ public class MediaUpdateProcessor {
         }
     }
 
-    /**
-     * handle the case both 'propertyHero' and 'subcategoryId' are not null case.
-     * @param imageMessage image Messge object from JSON
-     * @param mediaId
-     * @param domainId
-     * @param dynamoMedia media infomation from dynamo media table.
-     * @param heroProperty propertyHero from JSON message.
-     */
-    private void handleBothNotNull(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
+
+    private void handleHeroAndSubcategoryIdValid(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
         if ("true".equalsIgnoreCase(heroProperty)) {
             setHeroImgage(imageMessage, mediaId, domainId);
