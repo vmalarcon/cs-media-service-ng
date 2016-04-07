@@ -61,8 +61,9 @@ public class ThumbnailProcessor {
      * @return
      */
     public Thumbnail createThumbnail(ImageMessage imageMessage) {
-        return createGenericThumbnail(imageMessage.getFileUrl(), THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, Integer.parseInt(imageMessage.getRotation()), imageMessage.getMediaGuid(),
-                imageMessage.getOuterDomainData().getDomain().getDomain(), imageMessage.getOuterDomainData().getDomainId());
+        final Integer rotation = (imageMessage.getRotation() == null) ? null : Integer.parseInt(imageMessage.getRotation());
+        return createGenericThumbnail(imageMessage.getFileUrl(), THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, rotation,
+                imageMessage.getMediaGuid(), imageMessage.getOuterDomainData().getDomain().getDomain(), imageMessage.getOuterDomainData().getDomainId());
     }
 
     /**
