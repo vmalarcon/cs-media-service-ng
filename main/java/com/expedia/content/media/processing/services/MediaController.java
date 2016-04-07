@@ -1,7 +1,5 @@
 package com.expedia.content.media.processing.services;
 
-
-
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
@@ -130,7 +128,7 @@ public class MediaController extends CommonServiceController {
     public ResponseEntity<String> acquireMedia(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.ACQUIRE_MEDIA.getUrl();
-        LOGGER.info("RECEIVED REQUEST - messageName={}, JSONMessage=[{}], queryId=[{}]", serviceUrl, message, requestID);
+        LOGGER.info("RECEIVED REQUEST - messageName={}, JSONMessage=[{}], requestID=[{}]", serviceUrl, message, requestID);
         try {
             final ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
             final Map messageMap = JSONUtil.buildMapFromJson(message);
@@ -226,11 +224,12 @@ public class MediaController extends CommonServiceController {
                 return mediaUpdateProcesser.processRequest(imageMessageNew, lcmMediaId, domainId, dynamoMedia);
             }
         } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - serviceUrl={}, error=[{}], queryId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), queryId, message, ex);
+            LOGGER.error("ERROR - serviceUrl={}, error=[{}], queryId=[{}], requestID=[{}],JSONMessage=[{}].", serviceUrl, ex.getMessage(), queryId,
+                    requestID, message, ex);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         } catch (Exception ex) {
-            LOGGER.error("ERROR when update media -serviceUrl={}, error=[{}], queryId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), queryId,
-                    message, ex);
+            LOGGER.error("ERROR when update media -serviceUrl={}, error=[{}], queryId=[{}],requestID=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(),
+                    queryId, requestID, message, ex);
             return this.buildErrorResponse("update failure with message=" + ex.getMessage(), serviceUrl, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -250,9 +249,9 @@ public class MediaController extends CommonServiceController {
 
     /**
      * Web services interface to retrieve media information by its GUID.
-     * 
+     *
      * @param mediaGUID The GUID of the requested media.
-     * @param headers Headers of the request.
+     * @param headers   Headers of the request.
      * @return The requested media information.
      * @throws Exception Thrown if processing the message fails.
      */
@@ -261,7 +260,8 @@ public class MediaController extends CommonServiceController {
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     @RequestMapping(value = "/media/v1/images/{mediaGUID}", method = RequestMethod.GET)
     @Transactional
-    public ResponseEntity<String> getMedia(@PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+    public ResponseEntity<String> getMedia(@PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String, String> headers)
+            throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
@@ -278,7 +278,7 @@ public class MediaController extends CommonServiceController {
         final MediaGetResponse mediaResponse = transformSingleMediaForResponse(media);
         return new ResponseEntity<String>(OBJECT_MAPPER.writeValueAsString(mediaResponse), OK);
     }
-    
+
     /**
      * Web services interface to retrieve media information by domain name and id.
      *
@@ -312,15 +312,15 @@ public class MediaController extends CommonServiceController {
             return validationResponse;
         }
         final List<DomainIdMedia> images =
-                transformMediaListForResponse(mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter));
+                transformMediaListForResponse(
+                        mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter));
         final MediaByDomainIdResponse response = MediaByDomainIdResponse.builder().domain(domainName).domainId(domainId).images(images).build();
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);
     }
 
-
     /**
      * Transforms a media for a media get response format.
-     * 
+     *
      * @param media The media to transform
      * @return The media response with the transformed media.
      */
@@ -391,12 +391,12 @@ public class MediaController extends CommonServiceController {
     /**
      * Sets the LCM media id in the media object. The LCM id is put as a field of the domain data since it's
      * expected there in the response JSON payload.
-     * 
+     *
      * @param media The media object to update.
      */
     private void setResponseLcmMediaId(Media media) {
         if (media.getLcmMediaId() != null) {
-            if(media.getDomainData() == null) {
+            if (media.getDomainData() == null) {
                 media.setDomainData(new HashMap<>());
             }
             media.getDomainData().put(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
@@ -503,7 +503,6 @@ public class MediaController extends CommonServiceController {
      * ImageMessageBuilder for the provided ImageMessage . Reprocessing
      * happens only if the request comes from Media Cloud Router (as clientId)
      * <p>
-     *
      * The method will first try to find the media that have the same file name.
      * If multiple, it will choose the best one for replacement. It will finally
      * populate the replacement queryId and GUID on the ImageMessageBuilder.
@@ -511,7 +510,7 @@ public class MediaController extends CommonServiceController {
      *
      * @param imageMessage        Original message received.
      * @param imageMessageBuilder Builder for the new/mutated ImageMessage.
-     * @param clientId Existing in the message header, represents the client (EPC, Media Cloud Router, Multisource, GSO Media Tools)
+     * @param clientId            Existing in the message header, represents the client (EPC, Media Cloud Router, Multisource, GSO Media Tools)
      * @return returns true if reprocessing and false if not.
      */
 
@@ -615,5 +614,5 @@ public class MediaController extends CommonServiceController {
         final String domainProvider = DomainDataUtil.getDomainProvider(outerDomain.getProvider(), providerProperties);
         return OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
     }
-    
+
 }
