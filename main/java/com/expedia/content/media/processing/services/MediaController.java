@@ -165,7 +165,7 @@ public class MediaController extends CommonServiceController {
             final String clientId = auth.getName();
             return processRequest(message, requestID, serviceUrl, clientId, ACCEPTED);
         } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - messageName={}, error=[{}], queryId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
+            LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         }
     }
@@ -212,8 +212,8 @@ public class MediaController extends CommonServiceController {
             final String newJson = appendDomain(message);
             final String json = validateImageMessage(newJson, "EPCUpdate");
             if (!"[]".equals(json)) {
-                LOGGER.warn("Returning BAD_REQUEST for messageName={}, queryId=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, requestID, message,
-                        json);
+                LOGGER.warn("Returning BAD_REQUEST for messageName={}, queryId=[{}],requestID=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, queryId,
+                        requestID, message, json);
                 return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
             }
             final ImageMessage imageMessage = ImageMessage.parseJsonMessage(newJson);
@@ -303,11 +303,11 @@ public class MediaController extends CommonServiceController {
             @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
-        LOGGER.info("RECEIVED REQUEST - messageName={}, queryId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+        LOGGER.info("RECEIVED REQUEST - messageName={}, requestID=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                 serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
         final ResponseEntity<String> validationResponse = validateMediaByDomainIdRequest(domainName, domainId, activeFilter);
         if (validationResponse != null) {
-            LOGGER.warn("INVALID REQUEST - messageName={}, queryId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+            LOGGER.warn("INVALID REQUEST - messageName={}, requestID=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                     serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
             return validationResponse;
         }
