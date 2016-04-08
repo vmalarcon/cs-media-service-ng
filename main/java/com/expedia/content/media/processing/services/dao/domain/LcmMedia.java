@@ -12,7 +12,7 @@ import java.util.List;
  * Represents the media data from the the Media and CatalogItemMedia tables.
  */
 @Builder
-@SuppressWarnings({"PMD.UnusedPrivateField", "PMD.ImmutableField"})
+@SuppressWarnings({"PMD.UnusedPrivateField", "PMD.ImmutableField","PMD.TooManyFields"})
 public class LcmMedia {
 
     @Getter private final Integer domainId;
@@ -29,6 +29,13 @@ public class LcmMedia {
     @Getter private final String comment;
     @Getter private final Integer formatId;
     @Getter private final Boolean filProcessedBool;
+    @Getter private final String mediaCreditTxt;
+    @Getter private final Double mediaStartHorizontalPct;
+    @Getter private final Short mediaDisplayMethodSeqNbr;
+    @Getter private final String mediaCaptionTxt;
+    @Getter private final String mediaDisplayName;
+
+
 
     @Getter @Setter private List<LcmMediaDerivative> derivatives = Collections.EMPTY_LIST;
     @Getter @Setter private List<LcmMediaRoom> rooms = Collections.EMPTY_LIST;

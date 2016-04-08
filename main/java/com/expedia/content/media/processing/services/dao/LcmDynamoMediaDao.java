@@ -92,6 +92,20 @@ public class LcmDynamoMediaDao implements MediaDao {
     public List<Media> getMediaByFilename(String fileName) {
         return mediaRepo.getMediaByFilename(fileName);
     }
+    @Override
+    public Media getMediaByGuid(String guid) {
+        return mediaRepo.getMedia(guid);
+    }
+
+    @Override
+        public List<Media> getMediaByMediaId(String mediaId) {
+        return mediaRepo.getMediaByMediaId(mediaId);
+    }
+
+    @Override
+    public void saveMedia(Media media) {
+        mediaRepo.saveMedia(media);
+    }
 
     @Override
     @SuppressWarnings("unchecked")

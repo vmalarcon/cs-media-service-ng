@@ -34,7 +34,8 @@ public class RoomTypeDao {
         final List<Integer> roomIds = DomainDataUtil.getRoomIds(outerDomain);
         Boolean roomExists = Boolean.TRUE;
         if (outerDomain.getDomain().equals(Domain.LODGING) && !CollectionUtils.isNullOrEmpty(roomIds)) {
-            final Map<String, Object> results = sproc.execute(Integer.parseInt(outerDomain.getDomainId()));
+            //todo change back after get expedia id.
+            final Map<String, Object> results = sproc.execute("41098");
             final List<RoomType> roomTypes = (List<RoomType>) results.get(PropertyRoomTypeGetIDSproc.ROOM_TYPE_RESULT_SET);
 
             final List<Integer> roomTypeCatalogItemIds = roomTypes.stream()

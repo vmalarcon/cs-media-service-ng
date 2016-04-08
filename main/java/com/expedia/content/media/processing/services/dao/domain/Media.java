@@ -51,7 +51,7 @@ public class Media {
     @Setter private List<String> commentList;
     @Setter private String status;
     @Setter private String domainDerivativeCategory;
-
+    @Setter private Boolean propertyHero;
     @DynamoDBHashKey
     @DynamoDBAttribute(attributeName = "MediaGUID")
     public String getMediaGuid() {
@@ -161,6 +161,11 @@ public class Media {
     public String getLcmMediaId() {
         return lcmMediaId;
     }
+    @DynamoDBAttribute(attributeName = "PropertyHero")
+    public Boolean getPropertyHero() {
+        return propertyHero;
+    }
+
 
     @DynamoDBIgnore
     public List<Map<String, Object>> getDerivativesList() {

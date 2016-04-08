@@ -27,4 +27,9 @@ public class MediaReplacement {
                 .filter(m -> m.getActive().equalsIgnoreCase("true"))
                 .max((m1, m2) -> m1.getLastUpdated().compareTo(m2.getLastUpdated()));
     }
+
+    public static Optional<Media> selectLatestMedia(List<Media> mediaList) {
+        return mediaList.stream()
+                .max((m1, m2) -> m1.getLastUpdated().compareTo(m2.getLastUpdated()));
+    }
 }

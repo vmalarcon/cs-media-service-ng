@@ -47,6 +47,12 @@
 	            <ref bean="multisourceValidator"/>
 	        </list>
 	    </entry>
+        <entry key="EPCUpdate">
+            <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                <ref bean="mediaUpdateValidator"/>
+                <ref bean="lcmUpdateValidator"/>
+            </list>
+        </entry>
 	</util:map>
 
     <aws-messaging:queue-messaging-template id="queueMessagingTemplate" />
@@ -93,6 +99,20 @@
                         <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
                         <value>(domainData != null &amp;&amp; domainData.provider == null) ? "domainProvider is required." : "valid"</value>
                         <value>(imageMessage.rotation == null) ? "valid" : (Integer.parseInt(imageMessage.rotation)%90 == 0  &amp;&amp; Integer.parseInt(imageMessage.rotation) &lt;= 270) ? "valid" : "rotation accepted values are 0, 90, 180, and 270."</value>
+                    </list>
+                </entry>
+            </map>
+        </property>
+    </bean>
+
+
+    <bean id="mediaUpdateValidator" class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
+        <property name="clientRule" value="EPCUpdate" />
+        <property name="ruleMaps">
+            <map>
+                <entry key="EPCUpdate">
+                    <list>
+                       <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
                     </list>
                 </entry>
             </map>
@@ -325,5 +345,8 @@
     </bean>
 
     <bean id="lcmValidator" class="com.expedia.content.media.processing.services.validator.LCMValidator" />
+
+    <bean id="lcmUpdateValidator" class="com.expedia.content.media.processing.services.validator.LCMUpdateValidator" />
+
 
 </beans>
