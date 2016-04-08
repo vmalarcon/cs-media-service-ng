@@ -114,6 +114,7 @@ public class MediaController extends CommonServiceController {
     private DynamoMediaRepository dynamoMediaRepository;
     @Autowired
     private MediaUpdateProcessor mediaUpdateProcesser;
+    @Autowired
     private SKUGroupCatalogItemDao skuGroupCatalogItemDao;
 
     /**
