@@ -1070,7 +1070,6 @@ public class MediaControllerTest {
 
         String jsonMsg = "{  \n"
                 + "   \"userId\":\"bobthegreat\",\n"
-                + "   \"active\":\"true\",\n"
                 + "    \"domain\":\"Lodging\",\n"
                 + "   \"domainFields\":{  \n"
                 + "      \"propertyHero\":\"false\",\n"
@@ -1105,6 +1104,79 @@ public class MediaControllerTest {
         ResponseEntity<String> responseEntity = mediaController.mediaUpdate("19671339", jsonMsg, headers);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    public void testMediaUpdateBadRequest() throws Exception {
+
+        String jsonMsg = "{  \n"
+                + "   \"userId\":\"bobthegreat\",\n"
+                + "    \"domain\":\"Lodging\",\n"
+                + "   \"domainFields\":{  \n"
+                + "      \"propertyHero\":\"false\",\n"
+                + "      \"rooms\":[  \n"
+                + "         {  \n"
+                + "            \"roomId\":\"934779\",\n"
+                + "            \"roomHero\":\"false\"\n"
+                + "         },\n"
+                + "         {\n"
+                + "             \"roomId\":\"928675\",\n"
+                + "            \"roomHero\":\"true\" \n"
+                + "         }\n"
+                + "      ]\n"
+                + "   },\n"
+                + "   \"comment\":\"note33\"\n"
+                + "}";
+
+        List<Media> medias = new ArrayList<>();
+        Media media = Media.builder().lcmMediaId("19671339").mediaGuid("test").build();
+        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+        medias.add(media);
+        when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(medias);
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+        MultiValueMap<String, String> headers = new HttpHeaders();
+
+        ResponseEntity<String> responseEntity = mediaController.mediaUpdate("19671339", jsonMsg, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    public void testMediaUpdateInvalidQueryId() throws Exception {
+
+        String jsonMsg = "{  \n"
+                + "   \"userId\":\"bobthegreat\",\n"
+                + "    \"domain\":\"Lodging\",\n"
+                + "   \"domainFields\":{  \n"
+                + "      \"propertyHero\":\"false\",\n"
+                + "      \"rooms\":[  \n"
+                + "         {  \n"
+                + "            \"roomId\":\"934779\",\n"
+                + "            \"roomHero\":\"false\"\n"
+                + "         },\n"
+                + "         {\n"
+                + "             \"roomId\":\"928675\",\n"
+                + "            \"roomHero\":\"true\" \n"
+                + "         }\n"
+                + "      ]\n"
+                + "   },\n"
+                + "   \"comment\":\"note33\"\n"
+                + "}";
+
+        List<Media> medias = new ArrayList<>();
+        Media media = Media.builder().lcmMediaId("19671339").mediaGuid("test").build();
+        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+        medias.add(media);
+        when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(medias);
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        ResponseEntity<String> responseEntity = mediaController.mediaUpdate("test", jsonMsg, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
     private MediaUpdateProcessor getMediaUpdateProcesser(CatalogHeroProcessor catelogHeroProcesser) throws Exception {

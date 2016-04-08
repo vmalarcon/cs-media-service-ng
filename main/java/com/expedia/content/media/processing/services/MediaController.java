@@ -83,6 +83,7 @@ public class MediaController extends CommonServiceController {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
     private static final String GUID_REG = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
     private static final String MEDIA_CLOUD_ROUTER_CLIENT_ID = "Media Cloud Router";
+    private static final String MEDIA_VALIDATION_ERROR = "validationError";
 
     private static final String IMAGE_MESSAGE_FIELD = "message";
     private static final String REPROCESSING_STATE_FIELD = "processState";
@@ -128,17 +129,16 @@ public class MediaController extends CommonServiceController {
     public ResponseEntity<String> acquireMedia(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.ACQUIRE_MEDIA.getUrl();
-        LOGGER.info("RECEIVED REQUEST - messageName={}, JSONMessage=[{}], requestID=[{}]", serviceUrl, message, requestID);
+        LOGGER.info("RECEIVED REQUEST - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl, message, requestID);
         try {
             final ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
             final Map messageMap = JSONUtil.buildMapFromJson(message);
-
             final String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, providerProperties);
             LOGGER.info("converted to - common message =[{}]", mediaCommonMessage);
             final String userName = "Multisource";
             return processRequest(mediaCommonMessage, requestID, serviceUrl, userName, OK);
         } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}], error=[{}], requestID=[{}] .", serviceUrl, message, ex.getMessage(), requestID, ex);
+            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}], error=[{}], requestId=[{}] .", serviceUrl, message, ex.getMessage(), requestID, ex);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         }
     }
@@ -187,35 +187,18 @@ public class MediaController extends CommonServiceController {
             @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl() + "/" + queryId;
-        LOGGER.info("RECEIVED update REQUEST - serviceUrl={}, queryId=[{}], requestID=[{}], JSONMessage=[{}]", serviceUrl, queryId, requestID, message);
+        LOGGER.info("RECEIVED update REQUEST - serviceUrl={}, queryId=[{}], requestId=[{}], JSONMessage=[{}]", serviceUrl, queryId, requestID, message);
         try {
-            String lcmMediaId = "";
-            String domainId = "";
-            Media dynamoMedia = null;
-            if (queryId.matches(GUID_REG)) {
-                dynamoMedia = mediaDao.getMediaByGuid(queryId);
-                if (dynamoMedia == null) {
-                    return this.buildErrorResponse("input GUID does not exist in DB", serviceUrl, BAD_REQUEST);
-                }
-                lcmMediaId = dynamoMedia.getLcmMediaId();
-                domainId = dynamoMedia.getDomainId();
-            } else if (StringUtils.isNumeric(queryId)) {
-                lcmMediaId = queryId;
-                final List<Media> mediaList = mediaDao.getMediaByMediaId(queryId);
-                if (!mediaList.isEmpty()) {
-                    final String guid = mediaList.get(0).getMediaGuid();
-                    return this.buildErrorResponse("Media GUID " + guid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
-                }
-            } else {
-                return this.buildErrorResponse("input queryId is invalid", serviceUrl, BAD_REQUEST);
+            final Map<String, Object> objectMap = new HashMap<>();
+            validateAndInitMap(objectMap, queryId, serviceUrl, message, requestID);
+            if (objectMap.get(MEDIA_VALIDATION_ERROR) != null) {
+                return (ResponseEntity<String>) objectMap.get(MEDIA_VALIDATION_ERROR);
             }
-            final String newJson = appendDomain(message);
-            final String json = validateImageMessage(newJson, "EPCUpdate");
-            if (!"[]".equals(json)) {
-                LOGGER.warn("Returning BAD_REQUEST for messageName={}, queryId=[{}],requestID=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, queryId,
-                        requestID, message, json);
-                return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
-            }
+            final String lcmMediaId = (String) objectMap.get("lcmMediaId");
+            final String domainId = (String) objectMap.get("domainId");
+            final Media dynamoMedia = (Media) objectMap.get("dynamoMedia");
+
+            final String newJson = (String) objectMap.get("newJson");
             final ImageMessage imageMessage = ImageMessage.parseJsonMessage(newJson);
             if (message.contains("active")) {
                 return mediaUpdateProcesser.processRequest(imageMessage, lcmMediaId, domainId, dynamoMedia);
@@ -224,13 +207,47 @@ public class MediaController extends CommonServiceController {
                 return mediaUpdateProcesser.processRequest(imageMessageNew, lcmMediaId, domainId, dynamoMedia);
             }
         } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - serviceUrl={}, error=[{}], queryId=[{}], requestID=[{}],JSONMessage=[{}].", serviceUrl, ex.getMessage(), queryId,
+            LOGGER.error("ERROR - serviceUrl={}, error=[{}], queryId=[{}], requestId=[{}],JSONMessage=[{}].", serviceUrl, ex.getMessage(), queryId,
                     requestID, message, ex);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         } catch (Exception ex) {
-            LOGGER.error("ERROR when update media -serviceUrl={}, error=[{}], queryId=[{}],requestID=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(),
+            LOGGER.error("ERROR when update media -serviceUrl={}, error=[{}], queryId=[{}],requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(),
                     queryId, requestID, message, ex);
             return this.buildErrorResponse("update failure with message=" + ex.getMessage(), serviceUrl, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private void validateAndInitMap(Map<String, Object> objectMap, String queryId, String serviceUrl, String message, String requestID) throws Exception {
+        final String newJson = appendDomain(message);
+        objectMap.put("newJson", newJson);
+        final String jsonError = validateImageMessage(newJson, "EPCUpdate");
+        if (!"[]".equals(jsonError)) {
+            LOGGER.error("Returning BAD_REQUEST for serviceUrl={}, queryId=[{}],requestId=[{}], JSONMessage=[{}], Errors=[{}]", serviceUrl, queryId,
+                    requestID, message, jsonError);
+            objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse(jsonError, serviceUrl, BAD_REQUEST));
+            return;
+        }
+        if (queryId.matches(GUID_REG)) {
+            final Media dynamoMedia = mediaDao.getMediaByGuid(queryId);
+            if (dynamoMedia == null) {
+                objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input GUID does not exist in DB", serviceUrl, BAD_REQUEST));
+                return;
+            }
+            objectMap.put("lcmMediaId", dynamoMedia.getLcmMediaId());
+            objectMap.put("domainId", dynamoMedia.getDomainId());
+            objectMap.put("dynamoMedia", dynamoMedia);
+        } else if (StringUtils.isNumeric(queryId)) {
+            final List<Media> mediaList = mediaDao.getMediaByMediaId(queryId);
+            if (!mediaList.isEmpty()) {
+                final String guid = mediaList.get(0).getMediaGuid();
+                objectMap.put(MEDIA_VALIDATION_ERROR,
+                        this.buildErrorResponse("Media GUID " + guid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST));
+                return;
+            }
+            objectMap.put("lcmMediaId", queryId);
+        } else {
+            objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input queryId is invalid", serviceUrl, BAD_REQUEST));
+            return;
         }
     }
 
@@ -303,11 +320,11 @@ public class MediaController extends CommonServiceController {
             @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
-        LOGGER.info("RECEIVED REQUEST - messageName={}, requestID=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+        LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                 serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
         final ResponseEntity<String> validationResponse = validateMediaByDomainIdRequest(domainName, domainId, activeFilter);
         if (validationResponse != null) {
-            LOGGER.warn("INVALID REQUEST - messageName={}, requestID=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+            LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                     serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
             return validationResponse;
         }

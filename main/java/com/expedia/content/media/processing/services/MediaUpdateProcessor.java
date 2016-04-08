@@ -12,6 +12,7 @@ import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaRoomUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.reflect.FieldUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +56,7 @@ public class MediaUpdateProcessor {
     public ResponseEntity<String> processRequest(final ImageMessage imageMessage,
             final String mediaId, String domainId, Media dynamoMedia) throws Exception {
         Integer expediaId;
-        if (domainId.isEmpty()) {
+        if (StringUtils.isEmpty(domainId)) {
             final LcmMedia lcmMedia = mediaUpdateDao.getMediaByMediaId(Integer.valueOf(mediaId));
             expediaId = lcmMedia.getDomainId();
         } else {
@@ -127,7 +128,6 @@ public class MediaUpdateProcessor {
             }
         }
     }
-
 
     private void handleHeroAndSubcategoryIdValid(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();

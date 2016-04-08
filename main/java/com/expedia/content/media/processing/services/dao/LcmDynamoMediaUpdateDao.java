@@ -22,23 +22,27 @@ public class LcmDynamoMediaUpdateDao implements MediaUpdateDao {
     @Autowired
     private MediaChgSproc mediaChgSproc;
     @Autowired
-    private SQLMediaGetSproc  mediaGetByMediaIdSproc;
+    private SQLMediaGetSproc mediaGetByMediaIdSproc;
 
     public void updateMedia(ImageMessage imageMessage, int mediaId) {
         String statusCode = null;
         LOGGER.info("update media media[{}]" + mediaId);
-        if(imageMessage.isActive()!=null) {
+        if (imageMessage.isActive() != null) {
             statusCode = imageMessage.isActive() ? "A" : "I";
         }
         mediaChgSproc.updateMedia(mediaId,
-                imageMessage.getComment(),  statusCode,
-                 imageMessage.getUserId(),
+                imageMessage.getComment(), statusCode,
+                imageMessage.getUserId(),
                 UPDATED_BY);
     }
 
     public LcmMedia getMediaByMediaId(int mediaId) {
         final Map<String, Object> mediaResult = mediaGetByMediaIdSproc.execute(mediaId);
-        return ((List<LcmMedia>) mediaResult.get(SQLMediaGetSproc.MEDIA_SET)).get(0);
+        if (mediaResult.isEmpty()) {
+            return null;
+        } else {
+            return ((List<LcmMedia>) mediaResult.get(SQLMediaGetSproc.MEDIA_SET)).get(0);
+        }
     }
 
 }
