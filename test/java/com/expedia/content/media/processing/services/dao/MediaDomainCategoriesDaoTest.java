@@ -102,7 +102,7 @@ public class MediaDomainCategoriesDaoTest {
 
     @Test
     public  void testCategoryIdExists() {
-        domainField.put("category", "22022");
+        domainField.put("subcategoryId", "22022");
         domainField.put("propertyHero", "true");
         String localeId = "1033";
         List<MediaCategory> mockMediaCategories = new ArrayList<>();
@@ -123,7 +123,7 @@ public class MediaDomainCategoriesDaoTest {
 
     @Test
     public  void testCategoryDoesNotExist() {
-        domainField.put("category", "22005");
+        domainField.put("subcategoryId", "22005");
         domainField.put("propertyHero", "true");
         String localeId = "1033";
         List<MediaCategory> mockMediaCategories = new ArrayList<>();

@@ -116,7 +116,7 @@ public class LCMValidatorTest {
                         "    \"userId\": \"user-id\", " +
                         "    \"domainProvider\": \"EPC Internal User\", " +
                         "    \"domainFields\": { " +
-                        "          \"category\": \"10000\"," +
+                        "          \"subcategoryId\": \"10000\"," +
                         "          \"propertyHero\": \"true\"," +
                         "          \"rooms\": [ " +
                         "               {" +
@@ -152,7 +152,7 @@ public class LCMValidatorTest {
                         "    \"userId\": \"user-id\", " +
                         "    \"domainProvider\": \"EPC Internal User\", " +
                         "    \"domainFields\": { " +
-                        "          \"category\": \"10000\"," +
+                        "          \"subcategoryId\": \"10000\"," +
                         "          \"propertyHero\": \"true\"," +
                         "          \"rooms\": [ " +
                         "               {" +
@@ -190,7 +190,7 @@ public class LCMValidatorTest {
                         "    \"userId\": \"user-id\", " +
                         "    \"domainProvider\": \"does not exist\", " +
                         "    \"domainFields\": { " +
-                        "          \"category\": \"10000\"," +
+                        "          \"subcategoryId\": \"10000\"," +
                         "          \"propertyHero\": \"true\"," +
                         "          \"rooms\": [ " +
                         "               {" +
@@ -228,7 +228,7 @@ public class LCMValidatorTest {
                         "    \"userId\": \"user-id\", " +
                         "    \"domainProvider\": \"EPC Internal User\", " +
                         "    \"domainFields\": { " +
-                        "          \"category\": \"66\"," +
+                        "          \"subcategoryId\": \"66\"," +
                         "          \"propertyHero\": \"true\"," +
                         "          \"rooms\": [ " +
                         "               {" +
@@ -328,7 +328,7 @@ public class LCMValidatorTest {
                         "    \"userId\": \"user-id\", " +
                         "    \"domainProvider\": \"EPC Internal User\", " +
                         "    \"domainFields\": { " +
-                        "          \"category\": \"10000\"," +
+                        "          \"subcategoryId\": \"10000\"," +
                         "          \"propertyHero\": \"true\"," +
                         "          \"rooms\": [ " +
                         "               {" +
@@ -366,7 +366,7 @@ public class LCMValidatorTest {
                         "    \"userId\": \"user-id\", " +
                         "    \"domainProvider\": \"EPC Internal User\", " +
                         "    \"domainFields\": { " +
-                        "          \"category\": \"10000\"," +
+                        "          \"subcategoryId\": \"10000\"," +
                         "          \"propertyHero\": \"true\" " +
                         "                      }" +
                         " }";
@@ -396,7 +396,7 @@ public class LCMValidatorTest {
                         "    \"userId\": \"user-id\", " +
                         "    \"domainProvider\": \"epc InTerNaL user\", " +
                         "    \"domainFields\": { " +
-                        "          \"category\": \"10000\"," +
+                        "          \"subcategoryId\": \"10000\"," +
                         "          \"propertyHero\": \"true\"," +
                         "          \"rooms\": [ " +
                         "               {" +
@@ -432,7 +432,7 @@ public class LCMValidatorTest {
                         "    \"userId\": \"user-id\", " +
                         "    \"domainProvider\": \"EPC Internal User\", " +
                         "    \"domainFields\": { " +
-                        "          \"category\": \"10000\"," +
+                        "          \"subcategoryId\": \"10000\"," +
                         "          \"propertyHero\": \"true\"," +
                         "          \"rooms\": [ " +
                         "               {" +
