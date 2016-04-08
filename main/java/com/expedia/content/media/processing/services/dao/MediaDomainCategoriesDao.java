@@ -26,7 +26,7 @@ public class MediaDomainCategoriesDao {
     private static final int SKIP_NULL_DELETED_AND_FEATURE_CATEGORIES = 3;
     private final SQLMediaDomainCategoriesSproc sproc;
     private MediaSubCategoryCache mediaSubCategoryCache;
-    private final static String CATEGORY = "category";
+    private final static String SUBCATEGORY_ID = "subcategoryId";
 
     @Autowired
     public MediaDomainCategoriesDao(SQLMediaDomainCategoriesSproc sproc) {
@@ -131,8 +131,8 @@ public class MediaDomainCategoriesDao {
      */
     private String getCategory(OuterDomain outerDomain) {
         final String category = outerDomain.getDomainFields() == null ||
-                outerDomain.getDomainFields().get(CATEGORY) == null ? "" :
-                outerDomain.getDomainFields().get(CATEGORY).toString();
+                outerDomain.getDomainFields().get(SUBCATEGORY_ID) == null ? "" :
+                outerDomain.getDomainFields().get(SUBCATEGORY_ID).toString();
         return category;
     }
 
