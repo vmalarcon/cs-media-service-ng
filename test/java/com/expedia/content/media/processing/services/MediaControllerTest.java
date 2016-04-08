@@ -797,6 +797,21 @@ public class MediaControllerTest {
         return validators;
     }
 
+    @SuppressWarnings({"unchecked"})
+    private static Map<String, List<MapMessageValidator>> getMockValidatorsForUpdateWithError() {
+        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
+        List<MapMessageValidator> messageValidator = new ArrayList<>();
+        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
+        List<Map<String, String>> validationErrorList = new ArrayList<>();
+        Map<String, String> errorMap = new HashMap<>();
+        errorMap.put("test", "test");
+        validationErrorList.add(errorMap);
+        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
+        messageValidator.add(mockMessageValidator);
+        validators.put("EPCUpdate", messageValidator);
+        return validators;
+    }
+
     @Test
     public void testMediaUpdateByGuidHeroNull() throws Exception {
 
@@ -1010,6 +1025,10 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
+        MediaUpdateDao mediaUpdateDao = mock(MediaUpdateDao.class);
+        LcmMedia lcmMedia = LcmMedia.builder().domainId(41098).build();
+        when(mediaUpdateDao.getMediaByMediaId(anyInt())).thenReturn(lcmMedia);
+        FieldUtils.writeField(mediaController, "mediaUpdateDao", mediaUpdateDao, true);
 
         CatalogHeroProcessor catelogHeroProcesser = getCateLogMockHeroFalse();
         MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
@@ -1053,6 +1072,10 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
+        MediaUpdateDao mediaUpdateDao = mock(MediaUpdateDao.class);
+        LcmMedia lcmMedia = LcmMedia.builder().domainId(41098).build();
+        when(mediaUpdateDao.getMediaByMediaId(anyInt())).thenReturn(lcmMedia);
+        FieldUtils.writeField(mediaController, "mediaUpdateDao", mediaUpdateDao, true);
 
         CatalogHeroProcessor catelogHeroProcesser = getCateLogMock();
         MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
@@ -1094,6 +1117,11 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
+
+        MediaUpdateDao mediaUpdateDao = mock(MediaUpdateDao.class);
+        LcmMedia lcmMedia = LcmMedia.builder().domainId(41098).build();
+        when(mediaUpdateDao.getMediaByMediaId(anyInt())).thenReturn(lcmMedia);
+        FieldUtils.writeField(mediaController, "mediaUpdateDao", mediaUpdateDao, true);
 
         CatalogHeroProcessor catelogHeroProcesser = getCateLogMock();
         MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
@@ -1144,10 +1172,8 @@ public class MediaControllerTest {
     }
 
     @Test
-    public void testMediaUpdateInvalidQueryId() throws Exception {
-
+    public void testMediaUpdateBadRequestWithoutUserId() throws Exception {
         String jsonMsg = "{  \n"
-                + "   \"userId\":\"bobthegreat\",\n"
                 + "    \"domain\":\"Lodging\",\n"
                 + "   \"domainFields\":{  \n"
                 + "      \"propertyHero\":\"false\",\n"
@@ -1179,12 +1205,43 @@ public class MediaControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    public void testMediaUpdateInvalidQueryId() throws Exception {
+        String jsonMsg = "{  \n"
+                + "   \"userId\":\"bobthegreat\",\n"
+                + "    \"domain\":\"Lodging\",\n"
+                + "   \"domainFields\":{  \n"
+                + "      \"propertyHero\":\"false\",\n"
+                + "      \"rooms\":[  \n"
+                + "         {  \n"
+                + "            \"roomId\":\"934779\",\n"
+                + "            \"roomHero\":\"false\"\n"
+                + "         },\n"
+                + "         {\n"
+                + "             \"roomId\":\"928675\",\n"
+                + "            \"roomHero\":\"true\" \n"
+                + "         }\n"
+                + "      ]\n"
+                + "   },\n"
+                + "   \"comment\":\"note33\"\n"
+                + "}";
+
+        List<Media> medias = new ArrayList<>();
+        Media media = Media.builder().lcmMediaId("19671339").mediaGuid("test").build();
+
+        Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdateWithError();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        ResponseEntity<String> responseEntity = mediaController.mediaUpdate("123", jsonMsg, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
     private MediaUpdateProcessor getMediaUpdateProcesser(CatalogHeroProcessor catelogHeroProcesser) throws Exception {
         MediaUpdateProcessor mockUpdateProcess = new MediaUpdateProcessor();
-        MediaUpdateDao mediaUpdateDao = mock(MediaUpdateDao.class);
         CatalogitemMediaDao catalogitemMediaDao = mock(CatalogitemMediaDao.class);
         MediaDao mediaDao = mock(MediaDao.class);
-
+        MediaUpdateDao mediaUpdateDao = mock(MediaUpdateDao.class);
         LcmMedia lcmMedia = LcmMedia.builder().domainId(41098).build();
         when(mediaUpdateDao.getMediaByMediaId(anyInt())).thenReturn(lcmMedia);
         Mockito.doNothing().when(mediaUpdateDao).updateMedia(any(), anyInt());
@@ -1264,7 +1321,6 @@ public class MediaControllerTest {
         when(mediaLstWithCatalogItemMediaAndMediaFileNameSproc.getMedia(anyInt())).thenReturn(lcmCatalogItemMediaList);
         FieldUtils.writeField(catelogHeroProcesser, "mediaLstWithCatalogItemMediaAndMediaFileNameSproc", mediaLstWithCatalogItemMediaAndMediaFileNameSproc,
                 true);
-        //when(catelogHeroProcesser.getCatalogItemMeida(anyInt(), anyInt())).thenReturn(lcmCatalogItemMedia);
 
         return catelogHeroProcesser;
     }

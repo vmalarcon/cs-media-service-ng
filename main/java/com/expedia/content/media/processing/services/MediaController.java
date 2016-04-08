@@ -10,7 +10,9 @@ import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.services.dao.MediaDao;
+import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
 import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
@@ -106,6 +108,8 @@ public class MediaController extends CommonServiceController {
     private ThumbnailProcessor thumbnailProcessor;
     @Autowired
     private MediaDao mediaDao;
+    @Autowired
+    private MediaUpdateDao mediaUpdateDao;
     @Autowired
     private DynamoMediaRepository dynamoMediaRepository;
     @Autowired
@@ -244,7 +248,14 @@ public class MediaController extends CommonServiceController {
                         this.buildErrorResponse("Media GUID " + guid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST));
                 return;
             }
+            final LcmMedia lcmMedia = mediaUpdateDao.getMediaByMediaId(Integer.valueOf(queryId));
+            if (lcmMedia == null) {
+                objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input mediaId does not exist in DB", serviceUrl, BAD_REQUEST));
+                return;
+            }
             objectMap.put("lcmMediaId", queryId);
+            objectMap.put("domainId", lcmMedia.getDomainId().toString());
+
         } else {
             objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input queryId is invalid", serviceUrl, BAD_REQUEST));
             return;

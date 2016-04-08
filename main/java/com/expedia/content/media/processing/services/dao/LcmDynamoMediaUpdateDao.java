@@ -38,7 +38,7 @@ public class LcmDynamoMediaUpdateDao implements MediaUpdateDao {
 
     public LcmMedia getMediaByMediaId(int mediaId) {
         final Map<String, Object> mediaResult = mediaGetByMediaIdSproc.execute(mediaId);
-        if (mediaResult.isEmpty()) {
+        if (((List)mediaResult.get(SQLMediaGetSproc.MEDIA_SET)).isEmpty()) {
             return null;
         } else {
             return ((List<LcmMedia>) mediaResult.get(SQLMediaGetSproc.MEDIA_SET)).get(0);

@@ -5,14 +5,12 @@ import com.expedia.content.media.processing.services.dao.CatalogitemMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
 import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
-import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaRoomUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.reflect.FieldUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,13 +53,7 @@ public class MediaUpdateProcessor {
     @Transactional
     public ResponseEntity<String> processRequest(final ImageMessage imageMessage,
             final String mediaId, String domainId, Media dynamoMedia) throws Exception {
-        Integer expediaId;
-        if (StringUtils.isEmpty(domainId)) {
-            final LcmMedia lcmMedia = mediaUpdateDao.getMediaByMediaId(Integer.valueOf(mediaId));
-            expediaId = lcmMedia.getDomainId();
-        } else {
-            expediaId = Integer.valueOf(domainId);
-        }
+        final Integer expediaId = Integer.valueOf(domainId);
         //step1. update media table, if commented and active is not null
         if (imageMessage.getComment() != null || imageMessage.isActive() != null) {
             mediaUpdateDao.updateMedia(imageMessage, Integer.valueOf(mediaId));
