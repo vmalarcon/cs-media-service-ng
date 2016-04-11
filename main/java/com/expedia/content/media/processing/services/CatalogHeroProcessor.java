@@ -3,6 +3,7 @@ package com.expedia.content.media.processing.services;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDBException;
+import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
@@ -44,6 +45,8 @@ public class CatalogHeroProcessor {
     private CatalogItemMediaChgSproc catalogItemMediaChgSproc;
     @Autowired
     private CatalogItemListSproc catalogItemListSproc;
+    @Autowired
+    private MediaDao mediaDao;
     @Autowired
     private CatalogItemMediaDao catalogItemMediaDao;
     @Autowired
@@ -129,6 +132,12 @@ public class CatalogHeroProcessor {
                         !item.getLcmMediaId().equalsIgnoreCase("null") &&
                         item.getDomainFields() != null)
                 .collect(Collectors.toList());
+        dynamoHeroMedia.forEach(dynamoMedia -> {
+            dynamoMedia.setDomainFields(StringUtils.replace(dynamoMedia.getDomainFields(), "\"propertyHero\":\"true\"", "\"propertyHero\":\"false\""));
+            dynamoMedia.setUserId(imageMessage.getUserId());
+            dynamoMedia.setLastUpdated(new Date());
+            mediaDao.saveMedia(dynamoMedia);
+        });
         final List<LcmCatalogItemMedia> lcmHeroMedia = mediaLstWithCatalogItemMediaAndMediaFileNameSproc.getMedia(Integer.parseInt(catalogItemId))
                 .stream().filter(item -> item.getMediaId() != mediaId).collect(Collectors.toList());
         final List<CategoryMedia> categoryMediaList = buildCategoryMediaList(lcmHeroMedia, dynamoHeroMedia);
