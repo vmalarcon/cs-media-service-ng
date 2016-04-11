@@ -5,7 +5,7 @@ import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
 
 import java.util.List;
 
-public interface CatalogitemMediaDao {
+public interface CatalogItemMediaDao {
 
      /**
       * update the current media's useRank in catalogItemMedia table in LCM, if hero, set 3, if not hero, set the input subcategoryId.
