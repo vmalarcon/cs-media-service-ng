@@ -103,9 +103,10 @@ public class MediaUpdateProcessor {
 
     private void handleSubcategoryIdNull(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
+        final String domain = dynamoMedia == null || dynamoMedia.getDomain() == null ? "" : dynamoMedia.getDomain();
         if ("true".equalsIgnoreCase(heroProperty)) {
             setHeroImage(imageMessage, mediaId, domainId);
-            unsetHeroImage(imageMessage, mediaId, domainId, guid);
+            unsetHeroImage(imageMessage, mediaId, domainId, guid, domain);
         } else {
             final LcmCatalogItemMedia lcmCatalogItemMedia = catalogHeroProcessor.getCatalogItemMeida(domainId, mediaId);
             String subcategory = "";
@@ -124,9 +125,10 @@ public class MediaUpdateProcessor {
 
     private void handleHeroAndSubcategoryIdValid(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
+        final String domain = dynamoMedia == null || dynamoMedia.getDomain() == null ? "" : dynamoMedia.getDomain();
         if ("true".equalsIgnoreCase(heroProperty)) {
             setHeroImage(imageMessage, mediaId, domainId);
-            unsetHeroImage(imageMessage, mediaId, domainId, guid);
+            unsetHeroImage(imageMessage, mediaId, domainId, guid, domain);
         } else {
             //set the subid from json.
             catalogHeroProcessor.updateCurrentMediaHero(imageMessage, domainId, mediaId);
@@ -148,12 +150,14 @@ public class MediaUpdateProcessor {
         }
     }
 
-    private void unsetHeroImage(ImageMessage imageMessage, int mediaId, int domainId, String guid) {
-        if (guid.isEmpty()) {
-            catalogHeroProcessor.unsetOtherMediaHero(domainId, imageMessage.getUserId(), mediaId);
-        } else {
-            catalogHeroProcessor.setOldCategoryForHeroPropertyMedia(imageMessage, Integer.toString(domainId), guid, mediaId);
+    private void unsetHeroImage(ImageMessage imageMessage, int mediaId, int domainId, String guid, String domain) {
+        if ("Lodging".equalsIgnoreCase(domain)) {
+            if (guid.isEmpty()) {
+                catalogHeroProcessor.unsetOtherMediaHero(domainId, imageMessage.getUserId(), mediaId);
+            } else {
+                catalogHeroProcessor.setOldCategoryForHeroPropertyMedia(imageMessage, Integer.toString(domainId), guid, mediaId);
 
+            }
         }
     }
 

@@ -975,7 +975,7 @@ public class MediaControllerTest {
                 + "      ]\n"
                 + "   }";
         Media dynamoMedia =
-                Media.builder().lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
+                Media.builder().domain("Lodging").lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
                         .build();
         when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
 
@@ -1076,6 +1076,8 @@ public class MediaControllerTest {
         LcmMedia lcmMedia = LcmMedia.builder().domainId(41098).build();
         when(mediaUpdateDao.getMediaByMediaId(anyInt())).thenReturn(lcmMedia);
         FieldUtils.writeField(mediaController, "mediaUpdateDao", mediaUpdateDao, true);
+        Media dynamoMedia = Media.builder().domain("Lodging").build();
+        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(dynamoMedia);
 
         CatalogHeroProcessor catalogHeroProcessor = getCatalogMock();
         MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);
