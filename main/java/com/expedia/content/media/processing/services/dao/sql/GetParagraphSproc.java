@@ -1,7 +1,7 @@
 package com.expedia.content.media.processing.services.dao.sql;
 
-
 import com.expedia.content.media.processing.services.dao.domain.Paragraph;
+import com.expedia.content.media.processing.services.util.TimeZoneWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.SqlParameter;
@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +37,7 @@ public class GetParagraphSproc extends StoredProcedure {
         declareParameter(new SqlReturnResultSet(PROC_RESULT, new ParagraphRowMapper()));
     }
 
-    private static class ParagraphRowMapper implements RowMapper<Paragraph > {
+    private static class ParagraphRowMapper implements RowMapper<Paragraph> {
         @Override
         public Paragraph mapRow(ResultSet resultSet, int i) throws SQLException {
             final Paragraph paragraph = Paragraph.builder()
@@ -46,11 +47,11 @@ public class GetParagraphSproc extends StoredProcedure {
                     .paragraphTypeId(resultSet.getShort("ParagraphTypeID"))
                     .langId(resultSet.getInt("LangID"))
                     .paragraphTxt(resultSet.getString("ParagraphTxt"))
-                    .effectiveStartDate(resultSet.getTimestamp("EffectiveStartDate"))
-                    .effectiveEndDate(resultSet.getTimestamp("EffectiveEndDate"))
+                    .effectiveStartDate(new Timestamp(TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("EffectiveStartDate")).getTime()))
+                    .effectiveEndDate(new Timestamp(TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("EffectiveEndDate")).getTime()))
                     .paragraphMediaId(resultSet.getInt("ParagraphMediaID"))
                     .mediaSizeTypeId(resultSet.getShort("MediaSizeTypeID"))
-                    .updateDate(resultSet.getTimestamp("UpdateDate"))
+                    .updateDate(new Timestamp(TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("UpdateDate")).getTime()))
                     .lastUpdatedBy(resultSet.getString("LastUpdatedBy"))
                     .lastUpdateLocation(resultSet.getString("LastUpdateLocation"))
                     .contentSourceTypeId(resultSet.getString("ContentSourceTypeID"))

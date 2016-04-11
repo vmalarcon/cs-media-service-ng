@@ -1,6 +1,7 @@
 package com.expedia.content.media.processing.services.dao.sql;
 
 import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
+import com.expedia.content.media.processing.services.util.TimeZoneWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.SqlParameter;
@@ -37,7 +38,7 @@ public class MediaLstWithCatalogItemMediaAndMediaFileNameSproc extends StoredPro
             final LcmCatalogItemMedia media = LcmCatalogItemMedia.builder()
                     .mediaId(resultSet.getInt("MediaId"))
                     .mediaUseRank(resultSet.getInt("MediaUseRank"))
-                    .lastUpdateDate(resultSet.getTimestamp("UpdateDate"))
+                    .lastUpdateDate(TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("UpdateDate")))
                     .lastUpdatedBy(resultSet.getString("LastUpdatedBy"))
                     .build();
             return media;

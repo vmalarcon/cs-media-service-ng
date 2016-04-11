@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services.dao;
 
+import com.expedia.content.media.processing.services.util.TimeZoneWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.SqlParameter;
@@ -46,9 +47,9 @@ public class SKUGroupGetSproc extends StoredProcedure {
             final boolean chargeDepositBool = resultSet.getBoolean("chargeDepositBool");
             final String emailAddress = resultSet.getString("emailAddress");
             final int merchandisingTypeID = resultSet.getInt("merchandisingTypeID");
-            final Timestamp catalogItemUpdateDate = resultSet.getTimestamp("catalogItem_UpdateDate");
+            final Timestamp catalogItemUpdateDate = new Timestamp(TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("catalogItem_UpdateDate")).getTime());
             final String catalogItemLastUpdatedBy = resultSet.getString("catalogItem_LastUpdatedBy");
-            final Timestamp skuGroupUpdateDate = resultSet.getTimestamp("skuGroup_UpdateDate");
+            final Timestamp skuGroupUpdateDate = new Timestamp(TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("skuGroup_UpdateDate")).getTime());
             final String skuGroupLastUpdatedBy = resultSet.getString("skuGroup_LastUpdatedBy");
             final int priceLevelTypeID = resultSet.getInt("priceLevelTypeID");
             return new SKUGroupCatalogItem(name, catalogItemStatusTypeID, latitude, longitude, fuzzyLatLongBool, structureTypeID,

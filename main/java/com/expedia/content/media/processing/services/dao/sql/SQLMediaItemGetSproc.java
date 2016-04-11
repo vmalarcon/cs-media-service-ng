@@ -2,6 +2,7 @@ package com.expedia.content.media.processing.services.dao.sql;
 
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
+import com.expedia.content.media.processing.services.util.TimeZoneWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.SqlParameter;
@@ -13,7 +14,6 @@ import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.Date;
 
 /**
  * Call a MSSQL Sproc [MediaItemGet] in LCM in order to retrieve data from the Media, CatalogItemMedia, and MediaFileName (derivatives) tables
@@ -51,7 +51,7 @@ public class SQLMediaItemGetSproc extends StoredProcedure {
                     .height(resultSet.getInt("MediaHeight"))
                     .lastUpdatedBy(resultSet.getString("LastUpdatedBy"))
                     .fileSize(resultSet.getInt("FileSizeKb"))
-                    .lastUpdateDate(new Date(resultSet.getTimestamp("UpdateDate").getTime()))
+                    .lastUpdateDate(TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("UpdateDate")))
                     .category(resultSet.getInt("MediaUseRank"))
                     .comment(resultSet.getString("MediaCommentTxt"))
                     .formatId(resultSet.getInt("MediaFormatID"))

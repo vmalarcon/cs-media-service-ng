@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services.dao;
 
+import com.expedia.content.media.processing.services.util.TimeZoneWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.SqlParameter;
@@ -38,7 +39,7 @@ public class PropertyRoomTypeGetIDSproc extends StoredProcedure {
         public RoomType mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
             final int roomTypeCatalogItemID = resultSet.getInt("roomTypeContentID");
             final int roomTypeID = resultSet.getInt("roomTypeID");
-            final Timestamp updateDate = resultSet.getTimestamp("updateDate");
+            final Timestamp updateDate = new Timestamp(TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("updateDate")).getTime());
             final String lastUpdatedBy = resultSet.getString("lastUpdatedBy");
             final String lastUpdateLocation = resultSet.getString("lastUpdateLocation");
             return new RoomType(roomTypeCatalogItemID, roomTypeID, updateDate, lastUpdatedBy, lastUpdateLocation);

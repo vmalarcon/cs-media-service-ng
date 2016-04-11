@@ -2,6 +2,7 @@ package com.expedia.content.media.processing.services.dao.sql;
 
 import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.util.TimeZoneWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.SqlParameter;
@@ -42,7 +43,7 @@ public class CatalogItemListSproc extends StoredProcedure {
                     .fileName(resultSet.getString("ContentProviderMediaName"))
                     .comment(resultSet.getString("MediaCommentTxt"))
                     .mediaUseRank(resultSet.getInt("MediaUseRank"))
-                    .lastUpdateDate(resultSet.getDate("UpdateDate"))
+                    .lastUpdateDate(TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("UpdateDate")))
                     .build();
         }
     }
