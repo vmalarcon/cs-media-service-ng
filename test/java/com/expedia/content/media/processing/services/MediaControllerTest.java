@@ -838,7 +838,7 @@ public class MediaControllerTest {
         List<Media> emptyMediaList = new ArrayList<>();
         MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
         when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(emptyMediaList);
-        String dyNamoField = "{  \n"
+        String dynamoField = "{  \n"
                 + "      \"subcategoryId\":\"22003\",\n"
                 + "      \"propertyHero\":\"true\",\n"
                 + "      \"rooms\":[  \n"
@@ -853,7 +853,7 @@ public class MediaControllerTest {
                 + "      ]\n"
                 + "   }";
         Media dynamoMedia =
-                Media.builder().lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dyNamoField)
+                Media.builder().lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
                         .build();
         when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
 
@@ -861,9 +861,9 @@ public class MediaControllerTest {
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
-        CatalogHeroProcessor catelogHeroProcesser = getCateLogMock();
-        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
-        setFieldValue(mediaController, "mediaUpdateProcesser", mockUpdateProcess);
+        CatalogHeroProcessor catalogHeroProcessor = getCateLogMock();
+        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);
+        setFieldValue(mediaController, "mediaUpdateProcessor", mockUpdateProcess);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
 
@@ -899,7 +899,7 @@ public class MediaControllerTest {
         List<Media> emptyMediaList = new ArrayList<>();
         MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
         when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(emptyMediaList);
-        String dyNamoField = "{  \n"
+        String dynamoField = "{  \n"
                 + "      \"subcategoryId\":\"22003\",\n"
                 + "      \"propertyHero\":\"true\",\n"
                 + "      \"rooms\":[  \n"
@@ -914,7 +914,7 @@ public class MediaControllerTest {
                 + "      ]\n"
                 + "   }";
         Media dynamoMedia =
-                Media.builder().lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dyNamoField)
+                Media.builder().lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
                         .build();
         when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
 
@@ -922,9 +922,9 @@ public class MediaControllerTest {
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
-        CatalogHeroProcessor catelogHeroProcesser = getCateLogMock();
-        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
-        setFieldValue(mediaController, "mediaUpdateProcesser", mockUpdateProcess);
+        CatalogHeroProcessor catalogHeroProcessor = getCateLogMock();
+        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);
+        setFieldValue(mediaController, "mediaUpdateProcessor", mockUpdateProcess);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
 
@@ -960,7 +960,7 @@ public class MediaControllerTest {
         List<Media> emptyMediaList = new ArrayList<>();
         MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
         when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(emptyMediaList);
-        String dyNamoField = "{  \n"
+        String dynamoField = "{  \n"
                 + "      \"subcategoryId\":\"22003\",\n"
                 + "      \"propertyHero\":\"true\",\n"
                 + "      \"rooms\":[  \n"
@@ -975,7 +975,7 @@ public class MediaControllerTest {
                 + "      ]\n"
                 + "   }";
         Media dynamoMedia =
-                Media.builder().lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dyNamoField)
+                Media.builder().lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
                         .build();
         when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
 
@@ -983,9 +983,9 @@ public class MediaControllerTest {
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
-        CatalogHeroProcessor catelogHeroProcesser = getCateLogMockHeroFalse();
-        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
-        setFieldValue(mediaController, "mediaUpdateProcesser", mockUpdateProcess);
+        CatalogHeroProcessor catalogHeroProcessor = getCateLogMockHeroFalse();
+        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);
+        setFieldValue(mediaController, "mediaUpdateProcessor", mockUpdateProcess);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
 
@@ -1030,9 +1030,9 @@ public class MediaControllerTest {
         when(mediaUpdateDao.getMediaByMediaId(anyInt())).thenReturn(lcmMedia);
         FieldUtils.writeField(mediaController, "mediaUpdateDao", mediaUpdateDao, true);
 
-        CatalogHeroProcessor catelogHeroProcesser = getCateLogMockHeroFalse();
-        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
-        setFieldValue(mediaController, "mediaUpdateProcesser", mockUpdateProcess);
+        CatalogHeroProcessor catalogHeroProcessor = getCateLogMockHeroFalse();
+        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);
+        setFieldValue(mediaController, "mediaUpdateProcessor", mockUpdateProcess);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
 
@@ -1077,9 +1077,9 @@ public class MediaControllerTest {
         when(mediaUpdateDao.getMediaByMediaId(anyInt())).thenReturn(lcmMedia);
         FieldUtils.writeField(mediaController, "mediaUpdateDao", mediaUpdateDao, true);
 
-        CatalogHeroProcessor catelogHeroProcesser = getCateLogMock();
-        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
-        setFieldValue(mediaController, "mediaUpdateProcesser", mockUpdateProcess);
+        CatalogHeroProcessor catalogHeroProcessor = getCateLogMock();
+        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);
+        setFieldValue(mediaController, "mediaUpdateProcessor", mockUpdateProcess);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
 
@@ -1123,9 +1123,9 @@ public class MediaControllerTest {
         when(mediaUpdateDao.getMediaByMediaId(anyInt())).thenReturn(lcmMedia);
         FieldUtils.writeField(mediaController, "mediaUpdateDao", mediaUpdateDao, true);
 
-        CatalogHeroProcessor catelogHeroProcesser = getCateLogMock();
-        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catelogHeroProcesser);
-        setFieldValue(mediaController, "mediaUpdateProcesser", mockUpdateProcess);
+        CatalogHeroProcessor catalogHeroProcessor = getCateLogMock();
+        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);
+        setFieldValue(mediaController, "mediaUpdateProcessor", mockUpdateProcess);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
 
@@ -1237,9 +1237,9 @@ public class MediaControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
-    private MediaUpdateProcessor getMediaUpdateProcesser(CatalogHeroProcessor catelogHeroProcesser) throws Exception {
+    private MediaUpdateProcessor getMediaUpdateProcesser(CatalogHeroProcessor catalogHeroProcessor) throws Exception {
         MediaUpdateProcessor mockUpdateProcess = new MediaUpdateProcessor();
-        CatalogitemMediaDao catalogitemMediaDao = mock(CatalogitemMediaDao.class);
+        CatalogItemMediaDao catalogItemMediaDao = mock(CatalogItemMediaDao.class);
         MediaDao mediaDao = mock(MediaDao.class);
         MediaUpdateDao mediaUpdateDao = mock(MediaUpdateDao.class);
         LcmMedia lcmMedia = LcmMedia.builder().domainId(41098).build();
@@ -1258,20 +1258,20 @@ public class MediaControllerTest {
         lcmMediaRoomList.add(lcmMediaRoom);
         lcmMediaRoomList.add(lcmMediaRoom2);
         lcmMediaRoomList.add(lcmMediaRoom3);
-        when(catalogitemMediaDao.getLcmRoomsByMediaId(anyInt())).thenReturn(lcmMediaRoomList);
-        Mockito.doNothing().when(catalogitemMediaDao).deleteParagraph(anyInt());
-        Mockito.doNothing().when(catalogitemMediaDao).deleteCatalogItem(anyInt(), anyInt());
-        Mockito.doNothing().when(catalogitemMediaDao).addOrUpdateParagraph(anyInt(), anyInt());
-        Mockito.doNothing().when(catalogitemMediaDao).addCatalogItemForRoom(anyInt(), anyInt(), anyObject());
-        FieldUtils.writeField(mockUpdateProcess, "catalogitemMediaDao", catalogitemMediaDao, true);
-        FieldUtils.writeField(mockUpdateProcess, "catelogHeroProcesser", catelogHeroProcesser, true);
+        when(catalogItemMediaDao.getLcmRoomsByMediaId(anyInt())).thenReturn(lcmMediaRoomList);
+        Mockito.doNothing().when(catalogItemMediaDao).deleteParagraph(anyInt());
+        Mockito.doNothing().when(catalogItemMediaDao).deleteCatalogItem(anyInt(), anyInt());
+        Mockito.doNothing().when(catalogItemMediaDao).addOrUpdateParagraph(anyInt(), anyInt());
+        Mockito.doNothing().when(catalogItemMediaDao).addCatalogItemForRoom(anyInt(), anyInt(), anyObject());
+        FieldUtils.writeField(mockUpdateProcess, "catalogItemMediaDao", catalogItemMediaDao, true);
+        FieldUtils.writeField(mockUpdateProcess, "catalogHeroProcessor", catalogHeroProcessor, true);
         return mockUpdateProcess;
     }
 
     private CatalogHeroProcessor getCateLogMock() throws Exception {
-        CatalogHeroProcessor catelogHeroProcesser = new CatalogHeroProcessor();
+        CatalogHeroProcessor catalogHeroProcessor = new CatalogHeroProcessor();
         CatalogItemListSproc catalogItemListSproc = mock(CatalogItemListSproc.class);
-        CatalogitemMediaDao catalogitemMediaDao = mock(CatalogitemMediaDao.class);
+        CatalogItemMediaDao catalogItemMediaDao = mock(CatalogItemMediaDao.class);
         CatalogItemMediaChgSproc catalogItemMediaChgSproc = mock(CatalogItemMediaChgSproc.class);
 
         List<LcmCatalogItemMedia> lcmCatalogItemMediaList = new ArrayList<>();
@@ -1283,15 +1283,15 @@ public class MediaControllerTest {
         lcmCatMap.put(CatalogItemListSproc.MEDIA_SET, lcmCatalogItemMediaList);
         when(catalogItemListSproc.execute(anyInt())).thenReturn(lcmCatMap);
 
-        FieldUtils.writeField(catelogHeroProcesser, "catalogItemListSproc", catalogItemListSproc, true);
+        FieldUtils.writeField(catalogHeroProcessor, "catalogItemListSproc", catalogItemListSproc, true);
         Mockito.doNothing().when(catalogItemMediaChgSproc).updateCategory(anyInt(), anyInt(), anyInt(), anyString(), anyString());
-        FieldUtils.writeField(catelogHeroProcesser, "catalogItemMediaChgSproc", catalogItemMediaChgSproc, true);
-        Mockito.doNothing().when(catalogitemMediaDao).updateCatalogItem(any(), anyInt(), anyInt());
-        FieldUtils.writeField(catelogHeroProcesser, "catalogitemMediaDao", catalogitemMediaDao, true);
+        FieldUtils.writeField(catalogHeroProcessor, "catalogItemMediaChgSproc", catalogItemMediaChgSproc, true);
+        Mockito.doNothing().when(catalogItemMediaDao).updateCatalogItem(any(), anyInt(), anyInt());
+        FieldUtils.writeField(catalogHeroProcessor, "catalogItemMediaDao", catalogItemMediaDao, true);
 
         List<Media> heroMedia = new ArrayList<>();
         DynamoMediaRepository mediaRepo = mock(DynamoMediaRepository.class);
-        String dyNamoField = "{  \n"
+        String dynamoField = "{  \n"
                 + "      \"subcategoryId\":\"2201\",\n"
                 + "      \"propertyHero\":\"true\",\n"
                 + "      \"rooms\":[  \n"
@@ -1306,29 +1306,29 @@ public class MediaControllerTest {
                 + "      ]\n"
                 + "   }";
         Media media =
-                Media.builder().lcmMediaId("196713").mediaGuid("testGuid").domainId("41098").domainFields(dyNamoField).lastUpdated(
+                Media.builder().lcmMediaId("196713").mediaGuid("testGuid").domainId("41098").domainFields(dynamoField).lastUpdated(
                         new Date(new Date().getTime() - 10000)).build();
         heroMedia.add(media);
         when(mediaRepo.retrieveHeroPropertyMedia(anyString(), anyString())).thenReturn(heroMedia);
-        FieldUtils.writeField(catelogHeroProcesser, "mediaRepo", mediaRepo, true);
+        FieldUtils.writeField(catalogHeroProcessor, "mediaRepo", mediaRepo, true);
 
         CatalogItemMediaGetSproc catalogItemMediaGetSproc = mock(CatalogItemMediaGetSproc.class);
         when(catalogItemMediaGetSproc.getMedia(anyInt(), anyInt())).thenReturn(lcmCatalogItemMediaList);
-        FieldUtils.writeField(catelogHeroProcesser, "catalogItemMediaGetSproc", catalogItemMediaGetSproc, true);
+        FieldUtils.writeField(catalogHeroProcessor, "catalogItemMediaGetSproc", catalogItemMediaGetSproc, true);
 
         MediaLstWithCatalogItemMediaAndMediaFileNameSproc mediaLstWithCatalogItemMediaAndMediaFileNameSproc =
                 mock(MediaLstWithCatalogItemMediaAndMediaFileNameSproc.class);
         when(mediaLstWithCatalogItemMediaAndMediaFileNameSproc.getMedia(anyInt())).thenReturn(lcmCatalogItemMediaList);
-        FieldUtils.writeField(catelogHeroProcesser, "mediaLstWithCatalogItemMediaAndMediaFileNameSproc", mediaLstWithCatalogItemMediaAndMediaFileNameSproc,
+        FieldUtils.writeField(catalogHeroProcessor, "mediaLstWithCatalogItemMediaAndMediaFileNameSproc", mediaLstWithCatalogItemMediaAndMediaFileNameSproc,
                 true);
 
-        return catelogHeroProcesser;
+        return catalogHeroProcessor;
     }
 
     private CatalogHeroProcessor getCateLogMockHeroFalse() throws Exception {
-        CatalogHeroProcessor catelogHeroProcesser = new CatalogHeroProcessor();
+        CatalogHeroProcessor catalogHeroProcessor = new CatalogHeroProcessor();
         CatalogItemListSproc catalogItemListSproc = mock(CatalogItemListSproc.class);
-        CatalogitemMediaDao catalogitemMediaDao = mock(CatalogitemMediaDao.class);
+        CatalogItemMediaDao catalogItemMediaDao = mock(CatalogItemMediaDao.class);
         CatalogItemMediaChgSproc catalogItemMediaChgSproc = mock(CatalogItemMediaChgSproc.class);
 
         List<LcmCatalogItemMedia> lcmCatalogItemMediaList = new ArrayList<>();
@@ -1345,13 +1345,13 @@ public class MediaControllerTest {
         lcmCatMap.put(CatalogItemListSproc.MEDIA_SET, lcmCatalogItemMediaList);
         when(catalogItemListSproc.execute(anyInt())).thenReturn(lcmCatMap);
 
-        FieldUtils.writeField(catelogHeroProcesser, "catalogItemListSproc", catalogItemListSproc, true);
+        FieldUtils.writeField(catalogHeroProcessor, "catalogItemListSproc", catalogItemListSproc, true);
         Mockito.doNothing().when(catalogItemMediaChgSproc).updateCategory(anyInt(), anyInt(), anyInt(), anyString(), anyString());
-        FieldUtils.writeField(catelogHeroProcesser, "catalogItemMediaChgSproc", catalogItemMediaChgSproc, true);
-        Mockito.doNothing().when(catalogitemMediaDao).updateCatalogItem(any(), anyInt(), anyInt());
-        FieldUtils.writeField(catelogHeroProcesser, "catalogitemMediaDao", catalogitemMediaDao, true);
+        FieldUtils.writeField(catalogHeroProcessor, "catalogItemMediaChgSproc", catalogItemMediaChgSproc, true);
+        Mockito.doNothing().when(catalogItemMediaDao).updateCatalogItem(any(), anyInt(), anyInt());
+        FieldUtils.writeField(catalogHeroProcessor, "catalogItemMediaDao", catalogItemMediaDao, true);
 
-        String dyNamoField = "{  \n"
+        String dynamoField = "{  \n"
                 + "      \"subcategoryId\":\"2201\",\n"
                 + "      \"propertyHero\":\"true\",\n"
                 + "      \"rooms\":[  \n"
@@ -1368,24 +1368,24 @@ public class MediaControllerTest {
         List<Media> heroMedia = new ArrayList<>();
         DynamoMediaRepository mediaRepo = mock(DynamoMediaRepository.class);
         Media media =
-                Media.builder().lcmMediaId("19671338").mediaGuid("testGuid").domainId("41098").domainFields(dyNamoField).lastUpdated(
+                Media.builder().lcmMediaId("19671338").mediaGuid("testGuid").domainId("41098").domainFields(dynamoField).lastUpdated(
                         new Date(new Date().getTime() - 10000)).build();
         heroMedia.add(media);
         when(mediaRepo.retrieveHeroPropertyMedia(anyString(), anyString())).thenReturn(heroMedia);
-        FieldUtils.writeField(catelogHeroProcesser, "mediaRepo", mediaRepo, true);
+        FieldUtils.writeField(catalogHeroProcessor, "mediaRepo", mediaRepo, true);
 
         CatalogItemMediaGetSproc catalogItemMediaGetSproc = mock(CatalogItemMediaGetSproc.class);
         when(catalogItemMediaGetSproc.getMedia(anyInt(), anyInt())).thenReturn(lcmCatalogItemMediaList);
-        FieldUtils.writeField(catelogHeroProcesser, "catalogItemMediaGetSproc", catalogItemMediaGetSproc, true);
+        FieldUtils.writeField(catalogHeroProcessor, "catalogItemMediaGetSproc", catalogItemMediaGetSproc, true);
 
         MediaLstWithCatalogItemMediaAndMediaFileNameSproc mediaLstWithCatalogItemMediaAndMediaFileNameSproc =
                 mock(MediaLstWithCatalogItemMediaAndMediaFileNameSproc.class);
         when(mediaLstWithCatalogItemMediaAndMediaFileNameSproc.getMedia(anyInt())).thenReturn(lcmCatalogItemMediaList);
-        FieldUtils.writeField(catelogHeroProcesser, "mediaLstWithCatalogItemMediaAndMediaFileNameSproc", mediaLstWithCatalogItemMediaAndMediaFileNameSproc,
+        FieldUtils.writeField(catalogHeroProcessor, "mediaLstWithCatalogItemMediaAndMediaFileNameSproc", mediaLstWithCatalogItemMediaAndMediaFileNameSproc,
                 true);
-        //when(catelogHeroProcesser.getCatalogItemMeida(anyInt(), anyInt())).thenReturn(lcmCatalogItemMedia);
+        //when(catalogHeroProcessor.getCatalogItemMedia(anyInt(), anyInt())).thenReturn(lcmCatalogItemMedia);
 
-        return catelogHeroProcesser;
+        return catalogHeroProcessor;
     }
 
 }

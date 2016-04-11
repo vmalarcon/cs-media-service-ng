@@ -15,7 +15,7 @@ import java.util.Map;
  * Media data access operations through LCM and the Dynamo MediaDB.
  */
 @Component
-public class LcmDynamoCatalogAndParagraphDao implements CatalogitemMediaDao {
+public class LcmDynamoCatalogAndParagraphDao implements CatalogItemMediaDao {
 
     private static final String DEFAULT_SUBCATEGORY_ID = "0";
     public static final String MESSAGE_PROPERTY_HERO = "propertyHero";

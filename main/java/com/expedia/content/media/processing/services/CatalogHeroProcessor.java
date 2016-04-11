@@ -1,7 +1,7 @@
 package com.expedia.content.media.processing.services;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.services.dao.CatalogitemMediaDao;
+import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDBException;
 import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
@@ -45,7 +45,7 @@ public class CatalogHeroProcessor {
     @Autowired
     private CatalogItemListSproc catalogItemListSproc;
     @Autowired
-    private CatalogitemMediaDao catalogitemMediaDao;
+    private CatalogItemMediaDao catalogItemMediaDao;
     @Autowired
     CatalogItemMediaGetSproc catalogItemMediaGetSproc;
     @Autowired
@@ -112,7 +112,7 @@ public class CatalogHeroProcessor {
      * @param mediaId
      */
     public void updateCurrentMediaHero(ImageMessage imageMessage, int domainId, int mediaId) {
-        catalogitemMediaDao.updateCatalogItem(imageMessage, Integer.valueOf(mediaId), domainId);
+        catalogItemMediaDao.updateCatalogItem(imageMessage, Integer.valueOf(mediaId), domainId);
     }
 
     /**

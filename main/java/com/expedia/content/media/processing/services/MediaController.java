@@ -113,7 +113,7 @@ public class MediaController extends CommonServiceController {
     @Autowired
     private DynamoMediaRepository dynamoMediaRepository;
     @Autowired
-    private MediaUpdateProcessor mediaUpdateProcesser;
+    private MediaUpdateProcessor mediaUpdateProcessor;
     @Autowired
     private SKUGroupCatalogItemDao skuGroupCatalogItemDao;
 
@@ -206,10 +206,10 @@ public class MediaController extends CommonServiceController {
             final String newJson = (String) objectMap.get("newJson");
             final ImageMessage imageMessage = ImageMessage.parseJsonMessage(newJson);
             if (message.contains("active")) {
-                return mediaUpdateProcesser.processRequest(imageMessage, lcmMediaId, domainId, dynamoMedia);
+                return mediaUpdateProcessor.processRequest(imageMessage, lcmMediaId, domainId, dynamoMedia);
             } else {
                 final ImageMessage imageMessageNew = removeActiveFromImageMessage(imageMessage);
-                return mediaUpdateProcesser.processRequest(imageMessageNew, lcmMediaId, domainId, dynamoMedia);
+                return mediaUpdateProcessor.processRequest(imageMessageNew, lcmMediaId, domainId, dynamoMedia);
             }
         } catch (IllegalStateException | ImageMessageException ex) {
             LOGGER.error("ERROR - serviceUrl={}, error=[{}], queryId=[{}], requestId=[{}],JSONMessage=[{}].", serviceUrl, ex.getMessage(), queryId,

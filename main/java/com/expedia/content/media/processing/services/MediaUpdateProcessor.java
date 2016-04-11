@@ -1,7 +1,7 @@
 package com.expedia.content.media.processing.services;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.services.dao.CatalogitemMediaDao;
+import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
 import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
@@ -33,11 +33,11 @@ public class MediaUpdateProcessor {
     @Autowired
     private MediaUpdateDao mediaUpdateDao;
     @Autowired
-    private CatalogitemMediaDao catalogitemMediaDao;
+    private CatalogItemMediaDao catalogItemMediaDao;
     @Autowired
     private MediaDao mediaDao;
     @Autowired
-    private CatalogHeroProcessor catelogHeroProcesser;
+    private CatalogHeroProcessor catalogHeroProcessor;
 
     /**
      * process media update, involve media table, catalogItemMedia table, and paragraph table in lcm.
@@ -58,7 +58,7 @@ public class MediaUpdateProcessor {
         if (imageMessage.getComment() != null || imageMessage.isActive() != null) {
             mediaUpdateDao.updateMedia(imageMessage, Integer.valueOf(mediaId));
         }
-        //step 2 update property hero in catalotItemMedia
+        //step 2 update property hero in catalogItemMedia
         if (imageMessage.getOuterDomainData() != null &&
                 (imageMessage.getOuterDomainData().getDomainFieldValue(MESSAGE_PROPERTY_HERO) != null
                         || imageMessage.getOuterDomainData().getDomainFieldValue(MESSAGE_SUB_CATEGORY_ID) != null)) {
@@ -70,7 +70,7 @@ public class MediaUpdateProcessor {
         LOGGER.info("update  imageMessage=[{}], mediaId=[{}] to LCM done", imageMessage.toJSONMessage(), mediaId);
         //step 4. save media to dynamo
         if (dynamoMedia != null) {
-            setDynamMedia(imageMessage, dynamoMedia);
+            setDynamoMedia(imageMessage, dynamoMedia);
             mediaDao.saveMedia(dynamoMedia);
         }
         return new ResponseEntity<>("OK", HttpStatus.OK);
@@ -103,12 +103,12 @@ public class MediaUpdateProcessor {
     private void handleSubcategoryIdNull(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
         if ("true".equalsIgnoreCase(heroProperty)) {
-            setHeroImgage(imageMessage, mediaId, domainId);
+            setHeroImage(imageMessage, mediaId, domainId);
             unsetHeroImage(imageMessage, mediaId, domainId, guid);
         } else {
-            final LcmCatalogItemMedia lcmCatalogItemMedia = catelogHeroProcesser.getCatalogItemMeida(domainId, mediaId);
+            final LcmCatalogItemMedia lcmCatalogItemMedia = catalogHeroProcessor.getCatalogItemMeida(domainId, mediaId);
             String subcategory = "";
-            //if we have subid in dyanmo, we need to set that value.
+            //if we have subid in dynamo, we need to set that value.
             if (dynamoMedia != null) {
                 if (dynamoMedia.getDomainFields() != null) {
                     final Map map = JSONUtil.buildMapFromJson(dynamoMedia.getDomainFields());
@@ -116,7 +116,7 @@ public class MediaUpdateProcessor {
                 }
             }
             if (lcmCatalogItemMedia.getMediaUseRank() == 3) {
-                catelogHeroProcesser.setMediaToHero(imageMessage.getUserId(), lcmCatalogItemMedia, false, subcategory);
+                catalogHeroProcessor.setMediaToHero(imageMessage.getUserId(), lcmCatalogItemMedia, false, subcategory);
             }
         }
     }
@@ -124,34 +124,34 @@ public class MediaUpdateProcessor {
     private void handleHeroAndSubcategoryIdValid(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
         if ("true".equalsIgnoreCase(heroProperty)) {
-            setHeroImgage(imageMessage, mediaId, domainId);
+            setHeroImage(imageMessage, mediaId, domainId);
             unsetHeroImage(imageMessage, mediaId, domainId, guid);
         } else {
             //set the subid from json.
-            catelogHeroProcesser.updateCurrentMediaHero(imageMessage, domainId, mediaId);
+            catalogHeroProcessor.updateCurrentMediaHero(imageMessage, domainId, mediaId);
         }
     }
 
     private void handleHeroNull(ImageMessage imageMessage, int mediaId, int domainId) {
-        final LcmCatalogItemMedia lcmCatalogItemMedia = catelogHeroProcesser.getCatalogItemMeida(domainId, mediaId);
+        final LcmCatalogItemMedia lcmCatalogItemMedia = catalogHeroProcessor.getCatalogItemMeida(domainId, mediaId);
         //if it is not hero now , update with id in JSON.
         if (lcmCatalogItemMedia.getMediaUseRank() != 3) {
-            catelogHeroProcesser.updateCurrentMediaHero(imageMessage, domainId, mediaId);
+            catalogHeroProcessor.updateCurrentMediaHero(imageMessage, domainId, mediaId);
         }
     }
 
-    private void setHeroImgage(ImageMessage imageMessage, int mediaId, int domainId) {
-        final LcmCatalogItemMedia lcmCatalogItemMedia = catelogHeroProcesser.getCatalogItemMeida(domainId, mediaId);
+    private void setHeroImage(ImageMessage imageMessage, int mediaId, int domainId) {
+        final LcmCatalogItemMedia lcmCatalogItemMedia = catalogHeroProcessor.getCatalogItemMeida(domainId, mediaId);
         if (lcmCatalogItemMedia.getMediaUseRank() != 3) {
-            catelogHeroProcesser.setMediaToHero(imageMessage.getUserId(), lcmCatalogItemMedia, true, "");
+            catalogHeroProcessor.setMediaToHero(imageMessage.getUserId(), lcmCatalogItemMedia, true, "");
         }
     }
 
     private void unsetHeroImage(ImageMessage imageMessage, int mediaId, int domainId, String guid) {
         if (guid.isEmpty()) {
-            catelogHeroProcesser.unsetOtherMediaHero(domainId, imageMessage.getUserId(), mediaId);
+            catalogHeroProcessor.unsetOtherMediaHero(domainId, imageMessage.getUserId(), mediaId);
         } else {
-            catelogHeroProcesser.setOldCategoryForHeroPropertyMedia(imageMessage, Integer.toString(domainId), guid, mediaId);
+            catalogHeroProcessor.setOldCategoryForHeroPropertyMedia(imageMessage, Integer.toString(domainId), guid, mediaId);
 
         }
     }
@@ -163,7 +163,7 @@ public class MediaUpdateProcessor {
      * @param dynamoMedia
      * @throws Exception
      */
-    private void setDynamMedia(ImageMessage imageMessage, Media dynamoMedia) throws Exception {
+    private void setDynamoMedia(ImageMessage imageMessage, Media dynamoMedia) throws Exception {
         List<String> commentList = null;
         if (imageMessage.getComment() != null) {
             commentList = new ArrayList<>();
@@ -191,9 +191,9 @@ public class MediaUpdateProcessor {
      * @return
      */
     private Map<String, Object> combineDomainFields(Map<String, Object> domainFieldsDynamo, Map<String, Object> domainFieldsNew) {
-        if (domainFieldsNew.isEmpty()) {
+        if (domainFieldsNew == null || domainFieldsNew.isEmpty()) {
             return domainFieldsDynamo;
-        } else if (domainFieldsDynamo.isEmpty()) {
+        } else if (domainFieldsDynamo == null || domainFieldsDynamo.isEmpty()) {
             return domainFieldsNew;
         } else {
             if (domainFieldsNew.get(MESSAGE_ROOMS) != null) {
@@ -216,7 +216,7 @@ public class MediaUpdateProcessor {
         }
         final List<LcmMediaRoom> jsonRoomList = convert(roomList);
         //rooms from LCM DB.
-        final List<LcmMediaRoom> lcmMediaRoomList = catalogitemMediaDao.getLcmRoomsByMediaId(Integer.valueOf(mediaId));
+        final List<LcmMediaRoom> lcmMediaRoomList = catalogItemMediaDao.getLcmRoomsByMediaId(Integer.valueOf(mediaId));
         //room to be delete
         final List<LcmMediaRoom> deleteRoomListCata = new ArrayList<>();
         final List<LcmMediaRoom> deleteRoomListPara = new ArrayList<>();
@@ -234,25 +234,25 @@ public class MediaUpdateProcessor {
 
     private void deleteParagraph(List<LcmMediaRoom> deleteRoomListPara) {
         deleteRoomListPara.stream().forEach(lcmMediaRoom -> {
-            catalogitemMediaDao.deleteParagraph(lcmMediaRoom.getRoomId());
+            catalogItemMediaDao.deleteParagraph(lcmMediaRoom.getRoomId());
         });
     }
 
     private void addParagraph(List<LcmMediaRoom> addRoomListPara, int mediaId) {
         addRoomListPara.stream().forEach(lcmMediaRoom -> {
-            catalogitemMediaDao.addOrUpdateParagraph(lcmMediaRoom.getRoomId(), mediaId);
+            catalogItemMediaDao.addOrUpdateParagraph(lcmMediaRoom.getRoomId(), mediaId);
         });
     }
 
     private void deleteCatalogForRoom(List<LcmMediaRoom> deleteRoomListCata, int mediaId) {
         deleteRoomListCata.stream().forEach(lcmMediaRoom -> {
-            catalogitemMediaDao.deleteCatalogItem(lcmMediaRoom.getRoomId(), mediaId);
+            catalogItemMediaDao.deleteCatalogItem(lcmMediaRoom.getRoomId(), mediaId);
         });
     }
 
     private void addCatalogForRoom(List<LcmMediaRoom> addRoomListCata, int mediaId, ImageMessage imageMessage) {
         addRoomListCata.stream().forEach(lcmMediaRoom -> {
-            catalogitemMediaDao.addCatalogItemForRoom(lcmMediaRoom.getRoomId(), mediaId, imageMessage);
+            catalogItemMediaDao.addCatalogItemForRoom(lcmMediaRoom.getRoomId(), mediaId, imageMessage);
         });
     }
 
