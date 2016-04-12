@@ -88,7 +88,6 @@ public class MediaController extends CommonServiceController {
     private static final String MEDIA_VALIDATION_ERROR = "validationError";
     private static final String DOMAIN = "domain";
     private static final String DOMAIN_ID = "domainId";
-    private static final String LODGING = "Lodging";
 
     private static final String IMAGE_MESSAGE_FIELD = "message";
     private static final String REPROCESSING_STATE_FIELD = "processState";
@@ -277,7 +276,7 @@ public class MediaController extends CommonServiceController {
 
     private String appendDomain(String message, String domainId) throws Exception {
         final Map<String, Object> jsonMap = JSONUtil.buildMapFromJson(message);
-        jsonMap.put(DOMAIN, LODGING);
+        jsonMap.put(DOMAIN, Domain.LODGING.getDomain());
         jsonMap.put(DOMAIN_ID, domainId);
         return new ObjectMapper().writeValueAsString(jsonMap);
     }
