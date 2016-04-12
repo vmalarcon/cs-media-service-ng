@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services;
 
+import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDao;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -29,7 +31,7 @@ public class MediaUpdateProcessor {
     public static final String MESSAGE_PROPERTY_HERO = "propertyHero";
     public static final String MESSAGE_SUB_CATEGORY_ID = "subcategoryId";
     public static final String MESSAGE_ROOMS = "rooms";
-    public static final String MESSSAGE_ROOM_HERO = "roomHero";
+    public static final String MESSAGE_ROOM_HERO = "roomHero";
     @Autowired
     private MediaUpdateDao mediaUpdateDao;
     @Autowired
@@ -54,7 +56,7 @@ public class MediaUpdateProcessor {
     public ResponseEntity<String> processRequest(final ImageMessage imageMessage,
             final String mediaId, String domainId, Media dynamoMedia) throws Exception {
         final Integer expediaId = Integer.valueOf(domainId);
-        //step1. update media table, if commented and active is not null
+        //step1. update media table, if comment or active fields are not null
         if (imageMessage.getComment() != null || imageMessage.isActive() != null) {
             mediaUpdateDao.updateMedia(imageMessage, Integer.valueOf(mediaId));
         }
@@ -62,7 +64,6 @@ public class MediaUpdateProcessor {
         if (imageMessage.getOuterDomainData() != null &&
                 (imageMessage.getOuterDomainData().getDomainFieldValue(MESSAGE_PROPERTY_HERO) != null
                         || imageMessage.getOuterDomainData().getDomainFieldValue(MESSAGE_SUB_CATEGORY_ID) != null)) {
-
             handleLCMPropertyHero(imageMessage, Integer.valueOf(mediaId), expediaId, dynamoMedia);
         }
         //step 3 update room table.
@@ -71,6 +72,7 @@ public class MediaUpdateProcessor {
         //step 4. save media to dynamo
         if (dynamoMedia != null) {
             setDynamoMedia(imageMessage, dynamoMedia);
+            dynamoMedia.setLastUpdated(new Date());
             mediaDao.saveMedia(dynamoMedia);
         }
         return new ResponseEntity<>("OK", HttpStatus.OK);
@@ -102,9 +104,10 @@ public class MediaUpdateProcessor {
 
     private void handleSubcategoryIdNull(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
+        final String domain = dynamoMedia == null || dynamoMedia.getDomain() == null ? "" : dynamoMedia.getDomain();
         if ("true".equalsIgnoreCase(heroProperty)) {
             setHeroImage(imageMessage, mediaId, domainId);
-            unsetHeroImage(imageMessage, mediaId, domainId, guid);
+            unsetHeroImage(imageMessage, mediaId, domainId, guid, domain);
         } else {
             final LcmCatalogItemMedia lcmCatalogItemMedia = catalogHeroProcessor.getCatalogItemMeida(domainId, mediaId);
             String subcategory = "";
@@ -123,9 +126,10 @@ public class MediaUpdateProcessor {
 
     private void handleHeroAndSubcategoryIdValid(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
+        final String domain = dynamoMedia == null || dynamoMedia.getDomain() == null ? "" : dynamoMedia.getDomain();
         if ("true".equalsIgnoreCase(heroProperty)) {
             setHeroImage(imageMessage, mediaId, domainId);
-            unsetHeroImage(imageMessage, mediaId, domainId, guid);
+            unsetHeroImage(imageMessage, mediaId, domainId, guid, domain);
         } else {
             //set the subid from json.
             catalogHeroProcessor.updateCurrentMediaHero(imageMessage, domainId, mediaId);
@@ -147,12 +151,14 @@ public class MediaUpdateProcessor {
         }
     }
 
-    private void unsetHeroImage(ImageMessage imageMessage, int mediaId, int domainId, String guid) {
-        if (guid.isEmpty()) {
-            catalogHeroProcessor.unsetOtherMediaHero(domainId, imageMessage.getUserId(), mediaId);
-        } else {
-            catalogHeroProcessor.setOldCategoryForHeroPropertyMedia(imageMessage, Integer.toString(domainId), guid, mediaId);
+    private void unsetHeroImage(ImageMessage imageMessage, int mediaId, int domainId, String guid, String domain) {
+        if (Domain.LODGING.getDomain().equalsIgnoreCase(domain)) {
+            if (guid.isEmpty()) {
+                catalogHeroProcessor.unsetOtherMediaHero(domainId, imageMessage.getUserId(), mediaId);
+            } else {
+                catalogHeroProcessor.setOldCategoryForHeroPropertyMedia(imageMessage, Integer.toString(domainId), guid, mediaId);
 
+            }
         }
     }
 
@@ -164,9 +170,8 @@ public class MediaUpdateProcessor {
      * @throws Exception
      */
     private void setDynamoMedia(ImageMessage imageMessage, Media dynamoMedia) throws Exception {
-        List<String> commentList = null;
         if (imageMessage.getComment() != null) {
-            commentList = new ArrayList<>();
+            final List<String> commentList = new ArrayList<>();
             commentList.add(imageMessage.getComment());
             FieldUtils.writeField(dynamoMedia, "commentList", commentList, true);
         }
@@ -260,7 +265,7 @@ public class MediaUpdateProcessor {
         final List<LcmMediaRoom> lcmMediaRoomList = new ArrayList<>();
         if (roomList != null && !roomList.isEmpty()) {
             roomList.stream().forEach(room -> {
-                final boolean hero = (room.get(MESSSAGE_ROOM_HERO)).equals("true") ? true : false;
+                final boolean hero = (room.get(MESSAGE_ROOM_HERO)).equals("true") ? true : false;
                 final LcmMediaRoom lcmMediaRoom = LcmMediaRoom.builder().roomId(Integer.valueOf((String) room.get("roomId")))
                         .roomHero(hero).build();
                 lcmMediaRoomList.add(lcmMediaRoom);
