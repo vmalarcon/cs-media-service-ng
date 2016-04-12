@@ -1226,13 +1226,10 @@ public class MediaControllerTest {
                 + "   \"comment\":\"note33\"\n"
                 + "}";
 
-        List<Media> medias = new ArrayList<>();
-        Media media = Media.builder().lcmMediaId("19671339").mediaGuid("test").build();
-
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdateWithError();
         setFieldValue(mediaController, "mapValidatorList", validators);
         MultiValueMap<String, String> headers = new HttpHeaders();
-        ResponseEntity<String> responseEntity = mediaController.mediaUpdate("123", jsonMsg, headers);
+        ResponseEntity<String> responseEntity = mediaController.mediaUpdate("123a", jsonMsg, headers);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
