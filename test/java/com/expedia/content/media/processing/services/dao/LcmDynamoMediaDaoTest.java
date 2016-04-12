@@ -341,6 +341,45 @@ public class LcmDynamoMediaDaoTest {
         });
     }
 
+    @Test
+    public void testBooleanProeprtyHero() throws Exception {
+        SQLMediaIdListSproc mediaIdSproc = mock(SQLMediaIdListSproc.class);
+        List<Integer> mediaIds = new ArrayList<>();
+        Map<String, Object> idResult = new HashMap<>();
+        idResult.put(SQLMediaIdListSproc.MEDIA_ID_SET, mediaIds);
+        when(mediaIdSproc.execute(anyInt(), anyString())).thenReturn(idResult);
+
+        SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
+        List<LcmMedia> mediaList = new ArrayList<>();
+        Map<String, Object> mediaResult = new HashMap<>();
+        mediaResult.put(SQLMediaItemGetSproc.MEDIA_SET, mediaList);
+        List<LcmMediaDerivative> derivativeList = new ArrayList<>();
+        mediaResult.put(SQLMediaItemGetSproc.MEDIA_DERIVATIVES_SET, derivativeList);
+        when(mediaSproc.execute(anyInt(), anyInt())).thenReturn(mediaResult);
+
+        DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
+        List<Media> dynamoMediaList = new ArrayList<>();
+        String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
+        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).fileName("file1.jpg").domain("Lodging").domainId("1234")
+                .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": true}").build();
+        String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).fileName("file3.jpg").domain("Lodging").domainId("1234").build();
+        dynamoMediaList.add(dynamoMedia1);
+        dynamoMediaList.add(dynamoMedia3);
+        when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
+
+        final Properties properties = new Properties();
+        properties.put("1", "EPC Internal User");
+
+        MediaDao mediaDao = makeMockMediaDao(mediaIdSproc, mediaSproc, mockMediaDBRepo, properties, null);
+        setFieldValue(mediaDao, "lcmMediaIdSproc", mediaIdSproc);
+        setFieldValue(mediaDao, "lcmMediaItemSproc", mediaSproc);
+        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
+        List<Media> testMediaList1 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null);
+
+        assertEquals(2, testMediaList1.size());
+    }
+
     @SuppressWarnings("rawtypes")
     @Test
     public void testGetMediaByDomainIdFileProcessFalse() throws Exception {

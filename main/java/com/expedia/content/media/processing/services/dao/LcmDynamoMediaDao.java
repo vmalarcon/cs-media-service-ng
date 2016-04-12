@@ -202,11 +202,29 @@ public class LcmDynamoMediaDao implements MediaDao {
      */
     private int compareMedia(Media media1, Media media2, Domain domain) {
         if (Domain.LODGING.equals(domain)) {
-            final Boolean media1Hero = Boolean.valueOf(media1.getDomainData() == null ? null : ((String) media1.getDomainData().get("propertyHero")));
-            final Boolean media2Hero = Boolean.valueOf(media2.getDomainData() == null ? null : ((String) media2.getDomainData().get("propertyHero")));
+            isPropertyHero(media1);
+            final Boolean media1Hero = isPropertyHero(media1);
+            final Boolean media2Hero = isPropertyHero(media2);
             return media2Hero.compareTo(media1Hero);
         }
         return 0;
+    }
+    
+    /**
+     * Verifies if the media is the property hero image. Should only be done for LODGING images.
+     * @param media The media to verify.
+     * @return {@code true} if the image is a property hero image, {@code false} otherwise;
+     */
+    private Boolean isPropertyHero(Media media) {
+        if (media.getDomainData() != null) {
+            final Object propertyHeroValue = media.getDomainData().get("propertyHero");
+            if (propertyHeroValue instanceof Boolean) {
+                return (Boolean) propertyHeroValue;
+            } else {
+                return Boolean.valueOf((String) media.getDomainData().get("propertyHero"));
+            }
+        }
+        return false;
     }
 
     /**
@@ -271,7 +289,7 @@ public class LcmDynamoMediaDao implements MediaDao {
      * @param derivativeFilter Inclusive filter of derivatives. A null or empty string will not exclude any derivatives.
      * @return the updated passed media object.
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("PMD.AvoidCatchingNPE")
     private Media completeMedia(final Media media, final String derivativeFilter) {
         if (media != null) {
             if (media.getDomainFields() != null) {
@@ -282,7 +300,7 @@ public class LcmDynamoMediaDao implements MediaDao {
                         final Integer lcmMediaId = lcmMediaIdObject instanceof Integer ? (Integer) lcmMediaIdObject : Integer.parseInt((String) lcmMediaIdObject);
                         media.setLcmMediaId(lcmMediaId.toString());
                     }
-                } catch (IOException e) {
+                } catch (IOException | NullPointerException e) {
                     LOGGER.warn("Domain fields not stored in proper JSON format for media id {}.", media.getMediaGuid(), e);
                 }
             }
