@@ -102,6 +102,7 @@ public class MediaUpdateProcessor {
         }
     }
 
+    @SuppressWarnings({"PMD.NPathComplexity"})
     private void handleSubcategoryIdNull(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
         final String domain = dynamoMedia == null || dynamoMedia.getDomain() == null ? "" : dynamoMedia.getDomain();
@@ -118,7 +119,7 @@ public class MediaUpdateProcessor {
                     subcategory = (String) map.get("subcategoryId");
                 }
             }
-            if (lcmCatalogItemMedia.getMediaUseRank() == 3) {
+            if (lcmCatalogItemMedia != null && lcmCatalogItemMedia.getMediaUseRank() == 3) {
                 catalogHeroProcessor.setMediaToHero(imageMessage.getUserId(), lcmCatalogItemMedia, false, subcategory);
             }
         }
@@ -139,14 +140,14 @@ public class MediaUpdateProcessor {
     private void handleHeroNull(ImageMessage imageMessage, int mediaId, int domainId) {
         final LcmCatalogItemMedia lcmCatalogItemMedia = catalogHeroProcessor.getCatalogItemMeida(domainId, mediaId);
         //if it is not hero now , update with id in JSON.
-        if (lcmCatalogItemMedia.getMediaUseRank() != 3) {
+        if (lcmCatalogItemMedia != null && lcmCatalogItemMedia.getMediaUseRank() != 3) {
             catalogHeroProcessor.updateCurrentMediaHero(imageMessage, domainId, mediaId);
         }
     }
 
     private void setHeroImage(ImageMessage imageMessage, int mediaId, int domainId) {
         final LcmCatalogItemMedia lcmCatalogItemMedia = catalogHeroProcessor.getCatalogItemMeida(domainId, mediaId);
-        if (lcmCatalogItemMedia.getMediaUseRank() != 3) {
+        if (lcmCatalogItemMedia != null && lcmCatalogItemMedia.getMediaUseRank() != 3) {
             catalogHeroProcessor.setMediaToHero(imageMessage.getUserId(), lcmCatalogItemMedia, true, "");
         }
     }
@@ -216,7 +217,7 @@ public class MediaUpdateProcessor {
 
     private void processRooms(ImageMessage imageMessage, String mediaId) {
         final List<Map> roomList = (List<Map>) imageMessage.getOuterDomainData().getDomainFieldValue(MESSAGE_ROOMS);
-        if (roomList == null || roomList.isEmpty()) {
+        if (roomList == null) {
             return;
         }
         final List<LcmMediaRoom> jsonRoomList = convert(roomList);
@@ -265,10 +266,13 @@ public class MediaUpdateProcessor {
         final List<LcmMediaRoom> lcmMediaRoomList = new ArrayList<>();
         if (roomList != null && !roomList.isEmpty()) {
             roomList.stream().forEach(room -> {
-                final boolean hero = (room.get(MESSAGE_ROOM_HERO)).equals("true") ? true : false;
-                final LcmMediaRoom lcmMediaRoom = LcmMediaRoom.builder().roomId(Integer.valueOf((String) room.get("roomId")))
-                        .roomHero(hero).build();
-                lcmMediaRoomList.add(lcmMediaRoom);
+                if (room.size() > 0) {
+                    final boolean hero = (room.get(MESSAGE_ROOM_HERO)).equals("true") ? true : false;
+                    final LcmMediaRoom lcmMediaRoom = LcmMediaRoom.builder().roomId(Integer.valueOf((String) room.get("roomId")))
+                            .roomHero(hero).build();
+                    lcmMediaRoomList.add(lcmMediaRoom);
+                }
+
             });
         }
         return lcmMediaRoomList;

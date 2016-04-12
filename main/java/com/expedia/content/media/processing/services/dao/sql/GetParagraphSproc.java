@@ -14,6 +14,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -40,6 +41,15 @@ public class GetParagraphSproc extends StoredProcedure {
     private static class ParagraphRowMapper implements RowMapper<Paragraph> {
         @Override
         public Paragraph mapRow(ResultSet resultSet, int i) throws SQLException {
+            Date effectiveEndDate = null;
+            Date effectiveStartDate = null;
+            if (resultSet.getString("EffectiveStartDate") != null) {
+                effectiveStartDate = TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("EffectiveStartDate"));
+            }
+            if (resultSet.getString("EffectiveEndDate") != null) {
+                effectiveEndDate = TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("EffectiveEndDate"));
+            }
+
             final Paragraph paragraph = Paragraph.builder()
                     .catalogItemId(resultSet.getInt("CatalogItemID"))
                     .sectionTypeId(resultSet.getInt("SectionTypeID"))
@@ -47,8 +57,8 @@ public class GetParagraphSproc extends StoredProcedure {
                     .paragraphTypeId(resultSet.getShort("ParagraphTypeID"))
                     .langId(resultSet.getInt("LangID"))
                     .paragraphTxt(resultSet.getString("ParagraphTxt"))
-                    .effectiveStartDate(new Timestamp(TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("EffectiveStartDate")).getTime()))
-                    .effectiveEndDate(new Timestamp(TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("EffectiveEndDate")).getTime()))
+                    .effectiveStartDate(new Timestamp(effectiveStartDate.getTime()))
+                    .effectiveEndDate(new Timestamp(effectiveEndDate.getTime()))
                     .paragraphMediaId(resultSet.getInt("ParagraphMediaID"))
                     .mediaSizeTypeId(resultSet.getShort("MediaSizeTypeID"))
                     .updateDate(new Timestamp(TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("UpdateDate")).getTime()))
