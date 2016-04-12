@@ -202,7 +202,6 @@ public class LcmDynamoMediaDao implements MediaDao {
      */
     private int compareMedia(Media media1, Media media2, Domain domain) {
         if (Domain.LODGING.equals(domain)) {
-            isPropertyHero(media1);
             final Boolean media1Hero = isPropertyHero(media1);
             final Boolean media2Hero = isPropertyHero(media2);
             return media2Hero.compareTo(media1Hero);
