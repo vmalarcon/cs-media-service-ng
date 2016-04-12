@@ -86,6 +86,9 @@ public class MediaController extends CommonServiceController {
     private static final String GUID_REG = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
     private static final String MEDIA_CLOUD_ROUTER_CLIENT_ID = "Media Cloud Router";
     private static final String MEDIA_VALIDATION_ERROR = "validationError";
+    private static final String DOMAIN = "domain";
+    private static final String DOMAIN_ID = "domainId";
+    private static final String LODGING = "Lodging";
 
     private static final String IMAGE_MESSAGE_FIELD = "message";
     private static final String REPROCESSING_STATE_FIELD = "processState";
@@ -223,15 +226,8 @@ public class MediaController extends CommonServiceController {
     }
 
     private void validateAndInitMap(Map<String, Object> objectMap, String queryId, String serviceUrl, String message, String requestID) throws Exception {
-        final String newJson = appendDomain(message);
-        objectMap.put("newJson", newJson);
-        final String jsonError = validateImageMessage(newJson, "EPCUpdate");
-        if (!"[]".equals(jsonError)) {
-            LOGGER.error("Returning BAD_REQUEST for serviceUrl={}, queryId=[{}],requestId=[{}], JSONMessage=[{}], Errors=[{}]", serviceUrl, queryId,
-                    requestID, message, jsonError);
-            objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse(jsonError, serviceUrl, BAD_REQUEST));
-            return;
-        }
+
+
         if (queryId.matches(GUID_REG)) {
             final Media dynamoMedia = mediaDao.getMediaByGuid(queryId);
             if (dynamoMedia == null) {
@@ -261,6 +257,15 @@ public class MediaController extends CommonServiceController {
             objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input queryId is invalid", serviceUrl, BAD_REQUEST));
             return;
         }
+        final String newJson = appendDomain(message, (String) objectMap.get(DOMAIN_ID));
+        objectMap.put("newJson", newJson);
+        final String jsonError = validateImageMessage(newJson, "EPCUpdate");
+        if (!"[]".equals(jsonError)) {
+            LOGGER.error("Returning BAD_REQUEST for serviceUrl={}, queryId=[{}],requestId=[{}], JSONMessage=[{}], Errors=[{}]", serviceUrl, queryId,
+                    requestID, message, jsonError);
+            objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse(jsonError, serviceUrl, BAD_REQUEST));
+            return;
+        }
     }
 
     private ImageMessage removeActiveFromImageMessage(final ImageMessage imageMessage) {
@@ -270,9 +275,10 @@ public class MediaController extends CommonServiceController {
         return imageMessageBuilder.build();
     }
 
-    private String appendDomain(String message) throws Exception {
+    private String appendDomain(String message, String domainId) throws Exception {
         final Map<String, Object> jsonMap = JSONUtil.buildMapFromJson(message);
-        jsonMap.put("domain", "Lodging");
+        jsonMap.put(DOMAIN, LODGING);
+        jsonMap.put(DOMAIN_ID, domainId);
         return new ObjectMapper().writeValueAsString(jsonMap);
     }
 
