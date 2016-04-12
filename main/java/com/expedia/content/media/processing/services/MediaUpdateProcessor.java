@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services;
 
+import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDao;
@@ -151,7 +152,7 @@ public class MediaUpdateProcessor {
     }
 
     private void unsetHeroImage(ImageMessage imageMessage, int mediaId, int domainId, String guid, String domain) {
-        if ("Lodging".equalsIgnoreCase(domain)) {
+        if (Domain.LODGING.getDomain().equalsIgnoreCase(domain)) {
             if (guid.isEmpty()) {
                 catalogHeroProcessor.unsetOtherMediaHero(domainId, imageMessage.getUserId(), mediaId);
             } else {
