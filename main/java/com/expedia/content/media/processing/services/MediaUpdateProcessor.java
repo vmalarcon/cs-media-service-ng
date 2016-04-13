@@ -105,7 +105,9 @@ public class MediaUpdateProcessor {
     @SuppressWarnings({"PMD.NPathComplexity"})
     private void handleSubcategoryIdNull(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
-        final String domain = dynamoMedia == null || dynamoMedia.getDomain() == null ? "" : dynamoMedia.getDomain();
+        final String domain = dynamoMedia == null || dynamoMedia.getDomain() == null ?
+                (imageMessage.getOuterDomainData().getDomain().getDomain() == null ? "" : imageMessage.getOuterDomainData().getDomain().getDomain()) :
+                dynamoMedia.getDomain();
         if ("true".equalsIgnoreCase(heroProperty)) {
             setHeroImage(imageMessage, mediaId, domainId);
             unsetHeroImage(imageMessage, mediaId, domainId, guid, domain);
@@ -127,7 +129,9 @@ public class MediaUpdateProcessor {
 
     private void handleHeroAndSubcategoryIdValid(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
-        final String domain = dynamoMedia == null || dynamoMedia.getDomain() == null ? "" : dynamoMedia.getDomain();
+        final String domain = dynamoMedia == null || dynamoMedia.getDomain() == null ?
+                (imageMessage.getOuterDomainData().getDomain().getDomain() == null ? "" : imageMessage.getOuterDomainData().getDomain().getDomain()) :
+                dynamoMedia.getDomain();
         if ("true".equalsIgnoreCase(heroProperty)) {
             setHeroImage(imageMessage, mediaId, domainId);
             unsetHeroImage(imageMessage, mediaId, domainId, guid, domain);

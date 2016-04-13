@@ -64,7 +64,7 @@ public class CatalogHeroProcessor {
         final List<LcmCatalogItemMedia> lcmCatalogItemMediaList =
                 (List<LcmCatalogItemMedia>) catalogItemListSproc.execute(domainId).get(CatalogItemListSproc.MEDIA_SET);
         for (final LcmCatalogItemMedia lcmCatalogItemMedia : lcmCatalogItemMediaList) {
-            if (lcmCatalogItemMedia.getMediaId() != mediaId) {
+            if (lcmCatalogItemMedia.getMediaId() != mediaId && lcmCatalogItemMedia.getMediaUseRank() == 3) {
                 catalogItemMediaChgSproc.updateCategory(lcmCatalogItemMedia.getCatalogItemId(), lcmCatalogItemMedia.getMediaId(),
                         DEFAULT_USER_RANK, user, ROOM_UPDATED_BY);
             }
