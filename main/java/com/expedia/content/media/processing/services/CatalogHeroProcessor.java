@@ -19,7 +19,6 @@ import org.springframework.stereotype.Component;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.stream.Collectors;
 import java.util.List;
 import java.util.Date;
 import java.util.Set;
@@ -27,6 +26,7 @@ import java.util.Map;
 import java.util.HashSet;
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 import static com.expedia.content.media.processing.pipeline.domain.Domain.LODGING;
 
@@ -102,8 +102,12 @@ public class CatalogHeroProcessor {
      * @return LcmCatalogItemMedia
      */
     public LcmCatalogItemMedia getCatalogItemMeida(int catalogItemId, int mediaId) {
-        final LcmCatalogItemMedia catalogItemMedia =
-                catalogItemMediaGetSproc.getMedia(catalogItemId, mediaId).get(0);
+        LcmCatalogItemMedia catalogItemMedia = null;
+        final List<LcmCatalogItemMedia> catalogItemMedialist = catalogItemMediaGetSproc.getMedia(catalogItemId, mediaId);
+        if (catalogItemMedialist != null && !catalogItemMedialist.isEmpty()) {
+            catalogItemMedia =
+                    catalogItemMedialist.get(0);
+        }
         return catalogItemMedia;
     }
 

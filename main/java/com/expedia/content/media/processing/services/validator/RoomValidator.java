@@ -1,22 +1,17 @@
 package com.expedia.content.media.processing.services.validator;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
-import com.expedia.content.media.processing.services.dao.RoomTypeDao;
+import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.ValidatorUtil;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 
-public class LCMUpdateValidator implements MapMessageValidator {
-    @Autowired
-    private RoomTypeDao roomTypeDao;
-    @Autowired
-    private MediaDomainCategoriesDao mediaDomainCategoriesDao;
-    private final static String DEFAULT_LANG_ID = "1033";
+public class RoomValidator implements MapMessageValidator {
 
     public List<Map<String, String>> validateImages(List<ImageMessage> messageList) {
         final List<Map<String, String>> list = new ArrayList<>();
@@ -24,11 +19,10 @@ public class LCMUpdateValidator implements MapMessageValidator {
         for (final ImageMessage imageMessage : messageList) {
             final StringBuffer errorMsg = new StringBuffer();
             messageMap.put("imageMessage", imageMessage);
-            if (!roomTypeDao.roomTypeCatalogItemIdExists(imageMessage.getOuterDomainData())) {
-                errorMsg.append("The room does not belong to the property in LCM.");
-            }
-            if (!mediaDomainCategoriesDao.subCategoryIdExists(imageMessage.getOuterDomainData(), DEFAULT_LANG_ID)) {
-                errorMsg.append("The category does not exist in LCM.");
+            final List<Integer> roomIds = DomainDataUtil.getRoomIds(imageMessage.getOuterDomainData());
+            final Set inputSet = new HashSet(roomIds);
+            if (inputSet.size() < roomIds.size()) {
+                errorMsg.append("There are duplicate room ids exist in request.");
             }
             if (errorMsg.length() > 0) {
                 ValidatorUtil.putErrorMapToList(list, errorMsg, imageMessage);
