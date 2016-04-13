@@ -230,7 +230,7 @@ public class MediaController extends CommonServiceController {
         if (queryId.matches(GUID_REG)) {
             final Media dynamoMedia = mediaDao.getMediaByGuid(queryId);
             if (dynamoMedia == null) {
-                objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input GUID does not exist in DB", serviceUrl, BAD_REQUEST));
+                objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input GUID does not exist in DB", serviceUrl, NOT_FOUND));
                 return;
             }
             objectMap.put("lcmMediaId", dynamoMedia.getLcmMediaId());
@@ -246,7 +246,7 @@ public class MediaController extends CommonServiceController {
             }
             final LcmMedia lcmMedia = mediaUpdateDao.getMediaByMediaId(Integer.valueOf(queryId));
             if (lcmMedia == null) {
-                objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input mediaId does not exist in DB", serviceUrl, BAD_REQUEST));
+                objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input mediaId does not exist in DB", serviceUrl, NOT_FOUND));
                 return;
             }
             objectMap.put("lcmMediaId", queryId);

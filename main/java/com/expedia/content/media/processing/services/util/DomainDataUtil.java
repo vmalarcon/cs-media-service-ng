@@ -29,7 +29,9 @@ public class DomainDataUtil {
 
         for (int i = 0; i < roomsList.size(); i++) {
             final Map room = (Map)roomsList.get(i);
-            roomIds.add(Integer.parseInt(room.get(ROOMID).toString()));
+            if (room != null && !room.isEmpty()) {
+                roomIds.add(Integer.parseInt(room.get(ROOMID).toString()));
+            }
         }
         return roomIds;
     }
