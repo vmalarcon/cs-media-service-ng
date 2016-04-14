@@ -299,6 +299,13 @@ public class MediaController extends CommonServiceController {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
+        
+        final Map<String, Object> objectMap = new HashMap<>();
+        validateAndInitMap(objectMap, mediaGUID, serviceUrl, null, requestID);
+        if (objectMap.get(MEDIA_VALIDATION_ERROR) != null) {
+            return (ResponseEntity<String>) objectMap.get(MEDIA_VALIDATION_ERROR);
+        }
+
         //TODO Once lodging data transfered to media DB the second condition, numeric, will need to be removed.
         if (!mediaGUID.matches(REG_EX_GUID) && !mediaGUID.matches(REG_EX_NUMERIC)) {
             LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
