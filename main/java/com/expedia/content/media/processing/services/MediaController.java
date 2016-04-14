@@ -299,13 +299,10 @@ public class MediaController extends CommonServiceController {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
-        
-        final Map<String, Object> objectMap = new HashMap<>();
-        validateAndInitMap(objectMap, mediaGUID, serviceUrl, null, requestID);
-        if (objectMap.get(MEDIA_VALIDATION_ERROR) != null) {
-            return (ResponseEntity<String>) objectMap.get(MEDIA_VALIDATION_ERROR);
+        final String dynamoGuid = getGuidByMediaId(mediaGUID);
+        if(dynamoGuid!=null){
+            this.buildErrorResponse("Media GUID " + dynamoGuid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
         }
-
         //TODO Once lodging data transfered to media DB the second condition, numeric, will need to be removed.
         if (!mediaGUID.matches(REG_EX_GUID) && !mediaGUID.matches(REG_EX_NUMERIC)) {
             LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
@@ -656,4 +653,19 @@ public class MediaController extends CommonServiceController {
         return OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
     }
 
+    /**
+     * Retrieve the GUID base on a given LCM mediaId.
+     *
+     * @param mediaId
+     * @return The GUID or null if no media found in dynamo.
+     */
+    private String getGuidByMediaId(String mediaId){
+        if (StringUtils.isNumeric(mediaId)) {
+            final List<Media> mediaList = mediaDao.getMediaByMediaId(mediaId);
+            if (!mediaList.isEmpty()) {
+                 return mediaList.stream().findFirst().get().getMediaGuid();
+            }
+        }
+        return null;
+    }
 }
