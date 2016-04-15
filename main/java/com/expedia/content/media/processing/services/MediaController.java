@@ -308,7 +308,7 @@ public class MediaController extends CommonServiceController {
             return this.buildErrorResponse("Invalid media GUID provided.", serviceUrl, BAD_REQUEST);
         }
         final String dynamoGuid = getGuidByMediaId(mediaGUID);
-        if(dynamoGuid!=null){
+        if (dynamoGuid != null) {
             LOGGER.info("Media GUID [{}] exists, please use GUID in request. requestId=[{}]", mediaGUID, requestID);
             return this.buildErrorResponse("Media GUID " + dynamoGuid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
         }
