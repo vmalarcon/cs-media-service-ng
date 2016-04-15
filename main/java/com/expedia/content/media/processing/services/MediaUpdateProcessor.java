@@ -105,7 +105,7 @@ public class MediaUpdateProcessor {
     @SuppressWarnings({"PMD.NPathComplexity"})
     private void handleSubcategoryIdNull(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
-        final String domain = (imageMessage.getOuterDomainData().getDomain().getDomain() == null ? "" : imageMessage.getOuterDomainData().getDomain().getDomain());
+        final String domain = (imageMessage.getOuterDomainData() == null ? "" : imageMessage.getOuterDomainData().getDomain().getDomain());
         if ("true".equalsIgnoreCase(heroProperty)) {
             setHeroImage(imageMessage, mediaId, domainId);
             unsetHeroImage(imageMessage, mediaId, domainId, guid, domain);
