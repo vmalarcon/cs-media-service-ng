@@ -1336,7 +1336,6 @@ public class MediaControllerTest {
 
     private CatalogHeroProcessor getCatalogMock() throws Exception {
         CatalogHeroProcessor catalogHeroProcessor = new CatalogHeroProcessor();
-        CatalogItemListSproc catalogItemListSproc = mock(CatalogItemListSproc.class);
         CatalogItemMediaDao catalogItemMediaDao = mock(CatalogItemMediaDao.class);
         CatalogItemMediaChgSproc catalogItemMediaChgSproc = mock(CatalogItemMediaChgSproc.class);
         MediaDao mediaDao = mock(MediaDao.class);
@@ -1346,12 +1345,7 @@ public class MediaControllerTest {
                 LcmCatalogItemMedia.builder().catalogItemId(41098).mediaId(19671339).mediaUseRank(3).lastUpdatedBy("test").lastUpdateDate(new Date())
                         .build();
         lcmCatalogItemMediaList.add(lcmCatalogItemMedia);
-        Map<String, Object> lcmCatMap = new HashMap<>();
-        lcmCatMap.put(CatalogItemListSproc.MEDIA_SET, lcmCatalogItemMediaList);
-        when(catalogItemListSproc.execute(anyInt())).thenReturn(lcmCatMap);
 
-        FieldUtils.writeField(catalogHeroProcessor, "catalogItemListSproc", catalogItemListSproc, true);
-        Mockito.doNothing().when(catalogItemMediaChgSproc).updateCategory(anyInt(), anyInt(), anyInt(), anyString(), anyString());
         FieldUtils.writeField(catalogHeroProcessor, "catalogItemMediaChgSproc", catalogItemMediaChgSproc, true);
         Mockito.doNothing().when(catalogItemMediaDao).updateCatalogItem(any(), anyInt(), anyInt());
         FieldUtils.writeField(catalogHeroProcessor, "catalogItemMediaDao", catalogItemMediaDao, true);
@@ -1395,7 +1389,6 @@ public class MediaControllerTest {
 
     private CatalogHeroProcessor getCatalogMockHeroFalse() throws Exception {
         CatalogHeroProcessor catalogHeroProcessor = new CatalogHeroProcessor();
-        CatalogItemListSproc catalogItemListSproc = mock(CatalogItemListSproc.class);
         CatalogItemMediaDao catalogItemMediaDao = mock(CatalogItemMediaDao.class);
         CatalogItemMediaChgSproc catalogItemMediaChgSproc = mock(CatalogItemMediaChgSproc.class);
         MediaDao mediaDao = mock(MediaDao.class);
@@ -1410,12 +1403,6 @@ public class MediaControllerTest {
         lcmCatalogItemMediaList.add(lcmCatalogItemMedia);
         lcmCatalogItemMediaList.add(lcmCatalogItemMedia2);
 
-        Map<String, Object> lcmCatMap = new HashMap<>();
-        lcmCatMap.put(CatalogItemListSproc.MEDIA_SET, lcmCatalogItemMediaList);
-        when(catalogItemListSproc.execute(anyInt())).thenReturn(lcmCatMap);
-
-        FieldUtils.writeField(catalogHeroProcessor, "catalogItemListSproc", catalogItemListSproc, true);
-        Mockito.doNothing().when(catalogItemMediaChgSproc).updateCategory(anyInt(), anyInt(), anyInt(), anyString(), anyString());
         FieldUtils.writeField(catalogHeroProcessor, "catalogItemMediaChgSproc", catalogItemMediaChgSproc, true);
         Mockito.doNothing().when(catalogItemMediaDao).updateCatalogItem(any(), anyInt(), anyInt());
         FieldUtils.writeField(catalogHeroProcessor, "catalogItemMediaDao", catalogItemMediaDao, true);

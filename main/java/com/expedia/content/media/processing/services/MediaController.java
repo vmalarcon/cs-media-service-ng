@@ -227,8 +227,6 @@ public class MediaController extends CommonServiceController {
     }
 
     private void validateAndInitMap(Map<String, Object> objectMap, String queryId, String serviceUrl, String message, String requestID) throws Exception {
-
-
         if (queryId.matches(GUID_REG)) {
             final Media dynamoMedia = mediaDao.getMediaByGuid(queryId);
             if (dynamoMedia == null) {

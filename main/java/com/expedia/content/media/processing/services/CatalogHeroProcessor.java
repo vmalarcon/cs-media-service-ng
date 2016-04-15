@@ -7,7 +7,6 @@ import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
-import com.expedia.content.media.processing.services.dao.sql.CatalogItemListSproc;
 import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaChgSproc;
 import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.MediaLstWithCatalogItemMediaAndMediaFileNameSproc;
@@ -44,8 +43,6 @@ public class CatalogHeroProcessor {
     @Autowired
     private CatalogItemMediaChgSproc catalogItemMediaChgSproc;
     @Autowired
-    private CatalogItemListSproc catalogItemListSproc;
-    @Autowired
     private MediaDao mediaDao;
     @Autowired
     private CatalogItemMediaDao catalogItemMediaDao;
@@ -53,23 +50,6 @@ public class CatalogHeroProcessor {
     CatalogItemMediaGetSproc catalogItemMediaGetSproc;
     @Autowired
     MediaLstWithCatalogItemMediaAndMediaFileNameSproc mediaLstWithCatalogItemMediaAndMediaFileNameSproc;
-
-    /**
-     * set all other media  userRank to 0 in LCM
-     *
-     * @param domainId domainId that this media belongs to
-     * @param user     userId from JSON
-     */
-    public void unsetOtherMediaHero(int domainId, String user, int mediaId) {
-        final List<LcmCatalogItemMedia> lcmCatalogItemMediaList =
-                (List<LcmCatalogItemMedia>) catalogItemListSproc.execute(domainId).get(CatalogItemListSproc.MEDIA_SET);
-        for (final LcmCatalogItemMedia lcmCatalogItemMedia : lcmCatalogItemMediaList) {
-            if (lcmCatalogItemMedia.getMediaId() != mediaId) {
-                catalogItemMediaChgSproc.updateCategory(lcmCatalogItemMedia.getCatalogItemId(), lcmCatalogItemMedia.getMediaId(),
-                        DEFAULT_USER_RANK, user, ROOM_UPDATED_BY);
-            }
-        }
-    }
 
     /**
      * set the current media userank to hero 3, or set to subcategoryid from json
