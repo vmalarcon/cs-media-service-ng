@@ -299,14 +299,15 @@ public class MediaController extends CommonServiceController {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
-        final String dynamoGuid = getGuidByMediaId(mediaGUID);
-        if(dynamoGuid!=null){
-            this.buildErrorResponse("Media GUID " + dynamoGuid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
-        }
+
         //TODO Once lodging data transfered to media DB the second condition, numeric, will need to be removed.
         if (!mediaGUID.matches(REG_EX_GUID) && !mediaGUID.matches(REG_EX_NUMERIC)) {
             LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
             return this.buildErrorResponse("Invalid media GUID provided.", serviceUrl, BAD_REQUEST);
+        }
+        final String dynamoGuid = getGuidByMediaId(mediaGUID);
+        if(dynamoGuid!=null){
+            this.buildErrorResponse("Media GUID " + dynamoGuid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
         }
         final Media media = mediaDao.getMediaByGUID(mediaGUID);
         if (media == null) {
