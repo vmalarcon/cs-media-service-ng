@@ -105,9 +105,7 @@ public class MediaUpdateProcessor {
     @SuppressWarnings({"PMD.NPathComplexity"})
     private void handleSubcategoryIdNull(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
-        final String domain = dynamoMedia == null || dynamoMedia.getDomain() == null ?
-                (imageMessage.getOuterDomainData().getDomain().getDomain() == null ? "" : imageMessage.getOuterDomainData().getDomain().getDomain()) :
-                dynamoMedia.getDomain();
+        final String domain = (imageMessage.getOuterDomainData().getDomain().getDomain() == null ? "" : imageMessage.getOuterDomainData().getDomain().getDomain());
         if ("true".equalsIgnoreCase(heroProperty)) {
             setHeroImage(imageMessage, mediaId, domainId);
             unsetHeroImage(imageMessage, mediaId, domainId, guid, domain);
@@ -129,9 +127,7 @@ public class MediaUpdateProcessor {
 
     private void handleHeroAndSubcategoryIdValid(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
-        final String domain = dynamoMedia == null || dynamoMedia.getDomain() == null ?
-                (imageMessage.getOuterDomainData().getDomain().getDomain() == null ? "" : imageMessage.getOuterDomainData().getDomain().getDomain()) :
-                dynamoMedia.getDomain();
+        final String domain = (imageMessage.getOuterDomainData() == null ? "" : imageMessage.getOuterDomainData().getDomain().getDomain());
         if ("true".equalsIgnoreCase(heroProperty)) {
             setHeroImage(imageMessage, mediaId, domainId);
             unsetHeroImage(imageMessage, mediaId, domainId, guid, domain);
@@ -158,12 +154,7 @@ public class MediaUpdateProcessor {
 
     private void unsetHeroImage(ImageMessage imageMessage, int mediaId, int domainId, String guid, String domain) {
         if (Domain.LODGING.getDomain().equalsIgnoreCase(domain)) {
-            if (guid.isEmpty()) {
-                catalogHeroProcessor.unsetOtherMediaHero(domainId, imageMessage.getUserId(), mediaId);
-            } else {
-                catalogHeroProcessor.setOldCategoryForHeroPropertyMedia(imageMessage, Integer.toString(domainId), guid, mediaId);
-
-            }
+            catalogHeroProcessor.setOldCategoryForHeroPropertyMedia(imageMessage, Integer.toString(domainId), guid, mediaId);
         }
     }
 
