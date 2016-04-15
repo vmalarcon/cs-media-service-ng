@@ -78,6 +78,8 @@ public class MediaController extends CommonServiceController {
 
     private static final String RESPONSE_FIELD_MEDIA_GUID = "mediaGuid";
     private static final String RESPONSE_FIELD_STATUS = "status";
+    private static final String ERROR_MESSAGE = "error message";
+    private static final String REJECTED_STATUS = "REJECTED";
     private static final String RESPONSE_FIELD_THUMBNAIL_URL = "thumbnailUrl";
     private static final String RESPONSE_FIELD_LCM_MEDIA_ID = "lcmMediaId";
     private static final Logger LOGGER = LoggerFactory.getLogger(MediaController.class);
@@ -475,6 +477,7 @@ public class MediaController extends CommonServiceController {
      * @return The response for the service call.
      * @throws Exception Thrown if the message can't be validated or the response can't be serialized.
      */
+    @SuppressWarnings({"PMD.PrematureDeclaration"})
     private ResponseEntity<String> processRequest(final String message, final String requestID, final String serviceUrl, final String clientId,
             HttpStatus successStatus) throws Exception {
         final String json = validateImageMessage(message, clientId);
@@ -500,7 +503,13 @@ public class MediaController extends CommonServiceController {
         response.put(RESPONSE_FIELD_STATUS, "RECEIVED");
         Thumbnail thumbnail = null;
         if (imageMessageNew.isGenerateThumbnail()) {
-            thumbnail = thumbnailProcessor.createThumbnail(imageMessageNew);
+            try {
+                thumbnail = thumbnailProcessor.createThumbnail(imageMessageNew);
+            } catch (Exception e) {
+                response.put(RESPONSE_FIELD_STATUS, REJECTED_STATUS);
+                response.put(ERROR_MESSAGE, e.getLocalizedMessage());
+                return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), HttpStatus.UNPROCESSABLE_ENTITY);
+            }
             response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnail.getLocation());
         }
         if (!isReprocessing) {

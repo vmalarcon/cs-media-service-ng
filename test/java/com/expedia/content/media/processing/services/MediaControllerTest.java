@@ -6,10 +6,18 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import java.text.DateFormat;
@@ -25,19 +33,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import com.expedia.content.media.processing.services.dao.*;
-import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
-import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
-import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
-import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
-import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
-import com.expedia.content.media.processing.services.dao.sql.CatalogItemListSproc;
-import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaChgSproc;
-import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaGetSproc;
-import com.expedia.content.media.processing.services.dao.sql.MediaLstWithCatalogItemMediaAndMediaFileNameSproc;
 import org.apache.commons.lang3.reflect.FieldUtils;
-
 import org.codehaus.plexus.util.ReflectionUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -61,18 +57,23 @@ import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
-
+import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
+import com.expedia.content.media.processing.services.dao.LcmDynamoMediaDao;
+import com.expedia.content.media.processing.services.dao.MediaDao;
+import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
+import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
+import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
+import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
+import com.expedia.content.media.processing.services.dao.sql.CatalogItemListSproc;
+import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaChgSproc;
+import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaGetSproc;
+import com.expedia.content.media.processing.services.dao.sql.MediaLstWithCatalogItemMediaAndMediaFileNameSproc;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.google.common.collect.Lists;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
 @RunWith(MockitoJUnitRunner.class)
@@ -1254,6 +1255,52 @@ public class MediaControllerTest {
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
         assertTrue(responseEntity.getBody().contains("Media GUID d2d4d480-9627-47f9-86c6-1874c18d37f4 exists, please use GUID in request."));
+    }
+
+    /**
+     * CSPB-532224 Thumbail processor must return 422 error when an unprocessable image is received
+     * @throws Exception
+     */
+    @Test
+    public void testCorruptedImageFailToCreateThumbnail() throws Exception {
+        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", "
+                + "\"userId\": \"bobthegreat\", " + "\"generateThumbnail\": \"true\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", "
+                + "\"domainProvider\": \"EPC Legacy\" " + "}";
+
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        ThumbnailProcessor thumbnailProcessor = mock(ThumbnailProcessor.class);
+        String thumbnailUrl = "http://url.net/thumbnail.jpg";
+        Thumbnail thumbnail = mock(Thumbnail.class);
+        when(thumbnail.getLocation()).thenReturn(thumbnailUrl);
+        when(thumbnailProcessor.createThumbnail(any())).thenThrow(new RuntimeException("Unable to generate thumbnail with url: http://i.imgur.com/3PRGFii.jpg"));
+        setFieldValue(mediaController, "thumbnailProcessor", thumbnailProcessor);
+
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+        LcmDynamoMediaDao mockLcmDynamoMediaDao = mock(LcmDynamoMediaDao.class);
+        setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+        
+        ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
+        assertTrue(responseEntity.getBody().contains("\"error message\":\"Unable to generate thumbnail with url: http://i.imgur.com/3PRGFii.jpg\""));
+        assertTrue(responseEntity.getBody().contains("\"status\":\"REJECTED\""));
+
+        verifyZeroInteractions(mockLogActivityProcess);
+        verifyZeroInteractions(queueMessagingTemplateMock);
+        verifyZeroInteractions(mockLcmDynamoMediaDao);
+        verify(thumbnailProcessor, times(1)).createThumbnail(any(ImageMessage.class));
+        verifyZeroInteractions(thumbnail);
     }
 
     private MediaUpdateProcessor getMediaUpdateProcesser(CatalogHeroProcessor catalogHeroProcessor) throws Exception {
