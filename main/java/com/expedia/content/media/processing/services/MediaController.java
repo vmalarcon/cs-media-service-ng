@@ -535,8 +535,12 @@ public class MediaController extends CommonServiceController {
         imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
         final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
         imageMessageBuilder.outerDomainData(outerDomain);
-        imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(imageMessageBuilder.build()));
-        final Boolean isReprocessing = processReplacement(imageMessage, imageMessageBuilder, clientId);
+        Boolean isReprocessing = false;
+        if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
+            isReprocessing = processReplacement(imageMessage, imageMessageBuilder, clientId);
+        } else {
+            imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(imageMessageBuilder.build()));
+        }
         final ImageMessage imageMessageNew = imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).build();
         final Map<String, Object> messageState = new HashMap<>();
         messageState.put(IMAGE_MESSAGE_FIELD, imageMessageNew);
@@ -561,12 +565,13 @@ public class MediaController extends CommonServiceController {
      * @return returns true if reprocessing and false if not.
      */
 
-    private boolean processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder, String clientId) {
+    private boolean processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder, String clientId ) {
         if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
             LOGGER.info("This is a replacement: mediaGuid=[{}], filename=[{}], requestId=[{}]", imageMessage.getMediaGuid(), imageMessage.getFileName(),
                     imageMessage.getRequestId());
             final List<Media> mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
-            final Optional<Media> bestMedia = MediaReplacement.selectBestMedia(mediaList);
+            final Optional<Media> bestMedia = MediaReplacement
+                    .selectBestMedia(mediaList, imageMessage.getOuterDomainData().getDomainId(), imageMessage.getOuterDomainData().getProvider());
             // Replace the GUID and MediaId of the existing Media
             if (bestMedia.isPresent()) {
                 final Media media = bestMedia.get();

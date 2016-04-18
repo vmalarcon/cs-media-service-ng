@@ -22,9 +22,11 @@ public class MediaReplacement {
      * @param mediaList List of media from which to select the best.
      * @return Best media according to the logic
      */
-    public static Optional<Media> selectBestMedia(List<Media> mediaList) {
+    public static Optional<Media> selectBestMedia(List<Media> mediaList, String domainId, String provider) {
         return mediaList.stream()
                 .filter(m -> m.getActive().equalsIgnoreCase("true"))
+                .filter(m -> m.getDomainId().equalsIgnoreCase(domainId))
+                .filter(m -> m.getProvider().equalsIgnoreCase(provider))
                 .max((m1, m2) -> m1.getLastUpdated().compareTo(m2.getLastUpdated()));
     }
 
