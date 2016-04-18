@@ -446,7 +446,7 @@ public class MediaControllerTest {
         SecurityContextHolder.setContext(securityContext);
 
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"123_1_NASA_ISS-4.jpg\", "
-                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"ICE Portal\", "
+                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"SCORE\", "
                 + "\"domainFields\": { " + "    \"replace\": \"true\" " + "  } " + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
@@ -459,9 +459,9 @@ public class MediaControllerTest {
 
         MediaDao mockMediaDao = mock(MediaDao.class);
         when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg")))
-                .thenReturn(Lists.newArrayList(createByFileNameMedia("old-guid", "456", "true", DATE_FORMAT.parse("2016-02-17 12:00:00"), "456"),
-                        createByFileNameMedia("old-but-inactive", "567", "false", DATE_FORMAT.parse("2016-10-10 12:00:00"), "456"),
-                        createByFileNameMedia("too-old", "890", "true", DATE_FORMAT.parse("2016-02-17 11:59:59"), "456")));
+                .thenReturn(Lists.newArrayList(createByFileNameMedia("old-guid", "1238", "true", DATE_FORMAT.parse("2016-02-17 12:00:00"), "456"),
+                        createByFileNameMedia("old-but-inactive", "1238", "false", DATE_FORMAT.parse("2016-10-10 12:00:00"), "456"),
+                        createByFileNameMedia("too-old", "1238", "true", DATE_FORMAT.parse("2016-02-17 11:59:59"), "456")));
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
 
         String requestId = "test-request-id";
