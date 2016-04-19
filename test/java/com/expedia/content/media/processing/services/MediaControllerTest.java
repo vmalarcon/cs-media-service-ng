@@ -447,6 +447,9 @@ public class MediaControllerTest {
         String domainIdString = "\"domainId\":\"1234\"";
         assertTrue(responseEntity.getBody().contains(domainIdString));
         assertEquals(responseEntity.getBody().indexOf(domainIdString), responseEntity.getBody().lastIndexOf(domainIdString));
+        String totalMediaCount = "\"totalMediaCount\":50";
+        assertTrue(responseEntity.getBody().contains(totalMediaCount));
+        assertEquals(responseEntity.getBody().indexOf(totalMediaCount), responseEntity.getBody().lastIndexOf(totalMediaCount));
         assertTrue(responseEntity.getBody().contains("\"images\":["));
         assertFalse(responseEntity.getBody().contains("\"mediaGuid\":\"0aaaaaaa-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww"));
         IntStream.range(20,40)
@@ -529,21 +532,6 @@ public class MediaControllerTest {
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
         assertTrue(responseEntity.getBody().contains("pageSize and pageIndex can only be positive integer values"));
-    }
-
-    private List<Media> createMedia() {
-        List<String> commentList = new LinkedList<>();
-        commentList.add("Comment1");
-        commentList.add("Comment2");
-        List<Media> mediaValues = new ArrayList<>();
-        IntStream.range(0, 50)
-                .forEach( i -> {
-                    Media mediaItem = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file" + i + "_name.jpg")
-                            .mediaGuid(i + ((i > 9) ? "aaaaaa" : "aaaaaaa") + "-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww").lastUpdated(new Date()).commentList(commentList).build();
-                    mediaValues.add(mediaItem);
-                }
-        );
-        return mediaValues;
     }
 
     @Test
@@ -1565,5 +1553,20 @@ public class MediaControllerTest {
         //when(catalogHeroProcessor.getCatalogItemMedia(anyInt(), anyInt())).thenReturn(lcmCatalogItemMedia);
 
         return catalogHeroProcessor;
+    }
+
+    private List<Media> createMedia() {
+        List<String> commentList = new LinkedList<>();
+        commentList.add("Comment1");
+        commentList.add("Comment2");
+        List<Media> mediaValues = new ArrayList<>();
+        IntStream.range(0, 50)
+                .forEach( i -> {
+                            Media mediaItem = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file" + i + "_name.jpg")
+                                    .mediaGuid(i + ((i > 9) ? "aaaaaa" : "aaaaaaa") + "-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww").lastUpdated(new Date()).commentList(commentList).build();
+                            mediaValues.add(mediaItem);
+                        }
+                );
+        return mediaValues;
     }
 }
