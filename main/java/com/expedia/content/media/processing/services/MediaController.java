@@ -299,14 +299,8 @@ public class MediaController extends CommonServiceController {
     public ResponseEntity<String> getMedia(@PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String, String> headers)
             throws Exception {
         final String requestID = this.getRequestId(headers);
-        final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
+        final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
-        final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        final String clientId = auth.getName();
-        if (!mapValidatorList.containsKey(clientId)) {
-            LOGGER.warn("Returning bad request for messageName={}, requestId=[{}], mediaGUID or mediaID=[{}]. Errors=[{}]", serviceUrl, requestID, mediaGUID);
-            return this.buildErrorResponse(UNAUTHORIZED_USER_MESSAGE, serviceUrl, BAD_REQUEST);
-        }
         //TODO Once lodging data transfered to media DB the second condition, numeric, will need to be removed.
         if (!mediaGUID.matches(REG_EX_GUID) && !mediaGUID.matches(REG_EX_NUMERIC)) {
             LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
@@ -352,12 +346,6 @@ public class MediaController extends CommonServiceController {
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                 serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
-        final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        final String clientId = auth.getName();
-        if (!mapValidatorList.containsKey(clientId)) {
-            LOGGER.warn("Returning bad request for messageName={}, requestId=[{}], domainId=[{}]. Errors=[{}]", serviceUrl, requestID, domainId);
-            return this.buildErrorResponse(UNAUTHORIZED_USER_MESSAGE, serviceUrl, BAD_REQUEST);
-        }
         final ResponseEntity<String> validationResponse = validateMediaByDomainIdRequest(domainName, domainId, activeFilter);
         if (validationResponse != null) {
             LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",

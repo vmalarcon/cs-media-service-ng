@@ -789,48 +789,6 @@ public class MediaControllerTest {
     }
 
     @Test
-    public void testMediaGetUnauthorizedClient() throws Exception {
-        Authentication authentication = mock(Authentication.class);
-        when(authentication.getName()).thenReturn("Unauthorized user");
-        SecurityContext securityContext = mock(SecurityContext.class);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
-
-        String requestId = "test-request-id";
-        MultiValueMap<String, String> mockHeader = new HttpHeaders();
-        mockHeader.add("request-id", requestId);
-
-        Map<String, List<MapMessageValidator>> validators = getMockValidators();
-        setFieldValue(mediaController, "mapValidatorList", validators);
-
-        ResponseEntity<String> responseEntity = mediaController.getMedia("d2d4d480-9627-47f9-86c6-1874c18d37f4", mockHeader);
-        assertNotNull(responseEntity);
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-        assertTrue(responseEntity.toString().contains("User is not authorized."));
-    }
-
-    @Test
-    public void testMediaGetByDomainIdUnauthorizedClient() throws Exception {
-        Authentication authentication = mock(Authentication.class);
-        when(authentication.getName()).thenReturn("Unauthorized user");
-        SecurityContext securityContext = mock(SecurityContext.class);
-        when(securityContext.getAuthentication()).thenReturn(authentication);
-        SecurityContextHolder.setContext(securityContext);
-
-        String requestId = "test-request-id";
-        MultiValueMap<String, String> mockHeader = new HttpHeaders();
-        mockHeader.add("request-id", requestId);
-
-        Map<String, List<MapMessageValidator>> validators = getMockValidators();
-        setFieldValue(mediaController, "mapValidatorList", validators);
-
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", "true", null, mockHeader);
-        assertNotNull(responseEntity);
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-        assertTrue(responseEntity.toString().contains("User is not authorized."));
-    }
-
-    @Test
     public void testMediaUpdateByGuidHeroNull() throws Exception {
 
         String jsonMsg = "{  \n"
