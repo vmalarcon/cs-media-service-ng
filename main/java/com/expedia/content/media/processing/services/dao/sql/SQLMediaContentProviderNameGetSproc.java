@@ -40,6 +40,7 @@ public class SQLMediaContentProviderNameGetSproc extends StoredProcedure {
                     .fileName(resultSet.getString("ContentProviderMediaName"))
                     .domainId(resultSet.getInt("SKUGroupCatalogItemID"))
                     .filProcessedBool(activeFlag != null && "A".equals(activeFlag) ? true : false)
+                    .mediaId(resultSet.getInt("MediaID"))
                     .build();
         }
     }
