@@ -1,15 +1,8 @@
 package com.expedia.content.media.processing.services;
 
-import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.times;
-
+import com.expedia.content.media.processing.pipeline.reporting.Reporting;
+import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
+import com.expedia.content.media.processing.services.validator.TempDerivativeMVELValidator;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,9 +18,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.MultiValueMap;
 
-import com.expedia.content.media.processing.pipeline.reporting.Reporting;
-import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
-import com.expedia.content.media.processing.services.validator.TempDerivativeMVELValidator;
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
 @RunWith(MockitoJUnitRunner.class)
@@ -151,5 +150,31 @@ public class TempDerivativeControllerTest {
         ResponseEntity<String> responseEntity = tempDerivativeController.getTempDerivative(jsonMessage, mockHeader);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
 
+    }
+
+    @Test
+    public void testTemporaryDerivativeURLwithSpaceRequest() throws Exception {
+        String jsonMessage = "{ " + "\"fileUrl\": \"s3://ewe-cs-media-test/e2e/images/Space Test.jpg\", "
+                + "\"rotation\": 90, " + "\"width\": 180, " + "\"height\": 180" + "}";
+        TempDerivativeMVELValidator tempDerivativeMVELValidator = mock(TempDerivativeMVELValidator.class);
+        when(tempDerivativeMVELValidator.validateTempDerivativeMessage(any())).thenReturn("");
+        setFieldValue(tempDerivativeController, "tempDerivativeMVELValidator", tempDerivativeMVELValidator);
+
+        ThumbnailProcessor thumbnailProcessor = mock(ThumbnailProcessor.class);
+        String thumbnailUrl = "http://url.net/thumbnail.jpg";
+        Thumbnail thumbnail = mock(Thumbnail.class);
+        when(thumbnail.getLocation()).thenReturn(thumbnailUrl);
+        when(thumbnailProcessor.createThumbnail(any())).thenReturn(thumbnail);
+        setFieldValue(tempDerivativeController, "thumbnailProcessor", thumbnailProcessor);
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        ResponseEntity<String> responseEntity = tempDerivativeController.getTempDerivative(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"thumbnailUrl\":"));
+        verify(thumbnailProcessor,times(1)).createTempDerivativeThumbnail(any());
     }
 }
