@@ -337,26 +337,69 @@ public class MediaController extends CommonServiceController {
     @RequestMapping(value = "/media/v1/imagesbydomain/{domainName}/domainId/{domainId}", method = RequestMethod.GET)
     @Transactional
     public ResponseEntity<String> getMediaByDomainId(@PathVariable("domainName") final String domainName, @PathVariable("domainId") final String domainId,
+            @RequestParam(value = "pageSize", required = false) final Integer pageSize,
+            @RequestParam(value = "pageIndex", required = false) final Integer pageIndex,
             @RequestParam(value = "activeFilter", required = false,
                     defaultValue = "all") final String activeFilter,
             @RequestParam(value = "derivativeTypeFilter", required = false) final String derivativeTypeFilter,
             @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
-        LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
-                serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
+        LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+                serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
         final ResponseEntity<String> validationResponse = validateMediaByDomainIdRequest(domainName, domainId, activeFilter);
         if (validationResponse != null) {
-            LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
-                    serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
+            LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+                    serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
             return validationResponse;
         }
-        final List<DomainIdMedia> images =
+        List<DomainIdMedia> images =
                 transformMediaListForResponse(
                         mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter));
-        final MediaByDomainIdResponse response = MediaByDomainIdResponse.builder().domain(domainName).domainId(domainId).images(images).build();
+        final Integer totalMediaCount = images.size();
+        if (pageSize != null || pageIndex != null) {
+            final ResponseEntity<String> paginationResponse = validatePagination(totalMediaCount, pageIndex, pageSize);
+            if (paginationResponse == null) {
+                images = paginateImages(images, pageSize, pageIndex);
+            } else {
+                LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+                        serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
+                return paginationResponse;
+            }
+        }
+        final MediaByDomainIdResponse response = MediaByDomainIdResponse.builder().domain(domainName).domainId(domainId).totalMediaCount(totalMediaCount).images(images).build();
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);
     }
+
+    /**
+     * returns a ResponseEntity if the pageSize and pageIndex are not both null or not null
+     * @param totalMediaCount
+     * @param pageSize
+     * @param pageIndex
+     * @return a ResponseEntity if the pageSize and pageIndex are not both null or not null
+     */
+    private ResponseEntity<String> validatePagination(Integer totalMediaCount, Integer pageSize, Integer pageIndex) {
+        if ((pageSize != null && pageIndex == null) || (pageSize == null && pageIndex != null)) {
+            return new ResponseEntity<>("pageSize and pageIndex are inclusive, either both fields can be null or not null", BAD_REQUEST);
+        }
+        if (pageSize < 1 || pageIndex < 1) {
+            return new ResponseEntity<>("pageSize and pageIndex can only be positive integer values", BAD_REQUEST);
+        }
+        if (pageSize * pageIndex > totalMediaCount) {
+            return new ResponseEntity<>("pageIndex is out of bounds", BAD_REQUEST);
+        }
+        return null;
+    }
+
+    private List<DomainIdMedia> paginateImages(List<DomainIdMedia> images, Integer pageSize, Integer pageIndex) {
+        final int indexStart = pageSize * (pageIndex - 1);
+        final int indexEnd = indexStart + (pageSize - 1);
+        return images.stream()
+                .skip(indexStart)
+                .limit(indexEnd)
+                .collect(Collectors.toList());
+    }
+
 
     /**
      * Transforms a media for a media get response format.

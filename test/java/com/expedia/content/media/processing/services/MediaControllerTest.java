@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.codehaus.plexus.util.ReflectionUtils;
@@ -365,7 +366,7 @@ public class MediaControllerTest {
     public void testMediaByDomainIdInvalidActiveFilter() throws Exception {
         mediaController = new MediaController();
         MultiValueMap<String, String> headers = new HttpHeaders();
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", "potato", null, headers);
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", null, null, "potato", null, headers);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -373,7 +374,7 @@ public class MediaControllerTest {
     @Test
     public void testMediaByDomainIdInvalidDomain() throws Exception {
         MultiValueMap<String, String> headers = new HttpHeaders();
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("potato", "1234", "true", null, headers);
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("potato", "1234", null, null, "true", null, headers);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
     }
@@ -403,7 +404,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", "true", null, headers);
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", null, null, "true", null, headers);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         String domainString = "\"domain\":\"Lodging\"";
@@ -425,6 +426,127 @@ public class MediaControllerTest {
     }
 
     @Test
+    public void testMediaGetByDomainIdPagination() throws Exception {
+        List<Media> mediaValues = createMedia();
+
+        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString())).thenReturn(mediaValues);
+        SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
+        when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
+
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
+
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", 20, 2, "true", null, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        String domainString = "\"domain\":\"Lodging\"";
+        assertTrue(responseEntity.getBody().contains(domainString));
+        assertEquals(responseEntity.getBody().indexOf(domainString), responseEntity.getBody().lastIndexOf(domainString));
+        String domainIdString = "\"domainId\":\"1234\"";
+        assertTrue(responseEntity.getBody().contains(domainIdString));
+        assertEquals(responseEntity.getBody().indexOf(domainIdString), responseEntity.getBody().lastIndexOf(domainIdString));
+        assertTrue(responseEntity.getBody().contains("\"images\":["));
+        assertFalse(responseEntity.getBody().contains("\"mediaGuid\":\"0aaaaaaa-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww"));
+        IntStream.range(20,40)
+                .forEach( i -> {
+                    assertTrue(responseEntity.getBody().contains("\"mediaGuid\":\"" + i + "aaaaaa-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww\""));
+                });
+    }
+
+    @Test
+    public void testMediaGetByDomainIdPaginationOutOfBounds() throws Exception {
+        List<Media> mediaValues = createMedia();
+
+        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString())).thenReturn(mediaValues);
+        SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
+        when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
+
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
+
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", 20, 3, "true", null, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("pageIndex is out of bounds"));
+    }
+
+    @Test
+    public void testMediaGetByDomainIdPaginationPageSizeExistsButPageIndexNull() throws Exception {
+        List<Media> mediaValues = createMedia();
+
+        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString())).thenReturn(mediaValues);
+        SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
+        when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
+
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
+
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", 20, null, "true", null, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("pageSize and pageIndex are inclusive, either both fields can be null or not null"));
+    }
+
+    @Test
+    public void testMediaGetByDomainIdPaginationPageIndexExistsButPageSizeNull() throws Exception {
+        List<Media> mediaValues = createMedia();
+
+        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString())).thenReturn(mediaValues);
+        SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
+        when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
+
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
+
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", null, 1, "true", null, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("pageSize and pageIndex are inclusive, either both fields can be null or not null"));
+    }
+
+    @Test
+    public void testMediaGetByDomainIdPaginationIsNegavtive() throws Exception {
+        List<Media> mediaValues = createMedia();
+
+        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString())).thenReturn(mediaValues);
+        SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
+        when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
+
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
+
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", -20, -1, "true", null, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("pageSize and pageIndex can only be positive integer values"));
+    }
+
+    private List<Media> createMedia() {
+        List<String> commentList = new LinkedList<>();
+        commentList.add("Comment1");
+        commentList.add("Comment2");
+        List<Media> mediaValues = new ArrayList<>();
+        IntStream.range(0, 50)
+                .forEach( i -> {
+                    Media mediaItem = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file" + i + "_name.jpg")
+                            .mediaGuid(i + ((i > 9) ? "aaaaaa" : "aaaaaaa") + "-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww").lastUpdated(new Date()).commentList(commentList).build();
+                    mediaValues.add(mediaItem);
+                }
+        );
+        return mediaValues;
+    }
+
+    @Test
     public void testMediaByDomainIdLodgingNotFound() throws Exception {
         SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
         when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(false);
@@ -432,7 +554,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", "true", null, headers);
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", null, null, "true", null, headers);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
         assertEquals("DomainId not found: 1234", responseEntity.getBody());
