@@ -54,6 +54,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import javax.ws.rs.HEAD;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -229,8 +230,6 @@ public class MediaController extends CommonServiceController {
     }
 
     private void validateAndInitMap(Map<String, Object> objectMap, String queryId, String serviceUrl, String message, String requestID) throws Exception {
-
-
         if (queryId.matches(GUID_REG)) {
             final Media dynamoMedia = mediaDao.getMediaByGuid(queryId);
             if (dynamoMedia == null) {
@@ -313,6 +312,11 @@ public class MediaController extends CommonServiceController {
         if (!mediaGUID.matches(REG_EX_GUID) && !mediaGUID.matches(REG_EX_NUMERIC)) {
             LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
             return this.buildErrorResponse("Invalid media GUID provided.", serviceUrl, BAD_REQUEST);
+        }
+        final String dynamoGuid = getGuidByMediaId(mediaGUID);
+        if (dynamoGuid != null) {
+            LOGGER.info("Media GUID [{}] exists, please use GUID in request. requestId=[{}]", mediaGUID, requestID);
+            return this.buildErrorResponse("Media GUID " + dynamoGuid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
         }
         final Media media = mediaDao.getMediaByGUID(mediaGUID);
         if (media == null) {
@@ -429,7 +433,7 @@ public class MediaController extends CommonServiceController {
                     .domainFields(media.getDomainData())
                     .derivatives(media.getDerivativesList())
                     .domainDerivativeCategory(media.getDomainDerivativeCategory())
-                    .comments((media.getCommentList() == null) ? null: media.getCommentList().stream()
+                    .comments((media.getCommentList() == null) ? null : media.getCommentList().stream()
                             .map(comment -> Comment.builder().note(comment)
                                     .timestamp(DATE_FORMATTER.print(media.getLastUpdated().getTime())).build())
                             .collect(Collectors.toList()))
@@ -545,8 +549,12 @@ public class MediaController extends CommonServiceController {
         imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
         final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
         imageMessageBuilder.outerDomainData(outerDomain);
-        imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(imageMessageBuilder.build()));
-        final Boolean isReprocessing = processReplacement(imageMessage, imageMessageBuilder, clientId);
+        Boolean isReprocessing = false;
+        if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
+            isReprocessing = processReplacement(imageMessage, imageMessageBuilder, clientId);
+        } else {
+            imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(imageMessageBuilder.build()));
+        }
         final ImageMessage imageMessageNew = imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).build();
         final Map<String, Object> messageState = new HashMap<>();
         messageState.put(IMAGE_MESSAGE_FIELD, imageMessageNew);
@@ -571,12 +579,13 @@ public class MediaController extends CommonServiceController {
      * @return returns true if reprocessing and false if not.
      */
 
-    private boolean processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder, String clientId) {
+    private boolean processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder, String clientId ) {
         if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
             LOGGER.info("This is a replacement: mediaGuid=[{}], filename=[{}], requestId=[{}]", imageMessage.getMediaGuid(), imageMessage.getFileName(),
                     imageMessage.getRequestId());
             final List<Media> mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
-            final Optional<Media> bestMedia = MediaReplacement.selectBestMedia(mediaList);
+            final Optional<Media> bestMedia = MediaReplacement
+                    .selectBestMedia(mediaList, imageMessage.getOuterDomainData().getDomainId(), imageMessage.getOuterDomainData().getProvider());
             // Replace the GUID and MediaId of the existing Media
             if (bestMedia.isPresent()) {
                 final Media media = bestMedia.get();
@@ -672,4 +681,19 @@ public class MediaController extends CommonServiceController {
         return OuterDomain.builder().from(outerDomain).mediaProvider(domainProvider).build();
     }
 
+    /**
+     * Retrieve the GUID base on a given LCM mediaId.
+     *
+     * @param mediaId
+     * @return The GUID or null if no media found in dynamo.
+     */
+    private String getGuidByMediaId(String mediaId){
+        if (StringUtils.isNumeric(mediaId)) {
+            final List<Media> mediaList = mediaDao.getMediaByMediaId(mediaId);
+            if (!mediaList.isEmpty()) {
+                 return mediaList.stream().findFirst().get().getMediaGuid();
+            }
+        }
+        return null;
+    }
 }

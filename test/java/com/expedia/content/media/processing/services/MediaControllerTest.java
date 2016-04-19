@@ -1,5 +1,58 @@
 package com.expedia.content.media.processing.services;
 
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
+import static com.expedia.content.media.processing.services.util.MediaReplacementTest.createByFileNameMedia;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.codehaus.plexus.util.ReflectionUtils;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.Message;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.util.MultiValueMap;
+
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
@@ -21,57 +74,6 @@ import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaGet
 import com.expedia.content.media.processing.services.dao.sql.MediaLstWithCatalogItemMediaAndMediaFileNameSproc;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.google.common.collect.Lists;
-import org.apache.commons.lang3.reflect.FieldUtils;
-import org.codehaus.plexus.util.ReflectionUtils;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.Message;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.util.MultiValueMap;
-
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-
-import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-import static com.expedia.content.media.processing.services.util.MediaReplacementTest.createByFileNameMedia;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
 @RunWith(MockitoJUnitRunner.class)
@@ -446,7 +448,7 @@ public class MediaControllerTest {
         SecurityContextHolder.setContext(securityContext);
 
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"123_1_NASA_ISS-4.jpg\", "
-                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"ICE Portal\", "
+                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"SCORE\", "
                 + "\"domainFields\": { " + "    \"replace\": \"true\" " + "  } " + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
@@ -459,9 +461,9 @@ public class MediaControllerTest {
 
         MediaDao mockMediaDao = mock(MediaDao.class);
         when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg")))
-                .thenReturn(Lists.newArrayList(createByFileNameMedia("old-guid", "456", "true", DATE_FORMAT.parse("2016-02-17 12:00:00"), "456"),
-                        createByFileNameMedia("old-but-inactive", "567", "false", DATE_FORMAT.parse("2016-10-10 12:00:00"), "456"),
-                        createByFileNameMedia("too-old", "890", "true", DATE_FORMAT.parse("2016-02-17 11:59:59"), "456")));
+                .thenReturn(Lists.newArrayList(createByFileNameMedia("old-guid", "1238", "true", DATE_FORMAT.parse("2016-02-17 12:00:00"), "456"),
+                        createByFileNameMedia("old-but-inactive", "1238", "false", DATE_FORMAT.parse("2016-10-10 12:00:00"), "456"),
+                        createByFileNameMedia("too-old", "1238", "true", DATE_FORMAT.parse("2016-02-17 11:59:59"), "456")));
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
 
         String requestId = "test-request-id";
@@ -1236,6 +1238,25 @@ public class MediaControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+
+    @Test
+    public void testGetMediaWhichHasAGuidByLcmMediaId() throws Exception {
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
+                .lcmMediaId("123456").lastUpdated(new Date()).lcmMediaId("123456").mediaGuid("d2d4d480-9627-47f9-86c6-1874c18d37f4").build();
+        MediaDao mockMediaDao = mock(MediaDao.class);
+        when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(Arrays.asList(resultMedia));
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+
+        ResponseEntity<String> responseEntity = mediaController.getMedia("123456", mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("Media GUID d2d4d480-9627-47f9-86c6-1874c18d37f4 exists, please use GUID in request."));
+    }
+
     /**
      * CSPB-532224 Thumbail processor must return 422 error when an unprocessable image is received
      * @throws Exception
@@ -1267,7 +1288,7 @@ public class MediaControllerTest {
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
-
+        
         ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, responseEntity.getStatusCode());
@@ -1315,7 +1336,6 @@ public class MediaControllerTest {
 
     private CatalogHeroProcessor getCatalogMock() throws Exception {
         CatalogHeroProcessor catalogHeroProcessor = new CatalogHeroProcessor();
-        CatalogItemListSproc catalogItemListSproc = mock(CatalogItemListSproc.class);
         CatalogItemMediaDao catalogItemMediaDao = mock(CatalogItemMediaDao.class);
         CatalogItemMediaChgSproc catalogItemMediaChgSproc = mock(CatalogItemMediaChgSproc.class);
         MediaDao mediaDao = mock(MediaDao.class);
@@ -1325,12 +1345,7 @@ public class MediaControllerTest {
                 LcmCatalogItemMedia.builder().catalogItemId(41098).mediaId(19671339).mediaUseRank(3).lastUpdatedBy("test").lastUpdateDate(new Date())
                         .build();
         lcmCatalogItemMediaList.add(lcmCatalogItemMedia);
-        Map<String, Object> lcmCatMap = new HashMap<>();
-        lcmCatMap.put(CatalogItemListSproc.MEDIA_SET, lcmCatalogItemMediaList);
-        when(catalogItemListSproc.execute(anyInt())).thenReturn(lcmCatMap);
 
-        FieldUtils.writeField(catalogHeroProcessor, "catalogItemListSproc", catalogItemListSproc, true);
-        Mockito.doNothing().when(catalogItemMediaChgSproc).updateCategory(anyInt(), anyInt(), anyInt(), anyString(), anyString());
         FieldUtils.writeField(catalogHeroProcessor, "catalogItemMediaChgSproc", catalogItemMediaChgSproc, true);
         Mockito.doNothing().when(catalogItemMediaDao).updateCatalogItem(any(), anyInt(), anyInt());
         FieldUtils.writeField(catalogHeroProcessor, "catalogItemMediaDao", catalogItemMediaDao, true);
@@ -1374,7 +1389,6 @@ public class MediaControllerTest {
 
     private CatalogHeroProcessor getCatalogMockHeroFalse() throws Exception {
         CatalogHeroProcessor catalogHeroProcessor = new CatalogHeroProcessor();
-        CatalogItemListSproc catalogItemListSproc = mock(CatalogItemListSproc.class);
         CatalogItemMediaDao catalogItemMediaDao = mock(CatalogItemMediaDao.class);
         CatalogItemMediaChgSproc catalogItemMediaChgSproc = mock(CatalogItemMediaChgSproc.class);
         MediaDao mediaDao = mock(MediaDao.class);
@@ -1389,12 +1403,6 @@ public class MediaControllerTest {
         lcmCatalogItemMediaList.add(lcmCatalogItemMedia);
         lcmCatalogItemMediaList.add(lcmCatalogItemMedia2);
 
-        Map<String, Object> lcmCatMap = new HashMap<>();
-        lcmCatMap.put(CatalogItemListSproc.MEDIA_SET, lcmCatalogItemMediaList);
-        when(catalogItemListSproc.execute(anyInt())).thenReturn(lcmCatMap);
-
-        FieldUtils.writeField(catalogHeroProcessor, "catalogItemListSproc", catalogItemListSproc, true);
-        Mockito.doNothing().when(catalogItemMediaChgSproc).updateCategory(anyInt(), anyInt(), anyInt(), anyString(), anyString());
         FieldUtils.writeField(catalogHeroProcessor, "catalogItemMediaChgSproc", catalogItemMediaChgSproc, true);
         Mockito.doNothing().when(catalogItemMediaDao).updateCatalogItem(any(), anyInt(), anyInt());
         FieldUtils.writeField(catalogHeroProcessor, "catalogItemMediaDao", catalogItemMediaDao, true);
@@ -1436,5 +1444,4 @@ public class MediaControllerTest {
 
         return catalogHeroProcessor;
     }
-
 }
