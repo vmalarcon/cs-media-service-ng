@@ -1,14 +1,14 @@
 package com.expedia.content.media.processing.services;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.UUID;
-
+import com.amazonaws.util.IOUtils;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.Metadata;
+import com.expedia.content.media.processing.pipeline.util.TemporaryWorkFolder;
+import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
+import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
+import com.expedia.content.media.processing.services.util.ImageUtil;
+import com.google.common.base.Joiner;
+import expedia.content.solutions.metrics.annotations.Timer;
 import org.im4java.core.ConvertCmd;
 import org.im4java.core.IM4JavaException;
 import org.im4java.core.IMOperation;
@@ -21,16 +21,16 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
 
-import com.amazonaws.util.IOUtils;
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.Metadata;
-import com.expedia.content.media.processing.pipeline.util.TemporaryWorkFolder;
-import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
-import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
-import com.expedia.content.media.processing.services.util.ImageUtil;
-import com.google.common.base.Joiner;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.UUID;
 
-import expedia.content.solutions.metrics.annotations.Timer;
+import static com.expedia.content.media.processing.services.util.URLUtil.patchURL;
 
 /**
  * Thumbnail processing related functionality.
@@ -60,7 +60,7 @@ public class ThumbnailProcessor {
      * @param imageMessage incoming message.
      * @return
      */
-    public Thumbnail createThumbnail(ImageMessage imageMessage) {
+    public Thumbnail createThumbnail(ImageMessage imageMessage) throws Exception {
         final Integer rotation = (imageMessage.getRotation() == null) ? null : Integer.parseInt(imageMessage.getRotation());
         return createGenericThumbnail(imageMessage.getFileUrl(), THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, rotation,
                 imageMessage.getMediaGuid(), imageMessage.getOuterDomainData().getDomain().getDomain(), imageMessage.getOuterDomainData().getDomainId());
@@ -72,9 +72,9 @@ public class ThumbnailProcessor {
      * @param tempDerivativeMessage
      * @return URL Path for the resulting temporary derivative on S3
      */
-    public String createTempDerivativeThumbnail(TempDerivativeMessage tempDerivativeMessage) {
+    public String createTempDerivativeThumbnail(TempDerivativeMessage tempDerivativeMessage) throws Exception {
         final String guid = UUID.randomUUID().toString();
-        return createGenericThumbnail(tempDerivativeMessage.getFileUrl(), tempDerivativeMessage.getWidth(), tempDerivativeMessage.getHeight(),
+        return createGenericThumbnail(patchURL(tempDerivativeMessage.getFileUrl()), tempDerivativeMessage.getWidth(), tempDerivativeMessage.getHeight(),
                 tempDerivativeMessage.getRotation(), guid, "tempderivative", null).getLocation();
     }
 
@@ -93,17 +93,20 @@ public class ThumbnailProcessor {
      */
     @Timer(name = "ThumbnailGenerationTimer")
     private Thumbnail createGenericThumbnail(final String fileUrl, final int width, final int height, final Integer rotation, final String guid,
-                                             final String domain, final String domainId) {
+                                             final String domain, final String domainId) throws Exception {
 
         LOGGER.debug("Creating thumbnail url=[{}] guid=[{}]", fileUrl, guid);
         String thumbnailUrl;
+        String tempUrl;
         Path thumbnailPath;
         Path sourcePath;
         Thumbnail thumbnail = null;
 
+
+        tempUrl = patchURL(fileUrl);
         final Path workPath = Paths.get(tempWorkFolder);
         try (TemporaryWorkFolder workFolder = new TemporaryWorkFolder(workPath)) {
-            sourcePath = fetchUrl(fileUrl, guid, workFolder);
+            sourcePath = fetchUrl(tempUrl, guid, workFolder);
             thumbnailPath = generateThumbnail(sourcePath, width, height, (rotation == null) ? 0 : rotation);
             thumbnailUrl = computeS3thumbnailPath(guid, domain, domainId);
             LOGGER.debug("Writing thumbnail: " + thumbnailUrl);

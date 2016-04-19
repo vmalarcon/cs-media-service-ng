@@ -1,14 +1,14 @@
 package com.expedia.content.media.processing.services;
 
+import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.validator.HTTPValidator;
 import com.expedia.content.media.processing.services.validator.S3Validator;
+import expedia.content.solutions.metrics.annotations.Counter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 
-import com.expedia.content.media.processing.services.util.JSONUtil;
-
-import expedia.content.solutions.metrics.annotations.Counter;
+import static com.expedia.content.media.processing.services.util.URLUtil.patchURL;
 
 /**
  * Common functionality shared by the service controllers.
@@ -50,11 +50,12 @@ public abstract class CommonServiceController {
      * @param fileUrl Incoming imageMessage's fileUrl.
      * @return {@code true} if the file exists; {@code false} otherwise.
      */
-    public boolean verifyUrlExistence(final String fileUrl) {
-        if (fileUrl.startsWith(S3Validator.S3_PREFIX)) {
-            return S3Validator.checkFileExists(fileUrl);
+    public boolean verifyUrlExistence(final String fileUrl) throws Exception {
+        final String tempFileUrl = patchURL(fileUrl);
+        if (tempFileUrl.startsWith(S3Validator.S3_PREFIX)) {
+            return S3Validator.checkFileExists(tempFileUrl);
         } else {
-            return HTTPValidator.checkFileExists(fileUrl);
+            return HTTPValidator.checkFileExists(tempFileUrl);
         }
     }
 
