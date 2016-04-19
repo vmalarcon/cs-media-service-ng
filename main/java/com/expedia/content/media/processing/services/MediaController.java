@@ -95,6 +95,8 @@ public class MediaController extends CommonServiceController {
     private static final String REPROCESSING_STATE_FIELD = "processState";
     private static final String REG_EX_NUMERIC = "\\d+";
     private static final String REG_EX_GUID = "[a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12}";
+    private static final String UNAUTHORIZED_USER_MESSAGE = "User is not authorized.";
+
 
     @Resource(name = "providerProperties")
     private Properties providerProperties;
@@ -301,6 +303,12 @@ public class MediaController extends CommonServiceController {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
+        final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        final String clientId = auth.getName();
+        if (!mapValidatorList.containsKey(clientId)) {
+            LOGGER.warn("Returning bad request for messageName={}, requestId=[{}], mediaGUID or mediaID=[{}]. Errors=[{}]", serviceUrl, requestID, mediaGUID);
+            return this.buildErrorResponse(UNAUTHORIZED_USER_MESSAGE, serviceUrl, BAD_REQUEST);
+        }
         //TODO Once lodging data transfered to media DB the second condition, numeric, will need to be removed.
         if (!mediaGUID.matches(REG_EX_GUID) && !mediaGUID.matches(REG_EX_NUMERIC)) {
             LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
@@ -341,6 +349,12 @@ public class MediaController extends CommonServiceController {
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                 serviceUrl, requestID, domainName, domainId, activeFilter, derivativeTypeFilter);
+        final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        final String clientId = auth.getName();
+        if (!mapValidatorList.containsKey(clientId)) {
+            LOGGER.warn("Returning bad request for messageName={}, requestId=[{}], domainId=[{}]. Errors=[{}]", serviceUrl, requestID, domainId);
+            return this.buildErrorResponse(UNAUTHORIZED_USER_MESSAGE, serviceUrl, BAD_REQUEST);
+        }
         final ResponseEntity<String> validationResponse = validateMediaByDomainIdRequest(domainName, domainId, activeFilter);
         if (validationResponse != null) {
             LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
@@ -620,7 +634,7 @@ public class MediaController extends CommonServiceController {
         imageMessageList.add(imageMessage);
         final List<MapMessageValidator> validatorList = mapValidatorList.get(clientId);
         if (validatorList == null) {
-            return "User is not authorized.";
+            return UNAUTHORIZED_USER_MESSAGE;
         }
         List<Map<String, String>> validationErrorList = null;
         for (final MapMessageValidator mapMessageValidator : validatorList) {
