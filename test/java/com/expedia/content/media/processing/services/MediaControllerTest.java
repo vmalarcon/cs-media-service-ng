@@ -363,6 +363,8 @@ public class MediaControllerTest {
     public void testMediaByDomainIdInvalidActiveFilter() throws Exception {
         mediaController = new MediaController();
         MultiValueMap<String, String> headers = new HttpHeaders();
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
         ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", "potato", null, headers);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
@@ -371,6 +373,8 @@ public class MediaControllerTest {
     @Test
     public void testMediaByDomainIdInvalidDomain() throws Exception {
         MultiValueMap<String, String> headers = new HttpHeaders();
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
         ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("potato", "1234", "true", null, headers);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
@@ -399,6 +403,8 @@ public class MediaControllerTest {
 
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
         ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", "true", null, headers);
@@ -428,6 +434,8 @@ public class MediaControllerTest {
         when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(false);
 
         setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
         ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", "true", null, headers);
@@ -706,6 +714,8 @@ public class MediaControllerTest {
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
 
         ResponseEntity<String> responseEntity = mediaController.getMedia("hello potato", mockHeader);
         assertNotNull(responseEntity);
@@ -720,6 +730,8 @@ public class MediaControllerTest {
         MediaDao mockMediaDao = mock(MediaDao.class);
         when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(null);
         setFieldValue(mediaController, "mediaDao", mock(MediaDao.class));
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
 
         ResponseEntity<String> responseEntity = mediaController.getMedia("d2d4d480-9627-47f9-86c6-1874c18d37f4", mockHeader);
         assertNotNull(responseEntity);
@@ -738,6 +750,8 @@ public class MediaControllerTest {
         MediaDao mockMediaDao = mock(MediaDao.class);
         when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(resultMedia);
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
 
         ResponseEntity<String> responseEntity = mediaController.getMedia("123456", mockHeader);
         assertNotNull(responseEntity);
@@ -760,6 +774,8 @@ public class MediaControllerTest {
         MediaDao mockMediaDao = mock(MediaDao.class);
         when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(resultMedia);
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
 
         ResponseEntity<String> responseEntity = mediaController.getMedia("d2d4d480-9627-47f9-86c6-1874c18d37f4", mockHeader);
         assertNotNull(responseEntity);
@@ -784,11 +800,8 @@ public class MediaControllerTest {
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
 
-        Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
-                .lcmMediaId("123456").lastUpdated(new Date()).lcmMediaId("123456").mediaGuid("d2d4d480-9627-47f9-86c6-1874c18d37f4").build();
-        MediaDao mockMediaDao = mock(MediaDao.class);
-        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(resultMedia);
-        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
 
         ResponseEntity<String> responseEntity = mediaController.getMedia("d2d4d480-9627-47f9-86c6-1874c18d37f4", mockHeader);
         assertNotNull(responseEntity);
@@ -798,47 +811,23 @@ public class MediaControllerTest {
 
     @Test
     public void testMediaGetByDomainIdUnauthorizedClient() throws Exception {
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn("Unauthorized user");
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
 
-    }
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
 
-    @SuppressWarnings({"unchecked"})
-    private static Map<String, List<MapMessageValidator>> getMockValidators() {
-        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
-        List<MapMessageValidator> messageValidator = new ArrayList<>();
-        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
-        List<Map<String, String>> validationErrorList = new ArrayList<>();
-        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
-        messageValidator.add(mockMessageValidator);
-        validators.put(TEST_CLIENT_ID, messageValidator);
-        validators.put(MEDIA_CLOUD_ROUTER_CLIENT_ID, messageValidator);
-        return validators;
-    }
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
 
-    @SuppressWarnings({"unchecked"})
-    private static Map<String, List<MapMessageValidator>> getMockValidatorsForUpdate() {
-        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
-        List<MapMessageValidator> messageValidator = new ArrayList<>();
-        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
-        List<Map<String, String>> validationErrorList = new ArrayList<>();
-        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
-        messageValidator.add(mockMessageValidator);
-        validators.put("EPCUpdate", messageValidator);
-        return validators;
-    }
-
-    @SuppressWarnings({"unchecked"})
-    private static Map<String, List<MapMessageValidator>> getMockValidatorsForUpdateWithError() {
-        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
-        List<MapMessageValidator> messageValidator = new ArrayList<>();
-        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
-        List<Map<String, String>> validationErrorList = new ArrayList<>();
-        Map<String, String> errorMap = new HashMap<>();
-        errorMap.put("test", "test");
-        validationErrorList.add(errorMap);
-        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
-        messageValidator.add(mockMessageValidator);
-        validators.put("EPCUpdate", messageValidator);
-        return validators;
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", "true", null, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertTrue(responseEntity.toString().contains("User is not authorized."));
     }
 
     @Test
@@ -1277,6 +1266,8 @@ public class MediaControllerTest {
         MediaDao mockMediaDao = mock(MediaDao.class);
         when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(Arrays.asList(resultMedia));
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
 
         ResponseEntity<String> responseEntity = mediaController.getMedia("123456", mockHeader);
         assertNotNull(responseEntity);
@@ -1315,7 +1306,7 @@ public class MediaControllerTest {
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
-        
+
         ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, responseEntity.getStatusCode());
@@ -1328,6 +1319,46 @@ public class MediaControllerTest {
         verifyZeroInteractions(mockLcmDynamoMediaDao);
         verify(thumbnailProcessor, times(1)).createThumbnail(any(ImageMessage.class));
         verifyZeroInteractions(thumbnail);
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private static Map<String, List<MapMessageValidator>> getMockValidators() {
+        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
+        List<MapMessageValidator> messageValidator = new ArrayList<>();
+        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
+        List<Map<String, String>> validationErrorList = new ArrayList<>();
+        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
+        messageValidator.add(mockMessageValidator);
+        validators.put(TEST_CLIENT_ID, messageValidator);
+        validators.put(MEDIA_CLOUD_ROUTER_CLIENT_ID, messageValidator);
+        return validators;
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private static Map<String, List<MapMessageValidator>> getMockValidatorsForUpdate() {
+        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
+        List<MapMessageValidator> messageValidator = new ArrayList<>();
+        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
+        List<Map<String, String>> validationErrorList = new ArrayList<>();
+        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
+        messageValidator.add(mockMessageValidator);
+        validators.put("EPCUpdate", messageValidator);
+        return validators;
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private static Map<String, List<MapMessageValidator>> getMockValidatorsForUpdateWithError() {
+        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
+        List<MapMessageValidator> messageValidator = new ArrayList<>();
+        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
+        List<Map<String, String>> validationErrorList = new ArrayList<>();
+        Map<String, String> errorMap = new HashMap<>();
+        errorMap.put("test", "test");
+        validationErrorList.add(errorMap);
+        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
+        messageValidator.add(mockMessageValidator);
+        validators.put("EPCUpdate", messageValidator);
+        return validators;
     }
 
     private MediaUpdateProcessor getMediaUpdateProcesser(CatalogHeroProcessor catalogHeroProcessor) throws Exception {
