@@ -262,7 +262,7 @@ public class MediaUpdateProcessor {
         if (roomList != null && !roomList.isEmpty()) {
             roomList.stream().forEach(room -> {
                 if (room.size() > 0) {
-                    final boolean hero = (room.get(MESSAGE_ROOM_HERO)).equals("true") ? true : false;
+                    final boolean hero = ("true").equals(room.get(MESSAGE_ROOM_HERO)) ? true : false;
                     final LcmMediaRoom lcmMediaRoom = LcmMediaRoom.builder().roomId(Integer.valueOf((String) room.get("roomId")))
                             .roomHero(hero).build();
                     lcmMediaRoomList.add(lcmMediaRoom);
