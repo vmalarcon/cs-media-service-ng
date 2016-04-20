@@ -87,7 +87,7 @@ public class SourceURLController extends CommonServiceController {
             }
             String guid = "";
             if (fileSourceFinder.matchGuid(fileName)) {
-                guid = getGuidByMediaIdgetGuidByMediaId(lcmMedia.getMediaId().toString());
+                guid = getGuidByMediaId(lcmMedia.getMediaId().toString());
                 if (guid == null) {
                     return buildErrorResponse("can not found GUID.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
                 }
@@ -114,7 +114,7 @@ public class SourceURLController extends CommonServiceController {
         return true;
     }
 
-    private String getGuidByMediaIdgetGuidByMediaId(String mediaId) {
+    private String getGuidByMediaId(String mediaId) {
         if (org.apache.commons.lang.StringUtils.isNumeric(mediaId)) {
             final List<Media> mediaList = mediaDao.getMediaByMediaId(mediaId);
             if (!mediaList.isEmpty()) {
