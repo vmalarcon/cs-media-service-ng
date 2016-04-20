@@ -232,6 +232,9 @@ public class MediaController extends CommonServiceController {
             if (dynamoMedia == null) {
                 objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input GUID does not exist in DB", serviceUrl, NOT_FOUND));
                 return;
+            } else if (dynamoMedia.getLcmMediaId() == null) {
+                objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input GUID media has not been published", serviceUrl, BAD_REQUEST));
+                return;
             }
             objectMap.put("lcmMediaId", dynamoMedia.getLcmMediaId());
             objectMap.put("domainId", dynamoMedia.getDomainId());
