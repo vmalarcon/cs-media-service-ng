@@ -89,6 +89,8 @@ public class MediaController extends CommonServiceController {
     private static final String REPROCESSING_STATE_FIELD = "processState";
     private static final String REG_EX_NUMERIC = "\\d+";
     private static final String REG_EX_GUID = "[a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12}";
+    private static final String UNAUTHORIZED_USER_MESSAGE = "User is not authorized.";
+
 
     @Resource(name = "providerProperties")
     private Properties providerProperties;
@@ -236,9 +238,8 @@ public class MediaController extends CommonServiceController {
     public ResponseEntity<String> getMedia(@PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String, String> headers)
             throws Exception {
         final String requestID = this.getRequestId(headers);
-        final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
+        final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
-
         //TODO Once lodging data transfered to media DB the second condition, numeric, will need to be removed.
         if (!mediaGUID.matches(REG_EX_GUID) && !mediaGUID.matches(REG_EX_NUMERIC)) {
             LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
@@ -348,6 +349,7 @@ public class MediaController extends CommonServiceController {
         imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
         imageMessageBuilder.active(null);
         return imageMessageBuilder.build();
+
     }
 
     private String appendDomain(String message, String domainId) throws Exception {
@@ -544,7 +546,7 @@ public class MediaController extends CommonServiceController {
         imageMessageList.add(imageMessage);
         final List<MapMessageValidator> validatorList = mapValidatorList.get(clientId);
         if (validatorList == null) {
-            return "User is not authorized.";
+            return UNAUTHORIZED_USER_MESSAGE;
         }
         List<Map<String, String>> validationErrorList = null;
         for (final MapMessageValidator mapMessageValidator : validatorList) {
