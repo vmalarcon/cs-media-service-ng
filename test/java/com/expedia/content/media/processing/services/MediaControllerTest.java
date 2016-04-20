@@ -32,10 +32,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.expedia.content.media.processing.services.reqres.Comment;
+import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
+import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
+import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.codehaus.plexus.util.ReflectionUtils;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -69,7 +76,6 @@ import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
-import com.expedia.content.media.processing.services.dao.sql.CatalogItemListSproc;
 import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaChgSproc;
 import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.MediaLstWithCatalogItemMediaAndMediaFileNameSproc;
@@ -82,7 +88,9 @@ public class MediaControllerTest {
 
     private static final String TEST_CLIENT_ID = "a-user";
     private static final String MEDIA_CLOUD_ROUTER_CLIENT_ID = "Media Cloud Router";
+    private static final String RESPONSE_FIELD_LCM_MEDIA_ID = "lcmMediaId";
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
 
     @Mock
     private Reporting reporting;
@@ -395,8 +403,9 @@ public class MediaControllerTest {
         mediaValues.add(mediaItem1);
         mediaValues.add(mediaItem2);
 
+        MediaByDomainIdResponse response = MediaByDomainIdResponse.builder().domain("Lodging").domainId("1234").totalMediaCount(mediaValues.size()).images(transformMediaListForResponse(mediaValues)).build();
         MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
-        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString())).thenReturn(mediaValues);
+        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(response);
         SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
         when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
 
@@ -423,115 +432,6 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\":\"ea868d7d-c4ce-41a8-be43-19fff0ce5ad4\""));
         assertTrue(responseEntity.getBody().contains("\"lcmMediaId\":\"4321\""));
         assertTrue(responseEntity.getBody().contains("\"domainFields\":{"));
-    }
-
-    @Test
-    public void testMediaGetByDomainIdPagination() throws Exception {
-        List<Media> mediaValues = createMedia();
-
-        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
-        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString())).thenReturn(mediaValues);
-        SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
-        when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
-
-        setFieldValue(mediaController, "mediaDao", mockMediaDao);
-        setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
-
-        MultiValueMap<String, String> headers = new HttpHeaders();
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", 20, 2, "true", null, headers);
-        assertNotNull(responseEntity);
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-        String domainString = "\"domain\":\"Lodging\"";
-        assertTrue(responseEntity.getBody().contains(domainString));
-        assertEquals(responseEntity.getBody().indexOf(domainString), responseEntity.getBody().lastIndexOf(domainString));
-        String domainIdString = "\"domainId\":\"1234\"";
-        assertTrue(responseEntity.getBody().contains(domainIdString));
-        assertEquals(responseEntity.getBody().indexOf(domainIdString), responseEntity.getBody().lastIndexOf(domainIdString));
-        String totalMediaCount = "\"totalMediaCount\":50";
-        assertTrue(responseEntity.getBody().contains(totalMediaCount));
-        assertEquals(responseEntity.getBody().indexOf(totalMediaCount), responseEntity.getBody().lastIndexOf(totalMediaCount));
-        assertTrue(responseEntity.getBody().contains("\"images\":["));
-        assertFalse(responseEntity.getBody().contains("\"mediaGuid\":\"0aaaaaaa-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww"));
-        IntStream.range(20,40)
-                .forEach( i -> {
-                    assertTrue(responseEntity.getBody().contains("\"mediaGuid\":\"" + i + "aaaaaa-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww\""));
-                });
-    }
-
-    @Test
-    public void testMediaGetByDomainIdPaginationOutOfBounds() throws Exception {
-        List<Media> mediaValues = createMedia();
-
-        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
-        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString())).thenReturn(mediaValues);
-        SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
-        when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
-
-        setFieldValue(mediaController, "mediaDao", mockMediaDao);
-        setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
-
-        MultiValueMap<String, String> headers = new HttpHeaders();
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", 20, 3, "true", null, headers);
-        assertNotNull(responseEntity);
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-        assertTrue(responseEntity.getBody().contains("pageIndex is out of bounds"));
-    }
-
-    @Test
-    public void testMediaGetByDomainIdPaginationPageSizeExistsButPageIndexNull() throws Exception {
-        List<Media> mediaValues = createMedia();
-
-        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
-        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString())).thenReturn(mediaValues);
-        SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
-        when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
-
-        setFieldValue(mediaController, "mediaDao", mockMediaDao);
-        setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
-
-        MultiValueMap<String, String> headers = new HttpHeaders();
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", 20, null, "true", null, headers);
-        assertNotNull(responseEntity);
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-        assertTrue(responseEntity.getBody().contains("pageSize and pageIndex are inclusive, either both fields can be null or not null"));
-    }
-
-    @Test
-    public void testMediaGetByDomainIdPaginationPageIndexExistsButPageSizeNull() throws Exception {
-        List<Media> mediaValues = createMedia();
-
-        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
-        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString())).thenReturn(mediaValues);
-        SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
-        when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
-
-        setFieldValue(mediaController, "mediaDao", mockMediaDao);
-        setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
-
-        MultiValueMap<String, String> headers = new HttpHeaders();
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", null, 1, "true", null, headers);
-        assertNotNull(responseEntity);
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-        assertTrue(responseEntity.getBody().contains("pageSize and pageIndex are inclusive, either both fields can be null or not null"));
-    }
-
-    @Test
-    public void testMediaGetByDomainIdPaginationIsNegavtive() throws Exception {
-        List<Media> mediaValues = createMedia();
-
-        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
-        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString())).thenReturn(mediaValues);
-        SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
-        when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
-
-        setFieldValue(mediaController, "mediaDao", mockMediaDao);
-        setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
-
-        MultiValueMap<String, String> headers = new HttpHeaders();
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", -20, -1, "true", null, headers);
-        assertNotNull(responseEntity);
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-        assertTrue(responseEntity.getBody().contains("pageSize and pageIndex can only be positive integer values"));
     }
 
     @Test
@@ -848,7 +748,7 @@ public class MediaControllerTest {
         Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
                 .lcmMediaId("123456").lastUpdated(new Date()).lcmMediaId("123456").build();
         MediaDao mockMediaDao = mock(MediaDao.class);
-        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(resultMedia);
+        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(transformSingleMediaForResponse(resultMedia));
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
 
         ResponseEntity<String> responseEntity = mediaController.getMedia("123456", mockHeader);
@@ -870,7 +770,7 @@ public class MediaControllerTest {
         Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
                 .lcmMediaId("123456").lastUpdated(new Date()).lcmMediaId("123456").mediaGuid("d2d4d480-9627-47f9-86c6-1874c18d37f4").build();
         MediaDao mockMediaDao = mock(MediaDao.class);
-        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(resultMedia);
+        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(transformSingleMediaForResponse(resultMedia));
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
 
         ResponseEntity<String> responseEntity = mediaController.getMedia("d2d4d480-9627-47f9-86c6-1874c18d37f4", mockHeader);
@@ -1188,8 +1088,8 @@ public class MediaControllerTest {
         LcmMedia lcmMedia = LcmMedia.builder().domainId(41098).build();
         when(mediaUpdateDao.getMediaByMediaId(anyInt())).thenReturn(lcmMedia);
         FieldUtils.writeField(mediaController, "mediaUpdateDao", mediaUpdateDao, true);
-        Media dynamoMedia = Media.builder().domain("Lodging").build();
-        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(dynamoMedia);
+        Media dynamoMedia = Media.builder().domain("Lodging").lastUpdated(new Date()).build();
+        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(transformSingleMediaForResponse(dynamoMedia));
 
         CatalogHeroProcessor catalogHeroProcessor = getCatalogMock();
         MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);
@@ -1555,18 +1455,68 @@ public class MediaControllerTest {
         return catalogHeroProcessor;
     }
 
-    private List<Media> createMedia() {
-        List<String> commentList = new LinkedList<>();
-        commentList.add("Comment1");
-        commentList.add("Comment2");
-        List<Media> mediaValues = new ArrayList<>();
-        IntStream.range(0, 50)
-                .forEach( i -> {
-                            Media mediaItem = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file" + i + "_name.jpg")
-                                    .mediaGuid(i + ((i > 9) ? "aaaaaa" : "aaaaaaa") + "-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww").lastUpdated(new Date()).commentList(commentList).build();
-                            mediaValues.add(mediaItem);
-                        }
-                );
-        return mediaValues;
+    private MediaGetResponse transformSingleMediaForResponse(Media media) {
+        /* @formatter:off */
+        setResponseLcmMediaId(media);
+        return MediaGetResponse.builder()
+                .mediaGuid(media.getMediaGuid())
+                .fileUrl(media.getFileUrl())
+                .fileName(media.getFileName())
+                .active(media.getActive())
+                .width(media.getWidth())
+                .height(media.getHeight())
+                .fileSize(media.getFileSize())
+                .status(media.getStatus())
+                .lastUpdatedBy(media.getUserId())
+                .lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
+                .domain(media.getDomain())
+                .domainId(media.getDomainId())
+                .domainProvider(media.getProvider())
+                .domainFields(media.getDomainData())
+                .derivatives(media.getDerivativesList())
+                .domainDerivativeCategory(media.getDomainDerivativeCategory())
+                .comments((media.getCommentList() == null) ? null : media.getCommentList().stream()
+                        .map(comment -> Comment.builder().note(comment)
+                                .timestamp(DATE_FORMATTER.print(media.getLastUpdated().getTime())).build())
+                        .collect(Collectors.toList()))
+                .build();
+        /* @formatter:on */
+    }
+
+    private List<DomainIdMedia> transformMediaListForResponse(List<Media> mediaList) {
+        return mediaList.stream().map(media -> {
+            setResponseLcmMediaId(media);
+            /* @formatter:off */
+            return DomainIdMedia.builder()
+                    .mediaGuid(media.getMediaGuid())
+                    .fileUrl(media.getFileUrl())
+                    .fileName(media.getFileName())
+                    .active(media.getActive())
+                    .width(media.getWidth())
+                    .height(media.getHeight())
+                    .fileSize(media.getFileSize())
+                    .status(media.getStatus())
+                    .lastUpdatedBy(media.getUserId())
+                    .lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
+                    .domainProvider(media.getProvider())
+                    .domainFields(media.getDomainData())
+                    .derivatives(media.getDerivativesList())
+                    .domainDerivativeCategory(media.getDomainDerivativeCategory())
+                    .comments((media.getCommentList() == null) ? null: media.getCommentList().stream()
+                            .map(comment -> Comment.builder().note(comment)
+                                    .timestamp(DATE_FORMATTER.print(media.getLastUpdated().getTime())).build())
+                            .collect(Collectors.toList()))
+                    .build();
+        }).collect(Collectors.toList());
+        /* @formatter:on */
+    }
+
+    private void setResponseLcmMediaId(Media media) {
+        if (media.getLcmMediaId() != null) {
+            if (media.getDomainData() == null) {
+                media.setDomainData(new HashMap<>());
+            }
+            media.getDomainData().put(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
+        }
     }
 }
