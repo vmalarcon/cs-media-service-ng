@@ -9,6 +9,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
+import com.expedia.content.media.processing.services.util.JSONUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -51,7 +52,6 @@ public class Media {
     @Setter private List<String> commentList;
     @Setter private String status;
     @Setter private String domainDerivativeCategory;
-    @Setter private Boolean propertyHero;
     @DynamoDBHashKey
     @DynamoDBAttribute(attributeName = "MediaGUID")
     public String getMediaGuid() {
@@ -161,9 +161,11 @@ public class Media {
     public String getLcmMediaId() {
         return lcmMediaId;
     }
-    @DynamoDBAttribute(attributeName = "PropertyHero")
+
     public Boolean getPropertyHero() {
-        return propertyHero;
+        final Map domainMap = JSONUtil.buildMapFromJson(domainFields);
+        final String hero = (String) domainMap.get("propertyHero");
+        return "true".equalsIgnoreCase(hero);
     }
 
 
