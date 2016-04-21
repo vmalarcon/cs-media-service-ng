@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 @Component
 public class MediaUpdateProcessor {
@@ -75,7 +76,10 @@ public class MediaUpdateProcessor {
             dynamoMedia.setLastUpdated(new Date());
             mediaDao.saveMedia(dynamoMedia);
         }
-        return new ResponseEntity<>("OK", HttpStatus.OK);
+        final Map<String, Object> response = new HashMap<>();
+        response.put("status", Integer.valueOf(200));
+        final String jsonResponse = new ObjectMapper().writeValueAsString(response);
+        return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
     }
 
     /**
