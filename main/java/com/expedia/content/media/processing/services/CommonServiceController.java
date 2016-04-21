@@ -50,7 +50,7 @@ public abstract class CommonServiceController {
      * @param fileUrl Incoming imageMessage's fileUrl.
      * @return {@code true} if the file exists; {@code false} otherwise.
      */
-    public boolean verifyUrlExistence(final String fileUrl) throws Exception {
+    public boolean verifyUrlExistence(final String fileUrl) {
         final String patchedURL;
         patchedURL = patchURL(fileUrl);
         if (patchedURL.startsWith(S3Validator.S3_PREFIX)) {

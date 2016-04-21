@@ -1,12 +1,18 @@
 package com.expedia.content.media.processing.services;
 
-import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import com.expedia.content.media.processing.pipeline.util.OSDetector;
+import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
+import com.expedia.content.media.processing.services.testing.TestingUtil;
+import org.im4java.process.ProcessStarter;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.core.io.WritableResource;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -18,20 +24,13 @@ import java.net.URL;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.im4java.process.ProcessStarter;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.springframework.core.io.ResourceLoader;
-import org.springframework.core.io.WritableResource;
-
-import com.expedia.content.media.processing.pipeline.domain.Domain;
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
-import com.expedia.content.media.processing.pipeline.util.OSDetector;
-import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
-import com.expedia.content.media.processing.services.testing.TestingUtil;
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class ThumbnailProcessorTest {
 
@@ -133,6 +132,54 @@ public class ThumbnailProcessorTest {
 
         TempDerivativeMessage tempDerivativeMessage =
                 TempDerivativeMessage.builder().height(180).width(180).fileUrl("http://i.imgur.com/Ta3uP.jpg").rotation(0).build();
+        String thumbnailPath = thumbProcessor.createTempDerivativeThumbnail(tempDerivativeMessage);
+        assertTrue(thumbnailPath.matches("https://s3-us-north-200.amazonaws.com/cs-media-bucket/test/thumbnails/tempderivative/(.*)"));
+    }
+
+    @Test
+    public void testCreateTempDerivativeFromHttpUrlWithSpace() throws Exception {
+        ThumbnailProcessor thumbProcessor = new ThumbnailProcessor();
+        File workFolder = tempFolder.newFolder();
+        setFieldValue(thumbProcessor, "tempWorkFolder", workFolder.getAbsolutePath());
+        setFieldValue(thumbProcessor, "regionName", "us-north-200");
+        setFieldValue(thumbProcessor, "thumbnailOuputLocation", "s3://cs-media-bucket/test/thumbnails/");
+
+        WritableResource mockWritableResource = mock(WritableResource.class);
+        when(mockWritableResource.getOutputStream()).thenReturn(new BufferedOutputStream(new FileOutputStream(tempFolder.newFile())));
+        ResourceLoader mockResourceLoader = mock(ResourceLoader.class);
+        when(mockResourceLoader.getResource(anyString())).thenReturn(mockWritableResource);
+        setFieldValue(thumbProcessor, "resourceLoader", mockResourceLoader);
+
+        File sourceFile = TestingUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));
+        InputStream inputStream = new FileInputStream(sourceFile);
+        when(mockWritableResource.getInputStream()).thenReturn(inputStream);
+
+        TempDerivativeMessage tempDerivativeMessage =
+                TempDerivativeMessage.builder().height(180).width(180).fileUrl("s3://ewe-cs-media-test/e2e/images/Space Test.jpg").rotation(0).build();
+        String thumbnailPath = thumbProcessor.createTempDerivativeThumbnail(tempDerivativeMessage);
+        assertTrue(thumbnailPath.matches("https://s3-us-north-200.amazonaws.com/cs-media-bucket/test/thumbnails/tempderivative/(.*)"));
+    }
+
+    @Test
+    public void testCreateTempDerivativeFromS3UrlWithSpaceSuccessful() throws Exception {
+        ThumbnailProcessor thumbProcessor = new ThumbnailProcessor();
+        File workFolder = tempFolder.newFolder();
+        setFieldValue(thumbProcessor, "tempWorkFolder", workFolder.getAbsolutePath());
+        setFieldValue(thumbProcessor, "regionName", "us-north-200");
+        setFieldValue(thumbProcessor, "thumbnailOuputLocation", "s3://cs-media-bucket/test/thumbnails/");
+
+        WritableResource mockWritableResource = mock(WritableResource.class);
+        when(mockWritableResource.getOutputStream()).thenReturn(new BufferedOutputStream(new FileOutputStream(tempFolder.newFile())));
+        ResourceLoader mockResourceLoader = mock(ResourceLoader.class);
+        when(mockResourceLoader.getResource(anyString())).thenReturn(mockWritableResource);
+        setFieldValue(thumbProcessor, "resourceLoader", mockResourceLoader);
+
+        File sourceFile = TestingUtil.buildTestImage(500, 500, tempFolder.newFile("source.jpg"));
+        InputStream inputStream = new FileInputStream(sourceFile);
+        when(mockWritableResource.getInputStream()).thenReturn(inputStream);
+
+        TempDerivativeMessage tempDerivativeMessage =
+                TempDerivativeMessage.builder().height(180).width(180).fileUrl("http://images.xtravelsystem.com/slide/files/public/88/8/0/3/Images/lobby (2) (Custom).jpg").rotation(0).build();
         String thumbnailPath = thumbProcessor.createTempDerivativeThumbnail(tempDerivativeMessage);
         assertTrue(thumbnailPath.matches("https://s3-us-north-200.amazonaws.com/cs-media-bucket/test/thumbnails/tempderivative/(.*)"));
     }

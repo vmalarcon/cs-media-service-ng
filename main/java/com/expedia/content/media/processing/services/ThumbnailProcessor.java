@@ -60,7 +60,7 @@ public class ThumbnailProcessor {
      * @param imageMessage incoming message.
      * @return
      */
-    public Thumbnail createThumbnail(ImageMessage imageMessage) throws Exception {
+    public Thumbnail createThumbnail(ImageMessage imageMessage) {
         final Integer rotation = (imageMessage.getRotation() == null) ? null : Integer.parseInt(imageMessage.getRotation());
         return createGenericThumbnail(imageMessage.getFileUrl(), THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, rotation,
                 imageMessage.getMediaGuid(), imageMessage.getOuterDomainData().getDomain().getDomain(), imageMessage.getOuterDomainData().getDomainId());
@@ -72,7 +72,7 @@ public class ThumbnailProcessor {
      * @param tempDerivativeMessage
      * @return URL Path for the resulting temporary derivative on S3
      */
-    public String createTempDerivativeThumbnail(TempDerivativeMessage tempDerivativeMessage) throws Exception {
+    public String createTempDerivativeThumbnail(TempDerivativeMessage tempDerivativeMessage) {
         final String guid = UUID.randomUUID().toString();
         return createGenericThumbnail(patchURL(tempDerivativeMessage.getFileUrl()), tempDerivativeMessage.getWidth(), tempDerivativeMessage.getHeight(),
                 tempDerivativeMessage.getRotation(), guid, "tempderivative", null).getLocation();
@@ -93,7 +93,7 @@ public class ThumbnailProcessor {
      */
     @Timer(name = "ThumbnailGenerationTimer")
     private Thumbnail createGenericThumbnail(final String fileUrl, final int width, final int height, final Integer rotation, final String guid,
-                                             final String domain, final String domainId) throws Exception {
+                                             final String domain, final String domainId) {
 
         LOGGER.debug("Creating thumbnail url=[{}] guid=[{}]", fileUrl, guid);
         String thumbnailUrl;
