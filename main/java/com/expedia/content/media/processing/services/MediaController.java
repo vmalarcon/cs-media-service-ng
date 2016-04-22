@@ -318,7 +318,7 @@ public class MediaController extends CommonServiceController {
             LOGGER.info("Response not found. Provided media GUID does not exist' for requestId=[{}], mediaGUID=[{}]", requestID, mediaGUID);
             return this.buildErrorResponse("Provided media GUID does not exist.", serviceUrl, NOT_FOUND);
         } else if (media.getLcmMediaId() == null) {
-            return this.buildErrorResponse("Provided media has not published.", serviceUrl, BAD_REQUEST);
+            return this.buildErrorResponse("Provided media has not been published yet.", serviceUrl, BAD_REQUEST);
         }
         final MediaGetResponse mediaResponse = transformSingleMediaForResponse(media);
         return new ResponseEntity<String>(OBJECT_MAPPER.writeValueAsString(mediaResponse), OK);

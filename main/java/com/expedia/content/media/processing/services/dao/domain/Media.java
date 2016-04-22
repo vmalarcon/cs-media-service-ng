@@ -164,6 +164,9 @@ public class Media {
 
     public Boolean getPropertyHero() {
         final Map domainMap = JSONUtil.buildMapFromJson(domainFields);
+        if (domainMap == null) {
+            return false;
+        }
         final String hero = (String) domainMap.get("propertyHero");
         return "true".equalsIgnoreCase(hero);
     }
