@@ -153,7 +153,7 @@ public class CatalogHeroProcessor {
         final List<CategoryMedia> categoryMediaList = new ArrayList<>();
         final Map<Integer, Date> lcmMediaMap = new HashMap<>();
         final Set<Integer> dynamoLcmIdSet = new HashSet<>();
-        lcmMediaList.forEach(media -> lcmMediaMap.put(media.getMediaId(), media.getLastUpdateDate()));
+        lcmMediaList.stream().filter(media1 -> media1.getMediaUseRank() != 3).forEach(media -> lcmMediaMap.put(media.getMediaId(), media.getLastUpdateDate()));
 
         dynamoMediaList.stream()
                 .filter(media -> (lcmMediaMap.get(Integer.valueOf(media.getLcmMediaId()))) == null ||
