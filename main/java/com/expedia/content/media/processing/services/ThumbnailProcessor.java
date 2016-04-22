@@ -3,6 +3,7 @@ package com.expedia.content.media.processing.services;
 import com.amazonaws.util.IOUtils;
 import com.expedia.content.media.processing.pipeline.domain.CropInstruction;
 import com.expedia.content.media.processing.pipeline.domain.DerivativeType;
+import com.expedia.content.media.processing.pipeline.domain.Image;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.Metadata;
 import com.expedia.content.media.processing.pipeline.domain.ResizeCrop;
@@ -29,6 +30,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -137,7 +140,7 @@ public class ThumbnailProcessor {
      * @throws IOException Thrown if the convert command fails to read or write.
      */
     private Path generateThumbnail(final Path sourcePath, int width, int height, Integer rotation) throws IOException, InterruptedException,
-                                                                                                   IM4JavaException {
+            IM4JavaException, URISyntaxException {
         LOGGER.debug("Generating thumbnail -> " + sourcePath);
         final Path thumbnailPath = Paths.get(sourcePath.toString());
 
@@ -146,11 +149,11 @@ public class ThumbnailProcessor {
         operation.addRawArgs("2");
         operation.units("PixelsPerInch");
         operation.rotate(Double.valueOf(rotation));
+        final CropInstruction cropInstruction = scaleThumbnail(thumbnailPath.toUri().toURL(), height, width);
+        operation.background("black");
+        operation.gravity("center");
+        operation.extent(cropInstruction.getWidth(), cropInstruction.getHeight());
         operation.resize(width, height, "!");
-        final CropInstruction cropInstruction = scaleThumbnail(height, width);
-        if (cropInstruction != null) {
-            operation.extent(cropInstruction.getWidth(), cropInstruction.getHeight());
-        }
         operation.orient("top-left");
         operation.addImage(sourcePath.toString());
         operation.addImage(thumbnailPath.toString());
@@ -164,18 +167,20 @@ public class ThumbnailProcessor {
     }
 
     /**
-     *
+     * Since ResizeMethod is set to FIXED scaleThumbnail always returns CropInstruction
+     * even though the image does not need to be cropped
+     * @param imagePath
      * @param height
      * @param width
      * @return
      */
-    private CropInstruction scaleThumbnail(int height, int width) {
-        DerivativeType derivativeType = new DerivativeType();
+    private CropInstruction scaleThumbnail(URL imagePath, int height, int width) throws URISyntaxException {
+        final Image image = new Image(imagePath);
+        final DerivativeType derivativeType = new DerivativeType();
         derivativeType.setHeight(height);
         derivativeType.setWidth(width);
         derivativeType.setResizeMethod(ResizeMethod.FIXED);
-        derivativeType.setTypeName(DERIVATIVE_TYPE);
-        final ResizeCrop resizeCrop = new ResizeCrop(height, width, derivativeType);
+        final ResizeCrop resizeCrop = new ResizeCrop(image.getHeight(), image.getWidth(), derivativeType);
         return resizeCrop.getCropInstruction();
     }
 
