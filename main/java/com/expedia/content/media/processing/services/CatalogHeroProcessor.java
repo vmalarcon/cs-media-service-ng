@@ -153,7 +153,7 @@ public class CatalogHeroProcessor {
         final List<CategoryMedia> categoryMediaList = new ArrayList<>();
         final Map<Integer, Date> lcmMediaMap = new HashMap<>();
         final Set<Integer> dynamoLcmIdSet = new HashSet<>();
-        lcmMediaList.forEach(media -> lcmMediaMap.put(media.getMediaId(), media.getLastUpdateDate()));
+        lcmMediaList.stream().filter(media1 -> media1.getMediaUseRank() != 3).forEach(media -> lcmMediaMap.put(media.getMediaId(), media.getLastUpdateDate()));
 
         dynamoMediaList.stream()
                 .filter(media -> (lcmMediaMap.get(Integer.valueOf(media.getLcmMediaId()))) == null ||
@@ -173,10 +173,18 @@ public class CatalogHeroProcessor {
         return categoryMediaList;
     }
 
+    /**
+     * Compares a media's last update time in LCM and Dynamo DB.
+     * LCM only holds the time to the minute, so the seconds are dropped from the Dynamo DB time to normalize the values.
+     *
+     * @param lcmDate Last Update Time in LCM
+     * @param dynamoDate Last Update Time in Dynamo DB
+     * @return the boolean value of whether the Dynamo last update time is more recent than the LCM last update time
+     */
     private Boolean compareDates(Date lcmDate, Date dynamoDate) {
         final ZonedDateTime lcmDateZoned = ZonedDateTime.ofInstant(lcmDate.toInstant(), ZoneId.of(LCM_PST_TIMEZONE));
         final ZonedDateTime dynamoDateZoned = ZonedDateTime.ofInstant(dynamoDate.toInstant(), ZoneId.of(DYNAMO_UTC_TIMEZONE));
-        return lcmDateZoned.isBefore(dynamoDateZoned);
+        return !lcmDateZoned.isAfter(dynamoDateZoned.minusSeconds(dynamoDateZoned.getSecond()).minusNanos(dynamoDateZoned.getNano()));
     }
 
     private class CategoryMedia {

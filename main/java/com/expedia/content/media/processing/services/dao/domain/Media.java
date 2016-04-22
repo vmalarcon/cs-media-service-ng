@@ -23,7 +23,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @DynamoDBTable(tableName = "cs-mediadb-Media")
-@SuppressWarnings({"PMD.TooManyFields", "PMD.ExcessivePublicCount"})
+@SuppressWarnings({"PMD.TooManyFields", "PMD.ExcessivePublicCount","PMD.UnusedPrivateField", "PMD.SingularField"})
 public class Media {
 
     @Setter private String mediaGuid;
@@ -52,6 +52,9 @@ public class Media {
     @Setter private List<String> commentList;
     @Setter private String status;
     @Setter private String domainDerivativeCategory;
+
+    @Setter private Boolean propertyHero;
+
     @DynamoDBHashKey
     @DynamoDBAttribute(attributeName = "MediaGUID")
     public String getMediaGuid() {
@@ -170,7 +173,6 @@ public class Media {
         final String hero = (String) domainMap.get("propertyHero");
         return "true".equalsIgnoreCase(hero);
     }
-
 
     @DynamoDBIgnore
     public List<Map<String, Object>> getDerivativesList() {

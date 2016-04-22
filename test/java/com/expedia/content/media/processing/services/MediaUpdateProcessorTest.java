@@ -63,11 +63,12 @@ public class MediaUpdateProcessorTest {
                 + "}";
 
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
-        Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"subcategoryId\":\"22003\"}",
-                new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(), new HashMap<>(), new ArrayList<>(), "", "");
+        Media dynamoMedia =
+                new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"subcategoryId\":\"22003\"}",
+                        new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
+                        new HashMap<>(), new ArrayList<>(), "", "", false);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
     }
-
 
     @Test
     public void testHeroTrueFieldInRQ() throws Exception {
@@ -79,14 +80,17 @@ public class MediaUpdateProcessorTest {
                 + "    }\n"
                 + "}";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
-        Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"propertyHero\":\"true\"}",
-                new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(), new HashMap<>(), new ArrayList<>(),
-                "", "");
+        Media dynamoMedia =
+                new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"propertyHero\":\"true\"}",
+                        new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
+                        new HashMap<>(), new ArrayList<>(),
+                        "", "", true);
         LcmCatalogItemMedia lcmCatalogItemMedia = mock(LcmCatalogItemMedia.class);
         when(catalogHeroProcessor.getCatalogItemMeida(12345, 123)).thenReturn(lcmCatalogItemMedia);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(catalogHeroProcessor).setMediaToHero(eq("bobthegreat"), eq(lcmCatalogItemMedia), anyBoolean(), anyString());
-        verify(catalogHeroProcessor).setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
+        verify(catalogHeroProcessor)
+                .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
 
     }
 
@@ -100,12 +104,14 @@ public class MediaUpdateProcessorTest {
                 + "    }\n"
                 + "}";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
-        Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"propertyHero\":\"false\"}",
-                new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(), new HashMap<>(), new ArrayList<>(), "", "");
+        Media dynamoMedia =
+                new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"propertyHero\":\"false\"}",
+                        new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
+                        new HashMap<>(), new ArrayList<>(), "", "", false);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(catalogHeroProcessor).getCatalogItemMeida(12345, 123);
-        verify(catalogHeroProcessor, never()).setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
-
+        verify(catalogHeroProcessor, never())
+                .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
 
     }
 
@@ -120,13 +126,16 @@ public class MediaUpdateProcessorTest {
                 + "    }\n"
                 + "}";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
-        Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"propertyHero\":\"true\",\"subcategoryId\":\"22003\"}",
-                new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(), new HashMap<>(), new ArrayList<>(), "", "");
+        Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345",
+                "{\"propertyHero\":\"true\",\"subcategoryId\":\"22003\"}",
+                new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
+                new HashMap<>(), new ArrayList<>(), "", "", true);
         LcmCatalogItemMedia lcmCatalogItemMedia = mock(LcmCatalogItemMedia.class);
         when(catalogHeroProcessor.getCatalogItemMeida(12345, 123)).thenReturn(lcmCatalogItemMedia);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(catalogHeroProcessor).setMediaToHero(eq("bobthegreat"), eq(lcmCatalogItemMedia), anyBoolean(), anyString());
-        verify(catalogHeroProcessor).setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
+        verify(catalogHeroProcessor)
+                .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
     }
 
     @Test
@@ -140,7 +149,8 @@ public class MediaUpdateProcessorTest {
 
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
         Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{}",
-                new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(), new HashMap<>(), new ArrayList<>(), "", "");
+                new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
+                new HashMap<>(), new ArrayList<>(), "", "", false);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(mediaUpdateDao).updateMedia(imageMessage, 123);
     }
@@ -164,8 +174,10 @@ public class MediaUpdateProcessorTest {
                 + "    }\n"
                 + "}";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
-        Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"rooms\":[{\"roomId\":\"934779\",\"roomHero\":\"false\"},{\"roomId\":\"928675\",\"roomHero\":\"true\"}]}",
-                new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(), new HashMap<>(), new ArrayList<>(), "", "");
+        Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345",
+                "{\"rooms\":[{\"roomId\":\"934779\",\"roomHero\":\"false\"},{\"roomId\":\"928675\",\"roomHero\":\"true\"}]}",
+                new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
+                new HashMap<>(), new ArrayList<>(), "", "", false);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(catalogItemMediaDao).getLcmRoomsByMediaId(123);
     }

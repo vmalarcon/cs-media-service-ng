@@ -1,9 +1,9 @@
 package com.expedia.content.media.processing.services.util;
 
+import com.expedia.content.media.processing.services.dao.domain.Media;
+
 import java.util.List;
 import java.util.Optional;
-
-import com.expedia.content.media.processing.services.dao.domain.Media;
 
 /**
  * Utility methods/logic for the Media replacement logic.
