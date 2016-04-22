@@ -13,6 +13,12 @@ import java.util.stream.Stream;
 
 import javax.annotation.Resource;
 
+import com.expedia.content.media.processing.services.reqres.Comment;
+import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
+import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
+import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,7 +66,9 @@ public class LcmDynamoMediaDao implements MediaDao {
     private static final String FIELD_DERIVATIVE_WIDTH = "width";
     private static final String FIELD_DERIVATIVE_HEIGHT = "height";
     private static final String FIELD_DERIVATIVE_FILE_SIZE = "fileSize";
+    private static final String RESPONSE_FIELD_LCM_MEDIA_ID = "lcmMediaId";
 
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
     private static final Logger LOGGER = LoggerFactory.getLogger(LcmDynamoMediaDao.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Integer FORMAT_ID_2 = 2;
@@ -109,7 +117,7 @@ public class LcmDynamoMediaDao implements MediaDao {
 
     @Override
     @SuppressWarnings("unchecked")
-    public List<Media> getMediaByDomainId(Domain domain, String domainId, String activeFilter, String derivativeFilter) {
+    public MediaByDomainIdResponse getMediaByDomainId(Domain domain, String domainId, String activeFilter, String derivativeFilter, Integer pageSize, Integer pageIndex) throws Exception {
         List<Media> domainIdMedia = mediaRepo.loadMedia(domain, domainId).stream().map(media -> completeMedia(media, derivativeFilter)).collect(Collectors.toList());
         if (Domain.LODGING.equals(domain)) {
             final Map<String, Media> mediaLcmMediaIdMap =
@@ -135,13 +143,49 @@ public class LcmDynamoMediaDao implements MediaDao {
         }
         domainIdMedia = mediaStream.sorted((media1, media2) -> compareMedia(media1, media2, domain)).collect(Collectors.toList());
 
-        final List<String> fileNames =
+        List<String> fileNames =
                 domainIdMedia.stream().filter(media -> media.getFileName() != null).map(media -> media.getFileName()).distinct()
                         .collect(Collectors.toList());
-
+        final Integer totalMediaCount = fileNames.size();
+        if (pageSize != null || pageIndex != null) {
+            final String errorResponse = validatePagination(totalMediaCount, pageSize, pageIndex);
+            if (errorResponse == null) {
+                fileNames = (List<String>) paginateItems(fileNames.stream(), pageSize, pageIndex).collect(Collectors.toList());
+                domainIdMedia = (List<Media>) paginateItems(domainIdMedia.stream(), pageSize, pageIndex).collect(Collectors.toList());
+            } else {
+                throw new Exception(errorResponse);
+            }
+        }
         final Map<String, String> fileStatus = getStatusByLoop(paramLimit, fileNames);
         domainIdMedia.stream().forEach(media -> media.setStatus(fileStatus.get(media.getFileName())));
-        return domainIdMedia;
+        return MediaByDomainIdResponse.builder().domain(domain.getDomain()).domainId(domainId).totalMediaCount(totalMediaCount).images(transformMediaListForResponse(domainIdMedia)).build();
+    }
+
+    /**
+     * returns a ResponseEntity if the pageSize and pageIndex are not both null or not null
+     * @param totalMediaCount
+     * @param pageSize
+     * @param pageIndex
+     * @return a ResponseEntity if the pageSize and pageIndex are not both null or not null
+     */
+    private String validatePagination(Integer totalMediaCount, Integer pageSize, Integer pageIndex) {
+        if ((pageSize != null && pageIndex == null) || (pageSize == null && pageIndex != null)) {
+            return "pageSize and pageIndex are inclusive, either both fields can be null or not null";
+        }
+        if (pageSize < 1 || pageIndex < 1) {
+            return "pageSize and pageIndex can only be positive integer values";
+        }
+        if (pageSize * pageIndex > totalMediaCount) {
+            return "pageIndex is out of bounds";
+        }
+        return null;
+    }
+
+    private Stream paginateItems(Stream items, Integer pageSize, Integer pageIndex) {
+        final int indexStart = pageSize * (pageIndex - 1);
+        final int indexEnd = pageSize;
+        return items.skip(indexStart)
+                    .limit(indexEnd);
     }
 
     /*
@@ -150,7 +194,7 @@ public class LcmDynamoMediaDao implements MediaDao {
      */
     @Override
     @SuppressWarnings("unchecked")
-    public Media getMediaByGUID(String mediaGUID) {
+    public MediaGetResponse getMediaByGUID(String mediaGUID) {
         final boolean isLodgingNoGuid = mediaGUID.matches("\\d+");
         final String nullFilter = null;
         Media guidMedia = null;
@@ -189,7 +233,7 @@ public class LcmDynamoMediaDao implements MediaDao {
                 guidMedia.setStatus(status);
             }
         }
-        return guidMedia;
+        return transformSingleMediaForResponse(guidMedia);
     }
 
     /**
@@ -522,6 +566,94 @@ public class LcmDynamoMediaDao implements MediaDao {
                     }).collect(Collectors.toList());
         }
         return derivatives;
+    }
+
+    /**
+     * Transforms a media for a media get response format.
+     *
+     * @param media The media to transform
+     * @return The media response with the transformed media.
+     */
+    @SuppressWarnings({"PMD.SignatureDeclareThrowsException", "CPD-START"})
+    private MediaGetResponse transformSingleMediaForResponse(Media media) {
+        if (media != null) {
+        /* @formatter:off */
+            setResponseLcmMediaId(media);
+            return MediaGetResponse.builder()
+                    .mediaGuid(media.getMediaGuid())
+                    .fileUrl(media.getFileUrl())
+                    .fileName(media.getFileName())
+                    .active(media.getActive())
+                    .width(media.getWidth())
+                    .height(media.getHeight())
+                    .fileSize(media.getFileSize())
+                    .status(media.getStatus())
+                    .lastUpdatedBy(media.getUserId())
+                    .lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
+                    .domain(media.getDomain())
+                    .domainId(media.getDomainId())
+                    .domainProvider(media.getProvider())
+                    .domainFields(media.getDomainData())
+                    .derivatives(media.getDerivativesList())
+                    .domainDerivativeCategory(media.getDomainDerivativeCategory())
+                    .comments((media.getCommentList() == null) ? null : media.getCommentList().stream()
+                            .map(comment -> Comment.builder().note(comment)
+                                    .timestamp(DATE_FORMATTER.print(media.getLastUpdated().getTime())).build())
+                            .collect(Collectors.toList()))
+                    .build();
+        /* @formatter:on */
+        }
+        return null;
+    }
+
+    /**
+     * Transforms a media list for a media get response format.
+     *
+     * @param mediaList List of media to transform.
+     * @return The transformed list.
+     */
+    @SuppressWarnings("CPD-END")
+    private List<DomainIdMedia> transformMediaListForResponse(List<Media> mediaList) {
+        return mediaList.stream().map(media -> {
+            setResponseLcmMediaId(media);
+            /* @formatter:off */
+            return DomainIdMedia.builder()
+                    .mediaGuid(media.getMediaGuid())
+                    .fileUrl(media.getFileUrl())
+                    .fileName(media.getFileName())
+                    .active(media.getActive())
+                    .width(media.getWidth())
+                    .height(media.getHeight())
+                    .fileSize(media.getFileSize())
+                    .status(media.getStatus())
+                    .lastUpdatedBy(media.getUserId())
+                    .lastUpdateDateTime("TIME")
+                    .domainProvider(media.getProvider())
+                    .domainFields(media.getDomainData())
+                    .derivatives(media.getDerivativesList())
+                    .domainDerivativeCategory(media.getDomainDerivativeCategory())
+                    .comments((media.getCommentList() == null) ? null: media.getCommentList().stream()
+                            .map(comment -> Comment.builder().note(comment)
+                                    .timestamp(DATE_FORMATTER.print(media.getLastUpdated().getTime())).build())
+                            .collect(Collectors.toList()))
+                    .build();
+        }).collect(Collectors.toList());
+        /* @formatter:on */
+    }
+
+    /**
+     * Sets the LCM media id in the media object. The LCM id is put as a field of the domain data since it's
+     * expected there in the response JSON payload.
+     *
+     * @param media The media object to update.
+     */
+    private void setResponseLcmMediaId(Media media) {
+        if (media.getLcmMediaId() != null) {
+            if (media.getDomainData() == null) {
+                media.setDomainData(new HashMap<>());
+            }
+            media.getDomainData().put(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
+        }
     }
 
 }
