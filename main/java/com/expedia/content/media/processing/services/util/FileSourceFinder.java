@@ -3,9 +3,8 @@ package com.expedia.content.media.processing.services.util;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.ListObjectsRequest;
-import com.amazonaws.services.s3.model.ObjectListing;
-import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.amazonaws.services.s3.model.GetObjectRequest;
+import com.amazonaws.services.s3.model.S3Object;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -23,24 +22,24 @@ public class FileSourceFinder {
     public static final String SOURCE_DIR = "\\\\CHE-FILIDXIMG01\\GSO_media\\lodging";
     public static final String SOURCE_DIR_NEW = "\\\\CHE-FILIDXIMG01\\GSO_MediaNew\\lodging";
 
-
-
     /**
      * get the file source URL from S3 repo.
      *
      * @return true if found, false otherwise.
      */
-    public  String getGUIDFilePath(String bucketName, String prefix, String millonFolder, String partialName) {
+    public String getGUIDFilePath(String bucketName, String prefix, String millonFolder, String guid) {
         try {
             final AmazonS3 s3Client = new AmazonS3Client();
-            final ListObjectsRequest listObjectsRequest = new ListObjectsRequest()
-                    .withBucketName(bucketName)
-                    .withPrefix(prefix + millonFolder);
-            final ObjectListing objectListing = s3Client.listObjects(listObjectsRequest);
-            for (final S3ObjectSummary summary : objectListing.getObjectSummaries()) {
-                if (summary.getKey().contains(partialName.substring(0, 8))) {
-                    return S3_PREFIX + summary.getBucketName() + "/" + summary.getKey();
+            String objectName = prefix + millonFolder + guid + ".jpg";
+            S3Object object = s3Client.getObject(new GetObjectRequest(bucketName, objectName));
+            if (object == null) {
+                objectName = prefix + millonFolder + guid + ".JPG";
+                object = s3Client.getObject(new GetObjectRequest(bucketName, objectName));
+                if (object != null) {
+                    return S3_PREFIX + bucketName + "/" + objectName;
                 }
+            } else {
+                return S3_PREFIX + bucketName + "/" + objectName;
             }
         } catch (AmazonServiceException e) {
             LOGGER.error("s3 query exception", e);
@@ -57,12 +56,12 @@ public class FileSourceFinder {
      * @param domainId
      * @return
      */
-    public  String getSourcePath(String bucketName, String prefix, String fileUrl, int domainId) {
+    public String getSourcePath(String bucketName, String prefix, String fileUrl, int domainId, String guid) {
         final String fileName = getFileNameFromUrl(fileUrl);
         final String pattern = "_[\\w]{1}.jpg";
         final String millonFolder = getMillonFolderFromUrl(fileUrl);
         if (matchGuid(fileName)) {
-            return getGUIDFilePath(bucketName, prefix, millonFolder, fileName);
+            return getGUIDFilePath(bucketName, prefix, millonFolder, guid);
         } else {
             if (domainId < MILLION_FOLDER_LIMIT) {
                 return SOURCE_DIR + millonFolder.replace("/", "\\") + fileName.replaceFirst(pattern, ".jpg");
@@ -78,7 +77,7 @@ public class FileSourceFinder {
      * @param fileName
      * @return
      */
-    private  boolean matchGuid(String fileName) {
+    public boolean matchGuid(String fileName) {
         final String subName = getFileNameFromUrl(fileName);
         if (subName.length() > 8 && subName.substring(0, 8).contains("_")) {
             return false;
@@ -90,7 +89,7 @@ public class FileSourceFinder {
         return false;
     }
 
-    private  String getMillonFolderFromUrl(String fileUrl) {
+    private String getMillonFolderFromUrl(String fileUrl) {
         //http://images.trvl-media.com/hotels/1000000/10000/8400/8393/4a8a5b92_t.jpg
         if (fileUrl.contains(HOTELS) && fileUrl.contains("/")) {
             final int lastLoc = fileUrl.lastIndexOf('/');
@@ -108,7 +107,7 @@ public class FileSourceFinder {
      * @param fileUrl
      * @return
      */
-    public  String getFileNameFromUrl(String fileUrl) {
+    public String getFileNameFromUrl(String fileUrl) {
         //http://images.trvl-media.com/hotels/1000000/10000/8400/8393/4a8a5b92_t.jpg
         if (fileUrl.contains(HOTELS)) {
             final int lastLoc = fileUrl.lastIndexOf('/');
