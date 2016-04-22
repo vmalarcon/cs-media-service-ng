@@ -1,14 +1,18 @@
 package com.expedia.content.media.processing.services;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.UUID;
-
+import com.amazonaws.util.IOUtils;
+import com.expedia.content.media.processing.pipeline.domain.CropInstruction;
+import com.expedia.content.media.processing.pipeline.domain.DerivativeType;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.Metadata;
+import com.expedia.content.media.processing.pipeline.domain.ResizeCrop;
+import com.expedia.content.media.processing.pipeline.domain.ResizeMethod;
+import com.expedia.content.media.processing.pipeline.util.TemporaryWorkFolder;
+import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
+import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
+import com.expedia.content.media.processing.services.util.ImageUtil;
+import com.google.common.base.Joiner;
+import expedia.content.solutions.metrics.annotations.Timer;
 import org.im4java.core.ConvertCmd;
 import org.im4java.core.IM4JavaException;
 import org.im4java.core.IMOperation;
@@ -21,16 +25,14 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.WritableResource;
 import org.springframework.stereotype.Component;
 
-import com.amazonaws.util.IOUtils;
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.Metadata;
-import com.expedia.content.media.processing.pipeline.util.TemporaryWorkFolder;
-import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
-import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
-import com.expedia.content.media.processing.services.util.ImageUtil;
-import com.google.common.base.Joiner;
-
-import expedia.content.solutions.metrics.annotations.Timer;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * Thumbnail processing related functionality.
@@ -130,7 +132,6 @@ public class ThumbnailProcessor {
      * @param height
      * @param rotation
      * @return Path to the thumbnail stored locally.
-     * @param addThumbnailExtension boolean value to determine wheter to a a _t extension to the file
      * @throws IM4JavaException Thrown when the thumbnail generation fails.
      * @throws InterruptedException Thrown if the convert command fails.
      * @throws IOException Thrown if the convert command fails to read or write.
@@ -146,6 +147,10 @@ public class ThumbnailProcessor {
         operation.units("PixelsPerInch");
         operation.rotate(Double.valueOf(rotation));
         operation.resize(width, height, "!");
+        final CropInstruction cropInstruction = scaleThumbnail(height, width);
+        if (cropInstruction != null) {
+            operation.extent(cropInstruction.getWidth(), cropInstruction.getHeight());
+        }
         operation.orient("top-left");
         operation.addImage(sourcePath.toString());
         operation.addImage(thumbnailPath.toString());
@@ -156,6 +161,22 @@ public class ThumbnailProcessor {
         verifyCommandResult(convertCmd);
         LOGGER.debug("Generated thumbnail" + sourcePath);
         return thumbnailPath;
+    }
+
+    /**
+     *
+     * @param height
+     * @param width
+     * @return
+     */
+    private CropInstruction scaleThumbnail(int height, int width) {
+        DerivativeType derivativeType = new DerivativeType();
+        derivativeType.setHeight(height);
+        derivativeType.setWidth(width);
+        derivativeType.setResizeMethod(ResizeMethod.FIXED);
+        derivativeType.setTypeName(DERIVATIVE_TYPE);
+        final ResizeCrop resizeCrop = new ResizeCrop(height, width, derivativeType);
+        return resizeCrop.getCropInstruction();
     }
 
     /**
@@ -176,7 +197,6 @@ public class ThumbnailProcessor {
     /**
      * Builds the S3 storage location and file name for the source file.
      * 
-     * @param thumbnailPath The thumbnail work file.
      * @param guid The assigned media guid to the media file.
      * @param domain The domain the media belongs to.
      * @param domainId The id, in the domain, of the item the media belongs to.
@@ -196,7 +216,6 @@ public class ThumbnailProcessor {
      * @param fileUrl Image URL to fetch.
      * @param guid GUID for the image.
      * @param workFolder Temporary working folder to use for downloading the image.
-     * @param resourceLoader
      * @return Path where the image is downloaded.
      * @throws IOException When unable to fetch the URL
      */
