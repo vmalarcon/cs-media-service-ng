@@ -72,10 +72,10 @@ public class ThumbnailProcessor {
     }
 
     /**
-     * Create a Temporary Derivative and save it in S3
+     * Create a Temporary Derivative and save it in S3.
      *
-     * @param tempDerivativeMessage
-     * @return URL Path for the resulting temporary derivative on S3
+     * @param tempDerivativeMessage.
+     * @return URL Path for the resulting temporary derivative on S3.
      */
     public String createTempDerivativeThumbnail(TempDerivativeMessage tempDerivativeMessage) {
         final String guid = UUID.randomUUID().toString();
@@ -85,16 +85,16 @@ public class ThumbnailProcessor {
 
     /**
      * Generic method for creating a Thumbnail for an imageMessage or creating a
-     * temporary derivative
+     * temporary derivative.
      *
-     * @param fileUrl the url of the sent file
-     * @param width the width of the returned thumbnail
-     * @param height the height of the returned thumbnail
-     * @param rotation the rotation of the returned thumbnail
-     * @param guid the guid of the message
-     * @param domain domain of an imageMessage
-     * @param domainId domainId of an imageMessage
-     * @return thumbnailUrl the url of the generated thumbnail
+     * @param fileUrl the url of the sent file.
+     * @param width the width of the returned thumbnail.
+     * @param height the height of the returned thumbnail.
+     * @param rotation the rotation of the returned thumbnail.
+     * @param guid the guid of the message.
+     * @param domain domain of an imageMessage.
+     * @param domainId domainId of an imageMessage.
+     * @return thumbnailUrl the url of the generated thumbnail.
      */
     @Timer(name = "ThumbnailGenerationTimer")
     private Thumbnail createGenericThumbnail(final String fileUrl, final int width, final int height, final Integer rotation, final String guid,
@@ -131,9 +131,9 @@ public class ThumbnailProcessor {
      * Generates the thumbnail using ImageMagick.
      * 
      * @param sourcePath Locally saved image to convert to thumbnail.
-     * @param width
-     * @param height
-     * @param rotation
+     * @param width Desired width of the thumbnail image.
+     * @param height Desired height of the thumbnail image.
+     * @param rotation Rotation to apply to the thumbnail image. 
      * @return Path to the thumbnail stored locally.
      * @throws IM4JavaException Thrown when the thumbnail generation fails.
      * @throws InterruptedException Thrown if the convert command fails.
@@ -167,12 +167,13 @@ public class ThumbnailProcessor {
     }
 
     /**
-     * Since ResizeMethod is set to FIXED scaleThumbnail always returns CropInstruction
-     * even though the image does not need to be cropped
-     * @param imagePath
-     * @param height
-     * @param width
-     * @return
+     * Scales the image for the resulting thumbnail. Since ResizeMethod is set to FIXED scaleThumbnail always
+     * returns CropInstruction even though the image does not need to be cropped.
+     * 
+     * @param imagePath The path of the work image to manipulate.
+     * @param width Desired width of the thumbnail image.
+     * @param height Desired height of the thumbnail image.
+     * @return The resize and cropping instructions for the thumbnail.
      */
     private CropInstruction scaleThumbnail(URL imagePath, int height, int width) throws URISyntaxException {
         final Image image = new Image(imagePath);
@@ -185,10 +186,10 @@ public class ThumbnailProcessor {
     }
 
     /**
-     * Verify the result of an ImageMagick execution
+     * Verify the result of an ImageMagick execution.
      *
      * @param convertCommand ImageMagick command executed.
-     * @throws IM4JavaException thrown when any error/warning is returned form the command execution
+     * @throws IM4JavaException thrown when any error/warning is returned form the command execution.
      */
     private static void verifyCommandResult(final ConvertCmd convertCommand) throws IM4JavaException {
         final List<String> errorTexts = convertCommand.getErrorText();
