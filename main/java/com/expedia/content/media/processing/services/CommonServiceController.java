@@ -51,12 +51,10 @@ public abstract class CommonServiceController {
      * @return {@code true} if the file exists; {@code false} otherwise.
      */
     public boolean verifyUrlExistence(final String fileUrl) {
-        final String patchedURL;
-        patchedURL = patchURL(fileUrl);
-        if (patchedURL.startsWith(S3Validator.S3_PREFIX)) {
-            return S3Validator.checkFileExists(patchedURL);
+        if (fileUrl.startsWith(S3Validator.S3_PREFIX)) {
+            return S3Validator.checkFileExists(patchURL(fileUrl));
         } else {
-            return HTTPValidator.checkFileExists(patchURL(patchedURL));
+            return HTTPValidator.checkFileExists(patchURL(fileUrl));
         }
     }
 

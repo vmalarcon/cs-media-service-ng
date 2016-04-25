@@ -97,16 +97,13 @@ public class ThumbnailProcessor {
 
         LOGGER.debug("Creating thumbnail url=[{}] guid=[{}]", fileUrl, guid);
         String thumbnailUrl;
-        String tempUrl;
         Path thumbnailPath;
         Path sourcePath;
         Thumbnail thumbnail = null;
 
-
-        tempUrl = patchURL(fileUrl);
         final Path workPath = Paths.get(tempWorkFolder);
         try (TemporaryWorkFolder workFolder = new TemporaryWorkFolder(workPath)) {
-            sourcePath = fetchUrl(tempUrl, guid, workFolder);
+            sourcePath = fetchUrl(patchURL(fileUrl), guid, workFolder);
             thumbnailPath = generateThumbnail(sourcePath, width, height, (rotation == null) ? 0 : rotation);
             thumbnailUrl = computeS3thumbnailPath(guid, domain, domainId);
             LOGGER.debug("Writing thumbnail: " + thumbnailUrl);
