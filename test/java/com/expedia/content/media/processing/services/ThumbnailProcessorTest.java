@@ -132,7 +132,7 @@ public class ThumbnailProcessorTest {
         when(mockWritableResource.getInputStream()).thenReturn(inputStream);
 
         TempDerivativeMessage tempDerivativeMessage =
-                TempDerivativeMessage.builder().height(180).width(180).fileUrl("http://i.imgur.com/Ta3uP.jpg").rotation(0).build();
+                TempDerivativeMessage.builder().height(180).width(180).fileUrl("http://i.imgur.com/Ta3uP.jpg").rotation("0").build();
         String thumbnailPath = thumbProcessor.createTempDerivativeThumbnail(tempDerivativeMessage);
         assertTrue(thumbnailPath.matches("https://s3-us-north-200.amazonaws.com/cs-media-bucket/test/thumbnails/tempderivative/(.*)"));
     }
