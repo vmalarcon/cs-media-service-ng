@@ -627,7 +627,7 @@ public class LcmDynamoMediaDao implements MediaDao {
                     .fileSize(media.getFileSize())
                     .status(media.getStatus())
                     .lastUpdatedBy(media.getUserId())
-                    .lastUpdateDateTime("TIME")
+                    .lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
                     .domainProvider(media.getProvider())
                     .domainFields(media.getDomainData())
                     .derivatives(media.getDerivativesList())
