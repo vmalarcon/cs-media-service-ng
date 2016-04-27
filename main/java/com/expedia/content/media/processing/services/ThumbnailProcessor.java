@@ -130,9 +130,9 @@ public class ThumbnailProcessor {
     /**
      * Generates the thumbnail using ImageMagick.
      * The Order of the operation (Important):
-     * 1) Resize the image so that the aspect ratio stays constant and the width and height of the image
+     * 1) Rotate the source image (If the request has a rotation)
+     * 2) Resize the image so that the aspect ratio stays constant and the width and height of the image
      * are both greater than or equal to the width and height input
-     * 2) Rotate the resized image
      * 3) Crop (extent) the rotated image
      * 
      * @param sourcePath Locally saved image to convert to thumbnail.
@@ -147,17 +147,19 @@ public class ThumbnailProcessor {
     private Path generateThumbnail(final Path sourcePath, int width, int height, Integer rotation) throws IOException, InterruptedException,
             IM4JavaException, URISyntaxException {
         LOGGER.debug("Generating thumbnail -> " + sourcePath);
-        final Path thumbnailPath = Paths.get(sourcePath.toString());
 
-        final IMOperation operation = new IMOperation();
+        if (rotation != 0) {
+            rotateImage(sourcePath, rotation);
+        }
+        final Path thumbnailPath = Paths.get(sourcePath.toString());
         final ResizeCrop resizeCrop = scaleThumbnail(thumbnailPath.toUri().toURL(), height, width);
+        final IMOperation operation = new IMOperation();
         operation.limit("thread");
         operation.addRawArgs("2");
         operation.units("PixelsPerInch");
         operation.background("black");
         operation.gravity("center");
         operation.resize(resizeCrop.getWidth(), resizeCrop.getHeight());
-        operation.rotate(Double.valueOf(rotation));
         operation.extent(width, height);
         operation.orient("top-left");
         operation.addImage(sourcePath.toString());
@@ -169,6 +171,24 @@ public class ThumbnailProcessor {
         verifyCommandResult(convertCmd);
         LOGGER.debug("Generated thumbnail" + sourcePath);
         return thumbnailPath;
+    }
+
+    private void rotateImage(final Path sourcePath, Integer rotation) throws IOException, InterruptedException,
+            IM4JavaException, URISyntaxException {
+        final IMOperation operation = new IMOperation();
+        operation.limit("thread");
+        operation.addRawArgs("2");
+        operation.units("PixelsPerInch");
+        operation.background("black");
+        operation.gravity("center");
+        operation.rotate(Double.valueOf(rotation));
+        operation.orient("top-left");
+        operation.addImage(sourcePath.toString());
+        operation.addImage(sourcePath.toString());
+        final ConvertCmd convertCmd = new ConvertCmd();
+        LOGGER.debug("convert.thumb> {}", "convert " + operation.getCmdArgs().toString().replaceAll(",", ""));
+        convertCmd.run(operation);
+        verifyCommandResult(convertCmd);
     }
 
     /**
