@@ -159,7 +159,7 @@ public class ThumbnailProcessor {
         }
         operation.crop(width, height, 0, 0);
         operation.orient("top-left");
-        operation.addImage(thumbnailPath.toString());
+        operation.addImage(sourcePath.toString());
         operation.addImage(thumbnailPath.toString());
 
         final ConvertCmd convertCmd = new ConvertCmd();
