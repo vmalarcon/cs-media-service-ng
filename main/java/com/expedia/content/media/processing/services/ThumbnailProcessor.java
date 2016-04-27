@@ -133,7 +133,7 @@ public class ThumbnailProcessor {
      * 1) Resize the image so that the aspect ratio stays constant and the width and height of the image
      * are both greater than or equal to the width and height input
      * 2) Rotate the resized image
-     * 3) Crop the rotated image
+     * 3) Crop (extent) the rotated image
      * 
      * @param sourcePath Locally saved image to convert to thumbnail.
      * @param width Desired width of the thumbnail image.
