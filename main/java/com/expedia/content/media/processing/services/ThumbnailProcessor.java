@@ -158,7 +158,7 @@ public class ThumbnailProcessor {
         operation.gravity("center");
         operation.resize(resizeCrop.getWidth(), resizeCrop.getHeight());
         operation.rotate(Double.valueOf(rotation));
-        operation.crop(width, height, 0, 0);
+        operation.extent(width, height);
         operation.orient("top-left");
         operation.addImage(sourcePath.toString());
         operation.addImage(thumbnailPath.toString());
