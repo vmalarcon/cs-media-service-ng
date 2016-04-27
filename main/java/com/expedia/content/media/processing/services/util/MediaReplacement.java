@@ -26,7 +26,8 @@ public class MediaReplacement {
         return mediaList.stream()
                 .filter(m -> m.getActive().equalsIgnoreCase("true"))
                 .filter(m -> m.getDomainId().equalsIgnoreCase(domainId))
-                .filter(m -> m.getProvider().equalsIgnoreCase(provider))
+                //avoid NPE when legacy data record in dynamo does not have "provider".
+                .filter(m -> provider.equalsIgnoreCase(m.getProvider()))
                 .max((m1, m2) -> m1.getLastUpdated().compareTo(m2.getLastUpdated()));
     }
 

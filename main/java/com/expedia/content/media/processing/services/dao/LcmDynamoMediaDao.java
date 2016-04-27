@@ -248,7 +248,11 @@ public class LcmDynamoMediaDao implements MediaDao {
         if (Domain.LODGING.equals(domain)) {
             final Boolean media1Hero = isPropertyHero(media1);
             final Boolean media2Hero = isPropertyHero(media2);
-            return media2Hero.compareTo(media1Hero);
+            final int compareHero = media2Hero.compareTo(media1Hero);
+            if (compareHero != 0) {
+                return compareHero;
+            }
+            return media2.getLastUpdated().compareTo(media1.getLastUpdated());
         }
         return 0;
     }
@@ -627,7 +631,7 @@ public class LcmDynamoMediaDao implements MediaDao {
                     .fileSize(media.getFileSize())
                     .status(media.getStatus())
                     .lastUpdatedBy(media.getUserId())
-                    .lastUpdateDateTime("TIME")
+                    .lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
                     .domainProvider(media.getProvider())
                     .domainFields(media.getDomainData())
                     .derivatives(media.getDerivativesList())
