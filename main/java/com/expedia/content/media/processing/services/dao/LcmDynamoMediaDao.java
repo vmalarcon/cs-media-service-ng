@@ -252,7 +252,7 @@ public class LcmDynamoMediaDao implements MediaDao {
             if (compareHero != 0) {
                 return compareHero;
             }
-            return media1.getLastUpdated().compareTo(media2.getLastUpdated());
+            return media2.getLastUpdated().compareTo(media1.getLastUpdated());
         }
         return 0;
     }
