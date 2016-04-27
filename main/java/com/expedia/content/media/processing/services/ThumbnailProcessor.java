@@ -152,7 +152,7 @@ public class ThumbnailProcessor {
         operation.rotate(Double.valueOf(rotation));
         operation.background("black");
         operation.gravity("center");
-        if (rotation == 90 || rotation == 270) {
+        if ((rotation/90)%2 != 0) {
             operation.resize(resizeCrop.getHeight(), resizeCrop.getWidth());
         } else {
             operation.resize(resizeCrop.getWidth(), resizeCrop.getHeight());
