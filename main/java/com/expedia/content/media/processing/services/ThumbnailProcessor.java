@@ -1,7 +1,6 @@
 package com.expedia.content.media.processing.services;
 
 import com.amazonaws.util.IOUtils;
-import com.expedia.content.media.processing.pipeline.domain.CropInstruction;
 import com.expedia.content.media.processing.pipeline.domain.DerivativeType;
 import com.expedia.content.media.processing.pipeline.domain.Image;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
@@ -79,8 +78,9 @@ public class ThumbnailProcessor {
      */
     public String createTempDerivativeThumbnail(TempDerivativeMessage tempDerivativeMessage) {
         final String guid = UUID.randomUUID().toString();
+        final Integer rotation = (tempDerivativeMessage.getRotation() == null ? null : Integer.valueOf(tempDerivativeMessage.getRotation()));
         return createGenericThumbnail(tempDerivativeMessage.getFileUrl(), tempDerivativeMessage.getWidth(), tempDerivativeMessage.getHeight(),
-                Integer.valueOf(tempDerivativeMessage.getRotation()), guid, "tempderivative", null).getLocation();
+                rotation, guid, "tempderivative", null).getLocation();
     }
 
     /**
@@ -145,17 +145,21 @@ public class ThumbnailProcessor {
         final Path thumbnailPath = Paths.get(sourcePath.toString());
 
         final IMOperation operation = new IMOperation();
+        final ResizeCrop resizeCrop = scaleThumbnail(thumbnailPath.toUri().toURL(), height, width);
         operation.limit("thread");
         operation.addRawArgs("2");
         operation.units("PixelsPerInch");
         operation.rotate(Double.valueOf(rotation));
-        final CropInstruction cropInstruction = scaleThumbnail(thumbnailPath.toUri().toURL(), height, width);
         operation.background("black");
         operation.gravity("center");
-        operation.extent(cropInstruction.getWidth(), cropInstruction.getHeight());
-        operation.resize(width, height, "!");
+        if (rotation == 90 || rotation == 270) {
+            operation.resize(resizeCrop.getHeight(), resizeCrop.getWidth());
+        } else {
+            operation.resize(resizeCrop.getWidth(), resizeCrop.getHeight());
+        }
+        operation.crop(width, height, 0, 0);
         operation.orient("top-left");
-        operation.addImage(sourcePath.toString());
+        operation.addImage(thumbnailPath.toString());
         operation.addImage(thumbnailPath.toString());
 
         final ConvertCmd convertCmd = new ConvertCmd();
@@ -175,14 +179,13 @@ public class ThumbnailProcessor {
      * @param height Desired height of the thumbnail image.
      * @return The resize and cropping instructions for the thumbnail.
      */
-    private CropInstruction scaleThumbnail(URL imagePath, int height, int width) throws URISyntaxException {
+    private ResizeCrop scaleThumbnail(URL imagePath, int height, int width) throws URISyntaxException {
         final Image image = new Image(imagePath);
         final DerivativeType derivativeType = new DerivativeType();
         derivativeType.setHeight(height);
         derivativeType.setWidth(width);
         derivativeType.setResizeMethod(ResizeMethod.FIXED);
-        final ResizeCrop resizeCrop = new ResizeCrop(image.getHeight(), image.getWidth(), derivativeType);
-        return resizeCrop.getCropInstruction();
+        return new ResizeCrop(image.getHeight(), image.getWidth(), derivativeType);
     }
 
     /**
