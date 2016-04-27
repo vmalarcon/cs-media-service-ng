@@ -171,22 +171,6 @@ public class ThumbnailProcessor {
         return thumbnailPath;
     }
 
-//    /**
-//     * Adds a rotate and resize operation to the convert command
-//     * Since the resizeCrop if the rotation is 90 or 270
-//     * @param resizeCrop
-//     * @param operation
-//     * @param rotation
-//     */
-//    private void rotateAndResize(ResizeCrop resizeCrop, IMOperation operation, Integer rotation) {
-//        operation.rotate(Double.valueOf(rotation));
-//        if ((rotation/90)%2 != 0) {
-//            operation.resize(resizeCrop.getHeight(), resizeCrop.getWidth());
-//        } else {
-//            operation.resize(resizeCrop.getWidth(), resizeCrop.getHeight());
-//        }
-//    }
-
     /**
      * Scales the image for the resulting thumbnail. Since ResizeMethod is set to FIXED scaleThumbnail always
      * returns CropInstruction even though the image does not need to be cropped.
