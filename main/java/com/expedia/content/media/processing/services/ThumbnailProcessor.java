@@ -74,13 +74,13 @@ public class ThumbnailProcessor {
     /**
      * Create a Temporary Derivative and save it in S3.
      *
-     * @param tempDerivativeMessage.
+     * @param tempDerivativeMessage
      * @return URL Path for the resulting temporary derivative on S3.
      */
     public String createTempDerivativeThumbnail(TempDerivativeMessage tempDerivativeMessage) {
         final String guid = UUID.randomUUID().toString();
         return createGenericThumbnail(tempDerivativeMessage.getFileUrl(), tempDerivativeMessage.getWidth(), tempDerivativeMessage.getHeight(),
-                tempDerivativeMessage.getRotation(), guid, "tempderivative", null).getLocation();
+                Integer.valueOf(tempDerivativeMessage.getRotation()), guid, "tempderivative", null).getLocation();
     }
 
     /**
