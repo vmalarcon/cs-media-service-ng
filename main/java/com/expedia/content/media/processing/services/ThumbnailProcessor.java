@@ -129,6 +129,11 @@ public class ThumbnailProcessor {
 
     /**
      * Generates the thumbnail using ImageMagick.
+     * The Order of the operation (Important):
+     * 1) Resize the image so that the aspect ratio stays constant and the width and height of the image
+     * are both greater than or equal to the width and height input
+     * 2) Rotate the resized image
+     * 3) Crop the rotated image
      * 
      * @param sourcePath Locally saved image to convert to thumbnail.
      * @param width Desired width of the thumbnail image.
@@ -149,14 +154,10 @@ public class ThumbnailProcessor {
         operation.limit("thread");
         operation.addRawArgs("2");
         operation.units("PixelsPerInch");
-        operation.rotate(Double.valueOf(rotation));
         operation.background("black");
         operation.gravity("center");
-        if ((rotation/90)%2 != 0) {
-            operation.resize(resizeCrop.getHeight(), resizeCrop.getWidth());
-        } else {
-            operation.resize(resizeCrop.getWidth(), resizeCrop.getHeight());
-        }
+        operation.resize(resizeCrop.getWidth(), resizeCrop.getHeight());
+        operation.rotate(Double.valueOf(rotation));
         operation.crop(width, height, 0, 0);
         operation.orient("top-left");
         operation.addImage(sourcePath.toString());
@@ -169,6 +170,22 @@ public class ThumbnailProcessor {
         LOGGER.debug("Generated thumbnail" + sourcePath);
         return thumbnailPath;
     }
+
+//    /**
+//     * Adds a rotate and resize operation to the convert command
+//     * Since the resizeCrop if the rotation is 90 or 270
+//     * @param resizeCrop
+//     * @param operation
+//     * @param rotation
+//     */
+//    private void rotateAndResize(ResizeCrop resizeCrop, IMOperation operation, Integer rotation) {
+//        operation.rotate(Double.valueOf(rotation));
+//        if ((rotation/90)%2 != 0) {
+//            operation.resize(resizeCrop.getHeight(), resizeCrop.getWidth());
+//        } else {
+//            operation.resize(resizeCrop.getWidth(), resizeCrop.getHeight());
+//        }
+//    }
 
     /**
      * Scales the image for the resulting thumbnail. Since ResizeMethod is set to FIXED scaleThumbnail always
