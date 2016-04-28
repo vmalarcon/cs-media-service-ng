@@ -2,6 +2,7 @@ package com.expedia.content.media.processing.services.dao;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,10 +14,6 @@ import java.util.stream.Stream;
 
 import javax.annotation.Resource;
 
-import com.expedia.content.media.processing.services.reqres.Comment;
-import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
-import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
-import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
@@ -27,6 +24,7 @@ import org.springframework.stereotype.Component;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaAndDerivative;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
 import com.expedia.content.media.processing.services.dao.domain.Media;
@@ -34,9 +32,13 @@ import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaContentProviderNameGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
-import com.expedia.content.media.processing.services.dao.sql.SQLMediaIdListSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaItemGetSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaListSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetSproc;
+import com.expedia.content.media.processing.services.reqres.Comment;
+import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
+import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
+import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -49,7 +51,6 @@ import com.fasterxml.jackson.databind.type.CollectionType;
 @Component
 public class LcmDynamoMediaDao implements MediaDao {
 
-    private static final int DEFAULT_LODGING_LOCALE = 1033;
     private static final int LCM_HERO_CATEGORY = 3;
     private static final long KB_TO_BYTES_CONVERTER = 1024L;
     private static final String LODGING_VIRTUAL_TOUR_DERIVATIVE_TYPE = "VirtualTour";
@@ -74,7 +75,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     private static final Integer FORMAT_ID_2 = 2;
 
     @Autowired
-    private SQLMediaIdListSproc lcmMediaIdSproc;
+    private SQLMediaListSproc lcmMediaListSproc;
     @Autowired
     private SQLMediaItemGetSproc lcmMediaItemSproc;
     @Autowired
@@ -118,18 +119,29 @@ public class LcmDynamoMediaDao implements MediaDao {
     @Override
     @SuppressWarnings("unchecked")
     public MediaByDomainIdResponse getMediaByDomainId(Domain domain, String domainId, String activeFilter, String derivativeFilter, Integer pageSize, Integer pageIndex) throws Exception {
+        System.out.println("-------------------------------------------------------Time 1 " + new Date());
         List<Media> domainIdMedia = mediaRepo.loadMedia(domain, domainId).stream().map(media -> completeMedia(media, derivativeFilter)).collect(Collectors.toList());
+        System.out.println("-------------------------------------------------------Time 2 " + new Date());
         if (Domain.LODGING.equals(domain)) {
-            final Map<String, Media> mediaLcmMediaIdMap =
-                    domainIdMedia.stream().filter(media -> media.getLcmMediaId() != null && !"null".equals(media.getLcmMediaId()))
-                            .collect(Collectors.toMap(Media::getLcmMediaId, media -> media));
-            final Map<String, Object> idResult = lcmMediaIdSproc.execute(Integer.parseInt(domainId), DEFAULT_LODGING_LOCALE);
-            final List<Integer> mediaIds = (List<Integer>) idResult.get(SQLMediaIdListSproc.MEDIA_ID_SET);
+            final Map<String, Media> mediaLcmMediaIdMap = domainIdMedia.stream()
+                        .filter(media -> media.getLcmMediaId() != null && !"null".equals(media.getLcmMediaId()))
+                        .collect(Collectors.toMap(Media::getLcmMediaId, media -> media));
+            System.out.println("-------------------------------------------------------Time 3 " + new Date());
+            final Map<String, Object> mediaListResult = lcmMediaListSproc.execute(Integer.parseInt(domainId));
+            System.out.println("-------------------------------------------------------Time 4 " + new Date());
+            final List<LcmMediaAndDerivative> mediaDerivativeItems = (List<LcmMediaAndDerivative>) mediaListResult.get(SQLMediaListSproc.MEDIA_SET);
+            
+            final Map<Integer, List<LcmMediaAndDerivative>> lcmMediaMap =
+                    mediaDerivativeItems.stream().collect(Collectors.groupingBy(mediaAndDerivative -> mediaAndDerivative.getMediaId()));
             /* @formatter:off */
-            final List<Media> lcmMediaList = mediaIds.stream()
-                    .map(buildLcmMedia(domainId, derivativeFilter))
-                    .map(convertMedia(mediaLcmMediaIdMap))
-                    .collect(Collectors.toList());
+            System.out.println("-------------------------------------------------------Time 5 " + new Date());
+            final List<Media> lcmMediaList = lcmMediaMap.keySet().stream()
+                .map(mediaId -> {
+                        return convertLcmMediaAndDerivativeToLcmMedia(lcmMediaMap, mediaId, derivativeFilter);
+                    })
+                .map(convertMedia(mediaLcmMediaIdMap))
+                .collect(Collectors.toList());
+            System.out.println("-------------------------------------------------------Time 6 " + new Date());
             /* @formatter:on */
             domainIdMedia.removeAll(mediaLcmMediaIdMap.values());
             domainIdMedia.addAll(0, lcmMediaList);
@@ -156,9 +168,59 @@ public class LcmDynamoMediaDao implements MediaDao {
                 throw new Exception(errorResponse);
             }
         }
+        System.out.println("-------------------------------------------------------Time 7 " + new Date());
         final Map<String, String> fileStatus = getStatusByLoop(paramLimit, fileNames);
         domainIdMedia.stream().forEach(media -> media.setStatus(fileStatus.get(media.getFileName())));
+        System.out.println("-------------------------------------------------------Time 8 " + new Date());
         return MediaByDomainIdResponse.builder().domain(domain.getDomain()).domainId(domainId).totalMediaCount(totalMediaCount).images(transformMediaListForResponse(domainIdMedia)).build();
+    }
+
+    /**
+     * Converts a list of LcmLcmMediaAndDerivative belonging to on LCM media id to an LcmMedia instance.
+     * 
+     * @param lcmMediaMap The map containing all of the LcmLcmMediaAndDerivative lists.
+     * @param mediaId The id of media to convert.
+     * @return The converted LcmMedia.
+     */
+    private LcmMedia convertLcmMediaAndDerivativeToLcmMedia(final Map<Integer, List<LcmMediaAndDerivative>> lcmMediaMap, final Integer mediaId, String derivativeFilter) {
+        final List<LcmMediaAndDerivative> mediaList = lcmMediaMap.get(mediaId);
+        final LcmMediaAndDerivative firstMediaItem = mediaList.get(0);
+        final boolean skipDerivativeFiltering = derivativeFilter == null || derivativeFilter.isEmpty();
+        /* @formatter:off */
+        final List<LcmMediaDerivative> derivatives = mediaList.stream()
+                .map(mediaItem -> LcmMediaDerivative.builder()
+                        .mediaId(mediaItem.getMediaId())
+                        .fileName(mediaItem.getDerivativeFileName())
+                        .fileProcessed(mediaItem.getFileProcessed())
+                        .mediaSizeTypeId(mediaItem.getDerivativeSizeTypeId())
+                        .width(mediaItem.getDerivativeWidth())
+                        .height(mediaItem.getDerivativeHeight())
+                        .fileSize(mediaItem.getDerivativeFileSize())
+                        .build())
+                .filter(derivative -> (skipDerivativeFiltering || derivativeFilter.contains(derivative.getMediaSizeType())))
+                .collect(Collectors.toList());
+
+        final Date lastUpdateDate = firstMediaItem.getMediaLastUpdateDate().after(firstMediaItem.getLastUpdateDate()) ?
+                        firstMediaItem.getMediaLastUpdateDate() : firstMediaItem.getLastUpdateDate();
+        final String lastUpdatedBy = firstMediaItem.getMediaLastUpdateDate().after(firstMediaItem.getLastUpdateDate()) ?
+                        firstMediaItem.getMediaLastUpdatedBy() : firstMediaItem.getLastUpdatedBy();
+
+        return LcmMedia.builder()
+                    .mediaId(firstMediaItem.getMediaId())
+                    .provider(firstMediaItem.getProvider())
+                    .active(firstMediaItem.getActive())
+                    .fileName(firstMediaItem.getFileName())
+                    .width(firstMediaItem.getWidth())
+                    .height(firstMediaItem.getHeight())
+                    .lastUpdatedBy(lastUpdatedBy)
+                    .fileSize(firstMediaItem.getFileSize())
+                    .lastUpdateDate(lastUpdateDate)
+                    .category(firstMediaItem.getCategory())
+                    .comment(firstMediaItem.getComment())
+                    .formatId(firstMediaItem.getFormatId())
+                    .derivatives(derivatives)
+                    .build();
+        /* @formatter:off */
     }
 
     /**
