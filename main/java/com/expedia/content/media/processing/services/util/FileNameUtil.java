@@ -47,13 +47,14 @@ public class FileNameUtil {
      * Mapping enum for LCM:MediaProvider to function logic for resolving a fileName
      */
     public enum MediaProvider {
+        DESPEGAR("despegar", guidProviderNameToFileNameFunction),
         FREETOBOOK("freetobook", guidProviderNameToFileNameFunction),
         EPC_INTERNAL_USER("epc internal user", guidProviderNameToFileNameFunction),
         EPC_EXTERNAL_USER("epc external user", guidProviderNameToFileNameFunction),
+        SCORE("score", guidProviderNameToFileNameFunction),
         EPC_LEGACY("epc legacy"),
         MOBILE("mobile"),
         EEM_MIGRATION("eem migration"),
-        SCORE("score", guidProviderNameToFileNameFunction),
         OTHER("other"),
         GIGWALK("gigwalk"),
         TV_TRIP("tv trip"),
