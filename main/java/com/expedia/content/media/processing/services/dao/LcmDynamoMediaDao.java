@@ -34,7 +34,7 @@ import com.expedia.content.media.processing.services.dao.sql.SQLMediaContentProv
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaItemGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaListSproc;
-import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetByMediaIdSproc;
 import com.expedia.content.media.processing.services.reqres.Comment;
 import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
@@ -81,7 +81,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     @Autowired
     private SQLMediaGetSproc lcmMediaSproc;
     @Autowired
-    private SQLRoomGetSproc roomGetSproc;
+    private SQLRoomGetByMediaIdSproc roomGetSproc;
     @Autowired
     private SQLMediaContentProviderNameGetSproc mediaContentProviderNameGetSproc;
     @Autowired
@@ -119,29 +119,23 @@ public class LcmDynamoMediaDao implements MediaDao {
     @Override
     @SuppressWarnings("unchecked")
     public MediaByDomainIdResponse getMediaByDomainId(Domain domain, String domainId, String activeFilter, String derivativeFilter, Integer pageSize, Integer pageIndex) throws Exception {
-        System.out.println("-------------------------------------------------------Time 1 " + new Date());
         List<Media> domainIdMedia = mediaRepo.loadMedia(domain, domainId).stream().map(media -> completeMedia(media, derivativeFilter)).collect(Collectors.toList());
-        System.out.println("-------------------------------------------------------Time 2 " + new Date());
         if (Domain.LODGING.equals(domain)) {
             final Map<String, Media> mediaLcmMediaIdMap = domainIdMedia.stream()
                         .filter(media -> media.getLcmMediaId() != null && !"null".equals(media.getLcmMediaId()))
                         .collect(Collectors.toMap(Media::getLcmMediaId, media -> media));
-            System.out.println("-------------------------------------------------------Time 3 " + new Date());
             final Map<String, Object> mediaListResult = lcmMediaListSproc.execute(Integer.parseInt(domainId));
-            System.out.println("-------------------------------------------------------Time 4 " + new Date());
             final List<LcmMediaAndDerivative> mediaDerivativeItems = (List<LcmMediaAndDerivative>) mediaListResult.get(SQLMediaListSproc.MEDIA_SET);
             
             final Map<Integer, List<LcmMediaAndDerivative>> lcmMediaMap =
                     mediaDerivativeItems.stream().collect(Collectors.groupingBy(mediaAndDerivative -> mediaAndDerivative.getMediaId()));
             /* @formatter:off */
-            System.out.println("-------------------------------------------------------Time 5 " + new Date());
             final List<Media> lcmMediaList = lcmMediaMap.keySet().stream()
                 .map(mediaId -> {
                         return convertLcmMediaAndDerivativeToLcmMedia(lcmMediaMap, mediaId, derivativeFilter);
                     })
                 .map(convertMedia(mediaLcmMediaIdMap))
                 .collect(Collectors.toList());
-            System.out.println("-------------------------------------------------------Time 6 " + new Date());
             /* @formatter:on */
             domainIdMedia.removeAll(mediaLcmMediaIdMap.values());
             domainIdMedia.addAll(0, lcmMediaList);
@@ -168,10 +162,8 @@ public class LcmDynamoMediaDao implements MediaDao {
                 throw new Exception(errorResponse);
             }
         }
-        System.out.println("-------------------------------------------------------Time 7 " + new Date());
         final Map<String, String> fileStatus = getStatusByLoop(paramLimit, fileNames);
         domainIdMedia.stream().forEach(media -> media.setStatus(fileStatus.get(media.getFileName())));
-        System.out.println("-------------------------------------------------------Time 8 " + new Date());
         return MediaByDomainIdResponse.builder().domain(domain.getDomain()).domainId(domainId).totalMediaCount(totalMediaCount).images(transformMediaListForResponse(domainIdMedia)).build();
     }
 
@@ -574,13 +566,13 @@ public class LcmDynamoMediaDao implements MediaDao {
      * Extract LCM domain room data and stores into a passed map to be interpreted the same way as if it would have been pulled in
      * JSON from the media DB.
      *
-     * @param lcmMedia      Data object containing media data from LCM.
+     * @param lcmMedia Data object containing media data from LCM.
      * @param lcmDomainData Map to store extracted LCM data into.
+     * @param lcmRoomMediaMap Map of rooms related to LCM media id.
      */
     @SuppressWarnings("unchecked")
-    private void extractLcmRooms(final LcmMedia lcmMedia, final Map<String, Object> lcmDomainData) {
-        final Map<String, Object> roomResult = roomGetSproc.execute(lcmMedia.getMediaId());
-        final List<LcmMediaRoom> lcmMediaRoomList = (List<LcmMediaRoom>) roomResult.get(SQLRoomGetSproc.MEDIA_SET);
+    private void extractLcmRooms(final LcmMedia lcmMedia, final Map<String, Object> lcmDomainData, final Map<Integer, List<LcmMediaRoom>> lcmRoomMediaMap) {
+        final List<LcmMediaRoom> lcmMediaRoomList = lcmRoomMediaMap.get(lcmMedia.getMediaId());
         if (!lcmMediaRoomList.isEmpty()) {
             final List<Map<String, String>> roomList = lcmMediaRoomList.stream().map(room -> {
                 Map<String, String> roomData = new HashMap<>();

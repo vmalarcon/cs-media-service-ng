@@ -42,7 +42,7 @@ import com.expedia.content.media.processing.services.dao.sql.SQLMediaContentProv
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaItemGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaListSproc;
-import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetByMediaIdSproc;
 import com.expedia.content.media.processing.services.reqres.Comment;
 import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
@@ -54,11 +54,11 @@ public class LcmDynamoMediaDaoTest {
     private static final String RESPONSE_FIELD_LCM_MEDIA_ID = "lcmMediaId";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
 
-    SQLRoomGetSproc roomGetSproc = null;
+    SQLRoomGetByMediaIdSproc roomGetSproc = null;
 
     @Before
     public void setUp() throws Exception {
-        roomGetSproc = mock(SQLRoomGetSproc.class);
+        roomGetSproc = mock(SQLRoomGetByMediaIdSproc.class);
         Map<String, Object> roomResult = new HashMap<>();
         LcmMediaRoom lcmMediaRoom = LcmMediaRoom.builder().roomId(123).roomHero(true).build();
         List<LcmMediaRoom> lcmMediaRoomList = new ArrayList<>();

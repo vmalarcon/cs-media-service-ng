@@ -19,12 +19,12 @@ import java.sql.Types;
  * get current rooms of the media id.
  */
 @Repository
-public class SQLRoomGetSproc extends StoredProcedure {
+public class SQLRoomGetByMediaIdSproc extends StoredProcedure {
 
     public static final String MEDIA_SET = "room";
 
     @Autowired
-    public SQLRoomGetSproc(final DataSource dataSource) {
+    public SQLRoomGetByMediaIdSproc(final DataSource dataSource) {
         super(dataSource, "RoomTypeGetByMediaID");
         declareParameter(new SqlParameter("@pMediaID", Types.INTEGER));
         declareParameter(new SqlReturnResultSet(MEDIA_SET, new RoomRowMapper()));
