@@ -25,6 +25,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.junit.Before;
@@ -42,6 +43,7 @@ import com.expedia.content.media.processing.services.dao.sql.SQLMediaContentProv
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaItemGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaListSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetByCatalogItemIdSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetByMediaIdSproc;
 import com.expedia.content.media.processing.services.reqres.Comment;
 import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
@@ -54,18 +56,27 @@ public class LcmDynamoMediaDaoTest {
     private static final String RESPONSE_FIELD_LCM_MEDIA_ID = "lcmMediaId";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
 
-    SQLRoomGetByMediaIdSproc roomGetSproc = null;
+    SQLRoomGetByMediaIdSproc roomGetByMediaIdSproc = null;
+    SQLRoomGetByCatalogItemIdSproc roomGetByCatalogItemIdSproc = null;
 
     @Before
     public void setUp() throws Exception {
-        roomGetSproc = mock(SQLRoomGetByMediaIdSproc.class);
-        Map<String, Object> roomResult = new HashMap<>();
-        LcmMediaRoom lcmMediaRoom = LcmMediaRoom.builder().roomId(123).roomHero(true).build();
-        List<LcmMediaRoom> lcmMediaRoomList = new ArrayList<>();
-        lcmMediaRoomList.add(lcmMediaRoom);
-        roomResult.put("room", lcmMediaRoomList);
-        when(roomGetSproc.execute(anyInt())).thenReturn(roomResult);
+        roomGetByMediaIdSproc = mock(SQLRoomGetByMediaIdSproc.class);
+        Map<String, Object> roomByMediaIdResult = new HashMap<>();
+        LcmMediaRoom lcmMediaRoom = LcmMediaRoom.builder().mediaId(1).roomId(123).roomHero(true).build();
+        List<LcmMediaRoom> lcmMediaRoomByMediaIdList = new ArrayList<>();
+        lcmMediaRoomByMediaIdList.add(lcmMediaRoom);
+        roomByMediaIdResult.put("room", lcmMediaRoomByMediaIdList);
+        when(roomGetByMediaIdSproc.execute(anyInt())).thenReturn(roomByMediaIdResult);
 
+
+        roomGetByCatalogItemIdSproc = mock(SQLRoomGetByCatalogItemIdSproc.class);
+        Map<String, Object> roomByCatalogItemIdResult = new HashMap<>();
+        lcmMediaRoom = LcmMediaRoom.builder().mediaId(1).roomId(123).roomHero(true).build();
+        List<LcmMediaRoom> lcmMediaRoomByCatalogItemIdList = new ArrayList<>();
+        lcmMediaRoomByCatalogItemIdList.add(lcmMediaRoom);
+        roomByCatalogItemIdResult.put("room", lcmMediaRoomByCatalogItemIdList);
+        when(roomGetByCatalogItemIdSproc.execute(anyInt())).thenReturn(roomByCatalogItemIdResult);
 
     }
     @SuppressWarnings("rawtypes")
@@ -86,9 +97,10 @@ public class LcmDynamoMediaDaoTest {
                 .mediaGuid(guid1).domain("Lodging").domainId("1234").fileUrl("s3://fileUrl")
                 .domainFields("{\"lcmMediaId\":\"1\",\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}")
                 .derivatives("[{\"type\":\"v\",\"width\":179,\"height\":240,\"fileSize\":10622,\"location\":\"s3://ewe-cs-media-test/test/derivative/lodging/1000000/10000/7200/7139/dfec2df8_v.jpg\"}]")
+                .lastUpdated(new Date())
                 .build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
-        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").build();
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").lastUpdated(LocalDateTime.now().minusMinutes(5).toDate()).build();
         dynamoMediaList.add(dynamoMedia1);
         dynamoMediaList.add(dynamoMedia3);
         when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
@@ -149,12 +161,12 @@ public class LcmDynamoMediaDaoTest {
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         List<Media> dynamoMediaList = new ArrayList<>();
         String guid1 = "imspecial-9627-47f9-86c6-1874c18d3aaa";
-        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234")
+        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234").lastUpdated(new Date())
                 .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
         String guid2 = "f2d4d480-9627-47f9-86c6-1874c18d3bbc";
-        Media dynamoMedia2 = Media.builder().mediaGuid(guid2).domain("Lodging").domainId("1234").build();
+        Media dynamoMedia2 = Media.builder().mediaGuid(guid2).domain("Lodging").domainId("1234").lastUpdated(new Date()).build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
-        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").fileName("image3.jpg").domainId("1234").build();
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").fileName("image3.jpg").domainId("1234").lastUpdated(new Date()).build();
         dynamoMediaList.add(dynamoMedia2);
         dynamoMediaList.add(dynamoMedia3);
         dynamoMediaList.add(dynamoMedia1); //Put hero last to verify it returns as first item.
@@ -205,10 +217,11 @@ public class LcmDynamoMediaDaoTest {
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         List<Media> dynamoMediaList = new ArrayList<>();
         String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
-        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234")
+        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234").lastUpdated(new Date())
                 .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
-        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").build();
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234")
+                .lastUpdated(LocalDateTime.now().minusMinutes(5).toDate()).build();
         dynamoMediaList.add(dynamoMedia1);
         dynamoMediaList.add(dynamoMedia3);
         when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
@@ -255,10 +268,11 @@ public class LcmDynamoMediaDaoTest {
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         List<Media> dynamoMediaList = new ArrayList<>();
         String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
-        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234")
+        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234").lastUpdated(new Date())
                 .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
-        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").build();
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234")
+                .lastUpdated(LocalDateTime.now().minusMinutes(5).toDate()).build();
         dynamoMediaList.add(dynamoMedia1);
         dynamoMediaList.add(dynamoMedia3);
         when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
@@ -290,10 +304,11 @@ public class LcmDynamoMediaDaoTest {
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         List<Media> dynamoMediaList = new ArrayList<>();
         String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
-        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).fileName("file1.jpg").domain("Lodging").domainId("1234")
+        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).fileName("file1.jpg").domain("Lodging").domainId("1234").lastUpdated(new Date())
                 .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": true}").build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
-        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).fileName("file3.jpg").domain("Lodging").domainId("1234").build();
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).fileName("file3.jpg").domain("Lodging").domainId("1234")
+                .lastUpdated(LocalDateTime.now().minusMinutes(5).toDate()).build();
         dynamoMediaList.add(dynamoMedia1);
         dynamoMediaList.add(dynamoMedia3);
         when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
@@ -321,10 +336,11 @@ public class LcmDynamoMediaDaoTest {
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         List<Media> dynamoMediaList = new ArrayList<>();
         String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
-        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234")
+        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234").lastUpdated(new Date())
                 .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
-        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").build();
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234")
+                .lastUpdated(LocalDateTime.now().minusMinutes(5).toDate()).build();
         dynamoMediaList.add(dynamoMedia1);
         dynamoMediaList.add(dynamoMedia3);
         when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
@@ -500,7 +516,7 @@ public class LcmDynamoMediaDaoTest {
         try {
             mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, 20, 3);
         } catch (Exception ex) {
-            assertEquals(ex.getMessage(), "pageIndex is out of bounds");
+            assertEquals("pageIndex is out of bounds", ex.getMessage());
         }
 
     }
@@ -523,7 +539,7 @@ public class LcmDynamoMediaDaoTest {
         try {
             mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, 20, null);
         } catch (Exception ex) {
-            assertEquals(ex.getMessage(), "pageSize and pageIndex are inclusive, either both fields can be null or not null");
+            assertEquals("pageSize and pageIndex are inclusive, either both fields can be null or not null", ex.getMessage());
         }
     }
 
@@ -545,7 +561,7 @@ public class LcmDynamoMediaDaoTest {
         try {
             mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, null, 20);
         } catch (Exception ex) {
-            assertEquals(ex.getMessage(), "pageSize and pageIndex are inclusive, either both fields can be null or not null");
+            assertEquals("pageSize and pageIndex are inclusive, either both fields can be null or not null", ex.getMessage());
         }
     }
 
@@ -564,11 +580,11 @@ public class LcmDynamoMediaDaoTest {
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         when(mockMediaDBRepo.loadMedia(any(), any())).thenReturn(createMedia());
         MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null);
-        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
+        setFieldValue(mediaDao, "roomGetByCatalogItemIdSproc", roomGetByCatalogItemIdSproc);
         try {
             mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, -20, -1);
         } catch (Exception ex) {
-            assertEquals(ex.getMessage(), "pageSize and pageIndex can only be positive integer values");
+            assertEquals("pageSize and pageIndex can only be positive integer values", ex.getMessage());
         }
     }
     
@@ -585,7 +601,9 @@ public class LcmDynamoMediaDaoTest {
         setFieldValue(mediaDao, "processLogDao", makeMockProcessLogDao());
         setFieldValue(mediaDao, "activityWhiteList", makeActivityWhitelist());
         setFieldValue(mediaDao, "imageRootPath", "https://media.int.expedia.com/");
-        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
+        setFieldValue(mediaDao, "roomGetByMediaIdSproc", roomGetByMediaIdSproc);
+        setFieldValue(mediaDao, "roomGetByCatalogItemIdSproc", roomGetByCatalogItemIdSproc);
+        
         return mediaDao;
     }
 
