@@ -77,9 +77,14 @@ public class TempDerivativeController extends CommonServiceController {
     private static TempDerivativeMessage buildTempDerivativeFromJSONMessage(String jsonMessage) throws RequestMessageException {
         final Map jsonMap = JSONUtil.buildMapFromJson(jsonMessage);
         final String fileUrl = (String) jsonMap.get("fileUrl");
-        final Integer rotation = (Integer) jsonMap.get("rotation");
+        final String rotation = (String) jsonMap.get("rotation");
         final Integer width = (Integer) jsonMap.get("width");
         final Integer height = (Integer) jsonMap.get("height");
-        return TempDerivativeMessage.builder().fileUrl(fileUrl).rotation(rotation).width(width).height(height).build();
+        return TempDerivativeMessage.builder()
+                .fileUrl(fileUrl)
+                .rotation(rotation)
+                .width(width)
+                .height(height)
+                .build();
     }
 }

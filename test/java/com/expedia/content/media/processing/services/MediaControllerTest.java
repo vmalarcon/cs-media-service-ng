@@ -38,6 +38,7 @@ import com.expedia.content.media.processing.services.reqres.Comment;
 import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
+import com.expedia.content.media.processing.services.util.JSONUtil;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.codehaus.plexus.util.ReflectionUtils;
 import org.joda.time.format.DateTimeFormat;
@@ -121,6 +122,7 @@ public class MediaControllerTest {
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("6", "SCORE"));
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("3", "EPC Legacy"));
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("53", "freetobook"));
+        providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("54", "Despegar"));
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("56", "ICE Portal"));
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("56", "VFMLeonardo"));
         when(mockProviderProperties.entrySet()).thenReturn(providerMapping);
@@ -442,6 +444,53 @@ public class MediaControllerTest {
     }
 
     @Test
+    public void testMediaByDomainIdLodgingSortByDate() throws Exception {
+
+        List<String> commentList = new LinkedList<>();
+        commentList.add("Comment1");
+        commentList.add("Comment2");
+        Map<String, Object> domainData = new HashMap<>();
+        domainData.put("propertyHero", "true");
+        Map<String, Object> domainData2 = new HashMap<>();
+        domainData.put("propertyHero", "false");
+
+        Media mediaItem1 = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file_name.jpg")
+                .mediaGuid("first3a4b-c985-43d3-9245-b60ab1eb9a0f").lastUpdated(new Date(new Date().getTime()+5000)).domainData(domainData).lcmMediaId("4321").build();
+        Media mediaItem2 = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file2_name.jpg")
+                .mediaGuid("ea868d7d-c4ce-41a8-be43-19fff0ce5ad4").lastUpdated(new Date(new Date().getTime()+100000)).domainData(domainData).commentList(
+                        commentList).build();
+        Media mediaItem3 = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file2_name.jpg")
+                .mediaGuid("last8d7d-c4ce-41a8-be43-19fff0ce5ad4").lastUpdated(new Date()).domainData(domainData2).commentList(commentList).build();
+        List<Media> mediaValues = new ArrayList<>();
+        mediaValues.add(mediaItem1);
+        mediaValues.add(mediaItem2);
+        mediaValues.add(mediaItem3);
+
+
+        MediaByDomainIdResponse response = MediaByDomainIdResponse.builder().domain("Lodging").domainId("1234").totalMediaCount(mediaValues.size()).images(transformMediaListForResponse(mediaValues)).build();
+        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(response);
+        SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
+        when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
+
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", null, null, "true", null, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        Map<String, Object> jsonMap = JSONUtil.buildMapFromJson(responseEntity.getBody());
+        Map map =(HashMap)((List) jsonMap.get("images")).get(0);
+        assertTrue(map.get("mediaGuid").equals("first3a4b-c985-43d3-9245-b60ab1eb9a0f"));
+        Map map2 =(HashMap)((List) jsonMap.get("images")).get(2);
+        assertTrue(map2.get("mediaGuid").equals("last8d7d-c4ce-41a8-be43-19fff0ce5ad4"));
+
+    }
+
+    @Test
     public void testMediaByDomainIdLodgingNotFound() throws Exception {
         SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
         when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(false);
@@ -634,6 +683,42 @@ public class MediaControllerTest {
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
         assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_freetobook_(.*).jpg\"(.*)"));
+        verifyZeroInteractions(mockLcmDynamoMediaDao);
+    }
+
+    @Test
+    public void testDespegarFileNameExtraction() throws Exception {
+        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg/why/would/someone/name/all/of/their/files/original.jpg\", "
+                + "\"fileName\": \"original.jpg\", " + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", "
+                + "\"domainProvider\": \"Despegar\" " + "}";
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+        LcmDynamoMediaDao mockLcmDynamoMediaDao = mock(LcmDynamoMediaDao.class);
+        setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
+        assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
+        assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+
+        ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
+        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
+        verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
+        final Message<String> publishedMessageValue = publishedMessage.getValue();
+        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_Despegar_(.*).jpg\"(.*)"));
         verifyZeroInteractions(mockLcmDynamoMediaDao);
     }
 
