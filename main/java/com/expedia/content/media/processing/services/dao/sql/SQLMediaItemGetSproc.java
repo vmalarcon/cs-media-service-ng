@@ -37,6 +37,7 @@ public class SQLMediaItemGetSproc extends StoredProcedure {
      * Spring {@link RowMapper} implementation to converts a result set to a object
      * {@link LcmMedia}
      */
+    @SuppressWarnings("CPD-START")
     private class MediaRowMapper implements RowMapper<LcmMedia> {
         @Override
         public LcmMedia mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
@@ -63,6 +64,7 @@ public class SQLMediaItemGetSproc extends StoredProcedure {
      * Spring {@link RowMapper} implementation to converts a result set to a object
      * {@link LcmMediaDerivative}
      */
+    @SuppressWarnings("CPD-END")
     private class MediaDerivativeRowMapper implements RowMapper<LcmMediaDerivative> {
         @Override
         public LcmMediaDerivative mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
