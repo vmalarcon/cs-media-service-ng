@@ -1,11 +1,20 @@
 package com.expedia.content.media.processing.services;
 
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
-import com.expedia.content.media.processing.services.dao.MediaDao;
-import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
-import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
-import com.expedia.content.media.processing.services.dao.domain.Media;
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -13,20 +22,12 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.test.context.ContextConfiguration;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-
-import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
+import com.expedia.content.media.processing.services.dao.MediaDao;
+import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
+import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
+import com.expedia.content.media.processing.services.dao.domain.Media;
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
 @RunWith(MockitoJUnitRunner.class)
@@ -66,7 +67,7 @@ public class MediaUpdateProcessorTest {
         Media dynamoMedia =
                 new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"subcategoryId\":\"22003\"}",
                         new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
-                        new HashMap<>(), new ArrayList<>(), "", "", false);
+                        new HashMap<>(), new ArrayList<>(), "", "", false, Boolean.FALSE.toString());
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
     }
 
@@ -84,7 +85,7 @@ public class MediaUpdateProcessorTest {
                 new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"propertyHero\":\"true\"}",
                         new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
                         new HashMap<>(), new ArrayList<>(),
-                        "", "", true);
+                        "", "", true, Boolean.FALSE.toString());
         LcmCatalogItemMedia lcmCatalogItemMedia = mock(LcmCatalogItemMedia.class);
         when(catalogHeroProcessor.getCatalogItemMeida(12345, 123)).thenReturn(lcmCatalogItemMedia);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
@@ -107,7 +108,7 @@ public class MediaUpdateProcessorTest {
         Media dynamoMedia =
                 new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"propertyHero\":\"false\"}",
                         new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
-                        new HashMap<>(), new ArrayList<>(), "", "", false);
+                        new HashMap<>(), new ArrayList<>(), "", "", false, Boolean.FALSE.toString());
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(catalogHeroProcessor).getCatalogItemMeida(12345, 123);
         verify(catalogHeroProcessor, never())
@@ -129,7 +130,7 @@ public class MediaUpdateProcessorTest {
         Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345",
                 "{\"propertyHero\":\"true\",\"subcategoryId\":\"22003\"}",
                 new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
-                new HashMap<>(), new ArrayList<>(), "", "", true);
+                new HashMap<>(), new ArrayList<>(), "", "", true, Boolean.FALSE.toString());
         LcmCatalogItemMedia lcmCatalogItemMedia = mock(LcmCatalogItemMedia.class);
         when(catalogHeroProcessor.getCatalogItemMeida(12345, 123)).thenReturn(lcmCatalogItemMedia);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
@@ -150,7 +151,7 @@ public class MediaUpdateProcessorTest {
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
         Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{}",
                 new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
-                new HashMap<>(), new ArrayList<>(), "", "", false);
+                new HashMap<>(), new ArrayList<>(), "", "", false, Boolean.FALSE.toString());
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(mediaUpdateDao).updateMedia(imageMessage, 123);
     }
@@ -177,9 +178,37 @@ public class MediaUpdateProcessorTest {
         Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345",
                 "{\"rooms\":[{\"roomId\":\"934779\",\"roomHero\":\"false\"},{\"roomId\":\"928675\",\"roomHero\":\"true\"}]}",
                 new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
-                new HashMap<>(), new ArrayList<>(), "", "", false);
+                new HashMap<>(), new ArrayList<>(), "", "", false, Boolean.FALSE.toString());
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(catalogItemMediaDao).getLcmRoomsByMediaId(123);
+    }
+
+    @Test
+    public void testHideRecords() throws Exception {
+        String jsonMsg = "{  \n"
+                + "   \"userId\":\"bobthegreat\",\n"
+                + "    \"domain\":\"Lodging\",\n"
+                + "    \"hidden\":\"true\",\n"
+                + "   \"domainFields\":{  \n"
+                + "      \"rooms\":[ \n"
+                + "         {  \n"
+                + "            \"roomId\":\"934779\",\n"
+                + "            \"roomHero\":\"false\"\n"
+                + "         },\n"
+                + "         {\n"
+                + "             \"roomId\":\"928675\",\n"
+                + "            \"roomHero\":\"true\" \n"
+                + "         }\n"
+                + "      ]\n"
+                + "    }\n"
+                + "}";
+        ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345",
+                "{\"rooms\":[{\"roomId\":\"934779\",\"roomHero\":\"false\"},{\"roomId\":\"928675\",\"roomHero\":\"true\"}]}",
+                new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
+                new HashMap<>(), new ArrayList<>(), "", "", false, Boolean.FALSE.toString());
+        mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);       
+        assertEquals(Boolean.TRUE.toString(), dynamoMedia.getHidden());
     }
 
 }

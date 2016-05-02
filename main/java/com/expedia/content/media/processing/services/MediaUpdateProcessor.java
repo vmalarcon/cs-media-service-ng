@@ -33,6 +33,7 @@ public class MediaUpdateProcessor {
     public static final String MESSAGE_SUB_CATEGORY_ID = "subcategoryId";
     public static final String MESSAGE_ROOMS = "rooms";
     public static final String MESSAGE_ROOM_HERO = "roomHero";
+
     @Autowired
     private MediaUpdateDao mediaUpdateDao;
     @Autowired
@@ -74,6 +75,7 @@ public class MediaUpdateProcessor {
         if (dynamoMedia != null) {
             setDynamoMedia(imageMessage, dynamoMedia);
             dynamoMedia.setLastUpdated(new Date());
+            dynamoMedia.setHidden(String.valueOf(imageMessage.getHidden()));
             mediaDao.saveMedia(dynamoMedia);
         }
         final Map<String, Object> response = new HashMap<>();

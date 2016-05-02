@@ -2,9 +2,7 @@ package com.expedia.content.media.processing.services.dao;
 
 import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -16,8 +14,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -28,10 +24,6 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import com.expedia.content.media.processing.services.reqres.Comment;
-import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
-import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
-import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.junit.Before;
@@ -49,11 +41,11 @@ import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaIdListSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaItemGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetSproc;
+import com.expedia.content.media.processing.services.reqres.Comment;
+import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
+import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
+import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.util.MultiValueMap;
 
 public class LcmDynamoMediaDaoTest {
 
@@ -607,7 +599,7 @@ public class LcmDynamoMediaDaoTest {
 
         assertTrue(testMediaResponse.getTotalMediaCount() == 50);
         assertNotEquals(testMediaResponse.getImages().get(1).getMediaGuid(), "0aaaaaaa-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww");
-        IntStream.range(0, 20).forEach( i -> { assertEquals(testMediaResponse.getImages().get(i).getMediaGuid(),  (i+19) + "aaaaaa-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww"); });
+        IntStream.range(1, 20).forEach( i -> { assertEquals(testMediaResponse.getImages().get(i).getMediaGuid(),  (i+19) + "aaaaaa-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww"); });
     }
 
     @Test
