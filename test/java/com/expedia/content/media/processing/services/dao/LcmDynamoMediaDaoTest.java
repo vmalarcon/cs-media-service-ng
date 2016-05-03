@@ -12,6 +12,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.junit.Before;
@@ -31,6 +33,7 @@ import org.junit.Test;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaAndDerivative;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
 import com.expedia.content.media.processing.services.dao.domain.Media;
@@ -38,9 +41,10 @@ import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaContentProviderNameGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
-import com.expedia.content.media.processing.services.dao.sql.SQLMediaIdListSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaItemGetSproc;
-import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaListSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetByCatalogItemIdSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetByMediaIdSproc;
 import com.expedia.content.media.processing.services.reqres.Comment;
 import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
@@ -52,48 +56,39 @@ public class LcmDynamoMediaDaoTest {
     private static final String RESPONSE_FIELD_LCM_MEDIA_ID = "lcmMediaId";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
 
-    SQLRoomGetSproc roomGetSproc = null;
+    SQLRoomGetByMediaIdSproc roomGetByMediaIdSproc = null;
+    SQLRoomGetByCatalogItemIdSproc roomGetByCatalogItemIdSproc = null;
 
     @Before
     public void setUp() throws Exception {
-        roomGetSproc = mock(SQLRoomGetSproc.class);
-        Map<String, Object> roomResult = new HashMap<>();
-        LcmMediaRoom lcmMediaRoom = LcmMediaRoom.builder().roomId(123).roomHero(true).build();
-        List<LcmMediaRoom> lcmMediaRoomList = new ArrayList<>();
-        lcmMediaRoomList.add(lcmMediaRoom);
-        roomResult.put("room", lcmMediaRoomList);
-        when(roomGetSproc.execute(anyInt())).thenReturn(roomResult);
+        roomGetByMediaIdSproc = mock(SQLRoomGetByMediaIdSproc.class);
+        Map<String, Object> roomByMediaIdResult = new HashMap<>();
+        LcmMediaRoom lcmMediaRoom = LcmMediaRoom.builder().mediaId(1).roomId(123).roomHero(true).build();
+        List<LcmMediaRoom> lcmMediaRoomByMediaIdList = new ArrayList<>();
+        lcmMediaRoomByMediaIdList.add(lcmMediaRoom);
+        roomByMediaIdResult.put("room", lcmMediaRoomByMediaIdList);
+        when(roomGetByMediaIdSproc.execute(anyInt())).thenReturn(roomByMediaIdResult);
 
+
+        roomGetByCatalogItemIdSproc = mock(SQLRoomGetByCatalogItemIdSproc.class);
+        Map<String, Object> roomByCatalogItemIdResult = new HashMap<>();
+        lcmMediaRoom = LcmMediaRoom.builder().mediaId(1).roomId(123).roomHero(true).build();
+        List<LcmMediaRoom> lcmMediaRoomByCatalogItemIdList = new ArrayList<>();
+        lcmMediaRoomByCatalogItemIdList.add(lcmMediaRoom);
+        roomByCatalogItemIdResult.put("room", lcmMediaRoomByCatalogItemIdList);
+        when(roomGetByCatalogItemIdSproc.execute(anyInt())).thenReturn(roomByCatalogItemIdResult);
 
     }
     @SuppressWarnings("rawtypes")
     @Test
     public void testGetMediaByDomainIdNoFilter() throws Exception {
-        SQLMediaIdListSproc mediaIdSproc = mock(SQLMediaIdListSproc.class);
-        Integer mediaId1 = 1;
-        Integer mediaId2 = 2;
-        List<Integer> mediaIds = new ArrayList<>();
-        mediaIds.add(mediaId1);
-        mediaIds.add(mediaId2);
-        Map<String, Object> idResult = new HashMap<>();
-        idResult.put(SQLMediaIdListSproc.MEDIA_ID_SET, mediaIds);
-        when(mediaIdSproc.execute(anyInt(), anyString())).thenReturn(idResult);
+        SQLMediaListSproc mediaListSproc = mock(SQLMediaListSproc.class);
+        List<LcmMediaAndDerivative> mediaList = make2Media2DerivativeMediaResult(true, false, true, true, true, true, 2);
+        Map<String, Object> mediaResult = new HashMap<>();
+        mediaResult.put(SQLMediaListSproc.MEDIA_SET, mediaList);
+        when(mediaListSproc.execute(anyInt())).thenReturn(mediaResult);
 
         SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
-        List<LcmMedia> mediaList1 = new ArrayList<>();
-        LcmMedia media1 = LcmMedia.builder().domainId(1234).mediaId(1).fileName("image1.jpg").active(true).width(20).height(21).fileSize(200)
-                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(3).comment("Comment").formatId(2).build();
-        mediaList1.add(media1);
-        Map<String, Object> mediaResult1 = make2DerivativeMediaResult(mediaList1, 1, 1, 2, true, true, "image1_t.jpg", "image1_s.jpg");
-
-        List<LcmMedia> mediaList2 = new ArrayList<>();
-        LcmMedia media2 = LcmMedia.builder().domainId(1234).mediaId(2).fileName("image2.jpg").active(true).width(40).height(41).fileSize(500)
-                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(500).comment("").build();
-        mediaList2.add(media2);
-        Map<String, Object> mediaResult2 = make2DerivativeMediaResult(mediaList2, 2, 1, 2, true, true, "image2_t.jpg", "image2_s.jpg");
-
-        when(mediaSproc.execute(anyInt(), eq(mediaId1))).thenReturn(mediaResult1);
-        when(mediaSproc.execute(anyInt(), eq(mediaId2))).thenReturn(mediaResult2);
 
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         List<Media> dynamoMediaList = new ArrayList<>();
@@ -102,9 +97,10 @@ public class LcmDynamoMediaDaoTest {
                 .mediaGuid(guid1).domain("Lodging").domainId("1234").fileUrl("s3://fileUrl")
                 .domainFields("{\"lcmMediaId\":\"1\",\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}")
                 .derivatives("[{\"type\":\"v\",\"width\":179,\"height\":240,\"fileSize\":10622,\"location\":\"s3://ewe-cs-media-test/test/derivative/lodging/1000000/10000/7200/7139/dfec2df8_v.jpg\"}]")
+                .lastUpdated(new Date())
                 .build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
-        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").build();
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").lastUpdated(LocalDateTime.now().minusMinutes(5).toDate()).build();
         dynamoMediaList.add(dynamoMedia1);
         dynamoMediaList.add(dynamoMedia3);
         when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
@@ -112,8 +108,7 @@ public class LcmDynamoMediaDaoTest {
         final Properties properties = new Properties();
         properties.put("1", "EPC Internal User");
 
-        MediaDao mediaDao = makeMockMediaDao(mediaIdSproc, mediaSproc, mockMediaDBRepo, properties, null);
-        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
+        MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null);
         MediaByDomainIdResponse testMediaRespomse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null);
 
         assertEquals(3, testMediaRespomse.getImages().size());
@@ -124,19 +119,18 @@ public class LcmDynamoMediaDaoTest {
         assertEquals(((HashMap)rooms.get(0)).get("roomId"),"123");
         assertTrue(Boolean.valueOf(((HashMap) rooms.get(0)).get("roomHero").toString()));
 
-        assertEquals(media1.getDomainId().toString(), testMediaRespomse.getDomainId());
-        assertEquals(media1.getLastUpdatedBy(), testMedia1.getLastUpdatedBy());
-        assertEquals(media1.getFileName(), testMedia1.getFileName());
+        assertEquals(mediaList.get(0).getDomainId().toString(), testMediaRespomse.getDomainId());
+        assertEquals(mediaList.get(0).getLastUpdatedBy(), testMedia1.getLastUpdatedBy());
+        assertEquals(mediaList.get(0).getFileName(), testMedia1.getFileName());
         assertEquals(dynamoMedia1.getMediaGuid(), testMedia1.getMediaGuid());
-        assertEquals(media1.getComment(), testMedia1.getComments().get(0).getNote());
-        assertTrue((media1.getFileSize() * 1024L) == testMedia1.getFileSize());
+        assertEquals(mediaList.get(0).getComment(), testMedia1.getComments().get(0).getNote());
+        assertTrue((mediaList.get(0).getFileSize() * 1024L) == testMedia1.getFileSize());
         assertEquals("true", testMedia1.getDomainFields().get("propertyHero"));
         assertEquals("4321", testMedia1.getDomainFields().get("subcategoryId"));
         assertEquals("VirtualTour", testMedia1.getDomainDerivativeCategory());
         assertEquals("s3://fileUrl", testMedia1.getFileUrl());
         DomainIdMedia testMedia2 = testMediaRespomse.getImages().get(1);
         assertNull(testMedia2.getMediaGuid());
-        assertNull(testMedia2.getComments());
         assertNull(testMedia2.getFileUrl());
         DomainIdMedia testMedia3 = testMediaRespomse.getImages().get(2);
         assertEquals(dynamoMedia3.getMediaGuid(), testMedia3.getMediaGuid());
@@ -145,51 +139,34 @@ public class LcmDynamoMediaDaoTest {
 
     @Test
     public void testGetMediaByDomainIdCallSprocMultiple() throws Exception {
-        SQLMediaIdListSproc mediaIdSproc = mock(SQLMediaIdListSproc.class);
-        Integer mediaId1 = 1;
-        Integer mediaId2 = 2;
-        Integer mediaId3 = 3;
-        List<Integer> mediaIds = new ArrayList<>();
-        mediaIds.add(mediaId1);
-        mediaIds.add(mediaId2);
-        mediaIds.add(mediaId3);
+        SQLMediaListSproc mediaListSproc = mock(SQLMediaListSproc.class);
+        List<LcmMediaAndDerivative> mediaList = make2Media2DerivativeMediaResult(true, true, true, true, true, true, null);
+        Map<String, Object> mediaResult = new HashMap<>();
+        mediaResult.put(SQLMediaListSproc.MEDIA_SET, mediaList);
+        when(mediaListSproc.execute(anyInt())).thenReturn(mediaResult);
 
-        Map<String, Object> idResult = new HashMap<>();
-        idResult.put(SQLMediaIdListSproc.MEDIA_ID_SET, mediaIds);
-        when(mediaIdSproc.execute(anyInt(), anyString())).thenReturn(idResult);
+        LcmMediaAndDerivative media3d1 = LcmMediaAndDerivative.builder().mediaId(3).domainId(1234).fileName("image3.jpg").active(true).width(40)
+                .height(41).fileSize(500).lastUpdatedBy("test").lastUpdateDate(new Date()).mediaLastUpdatedBy("test").mediaLastUpdateDate(new Date())
+                .provider(400).category(500).comment("Comment").fileProcessed(true).derivativeSizeTypeId(1).derivativeFileName("image3_t.jpg")
+                .derivativeWidth(10).derivativeHeight(11).derivativeFileSize(100).build();
+        LcmMediaAndDerivative media3d2 = LcmMediaAndDerivative.builder().mediaId(3).domainId(1234).fileName("image3.jpg").active(true).width(40)
+                .height(41).fileSize(500).lastUpdatedBy("test").lastUpdateDate(new Date()).mediaLastUpdatedBy("test").mediaLastUpdateDate(new Date())
+                .provider(400).category(500).comment("Comment").fileProcessed(true).derivativeSizeTypeId(2).derivativeFileName("image3_s.jpg")
+                .derivativeWidth(20).derivativeHeight(21).derivativeFileSize(200).build();
+        mediaList.add(media3d1);
+        mediaList.add(media3d2);
 
         SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
-        List<LcmMedia> mediaList1 = new ArrayList<>();
-        LcmMedia media1 = LcmMedia.builder().domainId(1234).mediaId(1).fileName("image1.jpg").active(true).width(20).height(21).fileSize(200)
-                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(3).comment("Comment").formatId(2).build();
-        mediaList1.add(media1);
-        Map<String, Object> mediaResult1 = make2DerivativeMediaResult(mediaList1, 1, 1, 2, true, true, "image1_t.jpg", "image1_s.jpg");
-
-        List<LcmMedia> mediaList2 = new ArrayList<>();
-        LcmMedia media2 = LcmMedia.builder().domainId(1234).mediaId(2).fileName("image2.jpg").active(true).width(40).height(41).fileSize(500)
-                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(500).comment("").build();
-        mediaList2.add(media2);
-        Map<String, Object> mediaResult2 = make2DerivativeMediaResult(mediaList2, 2, 1, 2, true, true, "image2_t.jpg", "image2_s.jpg");
-
-        List<LcmMedia> mediaList3 = new ArrayList<>();
-        LcmMedia media3 = LcmMedia.builder().domainId(1234).mediaId(3).fileName("image3.jpg").active(true).width(40).height(41).fileSize(500)
-                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(500).comment("").build();
-        mediaList3.add(media3);
-        Map<String, Object> mediaResult3 = make2DerivativeMediaResult(mediaList2, 2, 1, 2, true, true, "image3_t.jpg", "image3_s.jpg");
-
-        when(mediaSproc.execute(anyInt(), eq(mediaId1))).thenReturn(mediaResult1);
-        when(mediaSproc.execute(anyInt(), eq(mediaId2))).thenReturn(mediaResult2);
-        when(mediaSproc.execute(anyInt(), eq(mediaId3))).thenReturn(mediaResult3);
 
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         List<Media> dynamoMediaList = new ArrayList<>();
         String guid1 = "imspecial-9627-47f9-86c6-1874c18d3aaa";
-        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234")
+        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234").lastUpdated(new Date())
                 .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
         String guid2 = "f2d4d480-9627-47f9-86c6-1874c18d3bbc";
-        Media dynamoMedia2 = Media.builder().mediaGuid(guid2).domain("Lodging").domainId("1234").build();
+        Media dynamoMedia2 = Media.builder().mediaGuid(guid2).domain("Lodging").domainId("1234").lastUpdated(new Date()).build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
-        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").fileName("image3.jpg").domainId("1234").build();
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").fileName("image3.jpg").domainId("1234").lastUpdated(new Date()).build();
         dynamoMediaList.add(dynamoMedia2);
         dynamoMediaList.add(dynamoMedia3);
         dynamoMediaList.add(dynamoMedia1); //Put hero last to verify it returns as first item.
@@ -198,11 +175,10 @@ public class LcmDynamoMediaDaoTest {
         final Properties properties = new Properties();
         properties.put("1", "EPC Internal User");
 
-        MediaDao mediaDao = makeMockMediaDao(mediaIdSproc, mediaSproc, mockMediaDBRepo, properties, null);
+        MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null);
         LcmProcessLogDao lcmProcessLogDao = makeMockProcessLogDao();
         setFieldValue(mediaDao, "processLogDao", lcmProcessLogDao);
         setFieldValue(mediaDao, "paramLimit", 2);
-        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
 
         List<DomainIdMedia> testMediaList = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null).getImages();
         verify(lcmProcessLogDao, times(2)).findMediaStatus(any());
@@ -226,45 +202,26 @@ public class LcmDynamoMediaDaoTest {
         LcmMedia lcmMediaResult = mediaDao.getContentProviderName("test.jpg");
         assertEquals("4600417_IMG0010.jpg", lcmMediaResult.getFileName());
         assertTrue(4600417 ==lcmMediaResult.getDomainId());
-
-
     }
 
     @Test
     public void testFilterActive() throws Exception {
-        SQLMediaIdListSproc mediaIdSproc = mock(SQLMediaIdListSproc.class);
-        Integer mediaId1 = 1;
-        Integer mediaId2 = 2;
-        List<Integer> mediaIds = new ArrayList<>();
-        mediaIds.add(mediaId1);
-        mediaIds.add(mediaId2);
-        Map<String, Object> idResult = new HashMap<>();
-        idResult.put(SQLMediaIdListSproc.MEDIA_ID_SET, mediaIds);
-        when(mediaIdSproc.execute(anyInt(), anyString())).thenReturn(idResult);
+        SQLMediaListSproc mediaListSproc = mock(SQLMediaListSproc.class);
+        List<LcmMediaAndDerivative> mediaList = make2Media2DerivativeMediaResult(true, false, true, true, true, true, null);
+        Map<String, Object> mediaResult = new HashMap<>();
+        mediaResult.put(SQLMediaListSproc.MEDIA_SET, mediaList);
+        when(mediaListSproc.execute(anyInt())).thenReturn(mediaResult);
 
         SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
-        LcmMedia media1 = LcmMedia.builder().domainId(1234).mediaId(1).fileName("image1.jpg").active(true).width(20).height(21).fileSize(200)
-                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(3).comment("Comment").build();
-        List<LcmMedia> mediaList1 = new ArrayList<>();
-        mediaList1.add(media1);
-        Map<String, Object> mediaResult1 = make2DerivativeMediaResult(mediaList1, 1, 1, 2, true, true, "image1_t.jpg", "image1_s.jpg");
-
-        LcmMedia media2 = LcmMedia.builder().domainId(1234).mediaId(2).fileName("image2.jpg").active(false).width(40).height(41).fileSize(500)
-                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(500).comment("").build();
-        List<LcmMedia> mediaList2 = new ArrayList<>();
-        mediaList2.add(media2);
-        Map<String, Object> mediaResult2 = make2DerivativeMediaResult(mediaList2, 2, 1, 2, true, true, "image2_t.jpg", "image2_s.jpg");
-
-        when(mediaSproc.execute(anyInt(), eq(mediaId1))).thenReturn(mediaResult1);
-        when(mediaSproc.execute(anyInt(), eq(mediaId2))).thenReturn(mediaResult2);
 
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         List<Media> dynamoMediaList = new ArrayList<>();
         String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
-        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234")
+        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234").lastUpdated(new Date())
                 .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
-        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").build();
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234")
+                .lastUpdated(LocalDateTime.now().minusMinutes(5).toDate()).build();
         dynamoMediaList.add(dynamoMedia1);
         dynamoMediaList.add(dynamoMedia3);
         when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
@@ -272,20 +229,17 @@ public class LcmDynamoMediaDaoTest {
         final Properties properties = new Properties();
         properties.put("1", "EPC Internal User");
 
-        MediaDao mediaDao = makeMockMediaDao(mediaIdSproc, mediaSproc, mockMediaDBRepo, properties, null);
-        setFieldValue(mediaDao, "lcmMediaIdSproc", mediaIdSproc);
-        setFieldValue(mediaDao, "lcmMediaItemSproc", mediaSproc);
-        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
+        MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null);
         MediaByDomainIdResponse testMediaResponse1 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, null, null);
 
         assertEquals(1, testMediaResponse1.getImages().size());
         testMediaResponse1.getImages().stream().forEach(media -> assertEquals(2, media.getDerivatives().size()));
         DomainIdMedia testMedia1 = testMediaResponse1.getImages().get(0);
-        assertEquals(media1.getDomainId().toString(), testMediaResponse1.getDomainId());
-        assertEquals(media1.getLastUpdatedBy(), testMedia1.getLastUpdatedBy());
-        assertEquals(media1.getFileName(), testMedia1.getFileName());
+        assertEquals(mediaList.get(0).getDomainId().toString(), testMediaResponse1.getDomainId());
+        assertEquals(mediaList.get(0).getLastUpdatedBy(), testMedia1.getLastUpdatedBy());
+        assertEquals(mediaList.get(0).getFileName(), testMedia1.getFileName());
         assertEquals(dynamoMedia1.getMediaGuid(), testMedia1.getMediaGuid());
-        assertTrue((media1.getFileSize() * 1024L) == testMedia1.getFileSize());
+        assertTrue((mediaList.get(0).getFileSize() * 1024L) == testMedia1.getFileSize());
 
         MediaByDomainIdResponse testMediaResponse2 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "false", null, null, null);
 
@@ -293,48 +247,32 @@ public class LcmDynamoMediaDaoTest {
         testMediaResponse2.getImages().stream().filter(media -> media.getDomainFields() != null && media.getDomainFields().get("lcmMediaId") != null)
                 .forEach(media -> assertEquals(2, media.getDerivatives().size()));
         DomainIdMedia testMedia2 = testMediaResponse2.getImages().get(0);
-        assertEquals(media2.getDomainId().toString(), testMediaResponse2.getDomainId());
-        assertEquals(media2.getLastUpdatedBy(), testMedia2.getLastUpdatedBy());
-        assertEquals(media2.getFileName(), testMedia2.getFileName());
-        assertTrue((media2.getFileSize() * 1024L) == testMedia2.getFileSize());
+        assertEquals(mediaList.get(2).getDomainId().toString(), testMediaResponse2.getDomainId());
+        assertEquals(mediaList.get(2).getLastUpdatedBy(), testMedia2.getLastUpdatedBy());
+        assertEquals(mediaList.get(2).getFileName(), testMedia2.getFileName());
+        assertTrue((mediaList.get(2).getFileSize() * 1024L) == testMedia2.getFileSize());
 
+        verifyZeroInteractions(mediaSproc);
     }
 
     @Test
     public void testFilterDerivatives() throws Exception {
-        SQLMediaIdListSproc mediaIdSproc = mock(SQLMediaIdListSproc.class);
-        Integer mediaId1 = 1;
-        Integer mediaId2 = 2;
-        List<Integer> mediaIds = new ArrayList<>();
-        mediaIds.add(mediaId1);
-        mediaIds.add(mediaId2);
-        Map<String, Object> idResult = new HashMap<>();
-        idResult.put(SQLMediaIdListSproc.MEDIA_ID_SET, mediaIds);
-        when(mediaIdSproc.execute(anyInt(), anyString())).thenReturn(idResult);
+        SQLMediaListSproc mediaListSproc = mock(SQLMediaListSproc.class);
+        List<LcmMediaAndDerivative> mediaList = make2Media2DerivativeMediaResult(true, true, true, true, true, true, null);
+        Map<String, Object> mediaResult = new HashMap<>();
+        mediaResult.put(SQLMediaListSproc.MEDIA_SET, mediaList);
+        when(mediaListSproc.execute(anyInt())).thenReturn(mediaResult);
 
         SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
-        LcmMedia media1 = LcmMedia.builder().domainId(1234).mediaId(1).fileName("image1.jpg").active(true).width(20).height(21).fileSize(200)
-                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(3).comment("Comment").build();
-        List<LcmMedia> mediaList1 = new ArrayList<>();
-        mediaList1.add(media1);
-        Map<String, Object> mediaResult1 = make2DerivativeMediaResult(mediaList1, 1, 1, 2, true, true, "image1_t.jpg", "image1_s.jpg");
-
-        LcmMedia media2 = LcmMedia.builder().domainId(1234).mediaId(2).fileName("image2.jpg").active(true).width(40).height(41).fileSize(500)
-                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(500).comment("").build();
-        List<LcmMedia> mediaList2 = new ArrayList<>();
-        mediaList2.add(media2);
-        Map<String, Object> mediaResult2 = make2DerivativeMediaResult(mediaList2, 2, 1, 2, true, true, "image2_t.jpg", "image2_s.jpg");
-
-        when(mediaSproc.execute(anyInt(), eq(mediaId1))).thenReturn(mediaResult1);
-        when(mediaSproc.execute(anyInt(), eq(mediaId2))).thenReturn(mediaResult2);
 
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         List<Media> dynamoMediaList = new ArrayList<>();
         String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
-        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234")
+        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234").lastUpdated(new Date())
                 .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
-        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").build();
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234")
+                .lastUpdated(LocalDateTime.now().minusMinutes(5).toDate()).build();
         dynamoMediaList.add(dynamoMedia1);
         dynamoMediaList.add(dynamoMedia3);
         when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
@@ -342,10 +280,7 @@ public class LcmDynamoMediaDaoTest {
         final Properties properties = new Properties();
         properties.put("1", "EPC Internal User");
 
-        MediaDao mediaDao = makeMockMediaDao(mediaIdSproc, mediaSproc, mockMediaDBRepo, properties, null);
-        setFieldValue(mediaDao, "lcmMediaIdSproc", mediaIdSproc);
-        setFieldValue(mediaDao, "lcmMediaItemSproc", mediaSproc);
-        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
+        MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null);
         MediaByDomainIdResponse testMediaList1 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, "a,t,b", null, null);
 
         assertEquals(3, testMediaList1.getImages().size());
@@ -353,31 +288,27 @@ public class LcmDynamoMediaDaoTest {
             assertEquals(1, media.getDerivatives().size());
             assertTrue(media.getDerivatives().get(0).get("type").equals("t"));
         });
+        verifyZeroInteractions(mediaSproc);
     }
 
     @Test
     public void testBooleanPropertyHero() throws Exception {
-        SQLMediaIdListSproc mediaIdSproc = mock(SQLMediaIdListSproc.class);
-        List<Integer> mediaIds = new ArrayList<>();
-        Map<String, Object> idResult = new HashMap<>();
-        idResult.put(SQLMediaIdListSproc.MEDIA_ID_SET, mediaIds);
-        when(mediaIdSproc.execute(anyInt(), anyString())).thenReturn(idResult);
-
-        SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
-        List<LcmMedia> mediaList = new ArrayList<>();
+        SQLMediaListSproc mediaListSproc = mock(SQLMediaListSproc.class);
+        List<LcmMediaAndDerivative> mediaList =  new ArrayList<>();
         Map<String, Object> mediaResult = new HashMap<>();
-        mediaResult.put(SQLMediaItemGetSproc.MEDIA_SET, mediaList);
-        List<LcmMediaDerivative> derivativeList = new ArrayList<>();
-        mediaResult.put(SQLMediaItemGetSproc.MEDIA_DERIVATIVES_SET, derivativeList);
-        when(mediaSproc.execute(anyInt(), anyInt())).thenReturn(mediaResult);
+        mediaResult.put(SQLMediaListSproc.MEDIA_SET, mediaList);
+        when(mediaListSproc.execute(anyInt())).thenReturn(mediaResult);
+        
+        SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
 
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         List<Media> dynamoMediaList = new ArrayList<>();
         String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
-        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).fileName("file1.jpg").domain("Lodging").domainId("1234")
+        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).fileName("file1.jpg").domain("Lodging").domainId("1234").lastUpdated(new Date())
                 .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": true}").build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
-        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).fileName("file3.jpg").domain("Lodging").domainId("1234").build();
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).fileName("file3.jpg").domain("Lodging").domainId("1234")
+                .lastUpdated(LocalDateTime.now().minusMinutes(5).toDate()).build();
         dynamoMediaList.add(dynamoMedia1);
         dynamoMediaList.add(dynamoMedia3);
         when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
@@ -385,10 +316,7 @@ public class LcmDynamoMediaDaoTest {
         final Properties properties = new Properties();
         properties.put("1", "EPC Internal User");
 
-        MediaDao mediaDao = makeMockMediaDao(mediaIdSproc, mediaSproc, mockMediaDBRepo, properties, null);
-        setFieldValue(mediaDao, "lcmMediaIdSproc", mediaIdSproc);
-        setFieldValue(mediaDao, "lcmMediaItemSproc", mediaSproc);
-        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
+        MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null);
         MediaByDomainIdResponse testMediaList1 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null);
 
         assertEquals(2, testMediaList1.getImages().size());
@@ -397,39 +325,22 @@ public class LcmDynamoMediaDaoTest {
     @SuppressWarnings("rawtypes")
     @Test
     public void testGetMediaByDomainIdFileProcessFalse() throws Exception {
-        SQLMediaIdListSproc mediaIdSproc = mock(SQLMediaIdListSproc.class);
-        Integer mediaId1 = 1;
-        Integer mediaId2 = 2;
-        List<Integer> mediaIds = new ArrayList<>();
-        mediaIds.add(mediaId1);
-        mediaIds.add(mediaId2);
-        Map<String, Object> idResult = new HashMap<>();
-        idResult.put(SQLMediaIdListSproc.MEDIA_ID_SET, mediaIds);
-        when(mediaIdSproc.execute(anyInt(), anyString())).thenReturn(idResult);
+        SQLMediaListSproc mediaListSproc = mock(SQLMediaListSproc.class);
+        List<LcmMediaAndDerivative> mediaList = make2Media2DerivativeMediaResult(true, true, false, false, false, true, null);
+        Map<String, Object> mediaResult = new HashMap<>();
+        mediaResult.put(SQLMediaListSproc.MEDIA_SET, mediaList);
+        when(mediaListSproc.execute(anyInt())).thenReturn(mediaResult);
 
         SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
-        List<LcmMedia> mediaList1 = new ArrayList<>();
-        LcmMedia media1 = LcmMedia.builder().domainId(1234).mediaId(1).fileName("image1.jpg").active(true).width(20).height(21).fileSize(200)
-                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(3).comment("Comment").formatId(2).build();
-        mediaList1.add(media1);
-        Map<String, Object> mediaResult1 = make2DerivativeMediaResult(mediaList1, 1, 1, 2, false, false, "image1_t.jpg", "image1_s.jpg");
-
-        List<LcmMedia> mediaList2 = new ArrayList<>();
-        LcmMedia media2 = LcmMedia.builder().domainId(1234).mediaId(2).fileName("image2.jpg").active(true).width(40).height(41).fileSize(500)
-                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(500).comment("").build();
-        mediaList2.add(media2);
-        Map<String, Object> mediaResult2 = make2DerivativeMediaResult(mediaList2, 2, 1, 2, false, true, "image2_t.jpg", "image2_s.jpg");
-
-        when(mediaSproc.execute(anyInt(), eq(mediaId1))).thenReturn(mediaResult1);
-        when(mediaSproc.execute(anyInt(), eq(mediaId2))).thenReturn(mediaResult2);
 
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         List<Media> dynamoMediaList = new ArrayList<>();
         String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
-        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234")
+        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).lcmMediaId("1").domain("Lodging").domainId("1234").lastUpdated(new Date())
                 .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}").build();
         String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
-        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").build();
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234")
+                .lastUpdated(LocalDateTime.now().minusMinutes(5).toDate()).build();
         dynamoMediaList.add(dynamoMedia1);
         dynamoMediaList.add(dynamoMedia3);
         when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
@@ -437,25 +348,22 @@ public class LcmDynamoMediaDaoTest {
         final Properties properties = new Properties();
         properties.put("1", "EPC Internal User");
 
-        MediaDao mediaDao = makeMockMediaDao(mediaIdSproc, mediaSproc, mockMediaDBRepo, properties, null);
-        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
+        MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null);
         MediaByDomainIdResponse testMediaResponse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null);
 
         assertEquals(3, testMediaResponse.getImages().size());
         DomainIdMedia testMedia1 = testMediaResponse.getImages().get(0);
-        assertEquals(media1.getDomainId().toString(), testMediaResponse.getDomainId());
-        assertEquals(media1.getLastUpdatedBy(), testMedia1.getLastUpdatedBy());
-        assertEquals(media1.getFileName(), testMedia1.getFileName());
+        assertEquals(mediaList.get(0).getDomainId().toString(), testMediaResponse.getDomainId());
+        assertEquals(mediaList.get(0).getLastUpdatedBy(), testMedia1.getLastUpdatedBy());
+        assertEquals(mediaList.get(0).getFileName(), testMedia1.getFileName());
         assertEquals(dynamoMedia1.getMediaGuid(), testMedia1.getMediaGuid());
-        assertEquals(media1.getComment(), testMedia1.getComments().get(0).getNote());
-        assertTrue((media1.getFileSize() * 1024L) == testMedia1.getFileSize());
+        assertEquals(mediaList.get(0).getComment(), testMedia1.getComments().get(0).getNote());
+        assertTrue((mediaList.get(0).getFileSize() * 1024L) == testMedia1.getFileSize());
         assertEquals(0, testMedia1.getDerivatives().size());
         assertEquals("true", testMedia1.getDomainFields().get("propertyHero"));
         assertEquals("4321", testMedia1.getDomainFields().get("subcategoryId"));
-        assertEquals("VirtualTour", testMedia1.getDomainDerivativeCategory());
         DomainIdMedia testMedia2 = testMediaResponse.getImages().get(1);
         assertNull(testMedia2.getMediaGuid());
-        assertNull(testMedia2.getComments());
         assertEquals(1, testMedia2.getDerivatives().size());
         HashMap derivative = (HashMap) testMedia2.getDerivatives().get(0);
         assertEquals(derivative.get("fileSize"), 200 * 1024L);
@@ -532,7 +440,6 @@ public class LcmDynamoMediaDaoTest {
         when(mockMediaItemSproc.execute(eq(domainId), eq(lcmMediaId))).thenReturn(itemResultMap);
         
         MediaDao mediaDao = makeMockMediaDao(null, mockMediaItemSproc, mock(DynamoMediaRepository.class), mockProperties, mockMediaGetSproc);
-        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
         MediaGetResponse resultMedia = mediaDao.getMediaByGUID(lcmMediaId.toString());
         assertEquals(lcmMediaId.toString(), resultMedia.getDomainFields().get("lcmMediaId"));
     }
@@ -564,36 +471,25 @@ public class LcmDynamoMediaDaoTest {
         when(mockMediaItemSproc.execute(eq(domainId), eq(lcmMediaId))).thenReturn(itemResultMap);
         
         MediaDao mediaDao = makeMockMediaDao(null, mockMediaItemSproc, mediaDynamo, mockProperties, null);
-        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
         MediaGetResponse resultMedia = mediaDao.getMediaByGUID(guid);
         assertEquals(lcmMediaId.toString(), resultMedia.getDomainFields().get("lcmMediaId"));
     }
 
     @Test
     public void testMediaGetByDomainIdPagination() throws Exception {
-        SQLMediaIdListSproc mediaIdSproc = mock(SQLMediaIdListSproc.class);
-        List<Integer> mediaIds = new ArrayList<>();
-        mediaIds.add(1);
-        Map<String, Object> idResult = new HashMap<>();
-        idResult.put(SQLMediaIdListSproc.MEDIA_ID_SET, mediaIds);
-        when(mediaIdSproc.execute(anyInt(), anyString())).thenReturn(idResult);
+        SQLMediaListSproc mediaListSproc = mock(SQLMediaListSproc.class);
+        List<LcmMediaAndDerivative> mediaList = make2Media2DerivativeMediaResult(true, false, true, true, true, true, null);
+        Map<String, Object> mediaResult = new HashMap<>();
+        mediaResult.put(SQLMediaListSproc.MEDIA_SET, mediaList);
+        when(mediaListSproc.execute(anyInt())).thenReturn(mediaResult);
 
         SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
-
-        List<LcmMedia> mediaList1 = new ArrayList<>();
-        LcmMedia media1 = LcmMedia.builder().domainId(1234).mediaId(1).fileName("image1.jpg").active(true).width(20).height(21).fileSize(200)
-                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(3).comment("Comment").formatId(2).build();
-        mediaList1.add(media1);
-        Map<String, Object> mediaResult1 = make2DerivativeMediaResult(mediaList1, 1, 1, 2, true, true, "image1_t.jpg", "image1_s.jpg");
-
-        when(mediaSproc.execute(anyInt(), anyInt())).thenReturn(mediaResult1);
         final Properties properties = new Properties();
         properties.put("1", "EPC Internal User");
 
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         when(mockMediaDBRepo.loadMedia(any(), any())).thenReturn(createMedia());
-        MediaDao mediaDao = makeMockMediaDao(mediaIdSproc, mediaSproc, mockMediaDBRepo, properties, null);
-        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
+        MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null);
 
         MediaByDomainIdResponse testMediaResponse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, 20, 2);
 
@@ -604,137 +500,98 @@ public class LcmDynamoMediaDaoTest {
 
     @Test
     public void testMediaGetByDomainIdPaginationOutOfBounds() throws Exception {
-        SQLMediaIdListSproc mediaIdSproc = mock(SQLMediaIdListSproc.class);
-        List<Integer> mediaIds = new ArrayList<>();
-        mediaIds.add(1);
-        Map<String, Object> idResult = new HashMap<>();
-        idResult.put(SQLMediaIdListSproc.MEDIA_ID_SET, mediaIds);
-        when(mediaIdSproc.execute(anyInt(), anyString())).thenReturn(idResult);
+        SQLMediaListSproc mediaListSproc = mock(SQLMediaListSproc.class);
+        List<LcmMediaAndDerivative> mediaList = make2Media2DerivativeMediaResult(true, false, true, true, true, true, null);
+        Map<String, Object> mediaResult = new HashMap<>();
+        mediaResult.put(SQLMediaListSproc.MEDIA_SET, mediaList);
+        when(mediaListSproc.execute(anyInt())).thenReturn(mediaResult);
 
         SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
-
-        List<LcmMedia> mediaList1 = new ArrayList<>();
-        LcmMedia media1 = LcmMedia.builder().domainId(1234).mediaId(1).fileName("image1.jpg").active(true).width(20).height(21).fileSize(200)
-                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(3).comment("Comment").formatId(2).build();
-        mediaList1.add(media1);
-        Map<String, Object> mediaResult1 = make2DerivativeMediaResult(mediaList1, 1, 1, 2, true, true, "image1_t.jpg", "image1_s.jpg");
-
-        when(mediaSproc.execute(anyInt(), anyInt())).thenReturn(mediaResult1);
         final Properties properties = new Properties();
         properties.put("1", "EPC Internal User");
 
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         when(mockMediaDBRepo.loadMedia(any(), any())).thenReturn(createMedia());
-        MediaDao mediaDao = makeMockMediaDao(mediaIdSproc, mediaSproc, mockMediaDBRepo, properties, null);
-        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
+        MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null);
         try {
             mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, 20, 3);
         } catch (Exception ex) {
-            assertEquals(ex.getMessage(), "pageIndex is out of bounds");
+            assertEquals("pageIndex is out of bounds", ex.getMessage());
         }
 
     }
 
     @Test
     public void testMediaGetByDomainIdPaginationPageSizeExistsButPageIndexNull() throws Exception {
-        SQLMediaIdListSproc mediaIdSproc = mock(SQLMediaIdListSproc.class);
-        List<Integer> mediaIds = new ArrayList<>();
-        mediaIds.add(1);
-        Map<String, Object> idResult = new HashMap<>();
-        idResult.put(SQLMediaIdListSproc.MEDIA_ID_SET, mediaIds);
-        when(mediaIdSproc.execute(anyInt(), anyString())).thenReturn(idResult);
+        SQLMediaListSproc mediaListSproc = mock(SQLMediaListSproc.class);
+        List<LcmMediaAndDerivative> mediaList = make2Media2DerivativeMediaResult(true, false, true, true, true, true, null);
+        Map<String, Object> mediaResult = new HashMap<>();
+        mediaResult.put(SQLMediaListSproc.MEDIA_SET, mediaList);
+        when(mediaListSproc.execute(anyInt())).thenReturn(mediaResult);
 
         SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
-
-        List<LcmMedia> mediaList1 = new ArrayList<>();
-        LcmMedia media1 = LcmMedia.builder().domainId(1234).mediaId(1).fileName("image1.jpg").active(true).width(20).height(21).fileSize(200)
-                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(3).comment("Comment").formatId(2).build();
-        mediaList1.add(media1);
-        Map<String, Object> mediaResult1 = make2DerivativeMediaResult(mediaList1, 1, 1, 2, true, true, "image1_t.jpg", "image1_s.jpg");
-
-        when(mediaSproc.execute(anyInt(), anyInt())).thenReturn(mediaResult1);
         final Properties properties = new Properties();
         properties.put("1", "EPC Internal User");
 
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         when(mockMediaDBRepo.loadMedia(any(), any())).thenReturn(createMedia());
-        MediaDao mediaDao = makeMockMediaDao(mediaIdSproc, mediaSproc, mockMediaDBRepo, properties, null);
-        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
+        MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null);
         try {
             mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, 20, null);
         } catch (Exception ex) {
-            assertEquals(ex.getMessage(), "pageSize and pageIndex are inclusive, either both fields can be null or not null");
+            assertEquals("pageSize and pageIndex are inclusive, either both fields can be null or not null", ex.getMessage());
         }
     }
 
     @Test
     public void testMediaGetByDomainIdPaginationPageIndexExistsButPageSizeNull() throws Exception {
-        SQLMediaIdListSproc mediaIdSproc = mock(SQLMediaIdListSproc.class);
-        List<Integer> mediaIds = new ArrayList<>();
-        mediaIds.add(1);
-        Map<String, Object> idResult = new HashMap<>();
-        idResult.put(SQLMediaIdListSproc.MEDIA_ID_SET, mediaIds);
-        when(mediaIdSproc.execute(anyInt(), anyString())).thenReturn(idResult);
+        SQLMediaListSproc mediaListSproc = mock(SQLMediaListSproc.class);
+        List<LcmMediaAndDerivative> mediaList = make2Media2DerivativeMediaResult(true, false, true, true, true, true, null);
+        Map<String, Object> mediaResult = new HashMap<>();
+        mediaResult.put(SQLMediaListSproc.MEDIA_SET, mediaList);
+        when(mediaListSproc.execute(anyInt())).thenReturn(mediaResult);
 
         SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
-
-        List<LcmMedia> mediaList1 = new ArrayList<>();
-        LcmMedia media1 = LcmMedia.builder().domainId(1234).mediaId(1).fileName("image1.jpg").active(true).width(20).height(21).fileSize(200)
-                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(3).comment("Comment").formatId(2).build();
-        mediaList1.add(media1);
-        Map<String, Object> mediaResult1 = make2DerivativeMediaResult(mediaList1, 1, 1, 2, true, true, "image1_t.jpg", "image1_s.jpg");
-
-        when(mediaSproc.execute(anyInt(), anyInt())).thenReturn(mediaResult1);
         final Properties properties = new Properties();
         properties.put("1", "EPC Internal User");
 
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         when(mockMediaDBRepo.loadMedia(any(), any())).thenReturn(createMedia());
-        MediaDao mediaDao = makeMockMediaDao(mediaIdSproc, mediaSproc, mockMediaDBRepo, properties, null);
-        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
+        MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null);
         try {
             mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, null, 20);
         } catch (Exception ex) {
-            assertEquals(ex.getMessage(), "pageSize and pageIndex are inclusive, either both fields can be null or not null");
+            assertEquals("pageSize and pageIndex are inclusive, either both fields can be null or not null", ex.getMessage());
         }
     }
 
     @Test
     public void testMediaGetByDomainIdPaginationIsNegative() throws Exception {
-        SQLMediaIdListSproc mediaIdSproc = mock(SQLMediaIdListSproc.class);
-        List<Integer> mediaIds = new ArrayList<>();
-        mediaIds.add(1);
-        Map<String, Object> idResult = new HashMap<>();
-        idResult.put(SQLMediaIdListSproc.MEDIA_ID_SET, mediaIds);
-        when(mediaIdSproc.execute(anyInt(), anyString())).thenReturn(idResult);
+        SQLMediaListSproc mediaListSproc = mock(SQLMediaListSproc.class);
+        List<LcmMediaAndDerivative> mediaList = make2Media2DerivativeMediaResult(true, false, true, true, true, true, null);
+        Map<String, Object> mediaResult = new HashMap<>();
+        mediaResult.put(SQLMediaListSproc.MEDIA_SET, mediaList);
+        when(mediaListSproc.execute(anyInt())).thenReturn(mediaResult);
 
         SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
-
-        List<LcmMedia> mediaList1 = new ArrayList<>();
-        LcmMedia media1 = LcmMedia.builder().domainId(1234).mediaId(1).fileName("image1.jpg").active(true).width(20).height(21).fileSize(200)
-                .lastUpdatedBy("test").lastUpdateDate(new Date()).provider(400).category(3).comment("Comment").formatId(2).build();
-        mediaList1.add(media1);
-        Map<String, Object> mediaResult1 = make2DerivativeMediaResult(mediaList1, 1, 1, 2, true, true, "image1_t.jpg", "image1_s.jpg");
-
-        when(mediaSproc.execute(anyInt(), anyInt())).thenReturn(mediaResult1);
         final Properties properties = new Properties();
         properties.put("1", "EPC Internal User");
 
         DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
         when(mockMediaDBRepo.loadMedia(any(), any())).thenReturn(createMedia());
-        MediaDao mediaDao = makeMockMediaDao(mediaIdSproc, mediaSproc, mockMediaDBRepo, properties, null);
-        setFieldValue(mediaDao, "roomGetSproc", roomGetSproc);
+        MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null);
+        setFieldValue(mediaDao, "roomGetByCatalogItemIdSproc", roomGetByCatalogItemIdSproc);
         try {
             mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, -20, -1);
         } catch (Exception ex) {
-            assertEquals(ex.getMessage(), "pageSize and pageIndex can only be positive integer values");
+            assertEquals("pageSize and pageIndex can only be positive integer values", ex.getMessage());
         }
     }
     
-    private MediaDao makeMockMediaDao(SQLMediaIdListSproc mediaIdSproc, SQLMediaItemGetSproc mediaItemSproc, DynamoMediaRepository mockMediaDBRepo,
+    private MediaDao makeMockMediaDao(SQLMediaListSproc mediaIdSproc, SQLMediaItemGetSproc mediaItemSproc, DynamoMediaRepository mockMediaDBRepo,
                                       final Properties properties, SQLMediaGetSproc mediaGetSproc) throws NoSuchFieldException, IllegalAccessException {
         MediaDao mediaDao = new LcmDynamoMediaDao();
-        setFieldValue(mediaDao, "lcmMediaIdSproc", mediaIdSproc);
+        setFieldValue(mediaDao, "lcmMediaListSproc", mediaIdSproc);
         setFieldValue(mediaDao, "lcmMediaSproc", mediaGetSproc);
         setFieldValue(mediaDao, "lcmMediaItemSproc", mediaItemSproc);
         setFieldValue(mediaDao, "paramLimit", 50);
@@ -744,6 +601,9 @@ public class LcmDynamoMediaDaoTest {
         setFieldValue(mediaDao, "processLogDao", makeMockProcessLogDao());
         setFieldValue(mediaDao, "activityWhiteList", makeActivityWhitelist());
         setFieldValue(mediaDao, "imageRootPath", "https://media.int.expedia.com/");
+        setFieldValue(mediaDao, "roomGetByMediaIdSproc", roomGetByMediaIdSproc);
+        setFieldValue(mediaDao, "roomGetByCatalogItemIdSproc", roomGetByCatalogItemIdSproc);
+        
         return mediaDao;
     }
 
@@ -755,21 +615,6 @@ public class LcmDynamoMediaDaoTest {
         activityMapping.setStatusMessage("PUBLISHED");
         whitelist.add(activityMapping);
         return whitelist;
-    }
-
-    private Map<String, Object> make2DerivativeMediaResult(List<LcmMedia> mediaList1, int mediaId, int type1, int type2, boolean published1,
-                                                           boolean published2, String fileName1, String fileName2) {
-        Map<String, Object> mediaResult1 = new HashMap<>();
-        mediaResult1.put(SQLMediaItemGetSproc.MEDIA_SET, mediaList1);
-        List<LcmMediaDerivative> derivativeList1 = new ArrayList<>();
-        LcmMediaDerivative derivative11 = LcmMediaDerivative.builder().mediaId(mediaId).fileProcessed(published1).mediaSizeTypeId(type1).fileName(fileName1)
-                .width(10).height(11).fileSize(100).build();
-        derivativeList1.add(derivative11);
-        LcmMediaDerivative derivative12 = LcmMediaDerivative.builder().mediaId(mediaId).fileProcessed(published2).mediaSizeTypeId(type2).fileName(fileName2)
-                .width(20).height(21).fileSize(200).build();
-        derivativeList1.add(derivative12);
-        mediaResult1.put(SQLMediaItemGetSproc.MEDIA_DERIVATIVES_SET, derivativeList1);
-        return mediaResult1;
     }
 
     private LcmProcessLogDao makeMockProcessLogDao() {
@@ -833,6 +678,31 @@ public class LcmDynamoMediaDaoTest {
                         }
                 );
         return mediaValues;
+    }
+
+    private List<LcmMediaAndDerivative> make2Media2DerivativeMediaResult(boolean active1, boolean active2, boolean published11, boolean published12, boolean published21, boolean published22, Integer formatId) {
+        LcmMediaAndDerivative media1d1 = LcmMediaAndDerivative.builder().mediaId(1).domainId(1234).fileName("image1.jpg").active(active1).width(20)
+                .height(21).fileSize(200).lastUpdatedBy("test").lastUpdateDate(new Date()).mediaLastUpdatedBy("test").mediaLastUpdateDate(new Date())
+                .provider(400).category(3).comment("Comment").fileProcessed(published11).derivativeSizeTypeId(1).derivativeFileName("image1_t.jpg")
+                .derivativeWidth(10).derivativeHeight(11).derivativeFileSize(100).formatId(formatId).build();
+        LcmMediaAndDerivative media1d2 = LcmMediaAndDerivative.builder().mediaId(1).domainId(1234).fileName("image1.jpg").active(active1).width(20)
+                .height(21).fileSize(200).lastUpdatedBy("test").lastUpdateDate(new Date()).mediaLastUpdatedBy("test").mediaLastUpdateDate(new Date())
+                .provider(400).category(3).comment("Comment").fileProcessed(published12).derivativeSizeTypeId(2).derivativeFileName("image1_s.jpg")
+                .derivativeWidth(20).derivativeHeight(21).derivativeFileSize(200).formatId(formatId).build();
+        LcmMediaAndDerivative media2d1 = LcmMediaAndDerivative.builder().mediaId(2).domainId(1234).fileName("image2.jpg").active(active2).width(40)
+                .height(41).fileSize(500).lastUpdatedBy("test").lastUpdateDate(new Date()).mediaLastUpdatedBy("test").mediaLastUpdateDate(new Date())
+                .provider(400).category(500).comment("Comment").fileProcessed(published21).derivativeSizeTypeId(1).derivativeFileName("image2_t.jpg")
+                .derivativeWidth(10).derivativeHeight(11).derivativeFileSize(100).build();
+        LcmMediaAndDerivative media2d2 = LcmMediaAndDerivative.builder().mediaId(2).domainId(1234).fileName("image2.jpg").active(active2).width(40)
+                .height(41).fileSize(500).lastUpdatedBy("test").lastUpdateDate(new Date()).mediaLastUpdatedBy("test").mediaLastUpdateDate(new Date())
+                .provider(400).category(500).comment("Comment").fileProcessed(published22).derivativeSizeTypeId(2).derivativeFileName("image2_s.jpg")
+                .derivativeWidth(20).derivativeHeight(21).derivativeFileSize(200).build();
+        List<LcmMediaAndDerivative> mediaList = new ArrayList<>();
+        mediaList.add(media1d1);
+        mediaList.add(media1d2);
+        mediaList.add(media2d1);
+        mediaList.add(media2d2);
+        return mediaList;
     }
 
 }

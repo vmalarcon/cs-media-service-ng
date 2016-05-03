@@ -36,7 +36,7 @@ public class LcmDynamoCatalogAndParagraphDao implements CatalogItemMediaDao {
     @Autowired
     private AddCatalogItemMediaForRoomsAndRatePlansSproc addCatalogItemMediaForRoom;
     @Autowired
-    private SQLRoomGetSproc roomGetSproc;
+    private SQLRoomGetByMediaIdSproc roomGetSproc;
     @Autowired
     private CatalogItemMediaDelSproc catalogItemMediaDelSproc;
     @Autowired
@@ -93,7 +93,7 @@ public class LcmDynamoCatalogAndParagraphDao implements CatalogItemMediaDao {
 
     public List<LcmMediaRoom> getLcmRoomsByMediaId(final int mediaId) {
         final Map<String, Object> roomResult = roomGetSproc.execute(mediaId);
-        return (List<LcmMediaRoom>) roomResult.get(SQLRoomGetSproc.MEDIA_SET);
+        return (List<LcmMediaRoom>) roomResult.get(SQLRoomGetByMediaIdSproc.ROOM_SET);
     }
 
     public void deleteParagraph(final int roomId) {

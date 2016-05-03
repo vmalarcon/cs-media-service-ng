@@ -10,8 +10,8 @@ import lombok.Getter;
 @SuppressWarnings({"PMD.UnusedPrivateField"})
 public class LcmMediaRoom {
 
+    @Getter private final int mediaId;
     @Getter private final int roomId;
     @Getter private final Boolean roomHero;
-
 
 }
