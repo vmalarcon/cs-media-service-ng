@@ -230,8 +230,8 @@ public class MediaController extends CommonServiceController {
      * @return The requested media information.
      * @throws Exception Thrown if processing the message fails.
      */
-    @Meter(name = "getMediaMessageCounter")
-    @Timer(name = "getMediaMessageTimer")
+    @Meter(name = "getMediaByGUIDMessageCounter")
+    @Timer(name = "getMediaByGUIDMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     @RequestMapping(value = "/media/v1/images/{mediaGUID}", method = RequestMethod.GET)
     @Transactional
