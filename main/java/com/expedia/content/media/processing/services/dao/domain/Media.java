@@ -53,7 +53,7 @@ public class Media {
     @Setter private String status;
     @Setter private String domainDerivativeCategory;
     @Setter private Boolean propertyHero;
-    @Setter private String hidden;
+    @Setter private Boolean hidden;
 
     @DynamoDBHashKey
     @DynamoDBAttribute(attributeName = "MediaGUID")
@@ -200,7 +200,7 @@ public class Media {
     }
 
     @DynamoDBAttribute(attributeName = "hidden")
-    public String getHidden(){
+    public Boolean getHidden(){
         return hidden;
     }
 }
