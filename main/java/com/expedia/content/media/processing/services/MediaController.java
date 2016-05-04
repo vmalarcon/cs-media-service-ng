@@ -350,10 +350,11 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * Verify if a media can be hide.
+     * Verify if a media can be hidden.
      *
-     * @param media Media to verify.
-     * @return returns true if the media can be hide or false if not.
+     * @param media Media to verify
+     * @param message Incoming message.
+     * @return returns true if the media can be hidden or false if not.
      */
     private Boolean canNotBeHidden(Media media, String message) throws Exception{
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
