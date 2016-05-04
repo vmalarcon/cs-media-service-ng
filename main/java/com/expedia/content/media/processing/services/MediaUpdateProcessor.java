@@ -222,10 +222,10 @@ public class MediaUpdateProcessor {
         final List<LcmMediaRoom> jsonRoomList = convert(roomList);
         // rooms from LCM DB.
         final List<LcmMediaRoom> lcmMediaRoomList = catalogItemMediaDao.getLcmRoomsByMediaId(Integer.valueOf(mediaId));
-        // room to be delete
+        // room to delete
         final List<LcmMediaRoom> deleteRoomListCata = new ArrayList<>();
         final List<LcmMediaRoom> deleteRoomListPara = new ArrayList<>();
-        // room need to be add
+        // room to add
         final List<LcmMediaRoom> addedRoomListCata = new ArrayList<>();
         final List<LcmMediaRoom> addedRoomListPara = new ArrayList<>();
 
