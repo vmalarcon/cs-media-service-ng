@@ -311,7 +311,7 @@ public class MediaController extends CommonServiceController {
                 objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input GUID does not exist in DB", serviceUrl, NOT_FOUND));
                 return;
             }else {
-                if(!isConcealable(dynamoMedia, message)){
+                if(isNotConcealable(dynamoMedia, message)){
                     objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("Only unpublished media can be concealed", serviceUrl, BAD_REQUEST));
                 }
             }
@@ -355,14 +355,14 @@ public class MediaController extends CommonServiceController {
      * @param media Media to verify.
      * @return returns true if the media can be hide or false if not.
      */
-    private Boolean isConcealable(Media media, String message) throws Exception{
+    private Boolean isNotConcealable(Media media, String message) throws Exception{
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
-        String mediaId = media.getLcmMediaId();
-        if (mediaId == null) {
+        String publishMediaId = media.getLcmMediaId();
+        if (publishMediaId == null) {
             final Map<String, Object> domainFields = OBJECT_MAPPER.readValue(media.getDomainFields(), Map.class);
-            mediaId = (String) domainFields.get(RESPONSE_FIELD_LCM_MEDIA_ID);
+            publishMediaId = (String) domainFields.get(RESPONSE_FIELD_LCM_MEDIA_ID);
         }
-        return !((mediaId != null) && imageMessage.getHidden());
+         return imageMessage.getHidden() && publishMediaId != null; 
     }
 
     private ImageMessage removeActiveFromImageMessage(final ImageMessage imageMessage) {
