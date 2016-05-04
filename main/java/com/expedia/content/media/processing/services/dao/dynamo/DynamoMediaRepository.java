@@ -57,7 +57,7 @@ public class DynamoMediaRepository {
                 .withKeyConditionExpression("MediaFileName = :mfn")
                 .withExpressionAttributeValues(params);
         return dynamoMapper.query(Media.class, expression).stream()
-                .filter(media->!Boolean.TRUE.equals(media.getHidden()))
+                .filter(media->!(Boolean.TRUE.equals(media.getHidden())))
                 .collect(Collectors.toList());
     }
 
