@@ -495,7 +495,7 @@ public class LcmDynamoMediaDaoTest {
 
         assertTrue(testMediaResponse.getTotalMediaCount() == 50);
         assertNotEquals(testMediaResponse.getImages().get(1).getMediaGuid(), "0aaaaaaa-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww");
-        IntStream.range(1, 20).forEach( i -> { assertEquals(testMediaResponse.getImages().get(i).getMediaGuid(),  (i+19) + "aaaaaa-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww"); });
+        IntStream.range(0, 20).forEach( i -> { assertEquals(testMediaResponse.getImages().get(i).getMediaGuid(),  (i+19) + "aaaaaa-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww"); });
     }
 
     @Test

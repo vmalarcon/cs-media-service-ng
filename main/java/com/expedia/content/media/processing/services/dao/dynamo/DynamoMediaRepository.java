@@ -56,7 +56,9 @@ public class DynamoMediaRepository {
                 .withConsistentRead(false)
                 .withKeyConditionExpression("MediaFileName = :mfn")
                 .withExpressionAttributeValues(params);
-        return dynamoMapper.query(Media.class, expression);
+        return dynamoMapper.query(Media.class, expression).stream()
+                .filter(media->!Boolean.TRUE.equals(media.getHidden()))
+                .collect(Collectors.toList());
     }
 
     /**
@@ -66,7 +68,8 @@ public class DynamoMediaRepository {
      * @return Media with the requested GUID.
      */
     public Media getMedia(String mediaGUID) {
-        return dynamoMapper.load(Media.class, mediaGUID);
+        final Media media = dynamoMapper.load(Media.class, mediaGUID);
+        return (media.getHidden()) ? null : media;
     }
 
     /**
@@ -84,6 +87,7 @@ public class DynamoMediaRepository {
                 .withExpressionAttributeValues(params);
         final List<Media> results = dynamoMapper.query(Media.class, expression);
         return results.stream()
+                .filter(item -> !(Boolean.TRUE.equals(item.getHidden())))
                 .filter(item -> environment.equals(item.getEnvironment()))
                 .collect(Collectors.toList());
     }
@@ -125,6 +129,7 @@ public class DynamoMediaRepository {
 
             final List<Media> results = dynamoMapper.query(Media.class, query);
             return results.stream()
+                    .filter(item -> !(Boolean.TRUE.equals(item.getHidden())))
                     .filter(item -> environment.equals(item.getEnvironment()))
                     .filter(item -> item.getPropertyHero() != null && item.getPropertyHero())
                     .collect(Collectors.toList());
@@ -159,7 +164,12 @@ public class DynamoMediaRepository {
             LOGGER.error("ERROR - message={}.", e.getMessage(), e);
             throw new MediaDBException(e.getMessage(), e);
         }
-        return mediaList;
+        return mediaList.stream()
+                .filter(item -> !(Boolean.TRUE.equals(item.getHidden())))
+                .filter(item -> environment.equals(item.getEnvironment()))
+                .filter(item -> item.getPropertyHero() != null && item.getPropertyHero())
+                .collect(Collectors.toList());
+
     }
 
     /**

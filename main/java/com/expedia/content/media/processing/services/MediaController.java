@@ -84,7 +84,8 @@ public class MediaController extends CommonServiceController {
     private static final String MEDIA_VALIDATION_ERROR = "validationError";
     private static final String DOMAIN = "domain";
     private static final String DOMAIN_ID = "domainId";
-
+    private static final String DYNAMO_MEDIA_FIELD = "dynamoMedia";
+    private static final String NEW_JASON_FIELD = "newJson";
     private static final String IMAGE_MESSAGE_FIELD = "message";
     private static final String REPROCESSING_STATE_FIELD = "processState";
     private static final String REG_EX_NUMERIC = "\\d+";
@@ -199,11 +200,11 @@ public class MediaController extends CommonServiceController {
             if (objectMap.get(MEDIA_VALIDATION_ERROR) != null) {
                 return (ResponseEntity<String>) objectMap.get(MEDIA_VALIDATION_ERROR);
             }
-            final String lcmMediaId = (String) objectMap.get("lcmMediaId");
-            final String domainId = (String) objectMap.get("domainId");
-            final Media dynamoMedia = (Media) objectMap.get("dynamoMedia");
+            final String lcmMediaId = (String) objectMap.get(RESPONSE_FIELD_LCM_MEDIA_ID);
+            final String domainId = (String) objectMap.get(DOMAIN_ID);
+            final Media dynamoMedia = (Media) objectMap.get(DYNAMO_MEDIA_FIELD);
 
-            final String newJson = (String) objectMap.get("newJson");
+            final String newJson = (String) objectMap.get(NEW_JASON_FIELD);
             final ImageMessage imageMessage = ImageMessage.parseJsonMessage(newJson);
             if (message.contains("active")) {
                 return mediaUpdateProcessor.processRequest(imageMessage, lcmMediaId, domainId, dynamoMedia);
@@ -309,10 +310,14 @@ public class MediaController extends CommonServiceController {
             if (dynamoMedia == null) {
                 objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input GUID does not exist in DB", serviceUrl, NOT_FOUND));
                 return;
+            }else {
+                if(!isConcealable(dynamoMedia, message)){
+                    objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("Only unpublished media can be concealed", serviceUrl, BAD_REQUEST));
+                }
             }
-            objectMap.put("lcmMediaId", dynamoMedia.getLcmMediaId());
-            objectMap.put("domainId", dynamoMedia.getDomainId());
-            objectMap.put("dynamoMedia", dynamoMedia);
+            objectMap.put(RESPONSE_FIELD_LCM_MEDIA_ID, dynamoMedia.getLcmMediaId());
+            objectMap.put(DOMAIN_ID, dynamoMedia.getDomainId());
+            objectMap.put(DYNAMO_MEDIA_FIELD, dynamoMedia);
         } else if (StringUtils.isNumeric(queryId)) {
             final List<Media> mediaList = mediaDao.getMediaByMediaId(queryId);
             if (!mediaList.isEmpty()) {
@@ -326,15 +331,15 @@ public class MediaController extends CommonServiceController {
                 objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input mediaId does not exist in DB", serviceUrl, NOT_FOUND));
                 return;
             }
-            objectMap.put("lcmMediaId", queryId);
-            objectMap.put("domainId", lcmMedia.getDomainId().toString());
+            objectMap.put(RESPONSE_FIELD_LCM_MEDIA_ID, queryId);
+            objectMap.put(DOMAIN_ID, lcmMedia.getDomainId().toString());
 
         } else {
             objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input queryId is invalid", serviceUrl, BAD_REQUEST));
             return;
         }
         final String newJson = appendDomain(message, (String) objectMap.get(DOMAIN_ID));
-        objectMap.put("newJson", newJson);
+        objectMap.put(NEW_JASON_FIELD, newJson);
         final String jsonError = validateImageMessage(newJson, "EPCUpdate");
         if (!"[]".equals(jsonError)) {
             LOGGER.error("Returning BAD_REQUEST for serviceUrl={}, queryId=[{}],requestId=[{}], JSONMessage=[{}], Errors=[{}]", serviceUrl, queryId,
@@ -342,6 +347,22 @@ public class MediaController extends CommonServiceController {
             objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse(jsonError, serviceUrl, BAD_REQUEST));
             return;
         }
+    }
+
+    /**
+     * Verify if a media can be hide.
+     *
+     * @param media Media to verify.
+     * @return returns true if the media can be hide or false if not.
+     */
+    private Boolean isConcealable(Media media, String message) throws Exception{
+        final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
+        String mediaId = media.getLcmMediaId();
+        if (mediaId == null) {
+            final Map<String, Object> domainFields = OBJECT_MAPPER.readValue(media.getDomainFields(), Map.class);
+            mediaId = (String) domainFields.get(RESPONSE_FIELD_LCM_MEDIA_ID);
+        }
+        return !((mediaId != null) && imageMessage.getHidden());
     }
 
     private ImageMessage removeActiveFromImageMessage(final ImageMessage imageMessage) {
