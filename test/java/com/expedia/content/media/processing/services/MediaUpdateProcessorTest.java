@@ -182,33 +182,4 @@ public class MediaUpdateProcessorTest {
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(catalogItemMediaDao).getLcmRoomsByMediaId(123);
     }
-
-    @Test
-    public void testHideRecords() throws Exception {
-        String jsonMsg = "{  \n"
-                + "   \"userId\":\"bobthegreat\",\n"
-                + "    \"domain\":\"Lodging\",\n"
-                + "    \"hidden\":\"true\",\n"
-                + "   \"domainFields\":{  \n"
-                + "      \"rooms\":[ \n"
-                + "         {  \n"
-                + "            \"roomId\":\"934779\",\n"
-                + "            \"roomHero\":\"false\"\n"
-                + "         },\n"
-                + "         {\n"
-                + "             \"roomId\":\"928675\",\n"
-                + "            \"roomHero\":\"true\" \n"
-                + "         }\n"
-                + "      ]\n"
-                + "    }\n"
-                + "}";
-        ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
-        Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345",
-                "{\"rooms\":[{\"roomId\":\"934779\",\"roomHero\":\"false\"},{\"roomId\":\"928675\",\"roomHero\":\"true\"}]}",
-                new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
-                new HashMap<>(), new ArrayList<>(), "", "", false, false);
-        mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);       
-        assertEquals(true, dynamoMedia.getHidden());
-    }
-
 }
