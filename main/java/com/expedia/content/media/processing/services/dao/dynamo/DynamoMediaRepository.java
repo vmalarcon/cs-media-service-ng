@@ -57,7 +57,8 @@ public class DynamoMediaRepository {
                 .withKeyConditionExpression("MediaFileName = :mfn")
                 .withExpressionAttributeValues(params);
         return dynamoMapper.query(Media.class, expression).stream()
-                .filter(media->!(Boolean.TRUE.equals(media.getHidden())))
+                .filter(item -> !(Boolean.TRUE.equals(item.getHidden() == null ? false : item.getHidden())))
+                .filter(item -> environment.equals(item.getEnvironment()))
                 .collect(Collectors.toList());
     }
 
@@ -69,7 +70,7 @@ public class DynamoMediaRepository {
      */
     public Media getMedia(String mediaGUID) {
         final Media media = dynamoMapper.load(Media.class, mediaGUID);
-        return (media.getHidden()) ? null : media;
+        return (media.getHidden() == null || !media.getHidden()) ? media : null;
     }
 
     /**
@@ -87,7 +88,7 @@ public class DynamoMediaRepository {
                 .withExpressionAttributeValues(params);
         final List<Media> results = dynamoMapper.query(Media.class, expression);
         return results.stream()
-                .filter(item -> !(Boolean.TRUE.equals(item.getHidden())))
+                .filter(item -> !(Boolean.TRUE.equals(item.getHidden() == null ? false : item.getHidden())))
                 .filter(item -> environment.equals(item.getEnvironment()))
                 .collect(Collectors.toList());
     }
@@ -129,7 +130,7 @@ public class DynamoMediaRepository {
 
             final List<Media> results = dynamoMapper.query(Media.class, query);
             return results.stream()
-                    .filter(item -> !(Boolean.TRUE.equals(item.getHidden())))
+                    .filter(item -> !(Boolean.TRUE.equals(item.getHidden() == null ? false : item.getHidden())))
                     .filter(item -> environment.equals(item.getEnvironment()))
                     .filter(item -> item.getPropertyHero() != null && item.getPropertyHero())
                     .collect(Collectors.toList());
@@ -165,7 +166,7 @@ public class DynamoMediaRepository {
             throw new MediaDBException(e.getMessage(), e);
         }
         return mediaList.stream()
-                .filter(item -> !(Boolean.TRUE.equals(item.getHidden())))
+                .filter(item -> !(Boolean.TRUE.equals(item.getHidden() == null ? false : item.getHidden())))
                 .filter(item -> environment.equals(item.getEnvironment()))
                 .filter(item -> item.getPropertyHero() != null && item.getPropertyHero())
                 .collect(Collectors.toList());

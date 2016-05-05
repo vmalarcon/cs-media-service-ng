@@ -1561,6 +1561,38 @@ public class MediaControllerTest {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
+    @Test
+    public void testMediaGetWithHiddenMedia() throws Exception {
+        final String dynamoField = "{  \n"
+                + "      \"subcategoryId\":\"22003\",\n"
+                + "      \"propertyHero\":\"true\",\n"
+                + "      \"rooms\":[  \n"
+                + "         {  \n"
+                + "            \"roomId\":\"934779\",\n"
+                + "            \"roomHero\":\"true\"\n"
+                + "         },\n"
+                + "         {\n"
+                + "             \"roomId\":\"928675\",\n"
+                + "            \"roomHero\":\"false\" \n"
+                + "         }\n"
+                + "      ]\n"
+                + "   }";
+
+       MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+       Media dynamoMedia =  Media.builder()
+               .domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6")
+               .domainFields(dynamoField).hidden(true).build();
+        when(mockMediaDao.getMediaByGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6")).thenReturn(null);
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        ResponseEntity<String> responseEntity = mediaController.getMedia("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6", headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+    }
+
 
 
     @SuppressWarnings({"unchecked"})
