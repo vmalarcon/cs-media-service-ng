@@ -1,27 +1,24 @@
 package com.expedia.content.media.processing.services.validator;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.commons.lang.reflect.FieldUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 // For faster tests, uncomment the following line
@@ -355,5 +352,32 @@ public class EPCMVELValidatorTest {
         imageMessageList.add(imageMessage);
         List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
         assertTrue(errorList.get(0).get("error").contains("rotation accepted values are 0, 90, 180, and 270."));
+    }
+
+    @Test
+    public void testNonNumericRotation() throws Exception {
+        String jsonMsg =
+                "         { " +
+                        "    \"fileUrl\": \"http://well-formed-url/hello.JpEg\"," +
+                        "    \"fileName\": \"Something\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
+                        "    \"rotation\": \"potato\", " +
+                        "    \"domain\": \"Lodging\", " +
+                        "    \"domainId\": \"123\", " +
+                        "    \"userId\": \"user-id\", " +
+                        "    \"domainProvider\": \"test\", " +
+                        "    \"domainFields\": { " +
+                        "      \"category\": \"123\", " +
+                        "      \"roomHero\": \"true\", " +
+                        "      \"rooms\": [ {} ]" +
+                        "    } " +
+                        " }";
+        ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        List<ImageMessage> imageMessageList = new ArrayList<>();
+        imageMessageList.add(imageMessage);
+        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
+        assertEquals(1, errorList.size());
+        assertEquals("rotation accepted values are 0, 90, 180, and 270.\r\n", errorList.get(0).get("error"));
+        assertEquals("Something", errorList.get(0).get("fileName"));
     }
 }

@@ -9,6 +9,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 
+import com.expedia.content.media.processing.services.util.JSONUtil;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -22,7 +23,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @DynamoDBTable(tableName = "cs-mediadb-Media")
-@SuppressWarnings({"PMD.TooManyFields", "PMD.ExcessivePublicCount"})
+@SuppressWarnings({"PMD.TooManyFields", "PMD.ExcessivePublicCount","PMD.UnusedPrivateField", "PMD.SingularField"})
 public class Media {
 
     @Setter private String mediaGuid;
@@ -51,7 +52,9 @@ public class Media {
     @Setter private List<String> commentList;
     @Setter private String status;
     @Setter private String domainDerivativeCategory;
+
     @Setter private Boolean propertyHero;
+
     @DynamoDBHashKey
     @DynamoDBAttribute(attributeName = "MediaGUID")
     public String getMediaGuid() {
@@ -161,11 +164,15 @@ public class Media {
     public String getLcmMediaId() {
         return lcmMediaId;
     }
-    @DynamoDBAttribute(attributeName = "PropertyHero")
-    public Boolean getPropertyHero() {
-        return propertyHero;
-    }
 
+    public Boolean getPropertyHero() {
+        final Map domainMap = JSONUtil.buildMapFromJson(domainFields);
+        if (domainMap == null) {
+            return false;
+        }
+        final String hero = (String) domainMap.get("propertyHero");
+        return "true".equalsIgnoreCase(hero);
+    }
 
     @DynamoDBIgnore
     public List<Map<String, Object>> getDerivativesList() {

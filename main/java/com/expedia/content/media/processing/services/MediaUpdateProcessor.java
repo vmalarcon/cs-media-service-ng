@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 @Component
 public class MediaUpdateProcessor {
@@ -75,7 +76,10 @@ public class MediaUpdateProcessor {
             dynamoMedia.setLastUpdated(new Date());
             mediaDao.saveMedia(dynamoMedia);
         }
-        return new ResponseEntity<>("OK", HttpStatus.OK);
+        final Map<String, Object> response = new HashMap<>();
+        response.put("status", Integer.valueOf(200));
+        final String jsonResponse = new ObjectMapper().writeValueAsString(response);
+        return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
     }
 
     /**
@@ -102,9 +106,10 @@ public class MediaUpdateProcessor {
         }
     }
 
+    @SuppressWarnings({"PMD.NPathComplexity"})
     private void handleSubcategoryIdNull(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
-        final String domain = dynamoMedia == null || dynamoMedia.getDomain() == null ? "" : dynamoMedia.getDomain();
+        final String domain = (imageMessage.getOuterDomainData() == null ? "" : imageMessage.getOuterDomainData().getDomain().getDomain());
         if ("true".equalsIgnoreCase(heroProperty)) {
             setHeroImage(imageMessage, mediaId, domainId);
             unsetHeroImage(imageMessage, mediaId, domainId, guid, domain);
@@ -118,7 +123,7 @@ public class MediaUpdateProcessor {
                     subcategory = (String) map.get("subcategoryId");
                 }
             }
-            if (lcmCatalogItemMedia.getMediaUseRank() == 3) {
+            if (lcmCatalogItemMedia != null && lcmCatalogItemMedia.getMediaUseRank() == 3) {
                 catalogHeroProcessor.setMediaToHero(imageMessage.getUserId(), lcmCatalogItemMedia, false, subcategory);
             }
         }
@@ -126,7 +131,7 @@ public class MediaUpdateProcessor {
 
     private void handleHeroAndSubcategoryIdValid(ImageMessage imageMessage, int mediaId, int domainId, Media dynamoMedia, String heroProperty) {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
-        final String domain = dynamoMedia == null || dynamoMedia.getDomain() == null ? "" : dynamoMedia.getDomain();
+        final String domain = (imageMessage.getOuterDomainData() == null ? "" : imageMessage.getOuterDomainData().getDomain().getDomain());
         if ("true".equalsIgnoreCase(heroProperty)) {
             setHeroImage(imageMessage, mediaId, domainId);
             unsetHeroImage(imageMessage, mediaId, domainId, guid, domain);
@@ -139,26 +144,21 @@ public class MediaUpdateProcessor {
     private void handleHeroNull(ImageMessage imageMessage, int mediaId, int domainId) {
         final LcmCatalogItemMedia lcmCatalogItemMedia = catalogHeroProcessor.getCatalogItemMeida(domainId, mediaId);
         //if it is not hero now , update with id in JSON.
-        if (lcmCatalogItemMedia.getMediaUseRank() != 3) {
+        if (lcmCatalogItemMedia != null && lcmCatalogItemMedia.getMediaUseRank() != 3) {
             catalogHeroProcessor.updateCurrentMediaHero(imageMessage, domainId, mediaId);
         }
     }
 
     private void setHeroImage(ImageMessage imageMessage, int mediaId, int domainId) {
         final LcmCatalogItemMedia lcmCatalogItemMedia = catalogHeroProcessor.getCatalogItemMeida(domainId, mediaId);
-        if (lcmCatalogItemMedia.getMediaUseRank() != 3) {
+        if (lcmCatalogItemMedia != null && lcmCatalogItemMedia.getMediaUseRank() != 3) {
             catalogHeroProcessor.setMediaToHero(imageMessage.getUserId(), lcmCatalogItemMedia, true, "");
         }
     }
 
     private void unsetHeroImage(ImageMessage imageMessage, int mediaId, int domainId, String guid, String domain) {
         if (Domain.LODGING.getDomain().equalsIgnoreCase(domain)) {
-            if (guid.isEmpty()) {
-                catalogHeroProcessor.unsetOtherMediaHero(domainId, imageMessage.getUserId(), mediaId);
-            } else {
-                catalogHeroProcessor.setOldCategoryForHeroPropertyMedia(imageMessage, Integer.toString(domainId), guid, mediaId);
-
-            }
+            catalogHeroProcessor.setOldCategoryForHeroPropertyMedia(imageMessage, Integer.toString(domainId), guid, mediaId);
         }
     }
 
@@ -216,7 +216,7 @@ public class MediaUpdateProcessor {
 
     private void processRooms(ImageMessage imageMessage, String mediaId) {
         final List<Map> roomList = (List<Map>) imageMessage.getOuterDomainData().getDomainFieldValue(MESSAGE_ROOMS);
-        if (roomList == null || roomList.isEmpty()) {
+        if (roomList == null) {
             return;
         }
         final List<LcmMediaRoom> jsonRoomList = convert(roomList);
@@ -265,10 +265,13 @@ public class MediaUpdateProcessor {
         final List<LcmMediaRoom> lcmMediaRoomList = new ArrayList<>();
         if (roomList != null && !roomList.isEmpty()) {
             roomList.stream().forEach(room -> {
-                final boolean hero = (room.get(MESSAGE_ROOM_HERO)).equals("true") ? true : false;
-                final LcmMediaRoom lcmMediaRoom = LcmMediaRoom.builder().roomId(Integer.valueOf((String) room.get("roomId")))
-                        .roomHero(hero).build();
-                lcmMediaRoomList.add(lcmMediaRoom);
+                if (room.size() > 0) {
+                    final boolean hero = ("true").equals(room.get(MESSAGE_ROOM_HERO)) ? true : false;
+                    final LcmMediaRoom lcmMediaRoom = LcmMediaRoom.builder().roomId(Integer.valueOf((String) room.get("roomId")))
+                            .roomHero(hero).build();
+                    lcmMediaRoomList.add(lcmMediaRoom);
+                }
+
             });
         }
         return lcmMediaRoomList;

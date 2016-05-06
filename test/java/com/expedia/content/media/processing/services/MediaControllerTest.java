@@ -6,15 +6,24 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,21 +32,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import com.expedia.content.media.processing.services.dao.*;
-import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
-import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
-import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
-import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
-import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
-import com.expedia.content.media.processing.services.dao.sql.CatalogItemListSproc;
-import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaChgSproc;
-import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaGetSproc;
-import com.expedia.content.media.processing.services.dao.sql.MediaLstWithCatalogItemMediaAndMediaFileNameSproc;
+import com.expedia.content.media.processing.services.reqres.Comment;
+import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
+import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
+import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
+import com.expedia.content.media.processing.services.util.JSONUtil;
 import org.apache.commons.lang3.reflect.FieldUtils;
-
 import org.codehaus.plexus.util.ReflectionUtils;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,18 +65,22 @@ import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
-
+import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
+import com.expedia.content.media.processing.services.dao.LcmDynamoMediaDao;
+import com.expedia.content.media.processing.services.dao.MediaDao;
+import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
+import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
+import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
+import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
+import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaChgSproc;
+import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaGetSproc;
+import com.expedia.content.media.processing.services.dao.sql.MediaLstWithCatalogItemMediaAndMediaFileNameSproc;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.google.common.collect.Lists;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
 @RunWith(MockitoJUnitRunner.class)
@@ -79,7 +88,9 @@ public class MediaControllerTest {
 
     private static final String TEST_CLIENT_ID = "a-user";
     private static final String MEDIA_CLOUD_ROUTER_CLIENT_ID = "Media Cloud Router";
+    private static final String RESPONSE_FIELD_LCM_MEDIA_ID = "lcmMediaId";
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
 
     @Mock
     private Reporting reporting;
@@ -111,6 +122,7 @@ public class MediaControllerTest {
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("6", "SCORE"));
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("3", "EPC Legacy"));
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("53", "freetobook"));
+        providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("54", "Despegar"));
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("56", "ICE Portal"));
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("56", "VFMLeonardo"));
         when(mockProviderProperties.entrySet()).thenReturn(providerMapping);
@@ -363,7 +375,10 @@ public class MediaControllerTest {
     public void testMediaByDomainIdInvalidActiveFilter() throws Exception {
         mediaController = new MediaController();
         MultiValueMap<String, String> headers = new HttpHeaders();
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", "potato", null, headers);
+
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", null, null, "potato", null, headers);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -371,7 +386,10 @@ public class MediaControllerTest {
     @Test
     public void testMediaByDomainIdInvalidDomain() throws Exception {
         MultiValueMap<String, String> headers = new HttpHeaders();
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("potato", "1234", "true", null, headers);
+
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("potato", "1234", null, null, "true", null, headers);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
     }
@@ -392,16 +410,19 @@ public class MediaControllerTest {
         mediaValues.add(mediaItem1);
         mediaValues.add(mediaItem2);
 
+        MediaByDomainIdResponse response = MediaByDomainIdResponse.builder().domain("Lodging").domainId("1234").totalMediaCount(mediaValues.size()).images(transformMediaListForResponse(mediaValues)).build();
         MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
-        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString())).thenReturn(mediaValues);
+        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(response);
         SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
         when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
 
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", "true", null, headers);
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", null, null, "true", null, headers);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         String domainString = "\"domain\":\"Lodging\"";
@@ -423,14 +444,63 @@ public class MediaControllerTest {
     }
 
     @Test
+    public void testMediaByDomainIdLodgingSortByDate() throws Exception {
+
+        List<String> commentList = new LinkedList<>();
+        commentList.add("Comment1");
+        commentList.add("Comment2");
+        Map<String, Object> domainData = new HashMap<>();
+        domainData.put("propertyHero", "true");
+        Map<String, Object> domainData2 = new HashMap<>();
+        domainData.put("propertyHero", "false");
+
+        Media mediaItem1 = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file_name.jpg")
+                .mediaGuid("first3a4b-c985-43d3-9245-b60ab1eb9a0f").lastUpdated(new Date(new Date().getTime()+5000)).domainData(domainData).lcmMediaId("4321").build();
+        Media mediaItem2 = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file2_name.jpg")
+                .mediaGuid("ea868d7d-c4ce-41a8-be43-19fff0ce5ad4").lastUpdated(new Date(new Date().getTime()+100000)).domainData(domainData).commentList(
+                        commentList).build();
+        Media mediaItem3 = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file2_name.jpg")
+                .mediaGuid("last8d7d-c4ce-41a8-be43-19fff0ce5ad4").lastUpdated(new Date()).domainData(domainData2).commentList(commentList).build();
+        List<Media> mediaValues = new ArrayList<>();
+        mediaValues.add(mediaItem1);
+        mediaValues.add(mediaItem2);
+        mediaValues.add(mediaItem3);
+
+
+        MediaByDomainIdResponse response = MediaByDomainIdResponse.builder().domain("Lodging").domainId("1234").totalMediaCount(mediaValues.size()).images(transformMediaListForResponse(mediaValues)).build();
+        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(response);
+        SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
+        when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
+
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", null, null, "true", null, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        Map<String, Object> jsonMap = JSONUtil.buildMapFromJson(responseEntity.getBody());
+        Map map =(HashMap)((List) jsonMap.get("images")).get(0);
+        assertTrue(map.get("mediaGuid").equals("first3a4b-c985-43d3-9245-b60ab1eb9a0f"));
+        Map map2 =(HashMap)((List) jsonMap.get("images")).get(2);
+        assertTrue(map2.get("mediaGuid").equals("last8d7d-c4ce-41a8-be43-19fff0ce5ad4"));
+
+    }
+
+    @Test
     public void testMediaByDomainIdLodgingNotFound() throws Exception {
         SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
         when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(false);
 
         setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", "true", null, headers);
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", null, null, "true", null, headers);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
         assertEquals("DomainId not found: 1234", responseEntity.getBody());
@@ -446,7 +516,7 @@ public class MediaControllerTest {
         SecurityContextHolder.setContext(securityContext);
 
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"123_1_NASA_ISS-4.jpg\", "
-                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"ICE Portal\", "
+                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"SCORE\", "
                 + "\"domainFields\": { " + "    \"replace\": \"true\" " + "  } " + "}";
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
@@ -459,9 +529,9 @@ public class MediaControllerTest {
 
         MediaDao mockMediaDao = mock(MediaDao.class);
         when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg")))
-                .thenReturn(Lists.newArrayList(createByFileNameMedia("old-guid", "456", "true", DATE_FORMAT.parse("2016-02-17 12:00:00"), "456"),
-                        createByFileNameMedia("old-but-inactive", "567", "false", DATE_FORMAT.parse("2016-10-10 12:00:00"), "456"),
-                        createByFileNameMedia("too-old", "890", "true", DATE_FORMAT.parse("2016-02-17 11:59:59"), "456")));
+                .thenReturn(Lists.newArrayList(createByFileNameMedia("old-guid", "1238", "true", DATE_FORMAT.parse("2016-02-17 12:00:00"), "456"),
+                        createByFileNameMedia("old-but-inactive", "1238", "false", DATE_FORMAT.parse("2016-10-10 12:00:00"), "456"),
+                        createByFileNameMedia("too-old", "1238", "true", DATE_FORMAT.parse("2016-02-17 11:59:59"), "456")));
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
 
         String requestId = "test-request-id";
@@ -616,6 +686,42 @@ public class MediaControllerTest {
         verifyZeroInteractions(mockLcmDynamoMediaDao);
     }
 
+    @Test
+    public void testDespegarFileNameExtraction() throws Exception {
+        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg/why/would/someone/name/all/of/their/files/original.jpg\", "
+                + "\"fileName\": \"original.jpg\", " + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", "
+                + "\"domainProvider\": \"Despegar\" " + "}";
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+        LcmDynamoMediaDao mockLcmDynamoMediaDao = mock(LcmDynamoMediaDao.class);
+        setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
+        assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
+        assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+
+        ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
+        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
+        verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
+        final Message<String> publishedMessageValue = publishedMessage.getValue();
+        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_Despegar_(.*).jpg\"(.*)"));
+        verifyZeroInteractions(mockLcmDynamoMediaDao);
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testEPCFileFormat() throws Exception {
@@ -706,6 +812,8 @@ public class MediaControllerTest {
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
 
         ResponseEntity<String> responseEntity = mediaController.getMedia("hello potato", mockHeader);
         assertNotNull(responseEntity);
@@ -720,6 +828,8 @@ public class MediaControllerTest {
         MediaDao mockMediaDao = mock(MediaDao.class);
         when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(null);
         setFieldValue(mediaController, "mediaDao", mock(MediaDao.class));
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
 
         ResponseEntity<String> responseEntity = mediaController.getMedia("d2d4d480-9627-47f9-86c6-1874c18d37f4", mockHeader);
         assertNotNull(responseEntity);
@@ -736,8 +846,10 @@ public class MediaControllerTest {
         Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
                 .lcmMediaId("123456").lastUpdated(new Date()).lcmMediaId("123456").build();
         MediaDao mockMediaDao = mock(MediaDao.class);
-        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(resultMedia);
+        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(transformSingleMediaForResponse(resultMedia));
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
 
         ResponseEntity<String> responseEntity = mediaController.getMedia("123456", mockHeader);
         assertNotNull(responseEntity);
@@ -758,8 +870,10 @@ public class MediaControllerTest {
         Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
                 .lcmMediaId("123456").lastUpdated(new Date()).lcmMediaId("123456").mediaGuid("d2d4d480-9627-47f9-86c6-1874c18d37f4").build();
         MediaDao mockMediaDao = mock(MediaDao.class);
-        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(resultMedia);
+        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(transformSingleMediaForResponse(resultMedia));
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
 
         ResponseEntity<String> responseEntity = mediaController.getMedia("d2d4d480-9627-47f9-86c6-1874c18d37f4", mockHeader);
         assertNotNull(responseEntity);
@@ -772,44 +886,64 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"fileName\":\"" + resultMedia.getFileName() + "\""));
     }
 
-    @SuppressWarnings({"unchecked"})
-    private static Map<String, List<MapMessageValidator>> getMockValidators() {
-        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
-        List<MapMessageValidator> messageValidator = new ArrayList<>();
-        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
-        List<Map<String, String>> validationErrorList = new ArrayList<>();
-        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
-        messageValidator.add(mockMessageValidator);
-        validators.put(TEST_CLIENT_ID, messageValidator);
-        validators.put(MEDIA_CLOUD_ROUTER_CLIENT_ID, messageValidator);
-        return validators;
-    }
+    @Test
+    public void testMediaUpdateByGuidHeroWithUnPublishMedia() throws Exception {
 
-    @SuppressWarnings({"unchecked"})
-    private static Map<String, List<MapMessageValidator>> getMockValidatorsForUpdate() {
-        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
-        List<MapMessageValidator> messageValidator = new ArrayList<>();
-        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
-        List<Map<String, String>> validationErrorList = new ArrayList<>();
-        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
-        messageValidator.add(mockMessageValidator);
-        validators.put("EPCUpdate", messageValidator);
-        return validators;
-    }
+        String jsonMsg = "{  \n"
+                + "   \"userId\":\"bobthegreat\",\n"
+                + "   \"active\":\"true\",\n"
+                + "    \"domain\":\"Lodging\",\n"
+                + "   \"domainFields\":{  \n"
+                + "      \"subcategoryId\":\"22003\",\n"
+                + "      \"rooms\":[  \n"
+                + "         {  \n"
+                + "            \"roomId\":\"934779\",\n"
+                + "            \"roomHero\":\"false\"\n"
+                + "         },\n"
+                + "         {\n"
+                + "             \"roomId\":\"928675\",\n"
+                + "            \"roomHero\":\"true\" \n"
+                + "         }\n"
+                + "      ]\n"
+                + "   },\n"
+                + "   \"comment\":\"note33\"\n"
+                + "}";
 
-    @SuppressWarnings({"unchecked"})
-    private static Map<String, List<MapMessageValidator>> getMockValidatorsForUpdateWithError() {
-        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
-        List<MapMessageValidator> messageValidator = new ArrayList<>();
-        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
-        List<Map<String, String>> validationErrorList = new ArrayList<>();
-        Map<String, String> errorMap = new HashMap<>();
-        errorMap.put("test", "test");
-        validationErrorList.add(errorMap);
-        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
-        messageValidator.add(mockMessageValidator);
-        validators.put("EPCUpdate", messageValidator);
-        return validators;
+        List<Media> emptyMediaList = new ArrayList<>();
+        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+        when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(emptyMediaList);
+        String dynamoField = "{  \n"
+                + "      \"subcategoryId\":\"22003\",\n"
+                + "      \"propertyHero\":\"true\",\n"
+                + "      \"rooms\":[  \n"
+                + "         {  \n"
+                + "            \"roomId\":\"934779\",\n"
+                + "            \"roomHero\":\"true\"\n"
+                + "         },\n"
+                + "         {\n"
+                + "             \"roomId\":\"928675\",\n"
+                + "            \"roomHero\":\"false\" \n"
+                + "         }\n"
+                + "      ]\n"
+                + "   }";
+        Media dynamoMedia =
+                Media.builder().domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
+                        .build();
+        when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
+
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        CatalogHeroProcessor catalogHeroProcessor = getCatalogMock();
+        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);
+        setFieldValue(mediaController, "mediaUpdateProcessor", mockUpdateProcess);
+
+        MultiValueMap<String, String> headers = new HttpHeaders();
+
+        ResponseEntity<String> responseEntity = mediaController.mediaUpdate("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6", jsonMsg, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
     @Test
@@ -823,8 +957,7 @@ public class MediaControllerTest {
                 + "      \"subcategoryId\":\"22003\",\n"
                 + "      \"rooms\":[  \n"
                 + "         {  \n"
-                + "            \"roomId\":\"934779\",\n"
-                + "            \"roomHero\":\"false\"\n"
+                + "            \"roomId\":\"934779\"\n"
                 + "         },\n"
                 + "         {\n"
                 + "             \"roomId\":\"928675\",\n"
@@ -1076,8 +1209,8 @@ public class MediaControllerTest {
         LcmMedia lcmMedia = LcmMedia.builder().domainId(41098).build();
         when(mediaUpdateDao.getMediaByMediaId(anyInt())).thenReturn(lcmMedia);
         FieldUtils.writeField(mediaController, "mediaUpdateDao", mediaUpdateDao, true);
-        Media dynamoMedia = Media.builder().domain("Lodging").build();
-        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(dynamoMedia);
+        Media dynamoMedia = Media.builder().domain("Lodging").lastUpdated(new Date()).build();
+        when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(transformSingleMediaForResponse(dynamoMedia));
 
         CatalogHeroProcessor catalogHeroProcessor = getCatalogMock();
         MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);
@@ -1236,6 +1369,113 @@ public class MediaControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+
+    @Test
+    public void testGetMediaWhichHasAGuidByLcmMediaId() throws Exception {
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
+                .lcmMediaId("123456").lastUpdated(new Date()).lcmMediaId("123456").mediaGuid("d2d4d480-9627-47f9-86c6-1874c18d37f4").build();
+        MediaDao mockMediaDao = mock(MediaDao.class);
+        when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(Arrays.asList(resultMedia));
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        ResponseEntity<String> responseEntity = mediaController.getMedia("123456", mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("Media GUID d2d4d480-9627-47f9-86c6-1874c18d37f4 exists, please use GUID in request."));
+    }
+
+    /**
+     * CSPB-532224 Thumbail processor must return 422 error when an unprocessable image is received
+     * @throws Exception
+     */
+    @Test
+    public void testCorruptedImageFailToCreateThumbnail() throws Exception {
+        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", "
+                + "\"userId\": \"bobthegreat\", " + "\"generateThumbnail\": \"true\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", "
+                + "\"domainProvider\": \"EPC Legacy\" " + "}";
+
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        ThumbnailProcessor thumbnailProcessor = mock(ThumbnailProcessor.class);
+        String thumbnailUrl = "http://url.net/thumbnail.jpg";
+        Thumbnail thumbnail = mock(Thumbnail.class);
+        when(thumbnail.getLocation()).thenReturn(thumbnailUrl);
+        when(thumbnailProcessor.createThumbnail(any())).thenThrow(new RuntimeException("Unable to generate thumbnail with url: http://i.imgur.com/3PRGFii.jpg"));
+        setFieldValue(mediaController, "thumbnailProcessor", thumbnailProcessor);
+
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+        LcmDynamoMediaDao mockLcmDynamoMediaDao = mock(LcmDynamoMediaDao.class);
+        setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
+        setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
+        assertTrue(responseEntity.getBody().contains("\"error message\":\"Unable to generate thumbnail with url: http://i.imgur.com/3PRGFii.jpg\""));
+        assertTrue(responseEntity.getBody().contains("\"status\":\"REJECTED\""));
+
+        verifyZeroInteractions(mockLogActivityProcess);
+        verifyZeroInteractions(queueMessagingTemplateMock);
+        verifyZeroInteractions(mockLcmDynamoMediaDao);
+        verify(thumbnailProcessor, times(1)).createThumbnail(any(ImageMessage.class));
+        verifyZeroInteractions(thumbnail);
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private static Map<String, List<MapMessageValidator>> getMockValidators() {
+        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
+        List<MapMessageValidator> messageValidator = new ArrayList<>();
+        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
+        List<Map<String, String>> validationErrorList = new ArrayList<>();
+        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
+        messageValidator.add(mockMessageValidator);
+        validators.put(TEST_CLIENT_ID, messageValidator);
+        validators.put(MEDIA_CLOUD_ROUTER_CLIENT_ID, messageValidator);
+        return validators;
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private static Map<String, List<MapMessageValidator>> getMockValidatorsForUpdate() {
+        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
+        List<MapMessageValidator> messageValidator = new ArrayList<>();
+        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
+        List<Map<String, String>> validationErrorList = new ArrayList<>();
+        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
+        messageValidator.add(mockMessageValidator);
+        validators.put("EPCUpdate", messageValidator);
+        return validators;
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private static Map<String, List<MapMessageValidator>> getMockValidatorsForUpdateWithError() {
+        Map<String, List<MapMessageValidator>> validators = new HashMap<>();
+        List<MapMessageValidator> messageValidator = new ArrayList<>();
+        MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
+        List<Map<String, String>> validationErrorList = new ArrayList<>();
+        Map<String, String> errorMap = new HashMap<>();
+        errorMap.put("test", "test");
+        validationErrorList.add(errorMap);
+        when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
+        messageValidator.add(mockMessageValidator);
+        validators.put("EPCUpdate", messageValidator);
+        return validators;
+    }
+
     private MediaUpdateProcessor getMediaUpdateProcesser(CatalogHeroProcessor catalogHeroProcessor) throws Exception {
         MediaUpdateProcessor mockUpdateProcess = new MediaUpdateProcessor();
         CatalogItemMediaDao catalogItemMediaDao = mock(CatalogItemMediaDao.class);
@@ -1269,7 +1509,6 @@ public class MediaControllerTest {
 
     private CatalogHeroProcessor getCatalogMock() throws Exception {
         CatalogHeroProcessor catalogHeroProcessor = new CatalogHeroProcessor();
-        CatalogItemListSproc catalogItemListSproc = mock(CatalogItemListSproc.class);
         CatalogItemMediaDao catalogItemMediaDao = mock(CatalogItemMediaDao.class);
         CatalogItemMediaChgSproc catalogItemMediaChgSproc = mock(CatalogItemMediaChgSproc.class);
         MediaDao mediaDao = mock(MediaDao.class);
@@ -1279,12 +1518,7 @@ public class MediaControllerTest {
                 LcmCatalogItemMedia.builder().catalogItemId(41098).mediaId(19671339).mediaUseRank(3).lastUpdatedBy("test").lastUpdateDate(new Date())
                         .build();
         lcmCatalogItemMediaList.add(lcmCatalogItemMedia);
-        Map<String, Object> lcmCatMap = new HashMap<>();
-        lcmCatMap.put(CatalogItemListSproc.MEDIA_SET, lcmCatalogItemMediaList);
-        when(catalogItemListSproc.execute(anyInt())).thenReturn(lcmCatMap);
 
-        FieldUtils.writeField(catalogHeroProcessor, "catalogItemListSproc", catalogItemListSproc, true);
-        Mockito.doNothing().when(catalogItemMediaChgSproc).updateCategory(anyInt(), anyInt(), anyInt(), anyString(), anyString());
         FieldUtils.writeField(catalogHeroProcessor, "catalogItemMediaChgSproc", catalogItemMediaChgSproc, true);
         Mockito.doNothing().when(catalogItemMediaDao).updateCatalogItem(any(), anyInt(), anyInt());
         FieldUtils.writeField(catalogHeroProcessor, "catalogItemMediaDao", catalogItemMediaDao, true);
@@ -1328,7 +1562,6 @@ public class MediaControllerTest {
 
     private CatalogHeroProcessor getCatalogMockHeroFalse() throws Exception {
         CatalogHeroProcessor catalogHeroProcessor = new CatalogHeroProcessor();
-        CatalogItemListSproc catalogItemListSproc = mock(CatalogItemListSproc.class);
         CatalogItemMediaDao catalogItemMediaDao = mock(CatalogItemMediaDao.class);
         CatalogItemMediaChgSproc catalogItemMediaChgSproc = mock(CatalogItemMediaChgSproc.class);
         MediaDao mediaDao = mock(MediaDao.class);
@@ -1343,12 +1576,6 @@ public class MediaControllerTest {
         lcmCatalogItemMediaList.add(lcmCatalogItemMedia);
         lcmCatalogItemMediaList.add(lcmCatalogItemMedia2);
 
-        Map<String, Object> lcmCatMap = new HashMap<>();
-        lcmCatMap.put(CatalogItemListSproc.MEDIA_SET, lcmCatalogItemMediaList);
-        when(catalogItemListSproc.execute(anyInt())).thenReturn(lcmCatMap);
-
-        FieldUtils.writeField(catalogHeroProcessor, "catalogItemListSproc", catalogItemListSproc, true);
-        Mockito.doNothing().when(catalogItemMediaChgSproc).updateCategory(anyInt(), anyInt(), anyInt(), anyString(), anyString());
         FieldUtils.writeField(catalogHeroProcessor, "catalogItemMediaChgSproc", catalogItemMediaChgSproc, true);
         Mockito.doNothing().when(catalogItemMediaDao).updateCatalogItem(any(), anyInt(), anyInt());
         FieldUtils.writeField(catalogHeroProcessor, "catalogItemMediaDao", catalogItemMediaDao, true);
@@ -1391,4 +1618,68 @@ public class MediaControllerTest {
         return catalogHeroProcessor;
     }
 
+    private MediaGetResponse transformSingleMediaForResponse(Media media) {
+        /* @formatter:off */
+        setResponseLcmMediaId(media);
+        return MediaGetResponse.builder()
+                .mediaGuid(media.getMediaGuid())
+                .fileUrl(media.getFileUrl())
+                .fileName(media.getFileName())
+                .active(media.getActive())
+                .width(media.getWidth())
+                .height(media.getHeight())
+                .fileSize(media.getFileSize())
+                .status(media.getStatus())
+                .lastUpdatedBy(media.getUserId())
+                .lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
+                .domain(media.getDomain())
+                .domainId(media.getDomainId())
+                .domainProvider(media.getProvider())
+                .domainFields(media.getDomainData())
+                .derivatives(media.getDerivativesList())
+                .domainDerivativeCategory(media.getDomainDerivativeCategory())
+                .comments((media.getCommentList() == null) ? null : media.getCommentList().stream()
+                        .map(comment -> Comment.builder().note(comment)
+                                .timestamp(DATE_FORMATTER.print(media.getLastUpdated().getTime())).build())
+                        .collect(Collectors.toList()))
+                .build();
+        /* @formatter:on */
+    }
+
+    private List<DomainIdMedia> transformMediaListForResponse(List<Media> mediaList) {
+        return mediaList.stream().map(media -> {
+            setResponseLcmMediaId(media);
+            /* @formatter:off */
+            return DomainIdMedia.builder()
+                    .mediaGuid(media.getMediaGuid())
+                    .fileUrl(media.getFileUrl())
+                    .fileName(media.getFileName())
+                    .active(media.getActive())
+                    .width(media.getWidth())
+                    .height(media.getHeight())
+                    .fileSize(media.getFileSize())
+                    .status(media.getStatus())
+                    .lastUpdatedBy(media.getUserId())
+                    .lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
+                    .domainProvider(media.getProvider())
+                    .domainFields(media.getDomainData())
+                    .derivatives(media.getDerivativesList())
+                    .domainDerivativeCategory(media.getDomainDerivativeCategory())
+                    .comments((media.getCommentList() == null) ? null: media.getCommentList().stream()
+                            .map(comment -> Comment.builder().note(comment)
+                                    .timestamp(DATE_FORMATTER.print(media.getLastUpdated().getTime())).build())
+                            .collect(Collectors.toList()))
+                    .build();
+        }).collect(Collectors.toList());
+        /* @formatter:on */
+    }
+
+    private void setResponseLcmMediaId(Media media) {
+        if (media.getLcmMediaId() != null) {
+            if (media.getDomainData() == null) {
+                media.setDomainData(new HashMap<>());
+            }
+            media.getDomainData().put(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
+        }
+    }
 }

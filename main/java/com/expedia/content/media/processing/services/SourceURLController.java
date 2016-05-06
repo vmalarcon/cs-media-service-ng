@@ -2,6 +2,7 @@ package com.expedia.content.media.processing.services;
 
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import com.expedia.content.media.processing.services.util.RequestMessageException;
@@ -27,8 +28,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestHeader;
 
-
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -79,11 +80,19 @@ public class SourceURLController extends CommonServiceController {
                 LOGGER.info("Response bad request provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
                 return this.buildErrorResponse("Provided fileUrl does not exist.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
             }
-            final LcmMedia lcmMedia = mediaDao.getContentProviderName(fileSourceFinder.getFileNameFromUrl(fileUrl));
+            final String fileName = fileSourceFinder.getFileNameFromUrl(fileUrl);
+            final LcmMedia lcmMedia = mediaDao.getContentProviderName(fileName);
             if (!checkDBResultValid(lcmMedia)) {
                 return buildErrorResponse(fileUrl + " not found.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
             }
-            final String sourcePath = fileSourceFinder.getSourcePath(bucketName, bucketPrefix, fileUrl, lcmMedia.getDomainId());
+            String guid = "";
+            if (fileSourceFinder.matchGuid(fileName)) {
+                guid = getGuidByMediaId(lcmMedia.getMediaId().toString());
+                if (guid == null) {
+                    return buildErrorResponse("can not found GUID.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
+                }
+            }
+            final String sourcePath = fileSourceFinder.getSourcePath(bucketName, bucketPrefix, fileUrl, lcmMedia.getDomainId(), guid);
             final Map<String, String> response = new HashMap<>();
             response.put("contentProviderMediaName", lcmMedia.getFileName());
             response.put("mediaSourceUrl", sourcePath);
@@ -99,10 +108,20 @@ public class SourceURLController extends CommonServiceController {
     }
 
     private boolean checkDBResultValid(LcmMedia lcmMedia) {
-        if (lcmMedia == null || StringUtils.isBlank(lcmMedia.getFileName()) || lcmMedia.getDomainId() == null) {
+        if (lcmMedia == null || StringUtils.isBlank(lcmMedia.getFileName()) || lcmMedia.getDomainId() == null || lcmMedia.getMediaId() == null) {
             return false;
         }
         return true;
+    }
+
+    private String getGuidByMediaId(String mediaId) {
+        if (org.apache.commons.lang.StringUtils.isNumeric(mediaId)) {
+            final List<Media> mediaList = mediaDao.getMediaByMediaId(mediaId);
+            if (!mediaList.isEmpty()) {
+                return mediaList.stream().findFirst().get().getMediaGuid();
+            }
+        }
+        return null;
     }
 
 }

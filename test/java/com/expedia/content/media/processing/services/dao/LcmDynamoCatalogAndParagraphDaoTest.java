@@ -20,7 +20,7 @@ public class LcmDynamoCatalogAndParagraphDaoTest {
 
     private CatalogItemMediaChgSproc catalogItemMediaChgSproc;
     private AddCatalogItemMediaForRoomsAndRatePlansSproc addCatalogItemMediaForRoom;
-    private SQLRoomGetSproc roomGetSproc;
+    private SQLRoomGetByMediaIdSproc roomGetSproc;
     private CatalogItemMediaDelSproc catalogItemMediaDelSproc;
     private AddParagraphSproc addParagraphSproc;
     private GetParagraphSproc getParagraphSproc;
@@ -31,7 +31,7 @@ public class LcmDynamoCatalogAndParagraphDaoTest {
 
     @Before
     public void setUp() throws Exception {
-        roomGetSproc = mock(SQLRoomGetSproc.class);
+        roomGetSproc = mock(SQLRoomGetByMediaIdSproc.class);
         Map<String, Object> roomResult = new HashMap<>();
         LcmMediaRoom lcmMediaRoom = LcmMediaRoom.builder().roomId(123).roomHero(true).build();
         List<LcmMediaRoom> lcmMediaRoomList = new ArrayList<>();

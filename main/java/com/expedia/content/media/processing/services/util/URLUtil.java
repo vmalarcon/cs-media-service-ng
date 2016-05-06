@@ -13,10 +13,10 @@ public class URLUtil {
     }
 
     /**
-     * utility method used check if the URL contains space characters
+     * utility method used check if the URL contains space characters.
      *
      * @param url url to be checked.
-     * @return
+     * @return true if URL contains space else false.
      */
     private static boolean isUrlContainSpace(String url) {
         return (url.contains(" "))? true : false;
@@ -24,8 +24,8 @@ public class URLUtil {
 
     /**
      *
-     * @param url url to be patched
-     * @return
+     * @param url url to be patched.
+     * @return patched URL with space replaced to "%20".
      */
     public static String patchURL(String url){
         if (url.startsWith(S3Validator.S3_PREFIX) || !isUrlContainSpace(url)) {
