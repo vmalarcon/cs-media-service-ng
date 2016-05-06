@@ -23,6 +23,7 @@ public class URLUtil {
     }
 
     /**
+     * utility method used to replace space characters in URL with encoded space "%20".
      *
      * @param url url to be patched.
      * @return patched URL with space replaced to "%20".
