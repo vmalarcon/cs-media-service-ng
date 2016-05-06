@@ -1,16 +1,5 @@
 package com.expedia.content.media.processing.services.dao.dynamo;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Repository;
-
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
@@ -23,6 +12,16 @@ import com.expedia.content.media.processing.services.dao.domain.MediaDerivative;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * DynamoDB implementation of the MediaConfigRepository interface.
@@ -211,7 +210,8 @@ public class DynamoMediaRepository {
                 .fileUrl(imageMessage.getFileUrl())
                 .lastUpdated(new Date())
                 .metadata(basicMetadata == null ? "" : WRITER.writeValueAsString(basicMetadata))
-                .mediaGuid(imageMessage.getMediaGuid()).build();
+                .mediaGuid(imageMessage.getMediaGuid())
+                .provider(imageMessage.getOuterDomainData().getProvider()).build();
     }
 
     /**
