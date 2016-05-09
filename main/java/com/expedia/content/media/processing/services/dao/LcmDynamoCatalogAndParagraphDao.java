@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services.dao;
 
+import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
@@ -85,7 +86,7 @@ public class LcmDynamoCatalogAndParagraphDao implements CatalogItemMediaDao {
                 Integer.parseInt(subcategory),
                 true,
                 MEDIA_USE_TYPE_IMAGE,
-                imageMessage.getUserId(),
+                StringUtils.isNullOrEmpty(imageMessage.getUserId()) ? imageMessage.getClientId() : imageMessage.getUserId(),
                 false,
                 true,
                 ROOM_UPDATED_BY);
