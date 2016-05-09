@@ -57,7 +57,7 @@ public class DynamoMediaRepositoryTest {
         assertEquals(expected.getFileName(), actual.getFileName());
         assertEquals(expected.getDomain(), actual.getDomain());
         assertEquals(expected.getDomainId(), actual.getDomainId());
-        assertEquals(expected.getHidden(), actual.getHidden());        
+        assertEquals(expected.isHidden(), actual.isHidden());
     }
 
     @Test

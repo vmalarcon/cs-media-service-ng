@@ -310,9 +310,10 @@ public class MediaController extends CommonServiceController {
             if (dynamoMedia == null) {
                 objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input GUID does not exist in DB", serviceUrl, NOT_FOUND));
                 return;
-            }else {
-                if(canNotBeHidden(dynamoMedia, message)){
+            } else {
+                if(cannotBeHidden(dynamoMedia, message)){
                     objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("Only unpublished media can be hidden", serviceUrl, BAD_REQUEST));
+                    return;
                 }
             }
             objectMap.put(RESPONSE_FIELD_LCM_MEDIA_ID, dynamoMedia.getLcmMediaId());
@@ -351,12 +352,14 @@ public class MediaController extends CommonServiceController {
 
     /**
      * Verify if a media can be hidden.
+     *  An image can be permanently hidden from all messages, including further updates.
+     *  This is not applied to published images. only unpublished images (Duplicated and Rejected) can be hidden.
      *
      * @param media Media to verify
      * @param message Incoming message.
      * @return returns true if the media can be hidden or false if not.
      */
-    private Boolean canNotBeHidden(Media media, String message) throws Exception{
+    private Boolean cannotBeHidden(Media media, String message) throws Exception{
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
         String publishedMediaId = media.getLcmMediaId();
         if (publishedMediaId == null) {

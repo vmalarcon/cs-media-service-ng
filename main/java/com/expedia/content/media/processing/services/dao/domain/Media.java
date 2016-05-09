@@ -200,7 +200,7 @@ public class Media {
     }
 
     @DynamoDBAttribute(attributeName = "hidden")
-    public Boolean getHidden(){
-        return hidden;
+    public Boolean isHidden(){
+        return hidden == null ? false : hidden;
     }
 }
