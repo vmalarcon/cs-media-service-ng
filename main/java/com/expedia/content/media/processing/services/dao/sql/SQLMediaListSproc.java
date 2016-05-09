@@ -60,7 +60,7 @@ public class SQLMediaListSproc extends StoredProcedure {
                     .fileProcessed(resultSet.getBoolean("FileProcessedBool"))
                     .derivativeWidth(resultSet.getInt("MediaFileWidth"))
                     .derivativeHeight(resultSet.getInt("MediaFileHeight"))
-                    .derivativeFileSize(resultSet.getInt("FileSizeKb"))
+                    .derivativeFileSize(resultSet.getInt("DerivativeFileSizeKb"))
                     .build();
         }
     }
