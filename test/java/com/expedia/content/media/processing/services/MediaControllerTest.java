@@ -61,6 +61,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.MultiValueMap;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
@@ -1577,7 +1578,7 @@ public class MediaControllerTest {
     }
 
     @Test
-    public void testMediaGetWithHiddenMedia() throws Exception {
+    public void testMediaGetHiddenMedia() throws Exception {
         final String dynamoField = "{  \n"
                 + "      \"subcategoryId\":\"22003\",\n"
                 + "      \"propertyHero\":\"true\",\n"
@@ -1597,7 +1598,8 @@ public class MediaControllerTest {
        Media dynamoMedia =  Media.builder()
                .domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6")
                .domainFields(dynamoField).hidden(true).build();
-        when(mockMediaDao.getMediaByGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6")).thenReturn(null);
+        DynamoDBMapper dynamo = mock(DynamoDBMapper.class);
+        when(dynamo.load(eq(Media.class),eq("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6"))).thenReturn(dynamoMedia);
         MultiValueMap<String, String> headers = new HttpHeaders();
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
