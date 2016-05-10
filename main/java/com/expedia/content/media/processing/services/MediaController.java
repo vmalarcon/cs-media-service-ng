@@ -308,16 +308,12 @@ public class MediaController extends CommonServiceController {
     }
 
     private void validateAndInitMap(Map<String, Object> objectMap, String queryId, String serviceUrl, String message, String requestID) throws Exception {
+        Media dynamoMedia = null;
         if (queryId.matches(GUID_REG)) {
-            final Media dynamoMedia = mediaDao.getMediaByGuid(queryId);
+            dynamoMedia = mediaDao.getMediaByGuid(queryId);
             if (dynamoMedia == null) {
                 objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input GUID does not exist in DB", serviceUrl, NOT_FOUND));
                 return;
-            } else {
-                if(!canBeHidden(dynamoMedia, message)){
-                    objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("Only unpublished media can be hidden", serviceUrl, BAD_REQUEST));
-                    return;
-                }
             }
             objectMap.put(RESPONSE_FIELD_LCM_MEDIA_ID, dynamoMedia.getLcmMediaId());
             objectMap.put(DOMAIN_ID, dynamoMedia.getDomainId());
@@ -349,6 +345,10 @@ public class MediaController extends CommonServiceController {
             LOGGER.error("Returning BAD_REQUEST for serviceUrl={}, queryId=[{}],requestId=[{}], JSONMessage=[{}], Errors=[{}]", serviceUrl, queryId,
                     requestID, message, jsonError);
             objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse(jsonError, serviceUrl, BAD_REQUEST));
+            return;
+        }
+        if (dynamoMedia != null && !canBeHidden(dynamoMedia, newJson)){
+            objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("Only unpublished media can be hidden", serviceUrl, BAD_REQUEST));
             return;
         }
     }
