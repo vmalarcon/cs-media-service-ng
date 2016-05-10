@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -140,7 +141,6 @@ public class DynamoMediaRepository {
      * @return The list of media attached to the domain id.
      */
     public List<Media> loadMedia(Domain domain, String domainId) {
-        List<Media> mediaList = null;
         try {
             final HashMap<String, String> names = new HashMap<>();
             names.put("#domain", "Domain");
@@ -153,12 +153,12 @@ public class DynamoMediaRepository {
                     .withKeyConditionExpression("DomainID = :pDomainId and #domain = :pDomain")
                     .withExpressionAttributeNames(names)
                     .withExpressionAttributeValues(params);
-            mediaList = dynamoMapper.query(Media.class, query);
+            return new ArrayList<>(dynamoMapper.query(Media.class, query))
+                    .stream().filter(item -> environment.equals(item.getEnvironment())).collect(Collectors.toList());
         } catch (Exception e) {
             LOGGER.error("ERROR - message={}.", e.getMessage(), e);
             throw new MediaDBException(e.getMessage(), e);
         }
-        return mediaList;
     }
 
     /**

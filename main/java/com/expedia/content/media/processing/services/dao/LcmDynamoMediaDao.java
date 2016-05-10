@@ -124,10 +124,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     @SuppressWarnings("unchecked")
     public MediaByDomainIdResponse getMediaByDomainId(final Domain domain, final String domainId, final String activeFilter, final String derivativeFilter,
                                                       final Integer pageSize, final Integer pageIndex) throws Exception {
-        List<Media> domainIdMedia = new ArrayList<>();
-        for (final Media media : mediaRepo.loadMedia(domain, domainId)) {
-            domainIdMedia.add(completeMedia(media, derivativeFilter));
-        }
+        List<Media> domainIdMedia = mediaRepo.loadMedia(domain, domainId).stream().map(media -> completeMedia(media, derivativeFilter)).collect(Collectors.toList());
         if (Domain.LODGING.equals(domain)) {
             extractLcmData(domainId, derivativeFilter, domainIdMedia);
         }
@@ -161,18 +158,9 @@ public class LcmDynamoMediaDao implements MediaDao {
     @SuppressWarnings("unchecked")
     private void extractLcmData(final String domainId, final String derivativeFilter, final List<Media> domainIdMedia) {
         final Integer domainIdInt = Integer.parseInt(domainId);
-        final Map<String, Media> mediaLcmMediaIdMap = new HashMap<>();
-        domainIdMedia.stream()
+        final Map<String, Media> mediaLcmMediaIdMap = domainIdMedia.stream()
                 .filter(media -> media.getLcmMediaId() != null && !"null".equals(media.getLcmMediaId()))
-                .forEach(media1 -> {
-                    if (mediaLcmMediaIdMap.get(media1.getLcmMediaId()) == null) {
-                        mediaLcmMediaIdMap.put(media1.getLcmMediaId(), media1);
-                    } else {
-                        if (media1.getLastUpdated().after(mediaLcmMediaIdMap.get(media1.getLcmMediaId()).getLastUpdated())) {
-                            mediaLcmMediaIdMap.put(media1.getLcmMediaId(), media1);
-                        }
-                    }
-                });
+                .collect(Collectors.toMap(Media::getLcmMediaId, media -> media));
         final List<LcmMediaAndDerivative> mediaDerivativeItems = (List<LcmMediaAndDerivative>) lcmMediaListSproc.execute(domainIdInt).get(SQLMediaListSproc.MEDIA_SET);
         final Map<Integer, List<LcmMediaAndDerivative>> lcmMediaMap =
                 mediaDerivativeItems.stream().collect(Collectors.groupingBy(mediaAndDerivative -> mediaAndDerivative.getMediaId()));
