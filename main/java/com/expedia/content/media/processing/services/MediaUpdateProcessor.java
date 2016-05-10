@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services;
 
+import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
@@ -178,9 +179,9 @@ public class MediaUpdateProcessor {
         if (imageMessage.isActive() != null) {
             FieldUtils.writeField(dynamoMedia, "active", imageMessage.isActive() ? "true" : "false", true);
         }
-        if (imageMessage.getUserId() != null) {
-            FieldUtils.writeField(dynamoMedia, "userId", imageMessage.getUserId(), true);
-        }
+
+        FieldUtils.writeField(dynamoMedia, "userId", StringUtils.isNullOrEmpty(imageMessage.getUserId()) ? imageMessage.getClientId() : imageMessage.getUserId(), true);
+
         final Map<String, Object> domainFieldsDynamo = JSONUtil.buildMapFromJson(dynamoMedia.getDomainFields());
         final Map<String, Object> domainFieldsNew = imageMessage.getOuterDomainData().getDomainFields();
         final Map<String, Object> domainFieldsCombine = combineDomainFields(domainFieldsDynamo, domainFieldsNew);
