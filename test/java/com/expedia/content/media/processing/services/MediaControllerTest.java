@@ -61,6 +61,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.MultiValueMap;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
@@ -935,23 +936,25 @@ public class MediaControllerTest {
                 + "      ]\n"
                 + "   }";
         Media dynamoMedia =
-                Media.builder().domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
+                Media.builder().fileName("file").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
                         .build();
         when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
-
+        final Map<String, String> status = new HashMap<>();
+        status.put("file", "PUBLISHED");
+        when(mockMediaDao.getLatestStatus(anyObject())).thenReturn(status);
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
         CatalogHeroProcessor catalogHeroProcessor = getCatalogMock();
-        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);
+        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);       
         setFieldValue(mediaController, "mediaUpdateProcessor", mockUpdateProcess);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
 
         ResponseEntity<String> responseEntity = mediaController.mediaUpdate("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6", jsonMsg, headers);
         assertNotNull(responseEntity);
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
@@ -994,10 +997,12 @@ public class MediaControllerTest {
                 + "      ]\n"
                 + "   }";
         Media dynamoMedia =
-                Media.builder().lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
+                Media.builder().fileName("file").lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
                         .build();
         when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
-
+        final Map<String, String> status = new HashMap<>();
+        status.put("file", "PUBLISHED");
+        when(mockMediaDao.getLatestStatus(anyObject())).thenReturn(status);
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -1055,10 +1060,13 @@ public class MediaControllerTest {
                 + "      ]\n"
                 + "   }";
         Media dynamoMedia =
-                Media.builder().lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
+                Media.builder().fileName("file").lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
                         .build();
         when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
-
+        
+        final Map<String, String> status = new HashMap<>();
+        status.put("file", "PUBLISHED");
+        when(mockMediaDao.getLatestStatus(anyObject())).thenReturn(status);
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -1116,10 +1124,12 @@ public class MediaControllerTest {
                 + "      ]\n"
                 + "   }";
         Media dynamoMedia =
-                Media.builder().domain("Lodging").lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
+                Media.builder().fileName("file").domain("Lodging").lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
                         .build();
-        when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
-
+        when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);      
+        final Map<String, String> status = new HashMap<>();
+        status.put("file", "PUBLISHED");
+        when(mockMediaDao.getLatestStatus(anyObject())).thenReturn(status);
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -1443,6 +1453,172 @@ public class MediaControllerTest {
         verify(thumbnailProcessor, times(1)).createThumbnail(any(ImageMessage.class));
         verifyZeroInteractions(thumbnail);
     }
+
+    @Test
+    public void testHiddenPublishedMedia() throws Exception {
+
+        String jsonMsg = "{  \n"
+                + "   \"userId\":\"bobthegreat\",\n"
+                + "   \"active\":\"true\",\n"
+                + "   \"hidden\":\"true\",\n"
+                + "    \"domain\":\"Lodging\",\n"
+                + "   \"domainFields\":{  \n"
+                + "      \"subcategoryId\":\"22003\",\n"
+                + "      \"propertyHero\":\"false\",\n"
+                + "      \"rooms\":[  \n"
+                + "         {  \n"
+                + "            \"roomId\":\"934779\",\n"
+                + "            \"roomHero\":\"false\"\n"
+                + "         },\n"
+                + "         {\n"
+                + "             \"roomId\":\"928675\",\n"
+                + "            \"roomHero\":\"true\" \n"
+                + "         }\n"
+                + "      ]\n"
+                + "   },\n"
+                + "   \"comment\":\"note33\"\n"
+                + "}";
+
+        List<Media> emptyMediaList = new ArrayList<>();
+        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+        when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(emptyMediaList);
+        String dynamoField = "{  \n"
+                + "      \"subcategoryId\":\"22003\",\n"
+                + "      \"propertyHero\":\"true\",\n"
+                + "      \"rooms\":[  \n"
+                + "         {  \n"
+                + "            \"roomId\":\"934779\",\n"
+                + "            \"roomHero\":\"true\"\n"
+                + "         },\n"
+                + "         {\n"
+                + "             \"roomId\":\"928675\",\n"
+                + "            \"roomHero\":\"false\" \n"
+                + "         }\n"
+                + "      ]\n"
+                + "   }";
+        Media dynamoMedia =
+                Media.builder().fileName("file").lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
+                        .build();
+        when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
+
+        final Map<String, String> status = new HashMap<>();
+        status.put("file", "PUBLISHED");
+        when(mockMediaDao.getLatestStatus(anyObject())).thenReturn(status);
+ 
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        CatalogHeroProcessor catalogHeroProcessor = getCatalogMock();
+        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);
+        setFieldValue(mediaController, "mediaUpdateProcessor", mockUpdateProcess);
+
+        MultiValueMap<String, String> headers = new HttpHeaders();
+
+        ResponseEntity<String> responseEntity = mediaController.mediaUpdate("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6", jsonMsg, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("Only unpublished media can be hidden"));
+    }
+
+    @Test
+    public void testHiddenUnPublishedMedia() throws Exception {
+
+        String jsonMsg = "{  \n"
+                + "   \"userId\":\"bobthegreat\",\n"
+                + "   \"active\":\"true\",\n"
+                + "   \"hidden\":\"true\",\n"
+                + "    \"domain\":\"Lodging\",\n"
+                + "   \"domainFields\":{  \n"
+                + "      \"subcategoryId\":\"22003\",\n"
+                + "      \"propertyHero\":\"false\",\n"
+                + "      \"rooms\":[  \n"
+                + "         {  \n"
+                + "            \"roomId\":\"934779\",\n"
+                + "            \"roomHero\":\"false\"\n"
+                + "         },\n"
+                + "         {\n"
+                + "             \"roomId\":\"928675\",\n"
+                + "            \"roomHero\":\"true\" \n"
+                + "         }\n"
+                + "      ]\n"
+                + "   },\n"
+                + "   \"comment\":\"note33\"\n"
+                + "}";
+
+        List<Media> emptyMediaList = new ArrayList<>();
+        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+        when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(emptyMediaList);
+        String dynamoField = "{  \n"
+                + "      \"subcategoryId\":\"22003\",\n"
+                + "      \"propertyHero\":\"true\",\n"
+                + "      \"rooms\":[  \n"
+                + "         {  \n"
+                + "            \"roomId\":\"934779\",\n"
+                + "            \"roomHero\":\"true\"\n"
+                + "         },\n"
+                + "         {\n"
+                + "             \"roomId\":\"928675\",\n"
+                + "            \"roomHero\":\"false\" \n"
+                + "         }\n"
+                + "      ]\n"
+                + "   }";
+        Media dynamoMedia =
+                Media.builder().fileName("file").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
+                        .build();
+        when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
+        final Map<String, String> status = new HashMap<>();
+        status.put("file", "REJECTED");
+        when(mockMediaDao.getLatestStatus(anyObject())).thenReturn(status);
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        CatalogHeroProcessor catalogHeroProcessor = getCatalogMock();
+        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);
+        setFieldValue(mediaController, "mediaUpdateProcessor", mockUpdateProcess);
+
+        MultiValueMap<String, String> headers = new HttpHeaders();
+
+        ResponseEntity<String> responseEntity = mediaController.mediaUpdate("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6", jsonMsg, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    public void testMediaGetHiddenMedia() throws Exception {
+        final String dynamoField = "{  \n"
+                + "      \"subcategoryId\":\"22003\",\n"
+                + "      \"propertyHero\":\"true\",\n"
+                + "      \"rooms\":[  \n"
+                + "         {  \n"
+                + "            \"roomId\":\"934779\",\n"
+                + "            \"roomHero\":\"true\"\n"
+                + "         },\n"
+                + "         {\n"
+                + "             \"roomId\":\"928675\",\n"
+                + "            \"roomHero\":\"false\" \n"
+                + "         }\n"
+                + "      ]\n"
+                + "   }";
+
+       MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+       Media dynamoMedia =  Media.builder()
+               .domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6")
+               .domainFields(dynamoField).hidden(true).build();
+        DynamoDBMapper dynamo = mock(DynamoDBMapper.class);
+        when(dynamo.load(eq(Media.class),eq("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6"))).thenReturn(dynamoMedia);
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        ResponseEntity<String> responseEntity = mediaController.getMedia("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6", headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+    }
+
+
 
     @SuppressWarnings({"unchecked"})
     private static Map<String, List<MapMessageValidator>> getMockValidators() {

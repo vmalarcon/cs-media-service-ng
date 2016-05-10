@@ -34,6 +34,7 @@ public class MediaUpdateProcessor {
     public static final String MESSAGE_SUB_CATEGORY_ID = "subcategoryId";
     public static final String MESSAGE_ROOMS = "rooms";
     public static final String MESSAGE_ROOM_HERO = "roomHero";
+
     @Autowired
     private MediaUpdateDao mediaUpdateDao;
     @Autowired
@@ -50,31 +51,33 @@ public class MediaUpdateProcessor {
      * @param imageMessage
      * @param mediaId
      * @param domainId
-     * @param dynamoMedia  can be null if media only exists in LCM.
+     * @param dynamoMedia can be null if media only exists in LCM.
      * @return
      * @throws Exception
      */
     @Transactional
-    public ResponseEntity<String> processRequest(final ImageMessage imageMessage,
-            final String mediaId, String domainId, Media dynamoMedia) throws Exception {
-        final Integer expediaId = Integer.valueOf(domainId);
-        //step1. update media table, if comment or active fields are not null
-        if (imageMessage.getComment() != null || imageMessage.isActive() != null) {
-            mediaUpdateDao.updateMedia(imageMessage, Integer.valueOf(mediaId));
+    public ResponseEntity<String> processRequest(final ImageMessage imageMessage, final String mediaId, String domainId,
+                                                 Media dynamoMedia) throws Exception {
+        if (mediaId != null) {
+            final Integer expediaId = Integer.valueOf(domainId);
+            // step1. update media table, if comment or active fields are not null
+            if (imageMessage.getComment() != null || imageMessage.isActive() != null) {
+                mediaUpdateDao.updateMedia(imageMessage, Integer.valueOf(mediaId));
+            }
+            // step 2 update property hero in catalogItemMedia
+            if (imageMessage.getOuterDomainData() != null && (imageMessage.getOuterDomainData().getDomainFieldValue(MESSAGE_PROPERTY_HERO) != null
+                    || imageMessage.getOuterDomainData().getDomainFieldValue(MESSAGE_SUB_CATEGORY_ID) != null)) {
+                handleLCMPropertyHero(imageMessage, Integer.valueOf(mediaId), expediaId, dynamoMedia);
+            }
+            // step 3 update room table.
+            processRooms(imageMessage, mediaId);
+            LOGGER.info("update  imageMessage=[{}], mediaId=[{}] to LCM done", imageMessage.toJSONMessage(), mediaId);
         }
-        //step 2 update property hero in catalogItemMedia
-        if (imageMessage.getOuterDomainData() != null &&
-                (imageMessage.getOuterDomainData().getDomainFieldValue(MESSAGE_PROPERTY_HERO) != null
-                        || imageMessage.getOuterDomainData().getDomainFieldValue(MESSAGE_SUB_CATEGORY_ID) != null)) {
-            handleLCMPropertyHero(imageMessage, Integer.valueOf(mediaId), expediaId, dynamoMedia);
-        }
-        //step 3 update room table.
-        processRooms(imageMessage, mediaId);
-        LOGGER.info("update  imageMessage=[{}], mediaId=[{}] to LCM done", imageMessage.toJSONMessage(), mediaId);
-        //step 4. save media to dynamo
+        // step 4. save media to dynamo
         if (dynamoMedia != null) {
             setDynamoMedia(imageMessage, dynamoMedia);
             dynamoMedia.setLastUpdated(new Date());
+            dynamoMedia.setHidden(imageMessage.getHidden());
             mediaDao.saveMedia(dynamoMedia);
         }
         final Map<String, Object> response = new HashMap<>();
@@ -223,10 +226,10 @@ public class MediaUpdateProcessor {
         final List<LcmMediaRoom> jsonRoomList = convert(roomList);
         //rooms from LCM DB.
         final List<LcmMediaRoom> lcmMediaRoomList = catalogItemMediaDao.getLcmRoomsByMediaId(Integer.valueOf(mediaId));
-        //room to be delete
+        // room to delete
         final List<LcmMediaRoom> deleteRoomListCata = new ArrayList<>();
         final List<LcmMediaRoom> deleteRoomListPara = new ArrayList<>();
-        //room need to be add
+        // room to add
         final List<LcmMediaRoom> addedRoomListCata = new ArrayList<>();
         final List<LcmMediaRoom> addedRoomListPara = new ArrayList<>();
 

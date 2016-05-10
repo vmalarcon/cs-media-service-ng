@@ -52,8 +52,8 @@ public class Media {
     @Setter private List<String> commentList;
     @Setter private String status;
     @Setter private String domainDerivativeCategory;
-
     @Setter private Boolean propertyHero;
+    @Setter private Boolean hidden;
 
     @DynamoDBHashKey
     @DynamoDBAttribute(attributeName = "MediaGUID")
@@ -199,4 +199,8 @@ public class Media {
         return domainDerivativeCategory;
     }
 
+    @DynamoDBAttribute(attributeName = "hidden")
+    public Boolean isHidden(){
+        return hidden == null ? false : hidden;
+    }
 }
