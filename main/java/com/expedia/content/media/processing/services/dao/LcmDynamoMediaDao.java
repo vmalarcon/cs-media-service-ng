@@ -167,7 +167,8 @@ public class LcmDynamoMediaDao implements MediaDao {
                 mediaDerivativeItems.stream().collect(Collectors.groupingBy(mediaAndDerivative -> mediaAndDerivative.getMediaId()));
         
         final List<LcmMediaRoom> mediaRoomItems = (List<LcmMediaRoom>) roomGetByCatalogItemIdSproc.execute(domainIdInt).get(SQLRoomGetSproc.ROOM_SET);
-        final Map<Integer, List<LcmMediaRoom>> lcmRoomMediaMap = mediaRoomItems.stream().collect(Collectors.groupingBy(mediaRoom -> mediaRoom.getMediaId()));
+        final Map<Integer, List<LcmMediaRoom>> lcmRoomMediaMap = mediaRoomItems.stream().collect(
+                Collectors.groupingBy(mediaRoom -> mediaRoom.getMediaId()));
         
         /* @formatter:off */
         final List<Media> lcmMediaList = lcmMediaMap.keySet().stream()
@@ -334,9 +335,22 @@ public class LcmDynamoMediaDao implements MediaDao {
             if (compareHero != 0) {
                 return compareHero;
             }
-            return media2.getLastUpdated().compareTo(media1.getLastUpdated());
+            final int commpareSubId = getSubId(media1).compareTo(getSubId(media2));
+            if (commpareSubId != 0) {
+                return commpareSubId;
+            }
         }
         return 0;
+    }
+
+    private String getSubId(Media media) {
+        if (media.getDomainData() != null) {
+            final String subId = (String) media.getDomainData().get("subcategoryId");
+            if (subId != null) {
+                return subId;
+            }
+        }
+        return "";
     }
     
     /**
