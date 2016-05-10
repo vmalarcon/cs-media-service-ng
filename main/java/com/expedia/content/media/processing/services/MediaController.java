@@ -354,12 +354,12 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * Verify if a media can be hidden.
+     *  Verify if a media can be hidden.
      *  An image can be permanently hidden from all messages, including further updates.
      *  This is not applied to published images. only unpublished images (Duplicated and Rejected) can be hidden.
      *
      * @param media Media to verify
-     * @param message Incoming message.
+     * @param message Incoming update message.
      * @return returns true if the media can be hidden or false if not.
      */
     private Boolean canBeHidden(Media media, String message) throws Exception{
