@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services.dao;
 
+import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.sql.MediaChgSproc;
@@ -32,7 +33,7 @@ public class LcmDynamoMediaUpdateDao implements MediaUpdateDao {
         }
         mediaChgSproc.updateMedia(mediaId,
                 imageMessage.getComment(), statusCode,
-                imageMessage.getUserId(),
+                StringUtils.isNullOrEmpty(imageMessage.getUserId()) ? imageMessage.getClientId() : imageMessage.getUserId(),
                 UPDATED_BY);
     }
 

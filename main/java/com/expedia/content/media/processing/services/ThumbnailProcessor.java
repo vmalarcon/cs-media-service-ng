@@ -1,10 +1,10 @@
 package com.expedia.content.media.processing.services;
 
 import com.amazonaws.util.IOUtils;
-import com.expedia.content.media.processing.pipeline.domain.DerivativeType;
-import com.expedia.content.media.processing.pipeline.domain.Image;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.Metadata;
+import com.expedia.content.media.processing.pipeline.domain.DerivativeType;
+import com.expedia.content.media.processing.pipeline.domain.Image;
 import com.expedia.content.media.processing.pipeline.domain.ResizeCrop;
 import com.expedia.content.media.processing.pipeline.domain.ResizeMethod;
 import com.expedia.content.media.processing.pipeline.util.TemporaryWorkFolder;
@@ -35,6 +35,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.UUID;
+
+import static com.expedia.content.media.processing.services.util.URLUtil.patchURL;
 
 /**
  * Thumbnail processing related functionality.
@@ -79,7 +81,7 @@ public class ThumbnailProcessor {
     public String createTempDerivativeThumbnail(TempDerivativeMessage tempDerivativeMessage) {
         final String guid = UUID.randomUUID().toString();
         final Integer rotation = (tempDerivativeMessage.getRotation() == null ? null : Integer.valueOf(tempDerivativeMessage.getRotation()));
-        return createGenericThumbnail(tempDerivativeMessage.getFileUrl(), tempDerivativeMessage.getWidth(), tempDerivativeMessage.getHeight(),
+        return createGenericThumbnail(patchURL(tempDerivativeMessage.getFileUrl()), tempDerivativeMessage.getWidth(), tempDerivativeMessage.getHeight(),
                 rotation, guid, "tempderivative", null).getLocation();
     }
 
@@ -108,7 +110,7 @@ public class ThumbnailProcessor {
 
         final Path workPath = Paths.get(tempWorkFolder);
         try (TemporaryWorkFolder workFolder = new TemporaryWorkFolder(workPath)) {
-            sourcePath = fetchUrl(fileUrl, guid, workFolder);
+            sourcePath = fetchUrl(patchURL(fileUrl), guid, workFolder);
             thumbnailPath = generateThumbnail(sourcePath, width, height, (rotation == null) ? 0 : rotation);
             thumbnailUrl = computeS3thumbnailPath(guid, domain, domainId);
             LOGGER.debug("Writing thumbnail: " + thumbnailUrl);

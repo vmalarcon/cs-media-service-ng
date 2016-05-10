@@ -211,6 +211,7 @@ public class DynamoMediaRepository {
                 .lastUpdated(new Date())
                 .metadata(basicMetadata == null ? "" : WRITER.writeValueAsString(basicMetadata))
                 .mediaGuid(imageMessage.getMediaGuid())
+                .userId(imageMessage.getUserId())
                 .provider(imageMessage.getOuterDomainData().getProvider()).build();
     }
 
