@@ -927,16 +927,18 @@ public class MediaControllerTest {
                 + "      ]\n"
                 + "   }";
         Media dynamoMedia =
-                Media.builder().domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
+                Media.builder().fileName("file").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
                         .build();
         when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
-
+        final Map<String, String> status = new HashMap<>();
+        status.put("file", "PUBLISHED");
+        when(mockMediaDao.getLatestStatus(anyObject())).thenReturn(status);
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
 
         CatalogHeroProcessor catalogHeroProcessor = getCatalogMock();
-        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);
+        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);       
         setFieldValue(mediaController, "mediaUpdateProcessor", mockUpdateProcess);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
@@ -986,10 +988,12 @@ public class MediaControllerTest {
                 + "      ]\n"
                 + "   }";
         Media dynamoMedia =
-                Media.builder().lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
+                Media.builder().fileName("file").lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
                         .build();
         when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
-
+        final Map<String, String> status = new HashMap<>();
+        status.put("file", "PUBLISHED");
+        when(mockMediaDao.getLatestStatus(anyObject())).thenReturn(status);
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -1047,10 +1051,13 @@ public class MediaControllerTest {
                 + "      ]\n"
                 + "   }";
         Media dynamoMedia =
-                Media.builder().lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
+                Media.builder().fileName("file").lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
                         .build();
         when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
-
+        
+        final Map<String, String> status = new HashMap<>();
+        status.put("file", "PUBLISHED");
+        when(mockMediaDao.getLatestStatus(anyObject())).thenReturn(status);
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -1108,10 +1115,12 @@ public class MediaControllerTest {
                 + "      ]\n"
                 + "   }";
         Media dynamoMedia =
-                Media.builder().domain("Lodging").lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
+                Media.builder().fileName("file").domain("Lodging").lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
                         .build();
-        when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
-
+        when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);      
+        final Map<String, String> status = new HashMap<>();
+        status.put("file", "PUBLISHED");
+        when(mockMediaDao.getLatestStatus(anyObject())).thenReturn(status);
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -1479,10 +1488,14 @@ public class MediaControllerTest {
                 + "      ]\n"
                 + "   }";
         Media dynamoMedia =
-                Media.builder().lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
+                Media.builder().fileName("file").lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
                         .build();
         when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
 
+        final Map<String, String> status = new HashMap<>();
+        status.put("file", "PUBLISHED");
+        when(mockMediaDao.getLatestStatus(anyObject())).thenReturn(status);
+ 
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -1542,10 +1555,12 @@ public class MediaControllerTest {
                 + "      ]\n"
                 + "   }";
         Media dynamoMedia =
-                Media.builder().domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
+                Media.builder().fileName("file").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
                         .build();
         when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
-
+        final Map<String, String> status = new HashMap<>();
+        status.put("file", "REJECTED");
+        when(mockMediaDao.getLatestStatus(anyObject())).thenReturn(status);
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);

@@ -319,6 +319,29 @@ public class LcmDynamoMediaDao implements MediaDao {
         return transformSingleMediaForResponse(guidMedia);
     }
 
+
+    /**
+     * Pulls the latest processing status of media files. When a file doesn't have any process logs the file is
+     * considered old and therefore published.
+     *
+     * @param fileNames File names for which the status is required.
+     * @return The latest status of a media file.
+     */
+    @Override
+    public Map<String, String> getLatestStatus(List<String> fileNames) {
+        List<MediaProcessLog> logs = processLogDao.findMediaStatus(fileNames);
+        logs = logs == null ? new ArrayList<>() : logs;
+        final Map<String, List<MediaProcessLog>> fileNameLogListMap = new HashMap<>();
+        JSONUtil.divideStatusListToMap(logs, fileNameLogListMap, fileNames.size());
+
+        return fileNames.stream().distinct().collect(Collectors.toMap(String::toString, fileName -> {
+            final List<MediaProcessLog> logList = fileNameLogListMap.get(fileName);
+            final ActivityMapping activityStatus = (logList == null) ? null : getLatestActivityMapping(logList);
+            return activityStatus == null ? "PUBLISHED" : activityStatus.getStatusMessage();
+        }));
+    }
+
+
     /**
      * Compares two media objects for sorting.
      * 
@@ -510,26 +533,7 @@ public class LcmDynamoMediaDao implements MediaDao {
         return null;
     }
 
-    /**
-     * Pulls the latest processing status of media files. When a file doesn't have any process logs the file is
-     * considered old and therefore published.
-     *
-     * @param fileNames File names for which the status is required.
-     * @return The latest status of a media file.
-     */
-    private Map<String, String> getLatestStatus(List<String> fileNames) {
-        List<MediaProcessLog> logs = processLogDao.findMediaStatus(fileNames);
-        logs = logs == null ? new ArrayList<>() : logs;
-        final Map<String, List<MediaProcessLog>> fileNameLogListMap = new HashMap<>();
-        JSONUtil.divideStatusListToMap(logs, fileNameLogListMap, fileNames.size());
-
-        return fileNames.stream().distinct().collect(Collectors.toMap(String::toString, fileName -> {
-            final List<MediaProcessLog> logList = fileNameLogListMap.get(fileName);
-            final ActivityMapping activityStatus = (logList == null) ? null : getLatestActivityMapping(logList);
-            return activityStatus == null ? "PUBLISHED" : activityStatus.getStatusMessage();
-        }));
-    }
-
+ 
     /**
      * Finds the latest activity that is part of the activity white list. The list is expected to
      * be ordered from oldest to latest.

@@ -52,6 +52,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Resource;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -91,6 +92,8 @@ public class MediaController extends CommonServiceController {
     private static final String REG_EX_NUMERIC = "\\d+";
     private static final String REG_EX_GUID = "[a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12}";
     private static final String UNAUTHORIZED_USER_MESSAGE = "User is not authorized.";
+    private static final String DUPLICATED_STATUS = "DUPLICATE";
+
 
 
     @Resource(name = "providerProperties")
@@ -311,7 +314,7 @@ public class MediaController extends CommonServiceController {
                 objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input GUID does not exist in DB", serviceUrl, NOT_FOUND));
                 return;
             } else {
-                if(cannotBeHidden(dynamoMedia, message)){
+                if(!canBeHidden(dynamoMedia, message)){
                     objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("Only unpublished media can be hidden", serviceUrl, BAD_REQUEST));
                     return;
                 }
@@ -359,14 +362,11 @@ public class MediaController extends CommonServiceController {
      * @param message Incoming message.
      * @return returns true if the media can be hidden or false if not.
      */
-    private Boolean cannotBeHidden(Media media, String message) throws Exception{
+    private Boolean canBeHidden(Media media, String message) throws Exception{
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
-        String publishedMediaId = media.getLcmMediaId();
-        if (publishedMediaId == null) {
-            final Map<String, Object> domainFields = OBJECT_MAPPER.readValue(media.getDomainFields(), Map.class);
-            publishedMediaId = (String) domainFields.get(RESPONSE_FIELD_LCM_MEDIA_ID);
-        }
-         return (imageMessage.getHidden() && publishedMediaId != null); 
+        final String fileName = media.getFileName();
+        final String latestStatus = mediaDao.getLatestStatus(Arrays.asList(fileName)).get(fileName);
+        return (REJECTED_STATUS.equals(latestStatus) || DUPLICATED_STATUS.equals(latestStatus)) || !imageMessage.getHidden();
     }
 
     private ImageMessage removeActiveFromImageMessage(final ImageMessage imageMessage) {

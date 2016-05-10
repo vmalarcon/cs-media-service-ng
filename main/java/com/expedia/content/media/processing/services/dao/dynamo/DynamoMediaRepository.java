@@ -70,7 +70,7 @@ public class DynamoMediaRepository {
      */
     public Media getMedia(String mediaGUID) {
         final Media media = dynamoMapper.load(Media.class, mediaGUID);
-        return (!media.isHidden()) ? media : null;
+        return (media.isHidden()) ? null : media;
     }
 
     /**
@@ -168,7 +168,6 @@ public class DynamoMediaRepository {
         return mediaList.stream()
                 .filter(item -> !(Boolean.TRUE.equals(item.isHidden())))
                 .filter(item -> environment.equals(item.getEnvironment()))
-                .filter(item -> item.getPropertyHero() != null && item.getPropertyHero())
                 .collect(Collectors.toList());
 
     }
