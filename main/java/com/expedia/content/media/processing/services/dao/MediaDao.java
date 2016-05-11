@@ -1,6 +1,7 @@
 package com.expedia.content.media.processing.services.dao;
 
 import java.util.List;
+import java.util.Map;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
@@ -68,5 +69,12 @@ public interface MediaDao {
      */
     void saveMedia(Media media);
 
-
+    /**
+     * Pulls the latest processing status of media files. When a file doesn't have any process logs the file is
+     * considered old and therefore published.
+     *
+     * @param fileNames File names for which the status is required.
+     * @return The latest status of a media file.
+     */
+    Map<String, String> getLatestStatus(List<String> fileNames);
 }
