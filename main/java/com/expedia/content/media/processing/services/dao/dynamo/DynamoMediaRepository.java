@@ -70,7 +70,7 @@ public class DynamoMediaRepository {
      */
     public Media getMedia(String mediaGUID) {
         final Media media = dynamoMapper.load(Media.class, mediaGUID);
-        return (media.isHidden()) ? null : media;
+        return media == null ? null : media.isHidden() ? null : media;
     }
 
     /**
