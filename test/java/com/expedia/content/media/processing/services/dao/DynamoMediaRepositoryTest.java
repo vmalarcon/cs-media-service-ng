@@ -44,6 +44,7 @@ public class DynamoMediaRepositoryTest {
         when(dynamoMapper.load(eq(Media.class),eq("g01"))).thenReturn(mediaList.get(0));
         when(dynamoMapper.load(eq(Media.class),eq("g02"))).thenReturn(mediaList.get(1));
         when(dynamoMapper.load(eq(Media.class),eq("g03"))).thenReturn(mediaList.get(2));
+        when(dynamoMapper.load(eq(Media.class),eq("g04"))).thenReturn(null);
     }
 
     @Test
@@ -65,6 +66,7 @@ public class DynamoMediaRepositoryTest {
         assertTrue(dynamoMediaRepository.getMedia("g01") == null);
         assertTrue(dynamoMediaRepository.getMedia("g02") != null);
         assertTrue(dynamoMediaRepository.getMedia("g03") == null);
+        assertTrue(dynamoMediaRepository.getMedia("g04") == null);
     }
 
     private List<Media> defaultMediaList() {
