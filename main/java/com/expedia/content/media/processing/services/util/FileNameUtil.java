@@ -49,8 +49,8 @@ public class FileNameUtil {
     public enum MediaProvider {
         DESPEGAR("despegar", guidProviderNameToFileNameFunction),
         FREETOBOOK("freetobook", guidProviderNameToFileNameFunction),
-        EPC_INTERNAL_USER("epc internal user"),
-        EPC_EXTERNAL_USER("epc external user"),
+        EPC_INTERNAL_USER("epc internal user", guidProviderNameToFileNameFunction),
+        EPC_EXTERNAL_USER("epc external user", guidProviderNameToFileNameFunction),
         SCORE("score", guidProviderNameToFileNameFunction),
         EPC_LEGACY("epc legacy"),
         MOBILE("mobile"),
