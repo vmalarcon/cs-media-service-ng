@@ -25,12 +25,12 @@ import expedia.content.solutions.metrics.spring.EnableMetrics;
 @ImportResource("classpath:media-services.xml")
 @EnableMetrics
 @EnableTransactionManagement
-@SuppressWarnings({"PMD.UseUtilityClass"})
+@SuppressWarnings({"PMD.UseUtilityClass","PMD.UnusedPrivateField"})
 public class Application extends SpringBootServletInitializer {
 
     @Gauge(name = "isALive")
-    private final Integer liveCount = 1;
-
+    private Integer liveCount = 1;
+    
     public static void main(String[] args) throws Exception {
         if (OSDetector.detectOS() == OSDetector.OS.WINDOWS) {
             final String path = System.getenv("PATH").replace('\\', '/');
