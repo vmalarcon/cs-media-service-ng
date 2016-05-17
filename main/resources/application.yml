@@ -45,3 +45,7 @@ cs:
 
 aws:
    endPoint: "https://dynamodb.${AWS_REGION}.amazonaws.com"
+media:
+	aws:
+		live:
+			count:1
