@@ -25,6 +25,7 @@ import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
+import org.apache.commons.io.FilenameUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
@@ -517,6 +518,7 @@ public class LcmDynamoMediaDao implements MediaDao {
             } else {
                 mediaBuilder.fileUrl(dynamoMedia.getFileUrl())
                         .clientId(dynamoMedia.getClientId())
+                        .providedName(dynamoMedia.getProvidedName())
                         .domain(dynamoMedia.getDomain())
                         .domainId(dynamoMedia.getDomainId())
                         .mediaGuid(dynamoMedia.getMediaGuid())
@@ -688,7 +690,7 @@ public class LcmDynamoMediaDao implements MediaDao {
             return MediaGetResponse.builder()
                     .mediaGuid(media.getMediaGuid())
                     .fileUrl(media.getFileUrl())
-                    .fileName(media.getFileName())
+                    .fileName(resolveFileNameToDisplay(media))
                     .active(media.getActive())
                     .width(media.getWidth())
                     .height(media.getHeight())
@@ -726,7 +728,7 @@ public class LcmDynamoMediaDao implements MediaDao {
             return DomainIdMedia.builder()
                     .mediaGuid(media.getMediaGuid())
                     .fileUrl(media.getFileUrl())
-                    .fileName(media.getFileName())
+                    .fileName(resolveFileNameToDisplay(media))
                     .active(media.getActive())
                     .width(media.getWidth())
                     .height(media.getHeight())
@@ -745,6 +747,14 @@ public class LcmDynamoMediaDao implements MediaDao {
                     .build();
         }).collect(Collectors.toList());
         /* @formatter:on */
+    }
+
+    private String resolveFileNameToDisplay(final Media media) {
+        return (media.getProvidedName() == null) ?
+                (media.getFileUrl() == null) ? media.getFileName() :
+                FilenameUtils.getBaseName(media.getFileUrl())
+                        + "." + FilenameUtils.getExtension(media.getFileUrl()) :
+                media.getProvidedName();
     }
 
     /**

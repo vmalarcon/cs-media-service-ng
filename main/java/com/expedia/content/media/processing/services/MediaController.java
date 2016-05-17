@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import expedia.content.solutions.metrics.annotations.Meter;
 import expedia.content.solutions.metrics.annotations.Timer;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -347,9 +348,8 @@ public class MediaController extends CommonServiceController {
             objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse(jsonError, serviceUrl, BAD_REQUEST));
             return;
         }
-        if (dynamoMedia != null && !canBeHidden(dynamoMedia, newJson)){
+        if (verifyHidden(dynamoMedia, newJson)){
             objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("Only unpublished media can be hidden", serviceUrl, BAD_REQUEST));
-            return;
         }
     }
 
@@ -362,11 +362,14 @@ public class MediaController extends CommonServiceController {
      * @param message Incoming update message.
      * @return returns true if the media can be hidden or false if not.
      */
-    private Boolean canBeHidden(Media media, String message) throws Exception{
+    private Boolean verifyHidden(Media media, String message) throws Exception {
+        if (media == null) {
+            return false;
+        }
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
         final String fileName = media.getFileName();
         final String latestStatus = mediaDao.getLatestStatus(Arrays.asList(fileName)).get(fileName);
-        return (REJECTED_STATUS.equals(latestStatus) || DUPLICATED_STATUS.equals(latestStatus)) || !imageMessage.getHidden();
+        return !(REJECTED_STATUS.equals(latestStatus) || DUPLICATED_STATUS.equals(latestStatus)) && imageMessage.getHidden();
     }
 
     private ImageMessage removeActiveFromImageMessage(final ImageMessage imageMessage) {
@@ -478,6 +481,9 @@ public class MediaController extends CommonServiceController {
         if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
             isReprocessing = processReplacement(imageMessage, imageMessageBuilder, clientId);
         } else {
+            if (imageMessage.getProvidedName() == null) {
+                imageMessageBuilder.providedName(resolveProvidedName(imageMessage));
+            }
             imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(imageMessageBuilder.build()));
         }
         final ImageMessage imageMessageNew = imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).build();
@@ -486,6 +492,13 @@ public class MediaController extends CommonServiceController {
         messageState.put(REPROCESSING_STATE_FIELD, isReprocessing);
 
         return messageState;
+    }
+
+    private String resolveProvidedName(final ImageMessage imageMessage) {
+        return (imageMessage.getFileName() == null) ?
+        FilenameUtils.getBaseName(imageMessage.getFileUrl())
+                + "." + FilenameUtils.getExtension(imageMessage.getFileUrl()) :
+                imageMessage.getFileName();
     }
 
     /**

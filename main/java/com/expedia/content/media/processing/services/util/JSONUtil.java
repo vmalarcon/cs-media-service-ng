@@ -241,11 +241,16 @@ public final class JSONUtil {
                             + ((imageMessage.getMediaProviderId() == null) ? "" : imageMessage.getMediaProviderId() + "_")
                             + FilenameUtils.getBaseName(imageMessage.getFileUrl()) + ".jpg";
                 }
+                mapMessage.put(MessageConstants.PROVIDED_NAME,
+                        FilenameUtils.getBaseName(imageMessage.getFileUrl()) + "." +  FilenameUtils.getExtension(imageMessage.getFileUrl()));
             }
             mapMessage.put(MessageConstants.FILE_NAME, fileName);
+
         } else {
             mapMessage.put(MessageConstants.FILE_NAME, imageMessage.getFileName());
+            mapMessage.put(MessageConstants.PROVIDED_NAME, imageMessage.getFileName());
         }
+
         if (map.get("imageType") != null) {
             mapMessage.put("domain", map.get("imageType"));
         }
