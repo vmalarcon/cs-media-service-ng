@@ -347,7 +347,7 @@ public class MediaController extends CommonServiceController {
             objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse(jsonError, serviceUrl, BAD_REQUEST));
             return;
         }
-        if (verifyHidden(dynamoMedia, newJson)){
+        if (mediaCannotBeHidden(dynamoMedia, newJson)){
             objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("Only unpublished media can be hidden", serviceUrl, BAD_REQUEST));
         }
     }
@@ -361,14 +361,14 @@ public class MediaController extends CommonServiceController {
      * @param message Incoming update message.
      * @return returns true if the media can be hidden or false if not.
      */
-    private Boolean verifyHidden(Media media, String message) throws Exception {
+    private Boolean mediaCannotBeHidden(Media media, String message) throws Exception {
         if (media == null) {
             return false;
         }
-        final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
+        final ImageMessage updateMessage = ImageMessage.parseJsonMessage(message);
         final String fileName = media.getFileName();
         final String latestStatus = mediaDao.getLatestStatus(Arrays.asList(fileName)).get(fileName);
-        return !(REJECTED_STATUS.equals(latestStatus) || DUPLICATED_STATUS.equals(latestStatus)) && imageMessage.getHidden();
+        return !(REJECTED_STATUS.equals(latestStatus) || DUPLICATED_STATUS.equals(latestStatus)) && updateMessage.getHidden();
     }
 
     private ImageMessage removeActiveFromImageMessage(final ImageMessage imageMessage) {

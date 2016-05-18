@@ -205,7 +205,7 @@ public class Media {
         return hidden == null ? false : hidden;
     }
 
-    @DynamoDBAttribute(attributeName = "providedName")
+    @DynamoDBAttribute(attributeName = "ProvidedName")
     public String getProvidedName() {
         return providedName;
     }
