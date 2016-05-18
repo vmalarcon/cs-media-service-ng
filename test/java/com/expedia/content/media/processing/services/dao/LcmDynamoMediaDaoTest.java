@@ -25,7 +25,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.apache.commons.io.FilenameUtils;
+import com.expedia.content.media.processing.services.util.FileNameUtil;
 import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -712,7 +712,7 @@ public class LcmDynamoMediaDaoTest {
         return MediaGetResponse.builder()
                 .mediaGuid(media.getMediaGuid())
                 .fileUrl(media.getFileUrl())
-                .fileName(resolveFileNameToDisplay(media))
+                .fileName(FileNameUtil.resolveFileNameToDisplay(media))
                 .active(media.getActive())
                 .width(media.getWidth())
                 .height(media.getHeight())
@@ -732,13 +732,6 @@ public class LcmDynamoMediaDaoTest {
                         .collect(Collectors.toList()))
                 .build();
         /* @formatter:on */
-    }
-    private String resolveFileNameToDisplay(final Media media) {
-        return (media.getProvidedName() == null) ?
-                (media.getFileUrl() == null) ? media.getFileName() :
-                        FilenameUtils.getBaseName(media.getFileUrl())
-                                + "." + FilenameUtils.getExtension(media.getFileUrl()) :
-                media.getProvidedName();
     }
 
     private void setResponseLcmMediaId(Media media) {

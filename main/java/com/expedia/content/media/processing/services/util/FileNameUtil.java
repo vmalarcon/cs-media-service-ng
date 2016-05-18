@@ -3,6 +3,7 @@ package com.expedia.content.media.processing.services.util;
 import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 
+import com.expedia.content.media.processing.services.dao.domain.Media;
 import org.apache.commons.io.FilenameUtils;
 
 
@@ -138,6 +139,45 @@ public class FileNameUtil {
             return mediaProvider.get().function.apply(imageMessage);
         }
         return guidProviderNameToFileNameFunction.apply(imageMessage);
+    }
+
+    /**
+     * resolve which String to put in the fileName field for MediaGet and GetByDomainID
+     *
+     * @param media
+     * @return fileName to display
+     */
+    public static String resolveFileNameToDisplay(final Media media) {
+        return (media.getProvidedName() == null) ?
+                (media.getFileUrl() == null) ? media.getFileName() :
+                        getFileNameFromUrl(media.getFileUrl()) :
+                media.getProvidedName();
+    }
+
+    /**
+     * returns the fileName from a url
+     * Example:  getFileNameFromUrl("https://www.ACoolWebSite.com/CoolPics/LargePics/BestQuality/aPrettySweetPic.jpg") will
+     * return "aPrettySweetPic.jpg"
+     *
+     * @param url
+     * @return fileName from the input url
+     */
+    public static String getFileNameFromUrl(final String url) {
+        return FilenameUtils.getBaseName(url)
+                + "." + FilenameUtils.getExtension(url);
+    }
+
+    /**
+     * returns the fileName from a url
+     * Example:  getFileNameFromUrl("https://www.ACoolWebSite.com/CoolPics/LargePics/BestQuality/aPrettySweetPic.jpeg", ".jpg") will
+     * return "aPrettySweetPic.jpg"
+     *
+     * @param url
+     * @param extension
+     * @return fileName from the input url
+     */
+    public static String getFileNameFromUrl(final String url, final String extension) {
+        return FilenameUtils.getBaseName(url) + extension;
     }
 
 }

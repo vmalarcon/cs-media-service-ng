@@ -28,7 +28,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import expedia.content.solutions.metrics.annotations.Meter;
 import expedia.content.solutions.metrics.annotations.Timer;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -496,8 +495,7 @@ public class MediaController extends CommonServiceController {
 
     private String resolveProvidedName(final ImageMessage imageMessage) {
         return (imageMessage.getFileName() == null) ?
-        FilenameUtils.getBaseName(imageMessage.getFileUrl())
-                + "." + FilenameUtils.getExtension(imageMessage.getFileUrl()) :
+                FileNameUtil.getFileNameFromUrl(imageMessage.getFileUrl()) :
                 imageMessage.getFileName();
     }
 

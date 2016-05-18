@@ -235,14 +235,14 @@ public final class JSONUtil {
             String fileName = "";
             if (imageMessage.getFileUrl() != null) {
                 if (alreadyContainsExpediaId(imageMessage)) {
-                    fileName = FilenameUtils.getBaseName(imageMessage.getFileUrl()) + ".jpg";
+                    fileName = FileNameUtil.getFileNameFromUrl(imageMessage.getFileUrl(), ".jpg");
                 } else {
                     fileName = ((imageMessage.getExpediaId() == null) ? "" : imageMessage.getExpediaId() + "_")
                             + ((imageMessage.getMediaProviderId() == null) ? "" : imageMessage.getMediaProviderId() + "_")
-                            + FilenameUtils.getBaseName(imageMessage.getFileUrl()) + ".jpg";
+                            + FileNameUtil.getFileNameFromUrl(imageMessage.getFileUrl(), ".jpg");
                 }
                 mapMessage.put(MessageConstants.PROVIDED_NAME,
-                        FilenameUtils.getBaseName(imageMessage.getFileUrl()) + "." +  FilenameUtils.getExtension(imageMessage.getFileUrl()));
+                        FileNameUtil.getFileNameFromUrl(imageMessage.getFileUrl()));
             }
             mapMessage.put(MessageConstants.FILE_NAME, fileName);
 
