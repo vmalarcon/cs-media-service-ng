@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import com.expedia.content.media.processing.pipeline.util.OSDetector;
 
-import expedia.content.solutions.metrics.annotations.Gauge;
 import expedia.content.solutions.metrics.spring.EnableMetrics;
 
 /**
@@ -25,11 +24,8 @@ import expedia.content.solutions.metrics.spring.EnableMetrics;
 @ImportResource("classpath:media-services.xml")
 @EnableMetrics
 @EnableTransactionManagement
-@SuppressWarnings({"PMD.UseUtilityClass","PMD.UnusedPrivateField"})
+@SuppressWarnings({"PMD.UseUtilityClass"})
 public class Application extends SpringBootServletInitializer {
-
-    @Gauge(name = "isALive")
-    private static final int LIVE_COUNT = 1;
     
     public static void main(String[] args) throws Exception {
         if (OSDetector.detectOS() == OSDetector.OS.WINDOWS) {

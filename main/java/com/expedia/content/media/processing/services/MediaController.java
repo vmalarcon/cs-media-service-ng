@@ -26,6 +26,8 @@ import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
+
+import expedia.content.solutions.metrics.annotations.Gauge;
 import expedia.content.solutions.metrics.annotations.Meter;
 import expedia.content.solutions.metrics.annotations.Timer;
 import org.apache.commons.lang.StringUtils;
@@ -70,6 +72,7 @@ import static org.springframework.http.HttpStatus.OK;
  * Web service controller for media resources.
  */
 @RestController
+@SuppressWarnings({"PMD.UnusedPrivateField","PMD.FinalFieldCouldBeStatic"})
 public class MediaController extends CommonServiceController {
 
     private static final String RESPONSE_FIELD_MEDIA_GUID = "mediaGuid";
@@ -95,6 +98,8 @@ public class MediaController extends CommonServiceController {
     private static final String DUPLICATED_STATUS = "DUPLICATE";
 
 
+    @Gauge(name = "isALive")
+    private final int liveCount = 1;
 
     @Resource(name = "providerProperties")
     private Properties providerProperties;
