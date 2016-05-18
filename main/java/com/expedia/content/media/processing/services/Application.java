@@ -1,7 +1,6 @@
 package com.expedia.content.media.processing.services;
 
 import org.im4java.process.ProcessStarter;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ResourceBanner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -30,8 +29,7 @@ import expedia.content.solutions.metrics.spring.EnableMetrics;
 public class Application extends SpringBootServletInitializer {
 
     @Gauge(name = "isALive")
-    @Value("${media.aws.live.count}")
-    private  Integer liveCount;
+    private static final int LIVE_COUNT = 1;
     
     public static void main(String[] args) throws Exception {
         if (OSDetector.detectOS() == OSDetector.OS.WINDOWS) {
