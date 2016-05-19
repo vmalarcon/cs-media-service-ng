@@ -493,6 +493,17 @@ public class MediaController extends CommonServiceController {
         return messageState;
     }
 
+    /**
+     * Resolves which fileName should be used as the ProvidedName. If the fileName field does not exist a name
+     * is extracted from the FileURL.
+     * - Note - this method will only be called on new media sent through MediaAdd.
+     * - Note - Media sent through AcquireMedia will already have a providedName when the json
+     * message is parsed and Reprocessed Media will never end up in the branch in @updateImageMessage()
+     * that calls this method
+     *
+     * @param imageMessage an imageMessage that does has null for the providedName field
+     * @return the fileName to use for the providedName field
+     */
     private String resolveProvidedName(final ImageMessage imageMessage) {
         return (imageMessage.getFileName() == null) ?
                 FileNameUtil.getFileNameFromUrl(imageMessage.getFileUrl()) :
