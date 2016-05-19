@@ -72,7 +72,6 @@ import static org.springframework.http.HttpStatus.OK;
  * Web service controller for media resources.
  */
 @RestController
-@SuppressWarnings({"PMD.UnusedPrivateField","PMD.FinalFieldCouldBeStatic"})
 public class MediaController extends CommonServiceController {
 
     private static final String RESPONSE_FIELD_MEDIA_GUID = "mediaGuid";
@@ -96,10 +95,6 @@ public class MediaController extends CommonServiceController {
     private static final String REG_EX_GUID = "[a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12}";
     private static final String UNAUTHORIZED_USER_MESSAGE = "User is not authorized.";
     private static final String DUPLICATED_STATUS = "DUPLICATE";
-
-
-    @Gauge(name = "isALive")
-    private final int liveCount = 1;
 
     @Resource(name = "providerProperties")
     private Properties providerProperties;
@@ -310,6 +305,11 @@ public class MediaController extends CommonServiceController {
             return new ResponseEntity<>(ex.getMessage(), BAD_REQUEST);
         }
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);
+    }
+
+    @Gauge(name = "liveCount")
+    public Integer liveCount() {
+        return 1;
     }
 
     private void validateAndInitMap(Map<String, Object> objectMap, String queryId, String serviceUrl, String message, String requestID) throws Exception {
