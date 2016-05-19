@@ -95,7 +95,8 @@ public class MediaController extends CommonServiceController {
     private static final String REG_EX_GUID = "[a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12}";
     private static final String UNAUTHORIZED_USER_MESSAGE = "User is not authorized.";
     private static final String DUPLICATED_STATUS = "DUPLICATE";
-
+    private static final Integer LIVE_COUNT = 1;
+    
     @Resource(name = "providerProperties")
     private Properties providerProperties;
     @Autowired
@@ -307,9 +308,16 @@ public class MediaController extends CommonServiceController {
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);
     }
 
+    /**
+     * Sends the metric server a unique value. This is useful to know:
+     * 1- The number of active or inactive  instances within a period of time.
+     * 2- How long the component was up or down within a period of time.
+     * 
+     * @return Always return a single value.
+     */
     @Gauge(name = "liveCount")
     public Integer liveCount() {
-        return 1;
+        return LIVE_COUNT;
     }
 
     private void validateAndInitMap(Map<String, Object> objectMap, String queryId, String serviceUrl, String message, String requestID) throws Exception {
