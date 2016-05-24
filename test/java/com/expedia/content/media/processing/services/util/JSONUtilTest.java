@@ -177,7 +177,7 @@ public class JSONUtilTest {
                 + "}";
                 
         final String convert =
-                "{\"fileUrl\":\"http:\\/\\/localhost:38081\\/office.jpg\",\"fileName\":\"429_1_office.jpg\",\"domain\":\"Lodging\",\"callback\":\"http:\\/\\/multi.source.callback\\/callback\",\"active\":\"true\",\"stagingKey\":{\"externalId\":\"222\",\"providerId\":\"300\",\"sourceId\":\"99\"},\"domainId\":\"429\",\"domainFields\":{\"subcategoryId\":\"801\",\"caption\":\"caption\",\"captionLocaleId\":\"1033\"},\"domainProvider\":\"EPC Internal User\",\"userId\":\"Multisource\",\"clientId\":\"Multisource\"}";
+                "{\"fileUrl\":\"http:\\/\\/localhost:38081\\/office.jpg\",\"providedName\":\"office.jpg\",\"fileName\":\"429_1_office.jpg\",\"domain\":\"Lodging\",\"callback\":\"http:\\/\\/multi.source.callback\\/callback\",\"active\":\"true\",\"stagingKey\":{\"externalId\":\"222\",\"providerId\":\"300\",\"sourceId\":\"99\"},\"domainId\":\"429\",\"domainFields\":{\"subcategoryId\":\"801\",\"caption\":\"caption\",\"captionLocaleId\":\"1033\"},\"domainProvider\":\"EPC Internal User\",\"userId\":\"Multisource\",\"clientId\":\"Multisource\"}";
                 
         final ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
         final Map messageMap = JSONUtil.buildMapFromJson(message);
@@ -208,7 +208,7 @@ public class JSONUtilTest {
                 + "}";
                 
         final String convert =
-                "{\"fileUrl\":\"http:\\/\\/localhost:38081\\/office.jpg\",\"fileName\":\"429_1_office.jpg\",\"domain\":\"Lodging\",\"callback\":\"http:\\/\\/multi.source.callback\\/callback\",\"active\":\"true\",\"stagingKey\":{\"externalId\":\"222\",\"providerId\":\"300\",\"sourceId\":\"99\"},\"domainId\":\"429\",\"domainFields\":{\"subcategoryId\":\"801\",\"caption\":\"caption\",\"captionLocaleId\":\"1033\"},\"domainProvider\":\"EPC Internal User\",\"userId\":\"Multisource\",\"clientId\":\"Multisource\"}";
+                "{\"fileUrl\":\"http:\\/\\/localhost:38081\\/office.jpg\",\"providedName\":\"office.jpg\",\"fileName\":\"429_1_office.jpg\",\"domain\":\"Lodging\",\"callback\":\"http:\\/\\/multi.source.callback\\/callback\",\"active\":\"true\",\"stagingKey\":{\"externalId\":\"222\",\"providerId\":\"300\",\"sourceId\":\"99\"},\"domainId\":\"429\",\"domainFields\":{\"subcategoryId\":\"801\",\"caption\":\"caption\",\"captionLocaleId\":\"1033\"},\"domainProvider\":\"EPC Internal User\",\"userId\":\"Multisource\",\"clientId\":\"Multisource\"}";
                 
         final ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
         final Map messageMap = JSONUtil.buildMapFromJson(message);
@@ -238,7 +238,7 @@ public class JSONUtilTest {
                 + "}";
                 
         final String convert =
-                "{\"fileUrl\":\"http:\\/\\/localhost:38081\\/4608680_300_office.jpg\",\"fileName\":\"4608680_300_office.jpg\",\"domain\":\"Lodging\",\"callback\":\"http:\\/\\/multi.source.callback\\/callback\",\"active\":\"true\",\"stagingKey\":{\"externalId\":\"222\",\"providerId\":\"300\",\"sourceId\":\"99\"},\"domainId\":\"4608680\",\"domainFields\":{\"subcategoryId\":\"801\"},\"domainProvider\":\"EPC Internal User\",\"userId\":\"Multisource\",\"clientId\":\"Multisource\"}";
+                "{\"fileUrl\":\"http:\\/\\/localhost:38081\\/4608680_300_office.jpg\",\"providedName\":\"4608680_300_office.jpg\",\"fileName\":\"4608680_300_office.jpg\",\"domain\":\"Lodging\",\"callback\":\"http:\\/\\/multi.source.callback\\/callback\",\"active\":\"true\",\"stagingKey\":{\"externalId\":\"222\",\"providerId\":\"300\",\"sourceId\":\"99\"},\"domainId\":\"4608680\",\"domainFields\":{\"subcategoryId\":\"801\"},\"domainProvider\":\"EPC Internal User\",\"userId\":\"Multisource\",\"clientId\":\"Multisource\"}";
         final ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
         final Map messageMap = JSONUtil.buildMapFromJson(message);
         final Properties properties = new Properties();
@@ -270,7 +270,7 @@ public class JSONUtilTest {
                 + "}";
                 
         final String convert =
-                "{\"fileUrl\":\"http:\\/\\/localhost:38081\\/4608680_300_office.jpg\",\"fileName\":\"4608680_300_office.jpg\",\"domain\":\"Lodging\",\"callback\":\"http:\\/\\/multi.source.callback\\/callback\",\"active\":\"true\",\"stagingKey\":{\"externalId\":\"222\",\"providerId\":\"300\",\"sourceId\":\"99\"},\"domainId\":\"4608680\",\"domainFields\":{\"subcategoryId\":\"801\",\"caption\":\"caption to move\",\"captionLocaleId\":\"1033\"},\"domainProvider\":\"EPC Internal User\",\"userId\":\"Multisource\",\"clientId\":\"Multisource\"}";
+                "{\"fileUrl\":\"http:\\/\\/localhost:38081\\/4608680_300_office.jpg\",\"providedName\":\"4608680_300_office.jpg\",\"fileName\":\"4608680_300_office.jpg\",\"domain\":\"Lodging\",\"callback\":\"http:\\/\\/multi.source.callback\\/callback\",\"active\":\"true\",\"stagingKey\":{\"externalId\":\"222\",\"providerId\":\"300\",\"sourceId\":\"99\"},\"domainId\":\"4608680\",\"domainFields\":{\"subcategoryId\":\"801\",\"caption\":\"caption to move\",\"captionLocaleId\":\"1033\"},\"domainProvider\":\"EPC Internal User\",\"userId\":\"Multisource\",\"clientId\":\"Multisource\"}";
         final ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
         final Map messageMap = JSONUtil.buildMapFromJson(message);
         final Properties properties = new Properties();

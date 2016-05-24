@@ -25,6 +25,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.expedia.content.media.processing.services.util.FileNameUtil;
 import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -94,7 +95,7 @@ public class LcmDynamoMediaDaoTest {
         List<Media> dynamoMediaList = new ArrayList<>();
         String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
         Media dynamoMedia1 = Media.builder()
-                .mediaGuid(guid1).domain("Lodging").domainId("1234").fileUrl("s3://fileUrl")
+                .mediaGuid(guid1).domain("Lodging").domainId("1234").fileUrl("s3://fileUrl/imageName.jpg")
                 .domainFields("{\"lcmMediaId\":\"1\",\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}")
                 .derivatives("[{\"type\":\"v\",\"width\":179,\"height\":240,\"fileSize\":10622,\"location\":\"s3://ewe-cs-media-test/test/derivative/lodging/1000000/10000/7200/7139/dfec2df8_v.jpg\"}]")
                 .lastUpdated(new Date())
@@ -121,14 +122,14 @@ public class LcmDynamoMediaDaoTest {
 
         assertEquals(mediaList.get(0).getDomainId().toString(), testMediaRespomse.getDomainId());
         assertEquals(mediaList.get(0).getLastUpdatedBy(), testMedia1.getLastUpdatedBy());
-        assertEquals(mediaList.get(0).getFileName(), testMedia1.getFileName());
+        assertEquals("imageName.jpg", testMedia1.getFileName());
         assertEquals(dynamoMedia1.getMediaGuid(), testMedia1.getMediaGuid());
         assertEquals(mediaList.get(0).getComment(), testMedia1.getComments().get(0).getNote());
         assertTrue((mediaList.get(0).getFileSize() * 1024L) == testMedia1.getFileSize());
         assertEquals("true", testMedia1.getDomainFields().get("propertyHero"));
         assertEquals("4321", testMedia1.getDomainFields().get("subcategoryId"));
         assertEquals("VirtualTour", testMedia1.getDomainDerivativeCategory());
-        assertEquals("s3://fileUrl", testMedia1.getFileUrl());
+        assertEquals("s3://fileUrl/imageName.jpg", testMedia1.getFileUrl());
         DomainIdMedia testMedia2 = testMediaRespomse.getImages().get(2);
         assertNull(testMedia2.getMediaGuid());
         assertNull(testMedia2.getFileUrl());
@@ -587,6 +588,83 @@ public class LcmDynamoMediaDaoTest {
             assertEquals("pageSize and pageIndex can only be positive integer values", ex.getMessage());
         }
     }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void testGetMediaByDomainIdProvidedName() throws Exception {
+        SQLMediaListSproc mediaListSproc = mock(SQLMediaListSproc.class);
+        List<LcmMediaAndDerivative> mediaList = make2Media2DerivativeMediaResult(true, false, true, true, true, true, 2);
+        Map<String, Object> mediaResult = new HashMap<>();
+        mediaResult.put(SQLMediaListSproc.MEDIA_SET, mediaList);
+        when(mediaListSproc.execute(anyInt())).thenReturn(mediaResult);
+
+        SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
+
+        DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
+        List<Media> dynamoMediaList = new ArrayList<>();
+        String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
+        Media dynamoMedia1 = Media.builder()
+                .mediaGuid(guid1).domain("Lodging").domainId("1234").fileUrl("s3://fileUrl/imageName.jpg").providedName("sick_name.jpg").fileName("not_a_sick_name.jpg")
+                .domainFields("{\"lcmMediaId\":\"1\",\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}")
+                .derivatives("[{\"type\":\"v\",\"width\":179,\"height\":240,\"fileSize\":10622,\"location\":\"s3://ewe-cs-media-test/test/derivative/lodging/1000000/10000/7200/7139/dfec2df8_v.jpg\"}]")
+                .lastUpdated(new Date())
+                .build();
+        String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").lastUpdated(LocalDateTime.now().minusMinutes(5).toDate()).build();
+        dynamoMediaList.add(dynamoMedia1);
+        dynamoMediaList.add(dynamoMedia3);
+        when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
+
+        final Properties properties = new Properties();
+        properties.put("1", "EPC Internal User");
+
+        MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null);
+        MediaByDomainIdResponse testMediaRespomse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null);
+
+        assertEquals(3, testMediaRespomse.getImages().size());
+        testMediaRespomse.getImages().stream().filter(media -> media.getDomainFields() != null && media.getDomainFields().get("lcmMediaId") != null).forEach(media -> assertEquals(2, media.getDerivatives().size()));
+        DomainIdMedia testMedia1 = testMediaRespomse.getImages().get(0);
+        Map<String, Object> domainMap = testMedia1.getDomainFields();
+        List rooms = (ArrayList)domainMap.get("rooms");
+        assertEquals(((HashMap)rooms.get(0)).get("roomId"),"123");
+        assertTrue(Boolean.valueOf(((HashMap) rooms.get(0)).get("roomHero").toString()));
+
+        assertEquals(mediaList.get(0).getDomainId().toString(), testMediaRespomse.getDomainId());
+        assertEquals(mediaList.get(0).getLastUpdatedBy(), testMedia1.getLastUpdatedBy());
+        assertEquals("sick_name.jpg", testMedia1.getFileName());
+        assertEquals(dynamoMedia1.getMediaGuid(), testMedia1.getMediaGuid());
+        assertEquals(mediaList.get(0).getComment(), testMedia1.getComments().get(0).getNote());
+        assertTrue((mediaList.get(0).getFileSize() * 1024L) == testMedia1.getFileSize());
+        assertEquals("true", testMedia1.getDomainFields().get("propertyHero"));
+        assertEquals("4321", testMedia1.getDomainFields().get("subcategoryId"));
+        assertEquals("VirtualTour", testMedia1.getDomainDerivativeCategory());
+        assertEquals("s3://fileUrl/imageName.jpg", testMedia1.getFileUrl());
+        DomainIdMedia testMedia2 = testMediaRespomse.getImages().get(2);
+        assertNull(testMedia2.getMediaGuid());
+        assertNull(testMedia2.getFileUrl());
+        DomainIdMedia testMedia3 = testMediaRespomse.getImages().get(1);
+        assertEquals(dynamoMedia3.getMediaGuid(), testMedia3.getMediaGuid());
+        assertNull(testMedia3.getFileUrl());
+    }
+
+    @Test
+    public void testMediaGetGUIDProvidedName() throws NoSuchFieldException, IllegalAccessException {
+        final Properties mockProperties = new Properties();
+        mockProperties.put("1", "EPC Internal User");
+
+        String guid = "d2d4d480-9627-47f9-86c6-1874c18d34t6";
+        Media guidMedia = Media.builder().active("true").mediaGuid(guid).lastUpdated(new Date()).providedName("super_duper_potato.jpg").fileName("super_potato.jpg").build();
+        DynamoMediaRepository mediaDynamo = mock(DynamoMediaRepository.class);
+        when(mediaDynamo.getMedia(guid)).thenReturn(guidMedia);
+
+        MediaDao mediaDao = makeMockMediaDao(null, null, mediaDynamo, mockProperties, null);
+        MediaGetResponse resultMedia = mediaDao.getMediaByGUID(guid);
+        MediaGetResponse guidMediaGet = transformSingleMediaForResponse(guidMedia);
+        assertEquals(guidMediaGet.getMediaGuid(), resultMedia.getMediaGuid());
+        assertEquals(guidMediaGet.getFileName(), resultMedia.getFileName());
+        assertEquals(guidMediaGet.getActive(), resultMedia.getActive());
+        assertEquals(guidMediaGet.getStatus(), resultMedia.getStatus());
+    }
     
     private MediaDao makeMockMediaDao(SQLMediaListSproc mediaIdSproc, SQLMediaItemGetSproc mediaItemSproc, DynamoMediaRepository mockMediaDBRepo,
                                       final Properties properties, SQLMediaGetSproc mediaGetSproc) throws NoSuchFieldException, IllegalAccessException {
@@ -634,7 +712,7 @@ public class LcmDynamoMediaDaoTest {
         return MediaGetResponse.builder()
                 .mediaGuid(media.getMediaGuid())
                 .fileUrl(media.getFileUrl())
-                .fileName(media.getFileName())
+                .fileName(FileNameUtil.resolveFileNameToDisplay(media))
                 .active(media.getActive())
                 .width(media.getWidth())
                 .height(media.getHeight())

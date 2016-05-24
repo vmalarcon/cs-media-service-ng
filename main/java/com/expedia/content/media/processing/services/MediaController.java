@@ -360,9 +360,8 @@ public class MediaController extends CommonServiceController {
             objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse(jsonError, serviceUrl, BAD_REQUEST));
             return;
         }
-        if (dynamoMedia != null && !canBeHidden(dynamoMedia, newJson)){
+        if (mediaCannotBeHidden(dynamoMedia, newJson)){
             objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("Only unpublished media can be hidden", serviceUrl, BAD_REQUEST));
-            return;
         }
     }
 
@@ -375,11 +374,14 @@ public class MediaController extends CommonServiceController {
      * @param message Incoming update message.
      * @return returns true if the media can be hidden or false if not.
      */
-    private Boolean canBeHidden(Media media, String message) throws Exception{
-        final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
+    private Boolean mediaCannotBeHidden(Media media, String message) throws Exception {
+        if (media == null) {
+            return false;
+        }
+        final ImageMessage updateMessage = ImageMessage.parseJsonMessage(message);
         final String fileName = media.getFileName();
         final String latestStatus = mediaDao.getLatestStatus(Arrays.asList(fileName)).get(fileName);
-        return (REJECTED_STATUS.equals(latestStatus) || DUPLICATED_STATUS.equals(latestStatus)) || !imageMessage.getHidden();
+        return !(REJECTED_STATUS.equals(latestStatus) || DUPLICATED_STATUS.equals(latestStatus)) && updateMessage.getHidden();
     }
 
     private ImageMessage removeActiveFromImageMessage(final ImageMessage imageMessage) {
@@ -491,6 +493,9 @@ public class MediaController extends CommonServiceController {
         if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
             isReprocessing = processReplacement(imageMessage, imageMessageBuilder, clientId);
         } else {
+            if (imageMessage.getProvidedName() == null) {
+                imageMessageBuilder.providedName(resolveProvidedName(imageMessage));
+            }
             imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(imageMessageBuilder.build()));
         }
         final ImageMessage imageMessageNew = imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).build();
@@ -499,6 +504,23 @@ public class MediaController extends CommonServiceController {
         messageState.put(REPROCESSING_STATE_FIELD, isReprocessing);
 
         return messageState;
+    }
+
+    /**
+     * Resolves which fileName should be used as the ProvidedName. If the fileName field does not exist a name
+     * is extracted from the FileURL.
+     * - Note - this method will only be called on new media sent through MediaAdd.
+     * - Note - Media sent through AcquireMedia will already have a providedName when the json
+     * message is parsed and Reprocessed Media will never end up in the branch in @updateImageMessage()
+     * that calls this method
+     *
+     * @param imageMessage an imageMessage that does has null for the providedName field
+     * @return the fileName to use for the providedName field
+     */
+    private String resolveProvidedName(final ImageMessage imageMessage) {
+        return (imageMessage.getFileName() == null) ?
+                FileNameUtil.getFileNameFromUrl(imageMessage.getFileUrl()) :
+                imageMessage.getFileName();
     }
 
     /**
@@ -531,6 +553,7 @@ public class MediaController extends CommonServiceController {
                 domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
                 imageMessageBuilder.outerDomainData(domainBuilder.build());
                 imageMessageBuilder.mediaGuid(media.getMediaGuid());
+                imageMessageBuilder.providedName(media.getProvidedName());
                 LOGGER.info("The replacement information is: mediaGuid=[{}], filename=[{}], requestId=[{}], lcmMediaId=[{}]", media.getMediaGuid(),
                         imageMessage.getFileName(), imageMessage.getRequestId(), media.getDomainId());
                 return true;
