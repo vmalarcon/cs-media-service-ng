@@ -75,11 +75,6 @@ public class SourceURLController extends CommonServiceController {
             if (fileUrl == null) {
                 return this.buildErrorResponse("mediaUrl is required in message.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), BAD_REQUEST);
             }
-            final boolean fileExists = verifyUrlExistence(fileUrl);
-            if (!fileExists) {
-                LOGGER.info("Response bad request provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
-                return this.buildErrorResponse("Provided fileUrl does not exist.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
-            }
             final String fileName = fileSourceFinder.getFileNameFromUrl(fileUrl);
             final LcmMedia lcmMedia = mediaDao.getContentProviderName(fileName);
             if (!checkDBResultValid(lcmMedia)) {

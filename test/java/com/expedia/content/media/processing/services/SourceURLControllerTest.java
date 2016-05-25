@@ -117,6 +117,13 @@ public class SourceURLControllerTest {
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
+        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+        when(mockMediaDao.getContentProviderName(anyString())).thenReturn(null);
+        FileSourceFinder fileSourceFinder = mock(FileSourceFinder.class);
+        String s3Location = "s3://ewe-cs-media-test/test/source/lodging/11000000/10440000/10430400/10430311/8b9680cd-f9f9-4f78-9344-2f00aba91a69.jpg";
+        when(fileSourceFinder.getSourcePath(anyString(), anyString(), anyString(), anyInt(), anyString())).thenReturn(s3Location);
+        setFieldValue(sourceURLController, "mediaDao", mockMediaDao);
+        setFieldValue(sourceURLController, "fileSourceFinder", fileSourceFinder);
         ResponseEntity<String> responseEntity = sourceURLController.getSourceURL(jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
