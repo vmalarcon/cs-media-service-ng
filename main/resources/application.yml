@@ -43,3 +43,6 @@ cs:
       hostname: ${monitoringAgent.statsd.hostname}
       port: ${monitoringAgent.statsd.port}
 
+aws:
+  endPoint: "https://dynamodb.${AWS_REGION}.amazonaws.com"
+
