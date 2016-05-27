@@ -316,7 +316,7 @@ public class MediaController extends CommonServiceController {
      * 
      * @return Always return a single value.
      */
-    @Gauge(name = "liveCount")
+    @Gauge(name = "isAlive")
     @Counter(name = "liveCounter")
     public Integer liveCount() {
         return LIVE_COUNT;
