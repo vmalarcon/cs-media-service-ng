@@ -27,6 +27,7 @@ import com.expedia.content.media.processing.services.validator.MapMessageValidat
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 
+import expedia.content.solutions.metrics.annotations.Counter;
 import expedia.content.solutions.metrics.annotations.Gauge;
 import expedia.content.solutions.metrics.annotations.Meter;
 import expedia.content.solutions.metrics.annotations.Timer;
@@ -96,7 +97,7 @@ public class MediaController extends CommonServiceController {
     private static final String UNAUTHORIZED_USER_MESSAGE = "User is not authorized.";
     private static final String DUPLICATED_STATUS = "DUPLICATE";
     private static final Integer LIVE_COUNT = 1;
-    
+        
     @Resource(name = "providerProperties")
     private Properties providerProperties;
     @Autowired
@@ -316,6 +317,7 @@ public class MediaController extends CommonServiceController {
      * @return Always return a single value.
      */
     @Gauge(name = "liveCount")
+    @Counter(name = "liveCounter")
     public Integer liveCount() {
         return LIVE_COUNT;
     }
