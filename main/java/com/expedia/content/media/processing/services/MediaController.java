@@ -1,5 +1,23 @@
 package com.expedia.content.media.processing.services;
 
+import static org.springframework.http.HttpStatus.ACCEPTED;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.OK;
+
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.UUID;
+
+import javax.annotation.Resource;
+
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
@@ -16,6 +34,7 @@ import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
+import com.expedia.content.media.processing.services.metrics.MetricProcessor;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import com.expedia.content.media.processing.services.util.DomainDataUtil;
@@ -27,10 +46,6 @@ import com.expedia.content.media.processing.services.validator.MapMessageValidat
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 
-import expedia.content.solutions.metrics.annotations.Counter;
-import expedia.content.solutions.metrics.annotations.Gauge;
-import expedia.content.solutions.metrics.annotations.Meter;
-import expedia.content.solutions.metrics.annotations.Timer;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,22 +67,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Resource;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.UUID;
-
-import static org.springframework.http.HttpStatus.ACCEPTED;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.OK;
+import expedia.content.solutions.metrics.annotations.Counter;
+import expedia.content.solutions.metrics.annotations.Gauge;
+import expedia.content.solutions.metrics.annotations.Meter;
+import expedia.content.solutions.metrics.annotations.Timer;
 
 /**
  * Web service controller for media resources.
@@ -122,6 +125,8 @@ public class MediaController extends CommonServiceController {
     private MediaUpdateProcessor mediaUpdateProcessor;
     @Autowired
     private SKUGroupCatalogItemDao skuGroupCatalogItemDao;
+    @Autowired
+    private MetricProcessor metricProcess;
 
     /**
      * web service interface to consume media message.
@@ -320,6 +325,16 @@ public class MediaController extends CommonServiceController {
     @Counter(name = "liveCounter")
     public Integer liveCount() {
         return LIVE_COUNT;
+    }
+    
+    @Gauge(name="upTime")
+    public Long getUptime() throws Exception {     
+        return metricProcess.getUptime();
+    }
+    
+    @Gauge(name="downTime")
+    public Long getDownTime() throws Exception {
+        return metricProcess.getDownTime();
     }
 
     private void validateAndInitMap(Map<String, Object> objectMap, String queryId, String serviceUrl, String message, String requestID) throws Exception {
@@ -658,5 +673,5 @@ public class MediaController extends CommonServiceController {
             }
         }
         return null;
-    }
+    }   
 }

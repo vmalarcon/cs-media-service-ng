@@ -1,17 +1,19 @@
 package com.expedia.content.media.processing.services;
 
+import com.expedia.content.media.processing.pipeline.util.OSDetector;
+import com.expedia.content.media.processing.services.metrics.MetricProcessor;
+
 import org.im4java.process.ProcessStarter;
 import org.springframework.boot.ResourceBanner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.web.SpringBootServletInitializer;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
-
-import com.expedia.content.media.processing.pipeline.util.OSDetector;
 
 import expedia.content.solutions.metrics.spring.EnableMetrics;
 
@@ -38,5 +40,9 @@ public class Application extends SpringBootServletInitializer {
                 .build();
         application.run(args);
     }
-
+    
+    @Bean
+    public MetricProcessor getMetricProcess(){
+        return new MetricProcessor();
+    }
 }
