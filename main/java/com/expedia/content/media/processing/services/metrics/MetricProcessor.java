@@ -27,7 +27,7 @@ public class MetricProcessor {
     @Value("${media.graphite.url}")
     private String environmentUrl;
 
-    private Map<String, Object> allData = new HashMap<>();
+    private final Map<String, Object> allData = new HashMap<>();
     private RestTemplate template;
     private InetAddress instanceIp;
 
@@ -50,9 +50,6 @@ public class MetricProcessor {
     public MetricProcessor(List<Map<String, Object>> data, RestTemplate template, InetAddress instanceIp) throws Exception {
         this.template = template;
         this.instanceIp = instanceIp;
-        if (allData == null) {
-            allData = new HashMap<>();
-        }
         allData.put(DATA_FIELD, data);
         allData.put(METRICS_FIELD, getMetrics(data));
     }
@@ -75,42 +72,48 @@ public class MetricProcessor {
      * Compute the up time for the whole component.
      */
     public Double getComponentUpTime() throws Exception {
-        final BiFunction<Integer, Double, Double> timeFunction = (size, instanceTime) -> {
-            return (double) (instanceTime / size);
-        };
         final List<Map<String, Object>> data = (List<Map<String, Object>>) allData.get(DATA_FIELD);
-        return getComponentTime(data.size(), getInstanceUpTime(), timeFunction);
+        return getComponentTime(data.size(), getInstanceUpTime(), (size, instanceTime) -> {
+            return (double) (instanceTime / size);
+        });
     }
 
     /**
      * Compute the down time for the whole component.
      */
     public Double getComponentDownTime() throws Exception {
-        final BiFunction<Integer, Double, Double> timeFunction = (size, instanceTime) -> {
-            return (double) (instanceTime / size);
-        };
         final List<Map<String, Object>> data = (List<Map<String, Object>>) allData.get(DATA_FIELD);
-        return getComponentTime(data.size(), getInstanceDownTime(), timeFunction);
+        return getComponentTime(data.size(), getInstanceDownTime(), (size, instanceTime) -> {
+            return (double) (instanceTime / size);
+        });
     }
 
     /**
      * Compute the percentage of up time for the whole component.
      */
     public Double getComponentPercentageUpTime() throws Exception {
-        final BiFunction<Double, Double, Double> percentageFunction = (componentUptime, componentDowntime) -> {
+        return getComponentPercentageTime(getComponentUpTime(), getComponentDownTime(), (componentUptime, componentDowntime) -> {
             return componentUptime / (componentUptime + componentDowntime);
-        };
-        return getComponentPercentageTime(getComponentUpTime(), getComponentDownTime(), percentageFunction);
+        });
     }
 
     /**
      * Compute The percentage of down time for the whole component.
      */
     public Double getComponentPercentageDownTime() throws Exception {
-        final BiFunction<Double, Double, Double> percentageFunction = (componentUptime, componentDowntime) -> {
+        return getComponentPercentageTime(getComponentUpTime(), getComponentDownTime(), (componentUptime, componentDowntime) -> {
             return componentDowntime / (componentUptime + componentDowntime);
-        };
-        return getComponentPercentageTime(getComponentUpTime(), getComponentDownTime(), percentageFunction);
+        });
+    }
+
+    /**
+     * Initialize the dataset.
+     */
+    @PostConstruct
+    public void setAllData() throws Exception {
+        final List<Map<String, Object>> data = getData();
+        allData.put(DATA_FIELD, data);
+        allData.put(METRICS_FIELD, getMetrics(data));
     }
 
     /**
@@ -154,16 +157,6 @@ public class MetricProcessor {
     }
 
     /**
-     * Initialize the dataset.
-     */
-    @PostConstruct
-    public void setAllData() throws Exception {
-        final List<Map<String, Object>> data = getData();
-        allData.put(DATA_FIELD, data);
-        allData.put(METRICS_FIELD, getMetrics(data));
-    }
-
-    /**
      * Convert the data fetched on graphite to a list of Metric object.
      * We keep only data belong to the current instance.
      * Filter is done base on the Instance IP address.
@@ -176,7 +169,7 @@ public class MetricProcessor {
         final List<Metric> metrics = new ArrayList<>();
         final String ipAddress = instanceIp.getHostAddress();
         if (data != null) {
-            data.stream().filter(t -> t.get(TARGET_FIELD).toString().contains(ipAddress.replace('.', '-'))).forEach(t -> {
+            data.stream().filter(t -> t.get(TARGET_FIELD).toString().contains(ipAddress.replace(REGEX_SEPARATOR, '-'))).forEach(t -> {
                 final String[] target = StringUtils.split((String) t.get(TARGET_FIELD), REGEX_SEPARATOR);
                 final List<List<Object>> dataPoints = (List<List<Object>>) t.get(DATA_POINT_FIELD);
                 final List<MetricPoint> metricPoints = new ArrayList<>();

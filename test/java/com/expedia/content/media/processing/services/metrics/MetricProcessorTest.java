@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services.metrics;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -36,6 +37,7 @@ public class MetricProcessorTest {
     private RestTemplate template;
     @Mock
     private ResponseEntity<List> response;
+    
     @Mock
     InetAddress inetAddress;
 
@@ -60,7 +62,22 @@ public class MetricProcessorTest {
     public void testDownTime() throws Exception {
         assertTrue(metricProcessor.getComponentDownTime().equals(30.0));
         assertTrue(metricProcessor.getInstanceDownTime().equals(30.0));
-        assertTrue(Double.valueOf(3.0).equals(Math.rint(metricProcessor.getComponentPercentageDownTime()*100)));
+        assertTrue(Double.valueOf(3.0).equals(Math.rint(metricProcessor.getComponentPercentageDownTime() * 100)));
+    }
+
+    @Test
+    public void testNonArgumentConstructor() {
+        final MetricProcessor metric = new MetricProcessor();
+        assertNotNull(metric);
+    }
+
+    @Test
+    public void testNullObject() throws Exception {
+        metricProcessor = new MetricProcessor(data, null, null);
+        assertNotNull(template);
+        assertNotNull(inetAddress);      
+        when(template.getForEntity(anyString(), eq(List.class))).thenReturn(response);
+        when(response.getBody()).thenReturn(new ArrayList<Map<String, Object>>()); 
     }
 
     private List<Map<String, Object>> buildSampleData() {

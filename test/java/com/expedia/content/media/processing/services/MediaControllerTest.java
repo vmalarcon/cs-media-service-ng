@@ -1619,7 +1619,7 @@ public class MediaControllerTest {
 
         ResponseEntity<String> responseEntity = mediaController.getMedia("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6", headers);
         assertNotNull(responseEntity);
-        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode()); 
     }
 
     @Test
@@ -1638,6 +1638,8 @@ public class MediaControllerTest {
         verify(metricProcessor).getInstanceDownTime();
         mediaController.getInstanceUpTime();
         verify(metricProcessor).getInstanceUpTime();
+        assertTrue(mediaController.liveCount().equals(1));
+        assertFalse(!mediaController.liveCount().equals(1));
     }
 
     @SuppressWarnings({"unchecked"})
