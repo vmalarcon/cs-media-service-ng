@@ -80,6 +80,7 @@ import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepos
 import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaChgSproc;
 import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.MediaLstWithCatalogItemMediaAndMediaFileNameSproc;
+import com.expedia.content.media.processing.services.metrics.MetricProcessor;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.google.common.collect.Lists;
 
@@ -1621,7 +1622,23 @@ public class MediaControllerTest {
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
     }
 
-
+    @Test
+    public void testMetricCalls() throws Exception{
+        MetricProcessor metricProcessor = mock(MetricProcessor.class);
+        setFieldValue(mediaController, "metricProcessor", metricProcessor);
+        mediaController.getComponentDownTime();
+        verify(metricProcessor).getComponentDownTime();
+        mediaController.getComponentPercentageDownTime();
+        verify(metricProcessor).getComponentPercentageDownTime();
+        mediaController.getComponentPercentageUpTime();
+        verify(metricProcessor).getComponentPercentageUpTime();
+        mediaController.getComponentUpTime();
+        verify(metricProcessor).getComponentUpTime();
+        mediaController.getInstanceDownTime();
+        verify(metricProcessor).getInstanceDownTime();
+        mediaController.getInstanceUpTime();
+        verify(metricProcessor).getInstanceUpTime();
+    }
 
     @SuppressWarnings({"unchecked"})
     private static Map<String, List<MapMessageValidator>> getMockValidators() {

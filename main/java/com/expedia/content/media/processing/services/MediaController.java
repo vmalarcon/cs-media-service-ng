@@ -126,7 +126,7 @@ public class MediaController extends CommonServiceController {
     @Autowired
     private SKUGroupCatalogItemDao skuGroupCatalogItemDao;
     @Autowired
-    private MetricProcessor metricProcess;
+    private MetricProcessor metricProcessor;
 
     /**
      * web service interface to consume media message.
@@ -327,14 +327,34 @@ public class MediaController extends CommonServiceController {
         return LIVE_COUNT;
     }
     
-    @Gauge(name="upTime")
-    public Long getUptime() throws Exception {     
-        return metricProcess.getUptime();
+    @Gauge(name="instanceUpTime")
+    public Double getInstanceUpTime() throws Exception {     
+        return metricProcessor.getInstanceUpTime();
     }
     
-    @Gauge(name="downTime")
-    public Long getDownTime() throws Exception {
-        return metricProcess.getDownTime();
+    @Gauge(name="instanceDownTime")
+    public Double getInstanceDownTime() throws Exception {
+        return metricProcessor.getInstanceDownTime();
+    }
+    
+    @Gauge(name="componentUpTime")
+    public Double getComponentUpTime() throws Exception {     
+        return metricProcessor.getComponentUpTime();
+    }
+    
+    @Gauge(name="componentDownTime")
+    public Double getComponentDownTime() throws Exception {
+        return metricProcessor.getComponentDownTime();
+    }
+    
+    @Gauge(name="componentPersentageUpTime")
+    public Double getComponentPercentageUpTime() throws Exception {     
+        return metricProcessor.getComponentPercentageUpTime();
+    }
+    
+    @Gauge(name="componentPercentageDownTime")
+    public Double getComponentPercentageDownTime() throws Exception {
+        return metricProcessor.getComponentPercentageDownTime();
     }
 
     private void validateAndInitMap(Map<String, Object> objectMap, String queryId, String serviceUrl, String message, String requestID) throws Exception {

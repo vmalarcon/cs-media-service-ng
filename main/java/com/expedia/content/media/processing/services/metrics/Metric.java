@@ -5,6 +5,9 @@ import java.util.List;
 import lombok.Builder;
 import lombok.Getter;
 
+/**
+ * Encapsulate a metric object.
+ */
 @Builder
 @Getter
 @SuppressWarnings({"PMD.UnusedPrivateField"})
