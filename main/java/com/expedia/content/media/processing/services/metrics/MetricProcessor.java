@@ -1,6 +1,5 @@
 package com.expedia.content.media.processing.services.metrics;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -26,8 +25,6 @@ public class MetricProcessor {
     private String graphiteApiUrl;
     private final Map<String, Object> allData = new HashMap<>();
     private RestTemplate template;
-    private InetAddress instanceIp;
-
     private static final Integer PUBLISH_DELAY = 30;
     private static final String DATA_POINT_FIELD = "datapoints";
     private static final String TARGET_FIELD = "target";
@@ -44,43 +41,24 @@ public class MetricProcessor {
     private static final Double UP_VALUE = 1.0;
     private static final Double DOWN_VALUE = 0.0;
 
-    public MetricProcessor(List<Map<String, Object>> data, RestTemplate template, InetAddress instanceIp) throws Exception {
+    public MetricProcessor(List<Map<String, Object>> data, RestTemplate template) throws Exception {
         this.template = template;
-        this.instanceIp = instanceIp;
         allData.put(DATA_FIELD, data);
-        allData.put(METRICS_FIELD, getInstanceMetrics(data));
-    }
-
-    /**
-     * Compute the instance up time.
-     */
-    public Double getInstanceUpTime() throws Exception {
-        return computeInstanceTime(UP_VALUE);
-    }
-
-    /**
-     * Compute the instance down time.
-     */
-    public Double getInstanceDownTime() throws Exception {
-        return computeInstanceTime(DOWN_VALUE);
+        allData.put(METRICS_FIELD, getMetrics(data));
     }
 
     /**
      * Compute the up time for the whole component.
      */
     public Double getComponentUpTime() throws Exception {
-        return getComponentTime(getInstanceUpTime(), getInstanceDownTime(), (upTime, downTime) -> {
-            return upTime > 0 ? upTime : 0.0;
-        });
+        return computeComponentTime(UP_VALUE);
     }
 
     /**
      * Compute the down time for the whole component.
      */
     public Double getComponentDownTime() throws Exception {
-        return getComponentTime(getInstanceUpTime(), getInstanceDownTime(), (upTime, downTime) -> {
-            return upTime > 0 ? 0.0 : downTime;
-        });
+        return computeComponentTime(DOWN_VALUE);
     }
 
     /**
@@ -108,34 +86,19 @@ public class MetricProcessor {
     public void setAllData() throws Exception {
         final List<Map<String, Object>> data = getData();
         allData.put(DATA_FIELD, data);
-        allData.put(METRICS_FIELD, getInstanceMetrics(data));
+        allData.put(METRICS_FIELD, getMetrics(data));
     }
 
     /**
      * Compute the time in percentage for the whole component.
      * 
      * @param cUptime component up time.
-     *
      * @param cDowntime component down time.
-     *
      * @param percentageFunction Applied function to select the computation direction (up or down time).
-     *
      * @return Returns the percentage time for the component.
      */
     private Double getComponentPercentageTime(Double cUptime, Double cDowntime, BiFunction<Double, Double, Double> percentageFunction) {
         return (cUptime + cDowntime) == 0 ? 0.0 : percentageFunction.apply(cUptime, cDowntime);
-    }
-
-    /**
-     * Compute the time for the whole component.
-     * 
-     * @param size size of the data collection extracted from graphite.
-     * @param instanceTime compute time for the instance.
-     * @param timeFunction Applied function to select the computation direction (up or down time).
-     * @return Returns the time for the component.
-     */
-    private Double getComponentTime(Double upTime, Double downTime, BiFunction<Double, Double, Double> timeFunction) throws Exception {
-        return timeFunction.apply(upTime, downTime);
     }
 
     /**
@@ -145,13 +108,29 @@ public class MetricProcessor {
      * @param direction. Given direction for computing. Up or Down.
      * @return Returns the computed time.
      */
-    private Double computeInstanceTime(Double direction) throws Exception {
+    private Double computeInstanceTime(Metric metric, Double direction) throws Exception {
+        return metric.getMetricPoints().stream().filter(mp -> direction.equals(mp.getValue())).mapToDouble(mp -> {
+            return (double) (mp.getEndTimestamp() - mp.getStartTimestamp());
+        }).sum();
+    }
+
+    /**
+     * Compute the time for the whole component.
+     */
+    private Double computeComponentTime(Double direction) throws Exception {
         final List<Metric> metrics = (List<Metric>) allData.get(METRICS_FIELD);
-        return metrics.stream().map(m -> {
-            return m.getMetricPoints().stream().filter(mp -> direction.equals(mp.getValue())).mapToDouble(mp -> {
-                return (double) (mp.getEndTimestamp() - mp.getStartTimestamp());
-            }).sum();
-        }).mapToDouble(Double::doubleValue).sum();
+        final List<Double> times = new ArrayList<>();
+        for (final Metric m : metrics) {
+            times.add(computeInstanceTime(m, direction));
+        }
+        if (direction.equals(DOWN_VALUE) && atLeastOneInstanceUp(metrics)) {
+            return 0.0;
+        }
+        return times.stream().mapToDouble(Double::doubleValue).max().getAsDouble();
+    }
+
+    private Boolean atLeastOneInstanceUp(final List<Metric> metrics) {
+        return metrics.stream().anyMatch(m -> m.getMetricPoints().stream().anyMatch(p -> p.getValue().equals(UP_VALUE)));
     }
 
     /**
@@ -162,13 +141,10 @@ public class MetricProcessor {
      * @param data Raw metrics data to convert.
      * @return Returns the list of metrics.
      */
-    private List<Metric> getInstanceMetrics(final List<Map<String, Object>> data) throws Exception {
-        instanceIp = instanceIp == null ? InetAddress.getLocalHost() : instanceIp;
-
+    private List<Metric> getMetrics(final List<Map<String, Object>> data) throws Exception {
         final List<Metric> metrics = new ArrayList<>();
-        final String ipAddress = instanceIp.getHostAddress();
         if (data != null) {
-            data.stream().filter(t -> recordMatch(t, ipAddress)).forEach(t -> {
+            data.stream().forEach(t -> {
                 final String[] target = StringUtils.split((String) t.get(TARGET_FIELD), REGEX_SEPARATOR);
                 final List<List<Object>> dataPoints = (List<List<Object>>) t.get(DATA_POINT_FIELD);
                 final List<MetricPoint> metricPoints = new ArrayList<>();
@@ -187,19 +163,6 @@ public class MetricProcessor {
             });
         }
         return metrics;
-    }
-
-    /**
-     * Verify if the record belongs to the given IP address.
-     *
-     * @param record Record to verify.
-     * @param instanceIp. Current instance IP.
-     * @return Returns true if the record match and false if not.
-     */
-    private Boolean recordMatch(final Map<String, Object> record, final String instanceIp) {
-        final String target = (String) record.get(TARGET_FIELD);
-        final String convertIp = instanceIp.replace('.', '-');
-        return target.contains(convertIp);
     }
 
     /**

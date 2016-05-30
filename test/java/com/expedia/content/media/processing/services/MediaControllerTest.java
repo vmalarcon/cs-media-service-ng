@@ -1634,10 +1634,6 @@ public class MediaControllerTest {
         verify(metricProcessor).getComponentPercentageUpTime();
         mediaController.getComponentUpTime();
         verify(metricProcessor).getComponentUpTime();
-        mediaController.getInstanceDownTime();
-        verify(metricProcessor).getInstanceDownTime();
-        mediaController.getInstanceUpTime();
-        verify(metricProcessor).getInstanceUpTime();
         assertTrue(mediaController.liveCount().equals(1));
         assertFalse(!mediaController.liveCount().equals(1));
     }
