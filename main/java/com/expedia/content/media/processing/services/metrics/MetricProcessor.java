@@ -69,9 +69,8 @@ public class MetricProcessor {
      * Compute the up time for the whole component.
      */
     public Double getComponentUpTime() throws Exception {
-        final List<Map<String, Object>> data = (List<Map<String, Object>>) allData.get(DATA_FIELD);
         return getComponentTime(getInstanceUpTime(), getInstanceDownTime(), (upTime, downTime) -> {
-            return upTime > 0 ? data.isEmpty() ? 0.0 : upTime / data.size() : 0.0;
+            return upTime > 0 ? upTime : 0.0;
         });
     }
 
@@ -79,9 +78,8 @@ public class MetricProcessor {
      * Compute the down time for the whole component.
      */
     public Double getComponentDownTime() throws Exception {
-        final List<Map<String, Object>> data = (List<Map<String, Object>>) allData.get(DATA_FIELD);
         return getComponentTime(getInstanceUpTime(), getInstanceDownTime(), (upTime, downTime) -> {
-            return upTime > 0 ? 0.0 : data.isEmpty() ? 0.0 : downTime / data.size();
+            return upTime > 0 ? 0.0 : downTime;
         });
     }
 
@@ -117,8 +115,11 @@ public class MetricProcessor {
      * Compute the time in percentage for the whole component.
      * 
      * @param cUptime component up time.
+     *
      * @param cDowntime component down time.
+     *
      * @param percentageFunction Applied function to select the computation direction (up or down time).
+     *
      * @return Returns the percentage time for the component.
      */
     private Double getComponentPercentageTime(Double cUptime, Double cDowntime, BiFunction<Double, Double, Double> percentageFunction) {
@@ -138,8 +139,8 @@ public class MetricProcessor {
     }
 
     /**
-     * Compute the time for an instance.
-     * The return time could be the up or down time base on the given direction.
+     * Compute the time for an instance. The return time could be the up or down
+     * time base on the given direction.
      * 
      * @param direction. Given direction for computing. Up or Down.
      * @return Returns the computed time.
@@ -154,9 +155,9 @@ public class MetricProcessor {
     }
 
     /**
-     * Convert the data fetched on graphite to a list of Metric object.
-     * We keep only data belong to the current instance.
-     * Filter is done base on the Instance IP address.
+     * Convert the data fetched on graphite to a list of Metric object. We keep
+     * only data belong to the current instance. Filter is done base on the
+     * Instance IP address.
      * 
      * @param data Raw metrics data to convert.
      * @return Returns the list of metrics.
@@ -167,7 +168,7 @@ public class MetricProcessor {
         final List<Metric> metrics = new ArrayList<>();
         final String ipAddress = instanceIp.getHostAddress();
         if (data != null) {
-            data.stream().filter(t -> t.get(TARGET_FIELD).toString().contains(ipAddress.replace(REGEX_SEPARATOR, '-'))).forEach(t -> {
+            data.stream().filter(t -> recordMatch(t, ipAddress)).forEach(t -> {
                 final String[] target = StringUtils.split((String) t.get(TARGET_FIELD), REGEX_SEPARATOR);
                 final List<List<Object>> dataPoints = (List<List<Object>>) t.get(DATA_POINT_FIELD);
                 final List<MetricPoint> metricPoints = new ArrayList<>();
@@ -186,6 +187,19 @@ public class MetricProcessor {
             });
         }
         return metrics;
+    }
+
+    /**
+     * Verify if the record belongs to the given IP address.
+     *
+     * @param record Record to verify.
+     * @param instanceIp. Current instance IP.
+     * @return Returns true if the record match and false if not.
+     */
+    private Boolean recordMatch(final Map<String, Object> record, final String instanceIp) {
+        final String target = (String) record.get(TARGET_FIELD);
+        final String convertIp = instanceIp.replace('.', '-');
+        return target.contains(convertIp);
     }
 
     /**
