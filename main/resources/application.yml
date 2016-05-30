@@ -42,7 +42,6 @@ cs:
     statsd:
       hostname: ${monitoringAgent.statsd.hostname}
       port: ${monitoringAgent.statsd.port}
-    target: from=-30s&target=stats.gauges.cs-media-service.${EXPEDIA_ENVIRONMENT}.ip-*.metrics.MediaController_isAlive.Value&format=json
 aws:
   endPoint: "https://dynamodb.${AWS_REGION}.amazonaws.com"
 

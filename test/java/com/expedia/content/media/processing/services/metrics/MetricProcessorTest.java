@@ -55,14 +55,14 @@ public class MetricProcessorTest {
     public void testUpTime() throws Exception {
         assertTrue(metricProcessor.getComponentUpTime().equals(900.0));
         assertTrue(metricProcessor.getInstanceUpTime().equals(900.0));
-        assertTrue(Double.valueOf(97.0).equals(Math.rint(metricProcessor.getComponentPercentageUpTime() * 100)));
+        assertTrue(Double.valueOf(100.0).equals(Math.rint(metricProcessor.getComponentPercentageUpTime() * 100)));
     }
 
     @Test
     public void testDownTime() throws Exception {
-        assertTrue(metricProcessor.getComponentDownTime().equals(30.0));
+        assertTrue(metricProcessor.getComponentDownTime().equals(0.0));
         assertTrue(metricProcessor.getInstanceDownTime().equals(30.0));
-        assertTrue(Double.valueOf(3.0).equals(Math.rint(metricProcessor.getComponentPercentageDownTime() * 100)));
+        assertTrue(Double.valueOf(0.0).equals(Math.rint(metricProcessor.getComponentPercentageDownTime() * 100)));
     }
 
     @Test

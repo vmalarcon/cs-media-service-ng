@@ -22,11 +22,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class MetricProcessor {
 
-    @Value("${cs.metrics.target}")
-    private String metricTarget;
-    @Value("${media.graphite.url}")
-    private String environmentUrl;
-
+    @Value("${graphite.api.url}")
+    private String graphiteApiUrl;
     private final Map<String, Object> allData = new HashMap<>();
     private RestTemplate template;
     private InetAddress instanceIp;
@@ -51,7 +48,7 @@ public class MetricProcessor {
         this.template = template;
         this.instanceIp = instanceIp;
         allData.put(DATA_FIELD, data);
-        allData.put(METRICS_FIELD, getMetrics(data));
+        allData.put(METRICS_FIELD, getInstanceMetrics(data));
     }
 
     /**
@@ -73,8 +70,8 @@ public class MetricProcessor {
      */
     public Double getComponentUpTime() throws Exception {
         final List<Map<String, Object>> data = (List<Map<String, Object>>) allData.get(DATA_FIELD);
-        return getComponentTime(data.size(), getInstanceUpTime(), (size, instanceTime) -> {
-            return (double) (instanceTime / size);
+        return getComponentTime(getInstanceUpTime(), getInstanceDownTime(), (upTime, downTime) -> {
+            return upTime > 0 ? data.isEmpty() ? 0.0 : upTime / data.size() : 0.0;
         });
     }
 
@@ -83,8 +80,8 @@ public class MetricProcessor {
      */
     public Double getComponentDownTime() throws Exception {
         final List<Map<String, Object>> data = (List<Map<String, Object>>) allData.get(DATA_FIELD);
-        return getComponentTime(data.size(), getInstanceDownTime(), (size, instanceTime) -> {
-            return (double) (instanceTime / size);
+        return getComponentTime(getInstanceUpTime(), getInstanceDownTime(), (upTime, downTime) -> {
+            return upTime > 0 ? 0.0 : data.isEmpty() ? 0.0 : downTime / data.size();
         });
     }
 
@@ -113,7 +110,7 @@ public class MetricProcessor {
     public void setAllData() throws Exception {
         final List<Map<String, Object>> data = getData();
         allData.put(DATA_FIELD, data);
-        allData.put(METRICS_FIELD, getMetrics(data));
+        allData.put(METRICS_FIELD, getInstanceMetrics(data));
     }
 
     /**
@@ -136,8 +133,8 @@ public class MetricProcessor {
      * @param timeFunction Applied function to select the computation direction (up or down time).
      * @return Returns the time for the component.
      */
-    private Double getComponentTime(Integer size, Double instanceTime, BiFunction<Integer, Double, Double> timeFunction) throws Exception {
-        return size == 0 ? 0.0 : timeFunction.apply(size, instanceTime);
+    private Double getComponentTime(Double upTime, Double downTime, BiFunction<Double, Double, Double> timeFunction) throws Exception {
+        return timeFunction.apply(upTime, downTime);
     }
 
     /**
@@ -164,8 +161,9 @@ public class MetricProcessor {
      * @param data Raw metrics data to convert.
      * @return Returns the list of metrics.
      */
-    private List<Metric> getMetrics(final List<Map<String, Object>> data) throws Exception {
+    private List<Metric> getInstanceMetrics(final List<Map<String, Object>> data) throws Exception {
         instanceIp = instanceIp == null ? InetAddress.getLocalHost() : instanceIp;
+
         final List<Metric> metrics = new ArrayList<>();
         final String ipAddress = instanceIp.getHostAddress();
         if (data != null) {
@@ -195,8 +193,7 @@ public class MetricProcessor {
      */
     private List<Map<String, Object>> getData() throws Exception {
         template = template == null ? new RestTemplate() : template;
-        final String url = environmentUrl + metricTarget;
-        final ResponseEntity<List> response = template.getForEntity(url, List.class);
+        final ResponseEntity<List> response = template.getForEntity(graphiteApiUrl, List.class);
         return response.getBody();
     }
 }
