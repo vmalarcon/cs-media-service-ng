@@ -347,7 +347,7 @@ public class MediaController extends CommonServiceController {
         return metricProcessor.getComponentDownTime();
     }
     
-    @Gauge(name="componentPersentageUpTime")
+    @Gauge(name="componentPercentageUpTime")
     public Double getComponentPercentageUpTime() throws Exception {     
         return metricProcessor.getComponentPercentageUpTime();
     }
