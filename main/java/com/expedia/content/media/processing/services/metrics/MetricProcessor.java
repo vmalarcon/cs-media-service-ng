@@ -38,6 +38,8 @@ public class MetricProcessor {
     private static final int Y_INDEX = 0;
     private static final Double UP_VALUE = 1.0;
     private static final Double DOWN_VALUE = 0.0;
+    private static final String UP_FIELD = "upTimeValues";
+    private static final String DOWN_FIELD = "downTimeValues";
 
     public MetricProcessor(List<Map<String, Object>> data, RestTemplate template) throws Exception {
         this.template = template;
@@ -64,6 +66,9 @@ public class MetricProcessor {
      */
     public Double getComponentPercentageUpTime() throws Exception {
         final Double uptime = getComponentUpTime();
+        final List<Double> uptimeList = (List<Double>) allData.get(UP_FIELD);
+        final List<Double> downtimeList = (List<Double>) allData.get(DOWN_FIELD);
+        componentIsUp(uptimeList, downtimeList);
         return uptime.equals(DOWN_VALUE) ? DOWN_VALUE : uptime / (uptime + getComponentDownTime());
     }
 
@@ -72,6 +77,11 @@ public class MetricProcessor {
      */
     public Double getComponentPercentageDownTime() throws Exception {
         return (1 - getComponentPercentageUpTime());
+    }
+
+    private Boolean componentIsUp(final List<Double> uptimeList, final List<Double> downtimeList) {
+        Double time = uptimeList.stream().mapToDouble(Double::doubleValue).sum();
+        return uptimeList.contains(downtimeList);
     }
 
     /**
@@ -106,6 +116,7 @@ public class MetricProcessor {
         for (final Metric m : metrics) {
             times.add(computeInstanceTime(m, direction));
         }
+        allData.put(direction.equals(UP_VALUE) ? UP_FIELD : DOWN_FIELD, times);
         return times.stream().mapToDouble(Double::doubleValue).max().getAsDouble();
     }
 
