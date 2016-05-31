@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
 
 import javax.annotation.PostConstruct;
 
@@ -25,7 +24,6 @@ public class MetricProcessor {
     private String graphiteApiUrl;
     private final Map<String, Object> allData = new HashMap<>();
     private RestTemplate template;
-    private static final Integer PUBLISH_DELAY = 30;
     private static final String DATA_POINT_FIELD = "datapoints";
     private static final String TARGET_FIELD = "target";
 
@@ -65,18 +63,15 @@ public class MetricProcessor {
      * Compute the percentage of up time for the whole component.
      */
     public Double getComponentPercentageUpTime() throws Exception {
-        return getComponentPercentageTime(getComponentUpTime(), getComponentDownTime(), (componentUptime, componentDowntime) -> {
-            return componentUptime / (componentUptime + componentDowntime);
-        });
+        final Double uptime = getComponentUpTime();
+        return uptime.equals(DOWN_VALUE) ? DOWN_VALUE : uptime / (uptime + getComponentDownTime());
     }
 
     /**
      * Compute The percentage of down time for the whole component.
      */
     public Double getComponentPercentageDownTime() throws Exception {
-        return getComponentPercentageTime(getComponentUpTime(), getComponentDownTime(), (componentUptime, componentDowntime) -> {
-            return componentDowntime / (componentUptime + componentDowntime);
-        });
+        return (1 - getComponentPercentageUpTime());
     }
 
     /**
@@ -87,18 +82,6 @@ public class MetricProcessor {
         final List<Map<String, Object>> data = getData();
         allData.put(DATA_FIELD, data);
         allData.put(METRICS_FIELD, getMetrics(data));
-    }
-
-    /**
-     * Compute the time in percentage for the whole component.
-     * 
-     * @param cUptime component up time.
-     * @param cDowntime component down time.
-     * @param percentageFunction Applied function to select the computation direction (up or down time).
-     * @return Returns the percentage time for the component.
-     */
-    private Double getComponentPercentageTime(Double cUptime, Double cDowntime, BiFunction<Double, Double, Double> percentageFunction) {
-        return (cUptime + cDowntime) == 0 ? 0.0 : percentageFunction.apply(cUptime, cDowntime);
     }
 
     /**
@@ -123,14 +106,7 @@ public class MetricProcessor {
         for (final Metric m : metrics) {
             times.add(computeInstanceTime(m, direction));
         }
-        if (direction.equals(DOWN_VALUE) && atLeastOneInstanceUp(metrics)) {
-            return 0.0;
-        }
         return times.stream().mapToDouble(Double::doubleValue).max().getAsDouble();
-    }
-
-    private Boolean atLeastOneInstanceUp(final List<Metric> metrics) {
-        return metrics.stream().anyMatch(m -> m.getMetricPoints().stream().anyMatch(p -> p.getValue().equals(UP_VALUE)));
     }
 
     /**
@@ -152,7 +128,7 @@ public class MetricProcessor {
                 for (int i = 0; i < dataPoints.size(); i++) {
                     final Integer x = (Integer) dataPoints.get(i).get(X_INDEX);
                     final Double y = (Double) dataPoints.get(i).get(Y_INDEX);
-                    startTimestamp = startTimestamp == null ? (long) (x - PUBLISH_DELAY) : (Integer) dataPoints.get(i - 1).get(X_INDEX);
+                    startTimestamp = startTimestamp == null ? (long) x : (Integer) dataPoints.get(i - 1).get(X_INDEX);
                     final MetricPoint metricPoint =
                             MetricPoint.builder().startTimestamp(startTimestamp).endTimestamp(x.longValue()).value(y == null ? 0 : y).build();
                     metricPoints.add(metricPoint);
