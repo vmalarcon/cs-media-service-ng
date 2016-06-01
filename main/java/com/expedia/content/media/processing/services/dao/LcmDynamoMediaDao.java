@@ -121,6 +121,18 @@ public class LcmDynamoMediaDao implements MediaDao {
         mediaRepo.saveMedia(media);
     }
 
+    /**
+     * Builds a @MediaByDomainIdResponse
+     *
+     * @param domain           Domain the item belongs too.
+     * @param domainId         The id of the domain item media items are needed.
+     * @param activeFilter     Filters active or inactive media. If "all" or null is provided all items are returned.
+     * @param derivativeFilter Inclusive filter of derivatives. A null or empty string will not exclude any derivatives.
+     * @param pageSize
+     * @param pageIndex
+     * @return A @MediaByDomainIdResponse
+     * @throws Exception
+     */
     @Override
     @SuppressWarnings("unchecked")
     public MediaByDomainIdResponse getMediaByDomainId(final Domain domain, final String domainId, final String activeFilter, final String derivativeFilter,
@@ -155,9 +167,12 @@ public class LcmDynamoMediaDao implements MediaDao {
                 .images(transformMediaListForResponse(domainIdMedia)).build();
     }
 
-    /*
-     * TODO Once all media from LCM is is migrated in the media DB only completeMedia(mediaRepo.getMedia(mediaGUID), nullFilter) and
-     * the latest status will be needed.
+    /**
+     * TODO Once all media from LCM is is migrated in the media DB only completeMedia(mediaRepo.getMedia(mediaGUID), nullFilter) and the latest status will be needed.
+     * Builds a @MediaGetResponse by mediaGuid (Supports LcmMediaId as well, but this feature will be deprecated in feature releases)
+     *
+     * @param mediaGUID     String identifier for a Media
+     * @return A @MediaGetResponse
      */
     @Override
     @SuppressWarnings("unchecked")
@@ -172,7 +187,6 @@ public class LcmDynamoMediaDao implements MediaDao {
         final Map<String, Media> mediaLcmMediaIdMap = new HashMap<>();
         Integer lcmMediaId = null;
         String domainId = null;
-        // Dynamo Media
         if (isLodgingWithGuid) {
             if (guidMedia.getLcmMediaId() != null) {
                 mediaLcmMediaIdMap.put(guidMedia.getLcmMediaId(), guidMedia);
@@ -180,7 +194,6 @@ public class LcmDynamoMediaDao implements MediaDao {
             }
             domainId = guidMedia.getDomainId();
         }
-        // LCM only Media
         if (isLodgingNoGuid) {
             lcmMediaId = Integer.parseInt(mediaGUID);
             final List<LcmMedia> lcmMediaList = (List<LcmMedia>) lcmMediaSproc.execute(lcmMediaId).get(SQLMediaGetSproc.MEDIA_SET);
@@ -190,7 +203,6 @@ public class LcmDynamoMediaDao implements MediaDao {
                 domainId = lcmMediaList.get(0).getDomainId().toString();
             }
         }
-        // Dynamo Media that's been published OR lcm only Media
         if (lcmMediaId != null) {
             final Map<String, Object> roomResult = roomGetByMediaIdSproc.execute(lcmMediaId);
             final Map<Integer, List<LcmMediaRoom>> lcmRoomMediaMap = new HashMap<>();
@@ -202,6 +214,12 @@ public class LcmDynamoMediaDao implements MediaDao {
         return transformSingleMediaForResponse(guidMedia);
     }
 
+    /**
+     * Get and Set the status for a Media.
+     *
+     * @param guidMedia         Media to ge the status for
+     * @param isLodgingNoGuid   Boolean to determine whether to get the Status from Dynamo or LCM
+     */
     private void setStatus(Media guidMedia, Boolean isLodgingNoGuid) {
         if (guidMedia != null) {
             String status;
@@ -221,9 +239,9 @@ public class LcmDynamoMediaDao implements MediaDao {
     /**
      * Returns a ResponseEntity if the pageSize and pageIndex are not both null or not null.
      * 
-     * @param totalMediaCount Total number of items belonging to the domain.
-     * @param pageSize Size of the page.
-     * @param pageIndex Which page to fetch items for.
+     * @param totalMediaCount   Total number of items belonging to the domain.
+     * @param pageSize          Size of the page.
+     * @param pageIndex         Which page to fetch items for.
      * @return A ResponseEntity if the pageSize and pageIndex are not both null or not null.
      */
     private String validatePagination(Integer totalMediaCount, Integer pageSize, Integer pageIndex) {
@@ -243,9 +261,9 @@ public class LcmDynamoMediaDao implements MediaDao {
      * Returns a page of items from a stream. Some request ask not for all items, but for only a page's worth of items.
      * The generics aren't specified in the stream to allow different types to be paginated.
      * 
-     * @param items Item stream.
-     * @param pageSize Size of the page.
-     * @param pageIndex Which page to fetch items for.
+     * @param items         Item stream.
+     * @param pageSize      Size of the page.
+     * @param pageIndex     Which page to fetch items for.
      * @return A stream of items belonging to the desired page.
      */
     @SuppressWarnings("rawtypes")
@@ -260,7 +278,7 @@ public class LcmDynamoMediaDao implements MediaDao {
      * builds a Map of FileNames to Latest Status. If a media has a guid the status is extracted from the MediaDB
      * otherwise the statuses are extracted from LCM
      *
-     * @param mediaList a list of Media
+     * @param mediaList     list of Media
      * @return Map of filenames to their latest statuses
      */
     private Map<String,String> buildFileStatusMap(List<Media> mediaList) {
@@ -285,8 +303,8 @@ public class LcmDynamoMediaDao implements MediaDao {
      * because of the parameter length limitation in Sproc 'MediaProcessLogGetByFilename', if the fileNames length is bigger than the limitation
      * we call the sproc multiple times to get the result.
      *
-     * @param limit Sproc parameter limitation.
-     * @param fileNames File names to fetch the status for.
+     * @param limit         Sproc parameter limitation.
+     * @param fileNames     File names to fetch the status for.
      * @return List of all status mapped to their file name.
      */
     private Map<String, String> getStatusLoop(int limit, List<String> fileNames) {
@@ -318,7 +336,7 @@ public class LcmDynamoMediaDao implements MediaDao {
      * Pulls the latest processing status of media files. When a file doesn't have any process logs the file is
      * considered old and therefore published.
      *
-     * @param fileNames File names for which the status is required.
+     * @param fileNames     File names for which the status is required.
      * @return The latest status of a media file.
      */
     @Override
@@ -337,7 +355,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     /**
      * Get Latest Status of a Media by guid
      *
-     * @param mediaGuid a GUID identifier for a Media
+     * @param mediaGuid     GUID identifier for a Media
      * @return The latest status of a media file.
      */
     public String getLatestStatus(String mediaGuid) {
@@ -352,7 +370,7 @@ public class LcmDynamoMediaDao implements MediaDao {
      * Finds the latest activity that is part of the activity white list. The list is expected to
      * be ordered from oldest to latest.
      *
-     * @param logList The list to search.
+     * @param logList   The list to search.
      * @return The found activity mapping. {@code null} if no activity is found.
      */
     private String getLatestActivityMapping(List<MediaProcessLog> logList) {
