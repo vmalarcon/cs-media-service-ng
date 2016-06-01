@@ -15,7 +15,7 @@ import lombok.Getter;
 @Builder
 @Getter
 @SuppressWarnings({"PMD.UnusedPrivateField"})
-public class Metric {
+public class MetricInstance {
     private final String applicationName;
     private final String instanceName;
     private final String environement;

@@ -24,7 +24,7 @@ public class MetricTest {
 
     @Test
     public void testMetric() {
-        Metric metric = Metric.builder().applicationName("cs-media-service").environement("test").instanceName("ip-0-0-0-0").metricPoints(points).build();
+        MetricInstance metric = MetricInstance.builder().applicationName("cs-media-service").environement("test").instanceName("ip-0-0-0-0").metricPoints(points).build();
       
         assertTrue(metric.getApplicationName().equals("cs-media-service"));
         assertTrue(metric.getEnvironement().equals("test"));

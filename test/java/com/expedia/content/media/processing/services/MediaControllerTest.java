@@ -81,6 +81,7 @@ import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaChg
 import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.MediaLstWithCatalogItemMediaAndMediaFileNameSproc;
 import com.expedia.content.media.processing.services.metrics.MetricProcessor;
+import com.expedia.content.media.processing.services.metrics.MetricQueryScope;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.google.common.collect.Lists;
 
@@ -1627,13 +1628,13 @@ public class MediaControllerTest {
         MetricProcessor metricProcessor = mock(MetricProcessor.class);
         setFieldValue(mediaController, "metricProcessor", metricProcessor);
         mediaController.getComponentMonthlyDownTime();
-        verify(metricProcessor).getComponentMonthlyDownTime();
+        verify(metricProcessor).getComponentDownTime(MetricQueryScope.MONTHLY);
         mediaController.getComponentPercentageMonthlyDownTime();
-        verify(metricProcessor).getComponentPercentageMonthlyDownTime();
+        verify(metricProcessor).getComponentPercentageDownTime(MetricQueryScope.MONTHLY);
         mediaController.getComponentPercentageMonthlyUpTime();
-        verify(metricProcessor).getComponentPercentageMonthlyUpTime();
+        verify(metricProcessor).getComponentPercentageUpTime(MetricQueryScope.MONTHLY);
         mediaController.getComponentMonthlyUpTime();
-        verify(metricProcessor).getComponentMonthlyUpTime();
+        verify(metricProcessor).getComponentUpTime(MetricQueryScope.MONTHLY);
         assertTrue(mediaController.liveCount().equals(1));
         assertFalse(!mediaController.liveCount().equals(1));
     }

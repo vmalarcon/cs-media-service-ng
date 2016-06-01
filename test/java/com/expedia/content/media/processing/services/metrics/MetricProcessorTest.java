@@ -41,19 +41,20 @@ public class MetricProcessorTest {
         data = buildSampleData();
         when(template.getForEntity(anyString(), eq(List.class))).thenReturn(response);
         when(response.getBody()).thenReturn(data);
-        metricProcessor = new MetricProcessor();
+        metricProcessor = new MetricProcessor(template);
     }
 
     @Test
     public void testUpTime() throws Exception {
-        assertTrue(metricProcessor.getComponentMonthlyUpTime().equals(900.0));
-        assertTrue(Double.valueOf(100.0).equals(Math.rint(metricProcessor.getComponentPercentageMonthlyUpTime() * 100)));
+        assertTrue(metricProcessor.getComponentUpTime(MetricQueryScope.DAILY).equals(900.0));
+        assertTrue(Double.valueOf(100.0).equals(Math.rint(metricProcessor.getComponentPercentageUpTime(MetricQueryScope.DAILY) * 100)));
+        
     }
 
     @Test
     public void testDownTime() throws Exception {
-        assertTrue(metricProcessor.getComponentMonthlyDownTime().equals(0.0));
-        assertTrue(Double.valueOf(0.0).equals(Math.rint(metricProcessor.getComponentPercentageMonthlyDownTime() * 100)));
+        assertTrue(metricProcessor.getComponentDownTime(MetricQueryScope.DAILY).equals(0.0));
+        assertTrue(Double.valueOf(0.0).equals(Math.rint(metricProcessor.getComponentPercentageDownTime(MetricQueryScope.DAILY) * 100)));
     }
 
     @Test

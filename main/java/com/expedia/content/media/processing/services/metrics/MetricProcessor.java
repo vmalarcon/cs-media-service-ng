@@ -26,6 +26,8 @@ public class MetricProcessor {
     @Value("${graphite.api.query}")
     private String graphiteApiQuery;
 
+    private RestTemplate template;
+
     private static final String DATA_POINT_FIELD = "datapoints";
     private static final String TARGET_FIELD = "target";
 
@@ -38,95 +40,37 @@ public class MetricProcessor {
     private static final Double UP_VALUE = 1.0;
     private static final Double DOWN_VALUE = 0.0;
 
-    private static final String MONTHLY_DATA = "-30d";
-    private static final String WEEKLY_DATA = "-7d";
-    private static final String DAILY_DATA = "-1d";
-
-    /**
-     * Compute the monthly up time for the whole component.
-     */
-    public Double getComponentMonthlyUpTime() throws Exception {
-        return computeComponentTime(UP_VALUE, MONTHLY_DATA);
+    public MetricProcessor(RestTemplate template) {
+        this.template = template;
     }
 
     /**
-     * Compute the monthly down time for the whole component.
+     * Compute the up time for the whole component.
      */
-    public Double getComponentMonthlyDownTime() throws Exception {
-        return computeComponentTime(DOWN_VALUE, MONTHLY_DATA);
+    public Double getComponentUpTime(MetricQueryScope scope) throws Exception {
+        return computeComponentTime(UP_VALUE, scope.getValue());
     }
 
     /**
-     * Compute the monthly percentage of up time for the whole component.
+     * Compute the down time for the whole component.
      */
-    public Double getComponentPercentageMonthlyUpTime() throws Exception {
-        final Double uptime = getComponentMonthlyUpTime();
-        return uptime.equals(DOWN_VALUE) ? DOWN_VALUE : uptime / (uptime + getComponentMonthlyDownTime());
+    public Double getComponentDownTime(MetricQueryScope scope) throws Exception {
+        return computeComponentTime(DOWN_VALUE, scope.getValue());
     }
 
     /**
-     * Compute The monthly percentage of down time for the whole component.
+     * Compute the percentage of up time for the whole component.
      */
-    public Double getComponentPercentageMonthlyDownTime() throws Exception {
-        return (1 - getComponentPercentageMonthlyUpTime());
+    public Double getComponentPercentageUpTime(MetricQueryScope scope) throws Exception {
+        final Double uptime = getComponentUpTime(scope);
+        return uptime.equals(DOWN_VALUE) ? DOWN_VALUE : uptime / (uptime + getComponentDownTime(scope));
     }
 
     /**
-     * Compute the weekly up time for the whole component.
+     * Compute The percentage of down time for the whole component.
      */
-    public Double getComponentWeeklyUpTime() throws Exception {
-        return computeComponentTime(UP_VALUE, WEEKLY_DATA);
-    }
-
-    /**
-     * Compute the weekly down time for the whole component.
-     */
-    public Double getComponentWeeklyDownTime() throws Exception {
-        return computeComponentTime(DOWN_VALUE, WEEKLY_DATA);
-    }
-
-    /**
-     * Compute the weekly percentage of up time for the whole component.
-     */
-    public Double getComponentPercentageWeeklyUpTime() throws Exception {
-        final Double uptime = getComponentWeeklyUpTime();
-        return uptime.equals(DOWN_VALUE) ? DOWN_VALUE : uptime / (uptime + getComponentWeeklyDownTime());
-    }
-
-    /**
-     * Compute The weekly percentage of down time for the whole component.
-     */
-    public Double getComponentPercentageWeeklyDownTime() throws Exception {
-        return (1 - getComponentPercentageWeeklyUpTime());
-    }
-
-    /**
-     * Compute the Daily up time for the whole component.
-     */
-    public Double getComponentDailyUpTime() throws Exception {
-        return computeComponentTime(UP_VALUE, DAILY_DATA);
-    }
-
-    /**
-     * Compute the Daily down time for the whole component.
-     */
-    public Double getComponentDailyDownTime() throws Exception {
-        return computeComponentTime(DOWN_VALUE, DAILY_DATA);
-    }
-
-    /**
-     * Compute the Daily percentage of up time for the whole component.
-     */
-    public Double getComponentPercentageDailyUpTime() throws Exception {
-        final Double uptime = getComponentDailyUpTime();
-        return uptime.equals(DOWN_VALUE) ? DOWN_VALUE : uptime / (uptime + getComponentDailyDownTime());
-    }
-
-    /**
-     * Compute The Daily percentage of down time for the whole component.
-     */
-    public Double getComponentPercentageDailyDownTime() throws Exception {
-        return (1 - getComponentPercentageDailyUpTime());
+    public Double getComponentPercentageDownTime(MetricQueryScope scope) throws Exception {
+        return (1 - getComponentPercentageUpTime(scope));
     }
 
     /**
@@ -136,7 +80,7 @@ public class MetricProcessor {
      * @param direction. Given direction for computing. Up or Down.
      * @return Returns the computed time.
      */
-    private Double computeInstanceTime(Metric metric, Double direction) throws Exception {
+    private Double computeInstanceTime(MetricInstance metric, Double direction) throws Exception {
         return metric.getMetricPoints().stream().filter(mp -> direction.equals(mp.getValue())).mapToDouble(mp -> {
             return (double) (mp.getEndTimestamp() - mp.getStartTimestamp());
         }).sum();
@@ -146,9 +90,9 @@ public class MetricProcessor {
      * Compute the time for the whole component.
      */
     private Double computeComponentTime(Double direction, String targetPeriod) throws Exception {
-        final List<Metric> metrics = initDataSet(targetPeriod);
+        final List<MetricInstance> metrics = initDataSet(targetPeriod);
         final List<Double> times = new ArrayList<>();
-        for (final Metric m : metrics) {
+        for (final MetricInstance m : metrics) {
             if (DOWN_VALUE.equals(direction)) {
                 for (final Long instant : m.getTimeStampList()) {
                     if (atLeastOneinstanceIsUp(instant, metrics)) {
@@ -162,6 +106,7 @@ public class MetricProcessor {
             }
         }
         return times.stream().mapToDouble(Double::doubleValue).max().getAsDouble();
+
     }
 
     /**
@@ -169,7 +114,7 @@ public class MetricProcessor {
      * 
      * @param targetPeriod target period to query.
      */
-    private List<Metric> initDataSet(String targetPeriod) throws Exception {
+    private List<MetricInstance> initDataSet(String targetPeriod) throws Exception {
         final List<Map<String, Object>> data = getData(targetPeriod);
         return getMetrics(data);
     }
@@ -182,8 +127,8 @@ public class MetricProcessor {
      * @param data Raw metrics data to convert.
      * @return Returns the list of metrics.
      */
-    private List<Metric> getMetrics(final List<Map<String, Object>> data) throws Exception {
-        final List<Metric> metrics = new ArrayList<>();
+    private List<MetricInstance> getMetrics(final List<Map<String, Object>> data) throws Exception {
+        final List<MetricInstance> metrics = new ArrayList<>();
         final SortedSet<Long> timeStampList = new TreeSet<>();
         if (data != null) {
             data.stream().forEach(t -> {
@@ -202,7 +147,7 @@ public class MetricProcessor {
                 }
                 Collections.sort(metricPoints);
 
-                final Metric metric = Metric.builder().applicationName(target[COMPONENT_INDEX]).instanceName(target[INSTANCE_INDEX])
+                final MetricInstance metric = MetricInstance.builder().applicationName(target[COMPONENT_INDEX]).instanceName(target[INSTANCE_INDEX])
                         .environement(target[ENVIRONMENT_INDEX]).timeStampList(timeStampList).metricPoints(metricPoints).build();
                 metrics.add(metric);
             });
@@ -216,8 +161,8 @@ public class MetricProcessor {
      * 
      * @param timeStamp given timestamp.
      */
-    private Boolean atLeastOneinstanceIsUp(Long instant, List<Metric> metrics) throws Exception {
-        for (final Metric metric : metrics) {
+    private Boolean atLeastOneinstanceIsUp(Long instant, List<MetricInstance> metrics) throws Exception {
+        for (final MetricInstance metric : metrics) {
             if (instanceIsUp(metric, instant)) {
                 return true;
             }
@@ -225,7 +170,7 @@ public class MetricProcessor {
         return false;
     }
 
-    private Boolean instanceIsUp(Metric instance, Long timestamp) {
+    private Boolean instanceIsUp(MetricInstance instance, Long timestamp) {
         return instance.getMetricPoints().stream().anyMatch(p -> p.getEndTimestamp().equals(timestamp) && UP_VALUE.equals(p.getValue()));
     }
 
@@ -233,7 +178,7 @@ public class MetricProcessor {
      * Fetch the raw data from graphite.
      */
     private List<Map<String, Object>> getData(String targetPeriod) throws Exception {
-        RestTemplate template = new RestTemplate();
+        template = template == null ? new RestTemplate() : template;
         final ResponseEntity<List> response = template.getForEntity(buildUrl(targetPeriod), List.class);
         return response.getBody();
     }
