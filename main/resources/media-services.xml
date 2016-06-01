@@ -43,6 +43,11 @@
 	            <ref bean="mediaRouterValidator"/>
 	        </list>
 	    </entry>
+        <entry key="EPS MEDIA API">
+            <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                <ref bean="epsMediaApiValidator"/>
+            </list>
+        </entry>
 	    <entry key="Multisource">
 	        <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
 	            <ref bean="multisourceValidator"/>
@@ -89,6 +94,28 @@
         <property name="ruleMaps">
             <map>
                 <entry key="Media Cloud Router">
+                    <list>
+                        <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
+                        <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
+                        <value>(imageMessage.fileUrl != null &amp;&amp; (!imageMessage.fileUrl.toLowerCase.endsWith(".jpg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".jpeg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".png")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".bmp")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".gif"))) ? "fileUrl extension is malformed." : "valid"</value>
+                        <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
+                        <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
+                        <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
+                        <value>(domainData.domain.domain.endsWith('Lodging') &amp;&amp; domainData.domainId != null &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
+                        <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
+                        <value>(domainData != null &amp;&amp; domainData.provider == null) ? "domainProvider is required." : "valid"</value>
+                        <value>(imageMessage.rotation == null) ? "valid" : (imageMessage.rotation.matches("[0-9]+") &amp;&amp; Integer.parseInt(imageMessage.rotation)%90 == 0  &amp;&amp; Integer.parseInt(imageMessage.rotation) &lt;= 270) ? "valid" : "rotation accepted values are 0, 90, 180, and 270."</value>
+                    </list>
+                </entry>
+            </map>
+        </property>
+    </bean>
+
+    <bean id="epsMediaApiValidator" class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
+        <property name="clientRule" value="EPS Media API" />
+        <property name="ruleMaps">
+            <map>
+                <entry key="EPS Media API">
                     <list>
                         <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
                         <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
