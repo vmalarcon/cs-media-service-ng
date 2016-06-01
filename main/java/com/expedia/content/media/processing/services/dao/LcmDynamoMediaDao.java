@@ -151,7 +151,7 @@ public class LcmDynamoMediaDao implements MediaDao {
         domainIdMedia = mediaStream.sorted((media1, media2) -> compareMedia(media1, media2, domain)).collect(Collectors.toList());
 
 
-        final Integer totalMediaCount = (int) domainIdMedia.stream().map(Media::getFileName).distinct().count();
+        final Integer totalMediaCount = (int) domainIdMedia.stream().filter(media -> media.getFileName() != null).map(Media::getFileName).distinct().count();
         if (pageSize != null || pageIndex != null) {
             final String errorResponse = validatePagination(totalMediaCount, pageSize, pageIndex);
             if (errorResponse == null) {
