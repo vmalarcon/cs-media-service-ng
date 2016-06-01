@@ -35,27 +35,25 @@ public class MetricProcessorTest {
     private RestTemplate template;
     @Mock
     private ResponseEntity<List> response;
-    
 
     @Before
     public void setup() throws Exception {
         data = buildSampleData();
         when(template.getForEntity(anyString(), eq(List.class))).thenReturn(response);
         when(response.getBody()).thenReturn(data);
-        metricProcessor = new MetricProcessor(data, template);
-        metricProcessor.setAllData();
+        metricProcessor = new MetricProcessor();
     }
 
     @Test
     public void testUpTime() throws Exception {
-        assertTrue(metricProcessor.getComponentUpTime().equals(900.0));
-        assertTrue(Double.valueOf(100.0).equals(Math.rint(metricProcessor.getComponentPercentageUpTime() * 100)));
+        assertTrue(metricProcessor.getComponentMonthlyUpTime().equals(900.0));
+        assertTrue(Double.valueOf(100.0).equals(Math.rint(metricProcessor.getComponentPercentageMonthlyUpTime() * 100)));
     }
 
     @Test
     public void testDownTime() throws Exception {
-        assertTrue(metricProcessor.getComponentDownTime().equals(0.0));
-        assertTrue(Double.valueOf(0.0).equals(Math.rint(metricProcessor.getComponentPercentageDownTime() * 100)));
+        assertTrue(metricProcessor.getComponentMonthlyDownTime().equals(0.0));
+        assertTrue(Double.valueOf(0.0).equals(Math.rint(metricProcessor.getComponentPercentageMonthlyDownTime() * 100)));
     }
 
     @Test
@@ -66,10 +64,9 @@ public class MetricProcessorTest {
 
     @Test
     public void testNullObject() throws Exception {
-        metricProcessor = new MetricProcessor(data, null);
-        assertNotNull(template);     
+        assertNotNull(template);
         when(template.getForEntity(anyString(), eq(List.class))).thenReturn(response);
-        when(response.getBody()).thenReturn(new ArrayList<Map<String, Object>>()); 
+        when(response.getBody()).thenReturn(new ArrayList<Map<String, Object>>());
     }
 
     private List<Map<String, Object>> buildSampleData() {

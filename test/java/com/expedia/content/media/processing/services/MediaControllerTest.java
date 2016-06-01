@@ -1626,14 +1626,14 @@ public class MediaControllerTest {
     public void testMetricCalls() throws Exception{
         MetricProcessor metricProcessor = mock(MetricProcessor.class);
         setFieldValue(mediaController, "metricProcessor", metricProcessor);
-        mediaController.getComponentDownTime();
-        verify(metricProcessor).getComponentDownTime();
-        mediaController.getComponentPercentageDownTime();
-        verify(metricProcessor).getComponentPercentageDownTime();
-        mediaController.getComponentPercentageUpTime();
-        verify(metricProcessor).getComponentPercentageUpTime();
-        mediaController.getComponentUpTime();
-        verify(metricProcessor).getComponentUpTime();
+        mediaController.getComponentMonthlyDownTime();
+        verify(metricProcessor).getComponentMonthlyDownTime();
+        mediaController.getComponentPercentageMonthlyDownTime();
+        verify(metricProcessor).getComponentPercentageMonthlyDownTime();
+        mediaController.getComponentPercentageMonthlyUpTime();
+        verify(metricProcessor).getComponentPercentageMonthlyUpTime();
+        mediaController.getComponentMonthlyUpTime();
+        verify(metricProcessor).getComponentMonthlyUpTime();
         assertTrue(mediaController.liveCount().equals(1));
         assertFalse(!mediaController.liveCount().equals(1));
     }

@@ -322,30 +322,70 @@ public class MediaController extends CommonServiceController {
      * @return Always return a single value.
      */
     @Gauge(name = "isAlive")
-    @Counter(name = "liveCounter")
     public Integer liveCount() {
         return LIVE_COUNT;
     }
     
-    @Gauge(name="componentUpTime")
-    public Double getComponentUpTime() throws Exception {     
-        return metricProcessor.getComponentUpTime();
+    @Gauge(name="componentMonthlyUpTime")
+    public Double getComponentMonthlyUpTime() throws Exception {     
+        return metricProcessor.getComponentMonthlyUpTime();
     }
     
-    @Gauge(name="componentDownTime")
-    public Double getComponentDownTime() throws Exception {
-        return metricProcessor.getComponentDownTime();
+    @Gauge(name="componentMonthlyDownTime")
+    public Double getComponentMonthlyDownTime() throws Exception {
+        return metricProcessor.getComponentMonthlyDownTime();
     }
     
-    @Gauge(name="componentPercentageUpTime")
-    public Double getComponentPercentageUpTime() throws Exception {     
-        return metricProcessor.getComponentPercentageUpTime();
+    @Gauge(name="componentPercentageMonthlyUpTime")
+    public Double getComponentPercentageMonthlyUpTime() throws Exception {     
+        return metricProcessor.getComponentPercentageMonthlyUpTime();
     }
     
-    @Gauge(name="componentPercentageDownTime")
-    public Double getComponentPercentageDownTime() throws Exception {
-        return metricProcessor.getComponentPercentageDownTime();
+    @Gauge(name="componentPercentageMonthlyDownTime")
+    public Double getComponentPercentageMonthlyDownTime() throws Exception {
+        return metricProcessor.getComponentPercentageMonthlyDownTime();
     }
+    
+    @Gauge(name="componentWeeklyUpTime")
+    public Double getComponentWeeklyUpTime() throws Exception {     
+        return metricProcessor.getComponentWeeklyUpTime();
+    }
+    
+    @Gauge(name="componentWeeklyDownTime")
+    public Double getComponentWeeklyDownTime() throws Exception {
+        return metricProcessor.getComponentMonthlyDownTime();
+    }
+    
+    @Gauge(name="componentPercentageWeeklyUpTime")
+    public Double getComponentPercentageWeeklyUpTime() throws Exception {     
+        return metricProcessor.getComponentPercentageWeeklyUpTime();
+    }
+    
+    @Gauge(name="componentPercentageWeeklyDownTime")
+    public Double getComponentPercentageWeeklyDownTime() throws Exception {
+        return metricProcessor.getComponentPercentageWeeklyDownTime();
+    }
+
+    @Gauge(name="componentDailyUpTime")
+    public Double getComponentDailyUpTime() throws Exception {     
+        return metricProcessor.getComponentDailyUpTime();
+    }
+    
+    @Gauge(name="componentDailyDownTime")
+    public Double getComponentDailyDownTime() throws Exception {
+        return metricProcessor.getComponentDailyDownTime();
+    }
+    
+    @Gauge(name="componentPercentageDailyUpTime")
+    public Double getComponentPercentageDailyUpTime() throws Exception {     
+        return metricProcessor.getComponentPercentageDailyUpTime();
+    }
+    
+    @Gauge(name="componentPercentageDailyDownTime")
+    public Double getComponentPercentageDailyDownTime() throws Exception {
+        return metricProcessor.getComponentPercentageDailyDownTime();
+    }
+
 
     private void validateAndInitMap(Map<String, Object> objectMap, String queryId, String serviceUrl, String message, String requestID) throws Exception {
         Media dynamoMedia = null;

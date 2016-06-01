@@ -1,11 +1,11 @@
 package com.expedia.content.media.processing.services.metrics;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import javax.annotation.PostConstruct;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,13 +22,12 @@ public class MetricProcessor {
 
     @Value("${graphite.api.url}")
     private String graphiteApiUrl;
-    private final Map<String, Object> allData = new HashMap<>();
-    private RestTemplate template;
+
+    @Value("${graphite.api.query}")
+    private String graphiteApiQuery;
+
     private static final String DATA_POINT_FIELD = "datapoints";
     private static final String TARGET_FIELD = "target";
-
-    private static final String DATA_FIELD = "data";
-    private static final String METRICS_FIELD = "metrics";
 
     private static final int COMPONENT_INDEX = 2;
     private static final int ENVIRONMENT_INDEX = 3;
@@ -38,60 +37,96 @@ public class MetricProcessor {
     private static final int Y_INDEX = 0;
     private static final Double UP_VALUE = 1.0;
     private static final Double DOWN_VALUE = 0.0;
-    private static final String UP_FIELD = "upTimeValues";
-    private static final String DOWN_FIELD = "downTimeValues";
 
-    public MetricProcessor(List<Map<String, Object>> data, RestTemplate template) throws Exception {
-        this.template = template;
-        allData.put(DATA_FIELD, data);
-        allData.put(METRICS_FIELD, getMetrics(data));
+    private static final String MONTHLY_DATA = "-30d";
+    private static final String WEEKLY_DATA = "-7d";
+    private static final String DAILY_DATA = "-1d";
+
+    /**
+     * Compute the monthly up time for the whole component.
+     */
+    public Double getComponentMonthlyUpTime() throws Exception {
+        return computeComponentTime(UP_VALUE, MONTHLY_DATA);
     }
 
     /**
-     * Compute the up time for the whole component.
+     * Compute the monthly down time for the whole component.
      */
-    public Double getComponentUpTime() throws Exception {
-        return computeComponentTime(UP_VALUE);
+    public Double getComponentMonthlyDownTime() throws Exception {
+        return computeComponentTime(DOWN_VALUE, MONTHLY_DATA);
     }
 
     /**
-     * Compute the down time for the whole component.
+     * Compute the monthly percentage of up time for the whole component.
      */
-    public Double getComponentDownTime() throws Exception {
-        return computeComponentTime(DOWN_VALUE);
+    public Double getComponentPercentageMonthlyUpTime() throws Exception {
+        final Double uptime = getComponentMonthlyUpTime();
+        return uptime.equals(DOWN_VALUE) ? DOWN_VALUE : uptime / (uptime + getComponentMonthlyDownTime());
     }
 
     /**
-     * Compute the percentage of up time for the whole component.
+     * Compute The monthly percentage of down time for the whole component.
      */
-    public Double getComponentPercentageUpTime() throws Exception {
-        final Double uptime = getComponentUpTime();
-        final List<Double> uptimeList = (List<Double>) allData.get(UP_FIELD);
-        final List<Double> downtimeList = (List<Double>) allData.get(DOWN_FIELD);
-        componentIsUp(uptimeList, downtimeList);
-        return uptime.equals(DOWN_VALUE) ? DOWN_VALUE : uptime / (uptime + getComponentDownTime());
+    public Double getComponentPercentageMonthlyDownTime() throws Exception {
+        return (1 - getComponentPercentageMonthlyUpTime());
     }
 
     /**
-     * Compute The percentage of down time for the whole component.
+     * Compute the weekly up time for the whole component.
      */
-    public Double getComponentPercentageDownTime() throws Exception {
-        return (1 - getComponentPercentageUpTime());
-    }
-
-    private Boolean componentIsUp(final List<Double> uptimeList, final List<Double> downtimeList) {
-        Double time = uptimeList.stream().mapToDouble(Double::doubleValue).sum();
-        return uptimeList.contains(downtimeList);
+    public Double getComponentWeeklyUpTime() throws Exception {
+        return computeComponentTime(UP_VALUE, WEEKLY_DATA);
     }
 
     /**
-     * Initialize the dataset.
+     * Compute the weekly down time for the whole component.
      */
-    @PostConstruct
-    public void setAllData() throws Exception {
-        final List<Map<String, Object>> data = getData();
-        allData.put(DATA_FIELD, data);
-        allData.put(METRICS_FIELD, getMetrics(data));
+    public Double getComponentWeeklyDownTime() throws Exception {
+        return computeComponentTime(DOWN_VALUE, WEEKLY_DATA);
+    }
+
+    /**
+     * Compute the weekly percentage of up time for the whole component.
+     */
+    public Double getComponentPercentageWeeklyUpTime() throws Exception {
+        final Double uptime = getComponentWeeklyUpTime();
+        return uptime.equals(DOWN_VALUE) ? DOWN_VALUE : uptime / (uptime + getComponentWeeklyDownTime());
+    }
+
+    /**
+     * Compute The weekly percentage of down time for the whole component.
+     */
+    public Double getComponentPercentageWeeklyDownTime() throws Exception {
+        return (1 - getComponentPercentageWeeklyUpTime());
+    }
+
+    /**
+     * Compute the Daily up time for the whole component.
+     */
+    public Double getComponentDailyUpTime() throws Exception {
+        return computeComponentTime(UP_VALUE, DAILY_DATA);
+    }
+
+    /**
+     * Compute the Daily down time for the whole component.
+     */
+    public Double getComponentDailyDownTime() throws Exception {
+        return computeComponentTime(DOWN_VALUE, DAILY_DATA);
+    }
+
+    /**
+     * Compute the Daily percentage of up time for the whole component.
+     */
+    public Double getComponentPercentageDailyUpTime() throws Exception {
+        final Double uptime = getComponentDailyUpTime();
+        return uptime.equals(DOWN_VALUE) ? DOWN_VALUE : uptime / (uptime + getComponentDailyDownTime());
+    }
+
+    /**
+     * Compute The Daily percentage of down time for the whole component.
+     */
+    public Double getComponentPercentageDailyDownTime() throws Exception {
+        return (1 - getComponentPercentageDailyUpTime());
     }
 
     /**
@@ -110,14 +145,33 @@ public class MetricProcessor {
     /**
      * Compute the time for the whole component.
      */
-    private Double computeComponentTime(Double direction) throws Exception {
-        final List<Metric> metrics = (List<Metric>) allData.get(METRICS_FIELD);
+    private Double computeComponentTime(Double direction, String targetPeriod) throws Exception {
+        final List<Metric> metrics = initDataSet(targetPeriod);
         final List<Double> times = new ArrayList<>();
         for (final Metric m : metrics) {
-            times.add(computeInstanceTime(m, direction));
+            if (DOWN_VALUE.equals(direction)) {
+                for (final Long instant : m.getTimeStampList()) {
+                    if (atLeastOneinstanceIsUp(instant, metrics)) {
+                        times.add(DOWN_VALUE);
+                    } else {
+                        times.add(computeInstanceTime(m, direction));
+                    }
+                }
+            } else {
+                times.add(computeInstanceTime(m, direction));
+            }
         }
-        allData.put(direction.equals(UP_VALUE) ? UP_FIELD : DOWN_FIELD, times);
         return times.stream().mapToDouble(Double::doubleValue).max().getAsDouble();
+    }
+
+    /**
+     * Initialize the dataset.
+     * 
+     * @param targetPeriod target period to query.
+     */
+    private List<Metric> initDataSet(String targetPeriod) throws Exception {
+        final List<Map<String, Object>> data = getData(targetPeriod);
+        return getMetrics(data);
     }
 
     /**
@@ -130,6 +184,7 @@ public class MetricProcessor {
      */
     private List<Metric> getMetrics(final List<Map<String, Object>> data) throws Exception {
         final List<Metric> metrics = new ArrayList<>();
+        final SortedSet<Long> timeStampList = new TreeSet<>();
         if (data != null) {
             data.stream().forEach(t -> {
                 final String[] target = StringUtils.split((String) t.get(TARGET_FIELD), REGEX_SEPARATOR);
@@ -143,21 +198,49 @@ public class MetricProcessor {
                     final MetricPoint metricPoint =
                             MetricPoint.builder().startTimestamp(startTimestamp).endTimestamp(x.longValue()).value(y == null ? 0 : y).build();
                     metricPoints.add(metricPoint);
+                    timeStampList.add(x.longValue());
                 }
+                Collections.sort(metricPoints);
+
                 final Metric metric = Metric.builder().applicationName(target[COMPONENT_INDEX]).instanceName(target[INSTANCE_INDEX])
-                        .environement(target[ENVIRONMENT_INDEX]).metricPoints(metricPoints).build();
+                        .environement(target[ENVIRONMENT_INDEX]).timeStampList(timeStampList).metricPoints(metricPoints).build();
                 metrics.add(metric);
             });
         }
+
         return metrics;
+    }
+
+    /**
+     * Verify if at least one instance is up at a specific timestamp.
+     * 
+     * @param timeStamp given timestamp.
+     */
+    private Boolean atLeastOneinstanceIsUp(Long instant, List<Metric> metrics) throws Exception {
+        for (final Metric metric : metrics) {
+            if (instanceIsUp(metric, instant)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Boolean instanceIsUp(Metric instance, Long timestamp) {
+        return instance.getMetricPoints().stream().anyMatch(p -> p.getEndTimestamp().equals(timestamp) && UP_VALUE.equals(p.getValue()));
     }
 
     /**
      * Fetch the raw data from graphite.
      */
-    private List<Map<String, Object>> getData() throws Exception {
-        template = template == null ? new RestTemplate() : template;
-        final ResponseEntity<List> response = template.getForEntity(graphiteApiUrl, List.class);
+    private List<Map<String, Object>> getData(String targetPeriod) throws Exception {
+        RestTemplate template = new RestTemplate();
+        final ResponseEntity<List> response = template.getForEntity(buildUrl(targetPeriod), List.class);
         return response.getBody();
+    }
+
+    private String buildUrl(String targetPeriod) {
+        final StringBuilder sb = new StringBuilder();
+        sb.append(graphiteApiUrl).append(targetPeriod).append(graphiteApiQuery);
+        return sb.toString();
     }
 }
