@@ -1,105 +1,188 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:util="http://www.springframework.org/schema/util"
-       xmlns:context="http://www.springframework.org/schema/context"
-       xmlns:tx="http://www.springframework.org/schema/tx"
-       xmlns:aws-context="http://www.springframework.org/schema/cloud/aws/context"
-       xmlns:aws-messaging="http://www.springframework.org/schema/cloud/aws/messaging"
-       xmlns="http://www.springframework.org/schema/beans"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+    xmlns:util="http://www.springframework.org/schema/util"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:tx="http://www.springframework.org/schema/tx"
+    xmlns:aws-context="http://www.springframework.org/schema/cloud/aws/context"
+    xmlns:aws-messaging="http://www.springframework.org/schema/cloud/aws/messaging"
+    xmlns="http://www.springframework.org/schema/beans"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
                            http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
                            http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
                            http://www.springframework.org/schema/cloud/aws/context http://www.springframework.org/schema/cloud/aws/context/spring-cloud-aws-context-1.0.xsd
                            http://www.springframework.org/schema/cloud/aws/messaging http://www.springframework.org/schema/cloud/aws/messaging/spring-cloud-aws-messaging-1.0.xsd
                            http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
 
-    <context:property-placeholder location="classpath:${EXPEDIA_ENVIRONMENT}.${AWS_REGION}.properties"/>
+    <context:property-placeholder
+        location="classpath:${EXPEDIA_ENVIRONMENT}.${AWS_REGION}.properties" />
 
     <import resource="collector-rabbit.xml" />
 
-    <aws-messaging:annotation-driven-queue-listener wait-time-out="20" />
+    <aws-messaging:annotation-driven-queue-listener
+        wait-time-out="20" />
 
     <aws-context:context-region region="${AWS_REGION}" />
-    <aws-context:context-resource-loader region="${AWS_REGION}" />
+    <aws-context:context-resource-loader
+        region="${AWS_REGION}" />
 
     <bean id="filenamesRabbitTemplate" class="org.springframework.amqp.rabbit.core.RabbitTemplate">
-        <property name="connectionFactory" ref="rabbitConnectionFactory"/>
+        <property name="connectionFactory" ref="rabbitConnectionFactory" />
         <property name="queue" value="${collector.queue}" />
         <property name="routingKey" value="${collector.queue}" />
     </bean>
 
-    <bean id="retryableAspect" class="com.expedia.content.media.processing.pipeline.retry.RetryableAspect" factory-method="aspectOf" autowire="byType" />
+    <bean id="retryableAspect"
+        class="com.expedia.content.media.processing.pipeline.retry.RetryableAspect"
+        factory-method="aspectOf" autowire="byType" />
 
-	<util:map id="imageMessageValidators">
-	    <entry key="EPC">
-	        <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
-	            <ref bean="mvelValidator"/>
-                <ref bean="lcmValidator"/>
-                <ref bean="roomValidator"/>
-	        </list>
-	    </entry>
-	    <entry key="Media Cloud Router">
-	        <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
-	            <ref bean="mediaRouterValidator"/>
-	        </list>
-	    </entry>
-	    <entry key="Multisource">
-	        <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
-	            <ref bean="multisourceValidator"/>
-	        </list>
-	    </entry>
-        <entry key="EPCUpdate">
-            <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
-                <ref bean="mediaUpdateValidator"/>
-                <ref bean="lcmUpdateValidator"/>
-                <ref bean="roomValidator"/>
+    <util:map id="imageMessageValidators">
+        <entry key="EPC">
+            <list
+                value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                <ref bean="mvelValidator" />
+                <ref bean="lcmValidator" />
+                <ref bean="roomValidator" />
             </list>
         </entry>
-	</util:map>
+        <entry key="Media Cloud Router">
+            <list
+                value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                <ref bean="mediaRouterValidator" />
+            </list>
+        </entry>
+        <entry key="Multisource">
+            <list
+                value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                <ref bean="multisourceValidator" />
+            </list>
+        </entry>
+        <entry key="EPCUpdate">
+            <list
+                value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                <ref bean="mediaUpdateValidator" />
+                <ref bean="lcmUpdateValidator" />
+                <ref bean="roomValidator" />
+            </list>
+        </entry>
+    </util:map>
 
-    <aws-messaging:queue-messaging-template id="queueMessagingTemplate" />
+    <aws-messaging:queue-messaging-template
+        id="queueMessagingTemplate" />
 
-    <bean id="mvelValidator" class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
-      <property name="clientRule" value="EPC" />
-      <property name="ruleMaps">
-          <map>
-              <entry key="EPC">
-                  <list>
-                      <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
-                      <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
-                      <value>(imageMessage.fileUrl != null &amp;&amp; (!imageMessage.fileUrl.toLowerCase.endsWith(".jpg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".jpeg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".png")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".bmp")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".gif"))) ? "fileUrl extension is malformed." : "valid"</value>
-                      <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
-                      <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
-                      <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
-                      <value>(domainData.domain.domain.endsWith('Lodging') &amp;&amp; domainData.domainId != null &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
-                      <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
-                      <value>(domainData != null &amp;&amp; domainData.provider == null) ? "domainProvider is required." : "valid"</value>
-                      <value>(domainData.domain.domain.equals('Lodging') &amp;&amp; domainData.domainFields != null &amp;&amp; domainData.domainFields.containsKey("category") &amp;&amp; !domainData.domainFields.get("category").toString.matches("[0-9]+")) ? "category is not numeric." : "valid"</value>
-                      <value>(domainData.domain.domain.equals('Lodging') &amp;&amp; domainData.domainFields != null &amp;&amp; domainData.domainFields.containsKey("roomHero") &amp;&amp; !domainData.domainFields.get("roomHero").toString.matches("true|false")) ? "roomHero is not boolean." : "valid"</value>
-                      <value>(imageMessage.rotation == null) ? "valid" : (imageMessage.rotation.matches("[0-9]+") &amp;&amp; Integer.parseInt(imageMessage.rotation)%90 == 0  &amp;&amp; Integer.parseInt(imageMessage.rotation) &lt;= 270) ? "valid" : "rotation accepted values are 0, 90, 180, and 270."</value>
-                      <!-- TODO: Rooms validations would go here. How do we traverse lists? -->
-                  </list>
-              </entry>
-          </map>
-      </property>
+    <bean id="mvelValidator"
+        class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
+        <property name="clientRule" value="EPC" />
+        <property name="ruleMaps">
+            <map>
+                <entry key="EPC">
+                    <list>
+                        <value>imageMessage.fileUrl != null ? "valid" :
+                            "fileUrl is required."</value>
+                        <value>(imageMessage.fileUrl != null &amp;&amp;
+                            !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*"))
+                            ? "fileUrl is malformed." : "valid"</value>
+                        <value>(imageMessage.fileUrl != null &amp;&amp;
+                            (!imageMessage.fileUrl.toLowerCase.endsWith(".jpg")
+                            &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".jpeg")
+                            &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".png")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".bmp")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".gif")))
+                            ? "fileUrl extension is malformed." :
+                            "valid"</value>
+                        <value>imageMessage.outerDomainData == null ?
+                            "domain is required." : "valid"</value>
+                        <value>(domainData != null &amp;&amp;
+                            !domainData.domain.domain.matches("Lodging|Cars"))
+                            ? "domain must be 'Lodging' or 'Cars'" :
+                            "valid"</value>
+                        <value>domainData.domainId != null ? "valid" :
+                            "domainId is required."</value>
+                        <value>(domainData.domain.domain.endsWith('Lodging')
+                            &amp;&amp; domainData.domainId != null
+                            &amp;&amp;
+                            !domainData.domainId.matches("[0-9]+")) ?
+                            "domainId is not numeric." : "valid"</value>
+                        <value>imageMessage.userId != null ? "valid" :
+                            "userId is required."</value>
+                        <value>(domainData != null &amp;&amp;
+                            domainData.provider == null) ?
+                            "domainProvider is required." : "valid"
+                        </value>
+                        <value>(domainData.domain.domain.equals('Lodging')
+                            &amp;&amp; domainData.domainFields != null
+                            &amp;&amp;
+                            domainData.domainFields.containsKey("category")
+                            &amp;&amp;
+                            !domainData.domainFields.get("category").toString.matches("[0-9]+"))
+                            ? "category is not numeric." : "valid"
+                        </value>
+                        <value>(domainData.domain.domain.equals('Lodging')
+                            &amp;&amp; domainData.domainFields != null
+                            &amp;&amp;
+                            domainData.domainFields.containsKey("roomHero")
+                            &amp;&amp;
+                            !domainData.domainFields.get("roomHero").toString.matches("true|false"))
+                            ? "roomHero is not boolean." : "valid"
+                        </value>
+                        <value>(imageMessage.rotation == null) ? "valid"
+                            : (imageMessage.rotation.matches("[0-9]+")
+                            &amp;&amp;
+                            Integer.parseInt(imageMessage.rotation)%90
+                            == 0 &amp;&amp;
+                            Integer.parseInt(imageMessage.rotation)
+                            &lt;= 270) ? "valid" : "rotation accepted
+                            values are 0, 90, 180, and 270."</value>
+                        <!-- TODO: Rooms validations would go here. How do 
+                            we traverse lists? -->
+                    </list>
+                </entry>
+            </map>
+        </property>
     </bean>
 
-    <bean id="mediaRouterValidator" class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
+    <bean id="mediaRouterValidator"
+        class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
         <property name="clientRule" value="Media Cloud Router" />
         <property name="ruleMaps">
             <map>
                 <entry key="Media Cloud Router">
                     <list>
-                        <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
-                        <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
-                        <value>(imageMessage.fileUrl != null &amp;&amp; (!imageMessage.fileUrl.toLowerCase.endsWith(".jpg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".jpeg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".png")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".bmp")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".gif"))) ? "fileUrl extension is malformed." : "valid"</value>
-                        <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
-                        <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
-                        <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
-                        <value>(domainData.domain.domain.endsWith('Lodging') &amp;&amp; domainData.domainId != null &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
-                        <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
-                        <value>(domainData != null &amp;&amp; domainData.provider == null) ? "domainProvider is required." : "valid"</value>
-                        <value>(imageMessage.rotation == null) ? "valid" : (imageMessage.rotation.matches("[0-9]+") &amp;&amp; Integer.parseInt(imageMessage.rotation)%90 == 0  &amp;&amp; Integer.parseInt(imageMessage.rotation) &lt;= 270) ? "valid" : "rotation accepted values are 0, 90, 180, and 270."</value>
+                        <value>imageMessage.fileUrl != null ? "valid" :
+                            "fileUrl is required."</value>
+                        <value>(imageMessage.fileUrl != null &amp;&amp;
+                            !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*"))
+                            ? "fileUrl is malformed." : "valid"</value>
+                        <value>(imageMessage.fileUrl != null &amp;&amp;
+                            (!imageMessage.fileUrl.toLowerCase.endsWith(".jpg")
+                            &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".jpeg")
+                            &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".png")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".bmp")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".gif")))
+                            ? "fileUrl extension is malformed." :
+                            "valid"</value>
+                        <value>imageMessage.outerDomainData == null ?
+                            "domain is required." : "valid"</value>
+                        <value>(domainData != null &amp;&amp;
+                            !domainData.domain.domain.matches("Lodging|Cars"))
+                            ? "domain must be 'Lodging' or 'Cars'" :
+                            "valid"</value>
+                        <value>domainData.domainId != null ? "valid" :
+                            "domainId is required."</value>
+                        <value>(domainData.domain.domain.endsWith('Lodging')
+                            &amp;&amp; domainData.domainId != null
+                            &amp;&amp;
+                            !domainData.domainId.matches("[0-9]+")) ?
+                            "domainId is not numeric." : "valid"</value>
+                        <value>imageMessage.userId != null ? "valid" :
+                            "userId is required."</value>
+                        <value>(domainData != null &amp;&amp;
+                            domainData.provider == null) ?
+                            "domainProvider is required." : "valid"
+                        </value>
+                        <value>(imageMessage.rotation == null) ? "valid"
+                            : (imageMessage.rotation.matches("[0-9]+")
+                            &amp;&amp;
+                            Integer.parseInt(imageMessage.rotation)%90
+                            == 0 &amp;&amp;
+                            Integer.parseInt(imageMessage.rotation)
+                            &lt;= 270) ? "valid" : "rotation accepted
+                            values are 0, 90, 180, and 270."</value>
                     </list>
                 </entry>
             </map>
@@ -107,59 +190,112 @@
     </bean>
 
 
-    <bean id="mediaUpdateValidator" class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
+    <bean id="mediaUpdateValidator"
+        class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
         <property name="clientRule" value="EPCUpdate" />
         <property name="ruleMaps">
             <map>
                 <entry key="EPCUpdate">
                     <list>
-                       <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
+                        <value>imageMessage.userId != null ? "valid" :
+                            "userId is required."</value>
                     </list>
                 </entry>
             </map>
         </property>
     </bean>
 
-    <bean id="multisourceValidator" class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
+    <bean id="multisourceValidator"
+        class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
         <property name="clientRule" value="Multisource" />
         <property name="ruleMaps">
             <map>
                 <entry key="Multisource">
                     <list>
-                        <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
-                        <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
-                        <value>(imageMessage.fileUrl != null &amp;&amp; (!imageMessage.fileUrl.toLowerCase.endsWith(".jpg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".jpeg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".png")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".bmp")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".gif"))) ? "fileUrl extension is malformed." : "valid"</value>
-                        <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
-                        <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
-                        <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
-                        <value>(domainData.domain.domain.endsWith('Lodging') &amp;&amp; domainData.domainId != null &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
-                        <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
-                        <value>(domainData != null &amp;&amp; domainData.provider == null) ? "domainProvider is required." : "valid"</value>
-                        <value>(imageMessage.rotation == null) ? "valid" : (imageMessage.rotation.matches("[0-9]+") &amp;&amp; Integer.parseInt(imageMessage.rotation)%90 == 0  &amp;&amp; Integer.parseInt(imageMessage.rotation) &lt;= 270) ? "valid" : "rotation accepted values are 0, 90, 180, and 270."</value>
+                        <value>imageMessage.fileUrl != null ? "valid" :
+                            "fileUrl is required."</value>
+                        <value>(imageMessage.fileUrl != null &amp;&amp;
+                            !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*"))
+                            ? "fileUrl is malformed." : "valid"</value>
+                        <value>(imageMessage.fileUrl != null &amp;&amp;
+                            (!imageMessage.fileUrl.toLowerCase.endsWith(".jpg")
+                            &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".jpeg")
+                            &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".png")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".bmp")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".gif")))
+                            ? "fileUrl extension is malformed." :
+                            "valid"</value>
+                        <value>imageMessage.outerDomainData == null ?
+                            "domain is required." : "valid"</value>
+                        <value>(domainData != null &amp;&amp;
+                            !domainData.domain.domain.matches("Lodging|Cars"))
+                            ? "domain must be 'Lodging' or 'Cars'" :
+                            "valid"</value>
+                        <value>domainData.domainId != null ? "valid" :
+                            "domainId is required."</value>
+                        <value>(domainData.domain.domain.endsWith('Lodging')
+                            &amp;&amp; domainData.domainId != null
+                            &amp;&amp;
+                            !domainData.domainId.matches("[0-9]+")) ?
+                            "domainId is not numeric." : "valid"</value>
+                        <value>imageMessage.userId != null ? "valid" :
+                            "userId is required."</value>
+                        <value>(domainData != null &amp;&amp;
+                            domainData.provider == null) ?
+                            "domainProvider is required." : "valid"
+                        </value>
+                        <value>(imageMessage.rotation == null) ? "valid"
+                            : (imageMessage.rotation.matches("[0-9]+")
+                            &amp;&amp;
+                            Integer.parseInt(imageMessage.rotation)%90
+                            == 0 &amp;&amp;
+                            Integer.parseInt(imageMessage.rotation)
+                            &lt;= 270) ? "valid" : "rotation accepted
+                            values are 0, 90, 180, and 270."</value>
                     </list>
                 </entry>
             </map>
         </property>
     </bean>
 
-    <bean id="tempDerivativeMVELValidator" class="com.expedia.content.media.processing.services.validator.TempDerivativeMVELValidator">
+    <bean id="tempDerivativeMVELValidator"
+        class="com.expedia.content.media.processing.services.validator.TempDerivativeMVELValidator">
         <property name="ruleList">
             <list>
-                <value>tempDerivativeMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
-                <value>(tempDerivativeMessage.fileUrl != null &amp;&amp; !tempDerivativeMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
-                <value>(tempDerivativeMessage.fileUrl != null &amp;&amp; (!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".jpg") &amp;&amp;!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".jpeg") &amp;&amp;!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".png")&amp;&amp;!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".bmp")&amp;&amp;!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".gif"))) ? "fileUrl extension is malformed." : "valid"</value>
-                <value>(tempDerivativeMessage.rotation == null) ? "valid" : (tempDerivativeMessage.rotation.matches("[0-9]+") &amp;&amp; Integer.parseInt(tempDerivativeMessage.rotation)%90 == 0  &amp;&amp; Integer.parseInt(tempDerivativeMessage.rotation) &lt;= 270) ? "valid" : "rotation accepted values are 0, 90, 180, and 270."</value>
-                <value>tempDerivativeMessage.width != null ? "valid" : "width is required."</value>
-                <value>tempDerivativeMessage.height != null ? "valid" : "height is required."</value>
+                <value>tempDerivativeMessage.fileUrl != null ? "valid" :
+                    "fileUrl is required."</value>
+                <value>(tempDerivativeMessage.fileUrl != null &amp;&amp;
+                    !tempDerivativeMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*"))
+                    ? "fileUrl is malformed." : "valid"</value>
+                <value>(tempDerivativeMessage.fileUrl != null &amp;&amp;
+                    (!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".jpg")
+                    &amp;&amp;!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".jpeg")
+                    &amp;&amp;!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".png")&amp;&amp;!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".bmp")&amp;&amp;!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".gif")))
+                    ? "fileUrl extension is malformed." : "valid"
+                </value>
+                <value>(tempDerivativeMessage.rotation == null) ?
+                    "valid" :
+                    (tempDerivativeMessage.rotation.matches("[0-9]+")
+                    &amp;&amp;
+                    Integer.parseInt(tempDerivativeMessage.rotation)%90
+                    == 0 &amp;&amp;
+                    Integer.parseInt(tempDerivativeMessage.rotation)
+                    &lt;= 270) ? "valid" : "rotation accepted values are
+                    0, 90, 180, and 270."</value>
+                <value>tempDerivativeMessage.width != null ? "valid" :
+                    "width is required."</value>
+                <value>tempDerivativeMessage.height != null ? "valid" :
+                    "height is required."</value>
             </list>
         </property>
     </bean>
 
-    <bean id="threadedLogger" class="com.expedia.content.media.processing.pipeline.reporting.ThreadLogActivityProcess">
+    <bean id="threadedLogger"
+        class="com.expedia.content.media.processing.pipeline.reporting.ThreadLogActivityProcess">
         <constructor-arg name="logThreadPoolSize" value="10" />
     </bean>
 
-    <bean id="compositeReporter" class="com.expedia.content.media.processing.pipeline.reporting.CompositeReporting" primary="true">
+    <bean id="compositeReporter"
+        class="com.expedia.content.media.processing.pipeline.reporting.CompositeReporting"
+        primary="true">
         <constructor-arg name="reports">
             <list>
                 <ref bean="dynamoReporter" />
@@ -168,32 +304,38 @@
         </constructor-arg>
     </bean>
 
-    <bean id="dynamoReporter" class="com.expedia.content.media.processing.pipeline.reporting.dynamo.DynamoReporting">
+    <bean id="dynamoReporter"
+        class="com.expedia.content.media.processing.pipeline.reporting.dynamo.DynamoReporting">
         <constructor-arg name="dynamoMapper" ref="dynamoMapper" />
         <constructor-arg name="appName" value="${processname}" />
     </bean>
 
-    <bean id="amazonDynamoDB" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient">
+    <bean id="amazonDynamoDB"
+        class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient">
         <property name="endpoint" value="${aws.endPoint}" />
     </bean>
 
     <bean id="dynamoMapper"
-          class="com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper">
+        class="com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper">
         <constructor-arg name="dynamoDB" ref="amazonDynamoDB" />
     </bean>
-    <bean id="dynamoMediaRepository" class="com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository">
-       <constructor-arg name="dynamoMapper" ref="dynamoMapper"/>
-       <constructor-arg name="environment" value="${EXPEDIA_ENVIRONMENT}"/>
+    <bean id="dynamoMediaRepository"
+        class="com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository">
+        <constructor-arg name="dynamoMapper" ref="dynamoMapper" />
+        <constructor-arg name="environment" value="${EXPEDIA_ENVIRONMENT}" />
     </bean>
-    <bean id="lcmReporter" class="com.expedia.content.media.processing.pipeline.reporting.sql.LcmReporting">
-        <constructor-arg name="logEntryInsertProcedure" ref="lcmInsertSproc" />
+    <bean id="lcmReporter"
+        class="com.expedia.content.media.processing.pipeline.reporting.sql.LcmReporting">
+        <constructor-arg name="logEntryInsertProcedure"
+            ref="lcmInsertSproc" />
         <constructor-arg name="appName" value="${processname}" />
     </bean>
 
-    <bean id="lcmInsertSproc" primary="true" class="com.expedia.content.media.processing.pipeline.reporting.sql.SQLLogEntryInsertSproc" />
+    <bean id="lcmInsertSproc" primary="true"
+        class="com.expedia.content.media.processing.pipeline.reporting.sql.SQLLogEntryInsertSproc" />
 
     <bean id="providerProperties"
-          class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+        class="org.springframework.beans.factory.config.PropertiesFactoryBean">
         <property name="locations">
             <list>
                 <value>classpath*:provider-mapping.properties</value>
@@ -213,38 +355,50 @@
         <property name="minIdle" value="5" />
     </bean>
 
-	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
-		<property name="dataSource" ref="dataSource" />
-	</bean>
-    
-    <tx:annotation-driven transaction-manager="transactionManager"/>
+    <bean id="transactionManager"
+        class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+
+    <tx:annotation-driven transaction-manager="transactionManager" />
 
     <!-- Retry -->
-    <bean id="loggingRetryListener" class="com.expedia.content.media.processing.pipeline.retry.LoggingRetryListener" />
+    <bean id="loggingRetryListener"
+        class="com.expedia.content.media.processing.pipeline.retry.LoggingRetryListener" />
 
     <bean id="retryTemplate" class="org.springframework.retry.support.RetryTemplate">
         <property name="retryPolicy">
-            <bean class="org.springframework.retry.policy.ExceptionClassifierRetryPolicy">
+            <bean
+                class="org.springframework.retry.policy.ExceptionClassifierRetryPolicy">
                 <property name="policyMap">
                     <map>
                         <entry key="java.net.MalformedURLException">
-                            <bean class="org.springframework.retry.policy.NeverRetryPolicy" />
+                            <bean
+                                class="org.springframework.retry.policy.NeverRetryPolicy" />
                         </entry>
-                        <entry key="com.expedia.content.media.processing.pipeline.exception.ImageMessageException">
-                            <bean class="org.springframework.retry.policy.NeverRetryPolicy" />
+                        <entry
+                            key="com.expedia.content.media.processing.pipeline.exception.ImageMessageException">
+                            <bean
+                                class="org.springframework.retry.policy.NeverRetryPolicy" />
                         </entry>
                         <entry key="java.net.URISyntaxException">
-                            <bean class="org.springframework.retry.policy.NeverRetryPolicy" />
+                            <bean
+                                class="org.springframework.retry.policy.NeverRetryPolicy" />
                         </entry>
-                        <entry key="java.nio.file.FileSystemNotFoundException">
-                            <bean class="org.springframework.retry.policy.NeverRetryPolicy" />
+                        <entry
+                            key="java.nio.file.FileSystemNotFoundException">
+                            <bean
+                                class="org.springframework.retry.policy.NeverRetryPolicy" />
                         </entry>
                         <entry key="org.im4java.core.InfoException">
-                            <bean class="org.springframework.retry.policy.NeverRetryPolicy" />
+                            <bean
+                                class="org.springframework.retry.policy.NeverRetryPolicy" />
                         </entry>
                         <entry key="java.lang.Exception">
-                            <bean class="org.springframework.retry.policy.SimpleRetryPolicy">
-                                <property name="maxAttempts" value="${retry.max.attempts}" />
+                            <bean
+                                class="org.springframework.retry.policy.SimpleRetryPolicy">
+                                <property name="maxAttempts"
+                                    value="${retry.max.attempts}" />
                             </bean>
                         </entry>
                     </map>
@@ -264,91 +418,114 @@
     </bean>
 
     <!-- Status Controller -->
-    <bean id="AWSReceptionActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
-        <property name="activityType" value="MediaMessageReceived"/>
-        <property name="statusMessage" value="RECEIVED"/>
-        <property name="mediaType" value=".*"/>
+    <bean id="AWSReceptionActivity"
+        class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="MediaMessageReceived" />
+        <property name="statusMessage" value="RECEIVED" />
+        <property name="mediaType" value=".*" />
     </bean>
 
-    <bean id="receptionActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+    <bean id="receptionActivity"
+        class="com.expedia.content.media.processing.services.util.ActivityMapping">
         <!-- this will work -->
-        <property name="activityType" value="Reception"/>
+        <property name="activityType" value="Reception" />
         <!-- this will *not* work -->
-        <property name="statusMessage" value="RECEIVED"/>
-        <property name="mediaType" value=".*"/>
+        <property name="statusMessage" value="RECEIVED" />
+        <property name="mediaType" value=".*" />
     </bean>
 
-    <bean id="derivativeCreationActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
-        <property name="activityType" value="DerivativeCreation"/>
-        <property name="statusMessage" value="DERIVATIVES_CREATED"/>
-        <property name="mediaType" value="VirtualTour|Lodging"/>
+    <bean id="derivativeCreationActivity"
+        class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="DerivativeCreation" />
+        <property name="statusMessage" value="DERIVATIVES_CREATED" />
+        <property name="mediaType" value="VirtualTour|Lodging" />
     </bean>
 
-    <bean id="duplicateFoundActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
-        <property name="activityType" value="CollectorDupMediaFound"/>
-        <property name="statusMessage" value="DUPLICATE"/>
-        <property name="mediaType" value=".*"/>
+    <bean id="duplicateFoundActivity"
+        class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="CollectorDupMediaFound" />
+        <property name="statusMessage" value="DUPLICATE" />
+        <property name="mediaType" value=".*" />
     </bean>
 
-    <bean id="rejectActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
-        <property name="activityType" value="Reject"/>
-        <property name="statusMessage" value="REJECTED"/>
-        <property name="mediaType" value=".*"/>
+    <bean id="rejectActivity"
+        class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="Reject" />
+        <property name="statusMessage" value="REJECTED" />
+        <property name="mediaType" value=".*" />
     </bean>
 
-    <bean id="publishActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
-        <property name="activityType" value="Publish"/>
-        <property name="statusMessage" value="PUBLISHED"/>
-        <property name="mediaType" value=".*"/>
+    <bean id="publishActivity"
+        class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="Publish" />
+        <property name="statusMessage" value="PUBLISHED" />
+        <property name="mediaType" value=".*" />
     </bean>
 
-    <bean id="dcpPickupActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
-        <property name="activityType" value="DcpPickup"/>
-        <property name="statusMessage" value="RECEIVED"/>
-        <property name="mediaType" value="Cars"/>
+    <bean id="dcpPickupActivity"
+        class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="DcpPickup" />
+        <property name="statusMessage" value="RECEIVED" />
+        <property name="mediaType" value="Cars" />
     </bean>
 
-    <bean id="carsDerivativeCreationActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
-        <property name="activityType" value="DerivativeCreation"/>
-        <property name="statusMessage" value="PUBLISHED"/>
-        <property name="mediaType" value="Cars"/>
+    <bean id="carsDerivativeCreationActivity"
+        class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="DerivativeCreation" />
+        <property name="statusMessage" value="PUBLISHED" />
+        <property name="mediaType" value="Cars" />
     </bean>
 
     <bean id="mediaStatusTypeValidator"
-          class="com.expedia.content.media.processing.services.validator.MediaNamesValidator">
+        class="com.expedia.content.media.processing.services.validator.MediaNamesValidator">
     </bean>
 
-    <bean id="processLogDao" class="com.expedia.content.media.processing.services.dao.LcmProcessLogDao">
+    <bean id="processLogDao"
+        class="com.expedia.content.media.processing.services.dao.LcmProcessLogDao">
         <constructor-arg name="sqlMediaLogSproc">
-            <bean class="com.expedia.content.media.processing.services.dao.sql.SQLMediaLogSproc" />
+            <bean
+                class="com.expedia.content.media.processing.services.dao.sql.SQLMediaLogSproc" />
         </constructor-arg>
     </bean>
     <!-- /Status Controller -->
 
     <!-- Category Controller -->
-    <bean id="mediaDomainCategoriesDao" class="com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao">
+    <bean id="mediaDomainCategoriesDao"
+        class="com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao">
         <constructor-arg name="sproc">
-            <bean class="com.expedia.content.media.processing.services.dao.sql.SQLMediaDomainCategoriesSproc" />
+            <bean
+                class="com.expedia.content.media.processing.services.dao.sql.SQLMediaDomainCategoriesSproc" />
         </constructor-arg>
     </bean>
     <!-- /Category Controller -->
 
-    <bean id="skuGroupCatalogItemDao" class="com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao">
+    <bean id="skuGroupCatalogItemDao"
+        class="com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao">
         <constructor-arg name="sproc">
-            <bean class="com.expedia.content.media.processing.services.dao.SKUGroupGetSproc" />
+            <bean
+                class="com.expedia.content.media.processing.services.dao.SKUGroupGetSproc" />
         </constructor-arg>
     </bean>
 
-    <bean id="roomTypeDao" class="com.expedia.content.media.processing.services.dao.RoomTypeDao">
+    <bean id="roomTypeDao"
+        class="com.expedia.content.media.processing.services.dao.RoomTypeDao">
         <constructor-arg name="sproc">
-            <bean class="com.expedia.content.media.processing.services.dao.PropertyRoomTypeGetIDSproc" />
+            <bean
+                class="com.expedia.content.media.processing.services.dao.PropertyRoomTypeGetIDSproc" />
         </constructor-arg>
     </bean>
 
-    <bean id="lcmValidator" class="com.expedia.content.media.processing.services.validator.LCMValidator" />
+    <bean id="lcmValidator"
+        class="com.expedia.content.media.processing.services.validator.LCMValidator" />
 
-    <bean id="lcmUpdateValidator" class="com.expedia.content.media.processing.services.validator.LCMUpdateValidator" />
+    <bean id="lcmUpdateValidator"
+        class="com.expedia.content.media.processing.services.validator.LCMUpdateValidator" />
 
-    <bean id="roomValidator" class="com.expedia.content.media.processing.services.validator.RoomValidator" />
-    <bean id="metricProcessor" class="com.expedia.content.media.processing.services.metrics.MetricProcessor"/>
+    <bean id="roomValidator"
+        class="com.expedia.content.media.processing.services.validator.RoomValidator" />
+    <bean id="metricProcessor"
+        class="com.expedia.content.media.processing.services.metrics.MetricProcessor">
+        <constructor-arg name="graphiteApiUrl" value="${graphite.api.url}" />
+        <constructor-arg name="graphiteApiQuery" value="${graphite.api.query}" />
+    </bean>
 </beans>

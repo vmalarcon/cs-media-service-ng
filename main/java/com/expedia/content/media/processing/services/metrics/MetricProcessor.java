@@ -6,9 +6,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.BiFunction;
 
 import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+// import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
@@ -20,14 +23,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class MetricProcessor {
 
-    @Value("${graphite.api.url}")
     private String graphiteApiUrl;
-
-    @Value("${graphite.api.query}")
     private String graphiteApiQuery;
-
     private RestTemplate template;
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(MetricProcessor.class);
     private static final String DATA_POINT_FIELD = "datapoints";
     private static final String TARGET_FIELD = "target";
 
@@ -44,18 +43,29 @@ public class MetricProcessor {
         this.template = template;
     }
 
+    public MetricProcessor(String graphiteApiUrl, String graphiteApiQuery) {
+        this.graphiteApiQuery = graphiteApiQuery;
+        this.graphiteApiUrl = graphiteApiUrl;
+    }
+
     /**
      * Compute the up time for the whole component.
      */
     public Double getComponentUpTime(MetricQueryScope scope) throws Exception {
-        return computeComponentTime(UP_VALUE, scope.getValue());
+        return computeTime(UP_VALUE, scope, (time, target) -> {
+            LOGGER.info("Uptime successfuly computed, value =[{}] scope =[{}]", time, target);
+            return time;
+        });
     }
 
     /**
      * Compute the down time for the whole component.
      */
     public Double getComponentDownTime(MetricQueryScope scope) throws Exception {
-        return computeComponentTime(DOWN_VALUE, scope.getValue());
+        return computeTime(DOWN_VALUE, scope, (time, target) -> {
+            LOGGER.info("Downtime successfuly computed, value =[{}] scope =[{}]", time, target);
+            return time;
+        });
     }
 
     /**
@@ -106,7 +116,11 @@ public class MetricProcessor {
             }
         }
         return times.stream().mapToDouble(Double::doubleValue).max().getAsDouble();
+    }
 
+    private Double computeTime(Double direction, MetricQueryScope scope, BiFunction<Double, String, Double> computeFunction) throws Exception {
+        final Double time = computeComponentTime(direction, scope.getValue());
+        return computeFunction.apply(time, scope.getDescription());
     }
 
     /**
