@@ -160,6 +160,7 @@ public class MetricProcessor {
      * Verify if at least one instance is up at a specific timestamp.
      * 
      * @param timeStamp given timestamp.
+     * @param metrics collection of instances to verify.
      */
     private Boolean atLeastOneinstanceIsUp(Long instant, List<MetricInstance> metrics) throws Exception {
         for (final MetricInstance metric : metrics) {
