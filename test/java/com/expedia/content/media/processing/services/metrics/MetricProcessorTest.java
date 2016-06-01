@@ -6,7 +6,6 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,7 +29,6 @@ public class MetricProcessorTest {
 
     private static final String DATA_POINT_FIELD = "datapoints";
     private static final String TARGET_FIELD = "target";
-    private static final String IP_ADDRESS = "0.0.0.0";
 
     private MetricProcessor metricProcessor;
     @Mock
@@ -38,30 +36,25 @@ public class MetricProcessorTest {
     @Mock
     private ResponseEntity<List> response;
     
-    @Mock
-    InetAddress inetAddress;
 
     @Before
     public void setup() throws Exception {
         data = buildSampleData();
-        when(inetAddress.getHostAddress()).thenReturn(IP_ADDRESS);
         when(template.getForEntity(anyString(), eq(List.class))).thenReturn(response);
         when(response.getBody()).thenReturn(data);
-        metricProcessor = new MetricProcessor(data, template, inetAddress);
+        metricProcessor = new MetricProcessor(data, template);
         metricProcessor.setAllData();
     }
 
     @Test
     public void testUpTime() throws Exception {
         assertTrue(metricProcessor.getComponentUpTime().equals(900.0));
-        assertTrue(metricProcessor.getInstanceUpTime().equals(900.0));
         assertTrue(Double.valueOf(100.0).equals(Math.rint(metricProcessor.getComponentPercentageUpTime() * 100)));
     }
 
     @Test
     public void testDownTime() throws Exception {
         assertTrue(metricProcessor.getComponentDownTime().equals(0.0));
-        assertTrue(metricProcessor.getInstanceDownTime().equals(30.0));
         assertTrue(Double.valueOf(0.0).equals(Math.rint(metricProcessor.getComponentPercentageDownTime() * 100)));
     }
 
@@ -73,9 +66,8 @@ public class MetricProcessorTest {
 
     @Test
     public void testNullObject() throws Exception {
-        metricProcessor = new MetricProcessor(data, null, null);
-        assertNotNull(template);
-        assertNotNull(inetAddress);      
+        metricProcessor = new MetricProcessor(data, null);
+        assertNotNull(template);     
         when(template.getForEntity(anyString(), eq(List.class))).thenReturn(response);
         when(response.getBody()).thenReturn(new ArrayList<Map<String, Object>>()); 
     }

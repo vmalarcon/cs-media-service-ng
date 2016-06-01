@@ -327,16 +327,6 @@ public class MediaController extends CommonServiceController {
         return LIVE_COUNT;
     }
     
-    @Gauge(name="instanceUpTime")
-    public Double getInstanceUpTime() throws Exception {     
-        return metricProcessor.getInstanceUpTime();
-    }
-    
-    @Gauge(name="instanceDownTime")
-    public Double getInstanceDownTime() throws Exception {
-        return metricProcessor.getInstanceDownTime();
-    }
-    
     @Gauge(name="componentUpTime")
     public Double getComponentUpTime() throws Exception {     
         return metricProcessor.getComponentUpTime();

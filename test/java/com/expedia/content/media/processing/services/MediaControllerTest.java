@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.expedia.content.media.processing.services.metrics.MetricProcessor;
 import com.expedia.content.media.processing.services.reqres.Comment;
 import com.expedia.content.media.processing.services.reqres.Image;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
@@ -1622,25 +1623,22 @@ public class MediaControllerTest {
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode()); 
     }
 
-//    @Test
-//    public void testMetricCalls() throws Exception{
-//        MetricProcessor metricProcessor = mock(MetricProcessor.class);
-//        setFieldValue(mediaController, "metricProcessor", metricProcessor);
-//        mediaController.getComponentDownTime();
-//        verify(metricProcessor).getComponentDownTime();
-//        mediaController.getComponentPercentageDownTime();
-//        verify(metricProcessor).getComponentPercentageDownTime();
-//        mediaController.getComponentPercentageUpTime();
-//        verify(metricProcessor).getComponentPercentageUpTime();
-//        mediaController.getComponentUpTime();
-//        verify(metricProcessor).getComponentUpTime();
-//        mediaController.getInstanceDownTime();
-//        verify(metricProcessor).getInstanceDownTime();
-//        mediaController.getInstanceUpTime();
-//        verify(metricProcessor).getInstanceUpTime();
-//        assertTrue(mediaController.liveCount().equals(1));
-//        assertFalse(!mediaController.liveCount().equals(1));
-//    }
+    @Test
+    public void testMetricCalls() throws Exception{
+        MetricProcessor metricProcessor = mock(MetricProcessor.class);
+        setFieldValue(mediaController, "metricProcessor", metricProcessor);
+        mediaController.getComponentDownTime();
+        verify(metricProcessor).getComponentDownTime();
+        mediaController.getComponentPercentageDownTime();
+        verify(metricProcessor).getComponentPercentageDownTime();
+        mediaController.getComponentPercentageUpTime();
+        verify(metricProcessor).getComponentPercentageUpTime();
+        mediaController.getComponentUpTime();
+        verify(metricProcessor).getComponentUpTime();
+        assertTrue(mediaController.liveCount().equals(1));
+        assertFalse(!mediaController.liveCount().equals(1));
+    }
+
 
     @SuppressWarnings({"unchecked"})
     private static Map<String, List<MapMessageValidator>> getMockValidators() {
