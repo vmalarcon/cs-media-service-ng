@@ -1,14 +1,28 @@
 package com.expedia.content.media.processing.services.dao.domain;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import lombok.NoArgsConstructor;
+
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
 /**
  * Represents the data retrieved from the media process log.
  */
+@NoArgsConstructor
+@DynamoDBTable(tableName = "cs-mediadb-MediaProcessLog")
 public class MediaProcessLog {
 
     private String activityTime;
     private String mediaFileName;
     private String activityType;
     private String mediaType;
+    private String mediaGuid;
 
     public MediaProcessLog(String activityTime, String mediaFileName, String activityNameAndType, String mediaType) {
         this.activityTime = activityTime;
@@ -17,6 +31,17 @@ public class MediaProcessLog {
         this.mediaType = mediaType;
     }
 
+    @DynamoDBHashKey
+    @DynamoDBAttribute(attributeName = "MediaGUID")
+    public String getMediaGuid() {
+        return mediaGuid;
+    }
+
+    public void setMediaGuid(String mediaGuid) {
+        this.mediaGuid = mediaGuid;
+    }
+
+    @DynamoDBAttribute(attributeName = "activityTime")
     public String getActivityTime() {
         return activityTime;
     }
@@ -25,6 +50,7 @@ public class MediaProcessLog {
         this.activityTime = activityTime;
     }
 
+    @DynamoDBAttribute(attributeName = "FileName")
     public String getMediaFileName() {
         return mediaFileName;
     }
@@ -33,6 +59,7 @@ public class MediaProcessLog {
         this.mediaFileName = mediaFileName;
     }
 
+    @DynamoDBAttribute(attributeName = "ActivityType")
     public String getActivityType() {
         return activityType;
     }
@@ -41,6 +68,7 @@ public class MediaProcessLog {
         this.activityType = activityType;
     }
 
+    @DynamoDBAttribute(attributeName = "MediaType")
     public String getMediaType() {
         return mediaType;
     }
@@ -49,12 +77,22 @@ public class MediaProcessLog {
         this.mediaType = mediaType;
     }
 
+    public Date getStatusDate() {
+        try {
+            final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.US);
+            return dateFormat.parse(activityTime);
+        } catch (ParseException e) {
+            return new Date(0L);
+        }
+    }
+
     @Override public String toString() {
         return "MediaProcessLog{" +
                 "activityTime='" + activityTime + '\'' +
                 ", mediaFileName='" + mediaFileName + '\'' +
                 ", activityType='" + activityType + '\'' +
                 ", mediaType='" + mediaType + '\'' +
+                ", mediaGudi='" + mediaGuid + '\'' +
                 '}';
     }
 }

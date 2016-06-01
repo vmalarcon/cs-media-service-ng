@@ -15,6 +15,6 @@ public class MediaByDomainIdResponse {
     @Getter private final String domain;
     @Getter private final String domainId;
     @Getter private final Integer totalMediaCount;
-    @Getter private final List<DomainIdMedia> images;
+    @Getter private final List<Image> images;
 
 }

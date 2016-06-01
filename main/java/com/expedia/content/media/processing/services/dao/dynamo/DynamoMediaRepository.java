@@ -9,6 +9,7 @@ import com.expedia.content.media.processing.pipeline.domain.Metadata;
 import com.expedia.content.media.processing.services.dao.MediaDBException;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaDerivative;
+import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -91,6 +92,20 @@ public class DynamoMediaRepository {
                 .filter(item -> !(Boolean.TRUE.equals(item.isHidden())))
                 .filter(item -> environment.equals(item.getEnvironment()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * get the Media information from dynamo Media table.
+     * @param mediaGuid media Id from JSON
+     * @return list of Media
+     */
+    public List<MediaProcessLog> getMediaProcessLogByMediaGUID(String mediaGuid) {
+        final MediaProcessLog hashKey = new MediaProcessLog();
+        hashKey.setMediaGuid(mediaGuid);
+        final DynamoDBQueryExpression<MediaProcessLog> expression = new DynamoDBQueryExpression<MediaProcessLog>()
+                .withHashKeyValues(hashKey)
+                .withConsistentRead(false);
+        return dynamoMapper.query(MediaProcessLog.class, expression);
     }
 
     /**
