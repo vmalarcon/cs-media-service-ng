@@ -71,6 +71,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     private static final String FIELD_DERIVATIVE_FILE_SIZE = "fileSize";
     private static final String RESPONSE_FIELD_LCM_MEDIA_ID = "lcmMediaId";
     private static final String PUBLISHED_ACTIVITY = "PUBLISHED";
+    private static final String NULL_FILTER = null;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
     private static final Logger LOGGER = LoggerFactory.getLogger(LcmDynamoMediaDao.class);
@@ -171,22 +172,49 @@ public class LcmDynamoMediaDao implements MediaDao {
      * TODO Once all media from LCM is is migrated in the media DB only completeMedia(mediaRepo.getMedia(mediaGUID), nullFilter) and the latest status will be needed.
      * Builds a @MediaGetResponse by mediaGuid (Supports LcmMediaId as well, but this feature will be deprecated in feature releases)
      *
+     *
      * @param mediaGUID     String identifier for a Media
      * @return A @MediaGetResponse
      */
     @Override
-    @SuppressWarnings("unchecked")
     public MediaGetResponse getMediaByGUID(String mediaGUID) {
         final boolean isLodgingNoGuid = mediaGUID.matches("\\d+");
-        final String nullFilter = null;
-        Media guidMedia = null;
-        if (!isLodgingNoGuid) {
-            guidMedia = completeMedia(mediaRepo.getMedia(mediaGUID), nullFilter);
+        Media guidMedia = isLodgingNoGuid ? resolveMediaByLcmMediaId(mediaGUID) : resolveMediaByGuid(mediaGUID);
+        resolveMediaStatus(guidMedia, isLodgingNoGuid);
+        return transformSingleMediaForResponse(guidMedia);
+    }
+
+    /**
+     * Resolves a Media by it's LcmMediaID
+     *
+     * @param lcmMediaIdString  lcmMediaID of a Media
+     * @return a completed Media object that corresponds to the LcmMediaID
+     */
+    @SuppressWarnings("unchecked")
+    private Media resolveMediaByLcmMediaId(String lcmMediaIdString) {
+        Integer lcmMediaId = Integer.parseInt(lcmMediaIdString);
+        String domainId = null;
+        List<LcmMedia> lcmMediaList = (List<LcmMedia>) lcmMediaSproc.execute(lcmMediaId).get(SQLMediaGetSproc.MEDIA_SET);
+        if (lcmMediaList.isEmpty()) {
+            lcmMediaId = null;
+        } else {
+            domainId = lcmMediaList.get(0).getDomainId().toString();
         }
-        final boolean isLodgingWithGuid = guidMedia != null && Domain.LODGING.getDomain().equals(guidMedia.getDomain());
-        final Map<String, Media> mediaLcmMediaIdMap = new HashMap<>();
+        return resolveMedia(lcmMediaId, domainId, new HashMap<>(), null);
+    }
+
+    /**
+     * Resolves a Media by it's MediaGUID
+     *
+     * @param mediaGUID     MediaGuid of a Media
+     * @return a completed Media object that corresponds to the MediaGuid
+     */
+    private Media resolveMediaByGuid(String mediaGUID) {
         Integer lcmMediaId = null;
         String domainId = null;
+        Map<String, Media> mediaLcmMediaIdMap = new HashMap<>();
+        Media guidMedia = completeMedia(mediaRepo.getMedia(mediaGUID), NULL_FILTER);
+        final boolean isLodgingWithGuid = guidMedia != null && Domain.LODGING.getDomain().equals(guidMedia.getDomain());
         if (isLodgingWithGuid) {
             if (guidMedia.getLcmMediaId() != null) {
                 mediaLcmMediaIdMap.put(guidMedia.getLcmMediaId(), guidMedia);
@@ -194,33 +222,37 @@ public class LcmDynamoMediaDao implements MediaDao {
             }
             domainId = guidMedia.getDomainId();
         }
-        if (isLodgingNoGuid) {
-            lcmMediaId = Integer.parseInt(mediaGUID);
-            final List<LcmMedia> lcmMediaList = (List<LcmMedia>) lcmMediaSproc.execute(lcmMediaId).get(SQLMediaGetSproc.MEDIA_SET);
-            if (lcmMediaList.isEmpty()) {
-                lcmMediaId = null;
-            } else {
-                domainId = lcmMediaList.get(0).getDomainId().toString();
-            }
-        }
+        return resolveMedia(lcmMediaId, domainId, mediaLcmMediaIdMap, guidMedia);
+    }
+
+    /**
+     * Adds corresponding room data and merges LcmMedia and MediaDB data for a Media object
+     *
+     * @param lcmMediaId            LcmMediaID for a Media
+     * @param domainId              DomainID of a Media
+     * @param mediaLcmMediaIdMap    Map of LcmMediaId to a Media
+     * @param guidMedia             Partially Resolved Media object
+     * @return  completed Media Object
+     */
+    @SuppressWarnings("unchecked")
+    private Media resolveMedia(Integer lcmMediaId, String domainId, Map<String, Media> mediaLcmMediaIdMap, Media guidMedia) {
         if (lcmMediaId != null) {
             final Map<String, Object> roomResult = roomGetByMediaIdSproc.execute(lcmMediaId);
             final Map<Integer, List<LcmMediaRoom>> lcmRoomMediaMap = new HashMap<>();
             lcmRoomMediaMap.put(lcmMediaId, (List<LcmMediaRoom>) roomResult.get(SQLRoomGetByMediaIdSproc.ROOM_SET));
-            guidMedia = convertMedia(mediaLcmMediaIdMap, lcmRoomMediaMap).apply(buildLcmMedia(domainId, nullFilter).apply(lcmMediaId));
+            guidMedia = convertMedia(mediaLcmMediaIdMap, lcmRoomMediaMap).apply(buildLcmMedia(domainId, NULL_FILTER).apply(lcmMediaId));
         }
-
-        setStatus(guidMedia, isLodgingNoGuid);
-        return transformSingleMediaForResponse(guidMedia);
+        return guidMedia;
     }
+
 
     /**
      * Get and Set the status for a Media.
      *
-     * @param guidMedia         Media to ge the status for
-     * @param isLodgingNoGuid   Boolean to determine whether to get the Status from Dynamo or LCM
+     * @param guidMedia         Media to get the status for
+     * @param isLodgingNoGuid   Boolean to determine whether to get the Status from MediaDB or LCM
      */
-    private void setStatus(Media guidMedia, Boolean isLodgingNoGuid) {
+    private void resolveMediaStatus(Media guidMedia, Boolean isLodgingNoGuid) {
         if (guidMedia != null) {
             String status;
             if (isLodgingNoGuid) {
