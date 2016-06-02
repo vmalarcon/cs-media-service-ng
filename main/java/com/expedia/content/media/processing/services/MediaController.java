@@ -327,60 +327,60 @@ public class MediaController extends CommonServiceController {
     }
     
     @Gauge(name="componentMonthlyUpTime")
-    public Double getComponentMonthlyUpTime() throws Exception {     
+    public Double getComponentMonthlyUpTime() throws Exception {
         return metricProcessor.getComponentUpTime(MetricQueryScope.MONTHLY);
     }
-    
+
     @Gauge(name="componentMonthlyDownTime")
     public Double getComponentMonthlyDownTime() throws Exception {
         return metricProcessor.getComponentDownTime(MetricQueryScope.MONTHLY);
     }
-    
+
     @Gauge(name="componentPercentageMonthlyUpTime")
-    public Double getComponentPercentageMonthlyUpTime() throws Exception {     
+    public Double getComponentPercentageMonthlyUpTime() throws Exception {
         return metricProcessor.getComponentPercentageUpTime(MetricQueryScope.MONTHLY);
     }
-    
+
     @Gauge(name="componentPercentageMonthlyDownTime")
     public Double getComponentPercentageMonthlyDownTime() throws Exception {
         return metricProcessor.getComponentPercentageDownTime(MetricQueryScope.MONTHLY);
     }
-    
+
     @Gauge(name="componentWeeklyUpTime")
-    public Double getComponentWeeklyUpTime() throws Exception {     
+    public Double getComponentWeeklyUpTime() throws Exception {
         return metricProcessor.getComponentUpTime(MetricQueryScope.WEEKLY);
     }
-    
+
     @Gauge(name="componentWeeklyDownTime")
     public Double getComponentWeeklyDownTime() throws Exception {
         return metricProcessor.getComponentDownTime(MetricQueryScope.WEEKLY);
     }
-    
+
     @Gauge(name="componentPercentageWeeklyUpTime")
-    public Double getComponentPercentageWeeklyUpTime() throws Exception {     
+    public Double getComponentPercentageWeeklyUpTime() throws Exception {
         return metricProcessor.getComponentPercentageUpTime(MetricQueryScope.WEEKLY);
     }
-    
+
     @Gauge(name="componentPercentageWeeklyDownTime")
     public Double getComponentPercentageWeeklyDownTime() throws Exception {
         return metricProcessor.getComponentPercentageDownTime(MetricQueryScope.WEEKLY);
     }
 
     @Gauge(name="componentDailyUpTime")
-    public Double getComponentDailyUpTime() throws Exception {     
+    public Double getComponentDailyUpTime() throws Exception {
         return metricProcessor.getComponentUpTime(MetricQueryScope.DAILY);
     }
-    
+
     @Gauge(name="componentDailyDownTime")
     public Double getComponentDailyDownTime() throws Exception {
         return metricProcessor.getComponentDownTime(MetricQueryScope.DAILY);
     }
-    
+
     @Gauge(name="componentPercentageDailyUpTime")
-    public Double getComponentPercentageDailyUpTime() throws Exception {     
+    public Double getComponentPercentageDailyUpTime() throws Exception {
         return metricProcessor.getComponentPercentageUpTime(MetricQueryScope.DAILY);
     }
-    
+
     @Gauge(name="componentPercentageDailyDownTime")
     public Double getComponentPercentageDailyDownTime() throws Exception {
         return metricProcessor.getComponentPercentageDownTime(MetricQueryScope.DAILY);
