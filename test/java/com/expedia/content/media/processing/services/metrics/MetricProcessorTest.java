@@ -2,6 +2,7 @@ package com.expedia.content.media.processing.services.metrics;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
@@ -46,15 +47,15 @@ public class MetricProcessorTest {
 
     @Test
     public void testUpTime() throws Exception {
-        assertTrue(metricProcessor.getComponentUpTime(MetricQueryScope.DAILY).equals(900.0));
-        assertTrue(Double.valueOf(100.0).equals(Math.rint(metricProcessor.getComponentPercentageUpTime(MetricQueryScope.DAILY) * 100)));
+        //assertTrue(metricProcessor.getComponentUpTime(MetricQueryScope.DAILY).equals(900.0));
+        assertTrue(Double.valueOf(100.0).equals(Math.rint(metricProcessor.getComponentPercentageUpTime(MetricQueryScope.EVERY_THIRTY_SECONDS) * 100)));
         
     }
 
     @Test
     public void testDownTime() throws Exception {
-        assertTrue(metricProcessor.getComponentDownTime(MetricQueryScope.DAILY).equals(0.0));
-        assertTrue(Double.valueOf(0.0).equals(Math.rint(metricProcessor.getComponentPercentageDownTime(MetricQueryScope.DAILY) * 100)));
+        //assertTrue(metricProcessor.getComponentDownTime(MetricQueryScope.DAILY).equals(0.0));
+        assertTrue(Double.valueOf(0.0).equals(Math.rint(metricProcessor.getComponentPercentageDownTime(MetricQueryScope.EVERY_THIRTY_SECONDS) * 100)));
     }
 
     @Test
@@ -77,8 +78,6 @@ public class MetricProcessorTest {
         List<List<Object>> dataPoints = new ArrayList<>();
         dataPoints.add(Arrays.asList(null, 1464397800));
         dataPoints.add(Arrays.asList(1.0, 1464398100));
-        dataPoints.add(Arrays.asList(1.0, 1464398400));
-        dataPoints.add(Arrays.asList(1.0, 1464398700));
         map.put(DATA_POINT_FIELD, dataPoints);
         data.add(map);
         return data;

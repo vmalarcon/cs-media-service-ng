@@ -3,7 +3,8 @@ package com.expedia.content.media.processing.services.metrics;
 public enum MetricQueryScope {
   MONTHLY("-30d", "Monthly"),
   WEEKLY("-7d", "Weekly"),
-  DAILY("-1d", "Daly");
+  DAILY("-30s", "Daily"),
+  EVERY_THIRTY_SECONDS("-30s","Every 30s");
     
     private final String value;
     private final String description;
