@@ -100,7 +100,7 @@ public class MediaController extends CommonServiceController {
     private static final String UNAUTHORIZED_USER_MESSAGE = "User is not authorized.";
     private static final String DUPLICATED_STATUS = "DUPLICATE";
     private static final Integer LIVE_COUNT = 1;
-
+        
     @Resource(name = "providerProperties")
     private Properties providerProperties;
     @Autowired
@@ -172,7 +172,7 @@ public class MediaController extends CommonServiceController {
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST)
     public ResponseEntity<String> mediaAdd(@RequestBody final String message,
-                                           @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+            @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
@@ -200,7 +200,7 @@ public class MediaController extends CommonServiceController {
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     @RequestMapping(value = "/media/v1/images/{queryId}", method = RequestMethod.PUT)
     public ResponseEntity<String> mediaUpdate(@PathVariable("queryId") final String queryId, @RequestBody final String message,
-                                              @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+            @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl() + "/" + queryId;
         LOGGER.info("RECEIVED update REQUEST - serviceUrl={}, queryId=[{}], requestId=[{}], JSONMessage=[{}]", serviceUrl, queryId, requestID, message);
@@ -237,7 +237,7 @@ public class MediaController extends CommonServiceController {
      * Web services interface to retrieve media information by its GUID.
      *
      * @param mediaGUID The GUID of the requested media.
-     * @param headers Headers of the request.
+     * @param headers   Headers of the request.
      * @return The requested media information.
      * @throws Exception Thrown if processing the message fails.
      */
@@ -246,12 +246,12 @@ public class MediaController extends CommonServiceController {
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     @RequestMapping(value = "/media/v1/images/{mediaGUID}", method = RequestMethod.GET)
     @Transactional
-    public ResponseEntity<String> getMedia(@PathVariable("mediaGUID") final String mediaGUID,
-                                           @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+    public ResponseEntity<String> getMedia(@PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String, String> headers)
+            throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
-        // TODO Once lodging data transfered to media DB the second condition, numeric, will need to be removed.
+        //TODO Once lodging data transfered to media DB the second condition, numeric, will need to be removed.
         if (!mediaGUID.matches(REG_EX_GUID) && !mediaGUID.matches(REG_EX_NUMERIC)) {
             LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
             return this.buildErrorResponse("Invalid media GUID provided.", serviceUrl, BAD_REQUEST);
@@ -272,12 +272,12 @@ public class MediaController extends CommonServiceController {
     /**
      * Web services interface to retrieve media information by domain name and id.
      *
-     * @param domainName Name of the domain the domain id belongs to.
-     * @param domainId Identification of the domain item the media is required.
-     * @param activeFilter Filter determining what images to return. When true only active are returned. When false only inactive media is returned. When
-     *            all then all are returned. All is set a default.
+     * @param domainName           Name of the domain the domain id belongs to.
+     * @param domainId             Identification of the domain item the media is required.
+     * @param activeFilter         Filter determining what images to return. When true only active are returned. When false only inactive media is returned. When
+     *                             all then all are returned. All is set a default.
      * @param derivativeTypeFilter Inclusive filter to use to only return certain types of derivatives. Returns all derivatives if not specified.
-     * @param headers Headers of the request.
+     * @param headers              Headers of the request.
      * @return The list of media data belonging to the domain item.
      * @throws Exception Thrown if processing the message fails.
      */
@@ -287,21 +287,19 @@ public class MediaController extends CommonServiceController {
     @RequestMapping(value = "/media/v1/imagesbydomain/{domainName}/domainId/{domainId}", method = RequestMethod.GET)
     @Transactional
     public ResponseEntity<String> getMediaByDomainId(@PathVariable("domainName") final String domainName, @PathVariable("domainId") final String domainId,
-                                                     @RequestParam(value = "pageSize", required = false) final Integer pageSize,
-                                                     @RequestParam(value = "pageIndex", required = false) final Integer pageIndex,
-                                                     @RequestParam(value = "activeFilter", required = false,
-                                                                   defaultValue = "all") final String activeFilter,
-                                                     @RequestParam(value = "derivativeTypeFilter", required = false) final String derivativeTypeFilter,
-                                                     @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+            @RequestParam(value = "pageSize", required = false) final Integer pageSize,
+            @RequestParam(value = "pageIndex", required = false) final Integer pageIndex,
+            @RequestParam(value = "activeFilter", required = false,
+                    defaultValue = "all") final String activeFilter,
+            @RequestParam(value = "derivativeTypeFilter", required = false) final String derivativeTypeFilter,
+            @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
-        LOGGER.info(
-                "RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+        LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                 serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
         final ResponseEntity<String> validationResponse = validateMediaByDomainIdRequest(domainName, domainId, activeFilter);
         if (validationResponse != null) {
-            LOGGER.warn(
-                    "INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+            LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                     serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
             return validationResponse;
         }
@@ -309,8 +307,7 @@ public class MediaController extends CommonServiceController {
         try {
             response = mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter, pageSize, pageIndex);
         } catch (Exception ex) {
-            LOGGER.warn(
-                    "INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+            LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                     serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
             return new ResponseEntity<>(ex.getMessage(), BAD_REQUEST);
         }
@@ -319,7 +316,7 @@ public class MediaController extends CommonServiceController {
 
     /**
      * Sends the metric server a unique value. This is useful to know:
-     * 1- The number of active or inactive instances within a period of time.
+     * 1- The number of active or inactive  instances within a period of time.
      * 2- How long the component was up or down within a period of time.
      * 
      * @return Always return a single value.
@@ -329,16 +326,22 @@ public class MediaController extends CommonServiceController {
         return LIVE_COUNT;
     }
 
-    @Gauge(name = "componentPercentageUpTime")
+    /**
+     * Compute the uptime percentage and send back to graphite
+     */
+    @Gauge(name="componentPercentageUpTime")
     public Double getComponentPercentageUpTime() throws Exception {
         return metricProcessor.getComponentPercentageUpTime(MetricQueryScope.EVERY_THIRTY_SECONDS);
     }
-
-    @Gauge(name = "componentPercentageDownTime")
+    
+    /**
+     * Compute the down time percentage and send back to graphite.
+     */
+    @Gauge(name="componentPercentageDownTime")
     public Double getComponentPercentageDownTime() throws Exception {
         return metricProcessor.getComponentPercentageDownTime(MetricQueryScope.EVERY_THIRTY_SECONDS);
     }
-
+    
     private void validateAndInitMap(Map<String, Object> objectMap, String queryId, String serviceUrl, String message, String requestID) throws Exception {
         Media dynamoMedia = null;
         if (queryId.matches(GUID_REG)) {
@@ -379,15 +382,15 @@ public class MediaController extends CommonServiceController {
             objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse(jsonError, serviceUrl, BAD_REQUEST));
             return;
         }
-        if (mediaCannotBeHidden(dynamoMedia, newJson)) {
+        if (mediaCannotBeHidden(dynamoMedia, newJson)){
             objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("Only unpublished media can be hidden", serviceUrl, BAD_REQUEST));
         }
     }
 
     /**
-     * Verify if a media can be hidden.
-     * An image can be permanently hidden from all messages, including further updates.
-     * This is not applied to published images. only unpublished images (Duplicated and Rejected) can be hidden.
+     *  Verify if a media can be hidden.
+     *  An image can be permanently hidden from all messages, including further updates.
+     *  This is not applied to published images. only unpublished images (Duplicated and Rejected) can be hidden.
      *
      * @param media Media to verify
      * @param message Incoming update message.
@@ -418,10 +421,11 @@ public class MediaController extends CommonServiceController {
         return new ObjectMapper().writeValueAsString(jsonMap);
     }
 
+
     /**
      * Validates the media by domain id request.
      *
-     * @param domainName Domain to validate.
+     * @param domainName   Domain to validate.
      * @param activeFilter Active filter to validate.
      * @return Returns a response if the validation fails; null otherwise.
      */
@@ -442,17 +446,17 @@ public class MediaController extends CommonServiceController {
     /**
      * Common processing between mediaAdd and the AWS portion of aquireMedia. Can be transfered into mediaAdd once aquireMedia is removed.
      *
-     * @param message JSON formated ImageMessage.
-     * @param requestID The id of the request. Used for tracking purposes.
-     * @param serviceUrl URL of the message called.
-     * @param clientId Web service client id.
+     * @param message       JSON formated ImageMessage.
+     * @param requestID     The id of the request. Used for tracking purposes.
+     * @param serviceUrl    URL of the message called.
+     * @param clientId      Web service client id.
      * @param successStatus Status to return when successful.
      * @return The response for the service call.
      * @throws Exception Thrown if the message can't be validated or the response can't be serialized.
      */
     @SuppressWarnings({"PMD.PrematureDeclaration"})
     private ResponseEntity<String> processRequest(final String message, final String requestID, final String serviceUrl, final String clientId,
-                                                  HttpStatus successStatus) throws Exception {
+            HttpStatus successStatus) throws Exception {
         final String json = validateImageMessage(message, clientId);
         if (!"[]".equals(json)) {
             LOGGER.warn("Returning bad request for messageName={}, requestId=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, requestID, message, json);
@@ -496,10 +500,10 @@ public class MediaController extends CommonServiceController {
      * published to the next work queue.
      *
      * @param imageMessage The incoming image message.
-     * @param requestID The id of the request. Used for tracking purposes.
-     * @param clientId Web service client id.
+     * @param requestID    The id of the request. Used for tracking purposes.
+     * @param clientId     Web service client id.
      * @return A Map contains the updated message with request and other data added
-     *         and if the file is checked for reprocessing .
+     * and if the file is checked for reprocessing .
      */
     private Map<String, Object> updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId) {
         ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
@@ -536,7 +540,9 @@ public class MediaController extends CommonServiceController {
      * @return the fileName to use for the providedName field
      */
     private String resolveProvidedName(final ImageMessage imageMessage) {
-        return (imageMessage.getFileName() == null) ? FileNameUtil.getFileNameFromUrl(imageMessage.getFileUrl()) : imageMessage.getFileName();
+        return (imageMessage.getFileName() == null) ?
+                FileNameUtil.getFileNameFromUrl(imageMessage.getFileUrl()) :
+                imageMessage.getFileName();
     }
 
     /**
@@ -549,19 +555,19 @@ public class MediaController extends CommonServiceController {
      * populate the replacement queryId and GUID on the ImageMessageBuilder.
      * </p>
      *
-     * @param imageMessage Original message received.
+     * @param imageMessage        Original message received.
      * @param imageMessageBuilder Builder for the new/mutated ImageMessage.
-     * @param clientId Existing in the message header, represents the client (EPC, Media Cloud Router, Multisource, GSO Media Tools)
+     * @param clientId            Existing in the message header, represents the client (EPC, Media Cloud Router, Multisource, GSO Media Tools)
      * @return returns true if reprocessing and false if not.
      */
 
-    private boolean processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder, String clientId) {
+    private boolean processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder, String clientId ) {
         if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
             LOGGER.info("This is a replacement: mediaGuid=[{}], filename=[{}], requestId=[{}]", imageMessage.getMediaGuid(), imageMessage.getFileName(),
                     imageMessage.getRequestId());
             final List<Media> mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
-            final Optional<Media> bestMedia = MediaReplacement.selectBestMedia(mediaList, imageMessage.getOuterDomainData().getDomainId(),
-                    imageMessage.getOuterDomainData().getProvider());
+            final Optional<Media> bestMedia = MediaReplacement
+                    .selectBestMedia(mediaList, imageMessage.getOuterDomainData().getDomainId(), imageMessage.getOuterDomainData().getProvider());
             // Replace the GUID and MediaId of the existing Media
             if (bestMedia.isPresent()) {
                 final Media media = bestMedia.get();
@@ -608,7 +614,7 @@ public class MediaController extends CommonServiceController {
      * Get validator list by different client, and do validation by rules and DAO validator (later)
      * return the validation error list that combine all of the error result.
      *
-     * @param message input json message.
+     * @param message  input json message.
      * @param clientId Web service client id.
      * @return JSON string contains fileName and error description.
      * @throws Exception when message to ImageMessage and convert java list to json.
@@ -636,12 +642,12 @@ public class MediaController extends CommonServiceController {
      * Logs a completed activity and its time. and exepdiaId is appended before the file name
      *
      * @param imageMessage The imageMessage of the file being processed.
-     * @param activity The activity to log.
+     * @param activity     The activity to log.
      */
     private void logActivity(final ImageMessage imageMessage, final Activity activity) throws URISyntaxException {
         final LogEntry logEntry =
                 new LogEntry(imageMessage.getFileName(), imageMessage.getMediaGuid(), activity, new Date(), imageMessage.getOuterDomainData().getDomain(),
-                             imageMessage.getOuterDomainData().getDomainId(), imageMessage.getOuterDomainData().getDerivativeCategory());
+                        imageMessage.getOuterDomainData().getDomainId(), imageMessage.getOuterDomainData().getDerivativeCategory());
         logActivityProcess.log(logEntry, reporting);
     }
 
@@ -664,13 +670,13 @@ public class MediaController extends CommonServiceController {
      * @param mediaId
      * @return The GUID or null if no media found in dynamo.
      */
-    private String getGuidByMediaId(String mediaId) {
+    private String getGuidByMediaId(String mediaId){
         if (StringUtils.isNumeric(mediaId)) {
             final List<Media> mediaList = mediaDao.getMediaByMediaId(mediaId);
             if (!mediaList.isEmpty()) {
-                return mediaList.stream().findFirst().get().getMediaGuid();
+                 return mediaList.stream().findFirst().get().getMediaGuid();
             }
         }
         return null;
-    }
+    }   
 }
