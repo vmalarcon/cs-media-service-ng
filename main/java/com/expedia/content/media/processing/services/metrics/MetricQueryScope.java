@@ -4,7 +4,7 @@ public enum MetricQueryScope {
   MONTHLY("-30d", "Monthly"),
   WEEKLY("-7d", "Weekly"),
   DAILY("-30s", "Daily"),
-  EVERY_THIRTY_SECONDS("-30s","Every 30s");
+  HOURLY("-1hours", "Hourly");
     
     private final String value;
     private final String description;
