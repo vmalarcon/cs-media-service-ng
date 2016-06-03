@@ -42,7 +42,7 @@ public class MetricProcessor {
     private static final Double UP_VALUE = 1.0;
     private static final Double DOWN_VALUE = 0.0;
     private static final String LAST_QUERY_TIME = "lastQueryTime";
-    private static final Long DEFAULT_QUERY_DELAY = 30L;
+    private static final int DEFAULT_QUERY_DELAY = 30;
 
     public MetricProcessor(RestTemplate template) {
         this.template = template;
@@ -79,14 +79,18 @@ public class MetricProcessor {
     public Double getComponentPercentageUpTime(MetricQueryScope scope) throws Exception {
         final Double uptime = getComponentUpTime(scope);
         final Double downtime = getComponentDownTime(scope);
-        return uptime.equals(DOWN_VALUE) ? DOWN_VALUE : uptime / (uptime + downtime);
+        final Double upercentage = uptime.equals(DOWN_VALUE) ? DOWN_VALUE : uptime / (uptime + downtime);
+        LOGGER.info("Uptime percentage successfuly computed, value =[{}] scope =[{}]", upercentage, scope.getDescription());
+        return upercentage;
     }
 
     /**
      * Compute The percentage of down time for the whole component.
      */
     public Double getComponentPercentageDownTime(MetricQueryScope scope) throws Exception {
-        return (1 - getComponentPercentageUpTime(scope));
+        final Double dpercentage = (1 - getComponentPercentageUpTime(scope));
+        LOGGER.info("Downtime percentage successfuly computed, value =[{}] scope =[{}]", dpercentage, scope.getDescription());
+        return dpercentage;
     }
 
     /**
@@ -108,9 +112,8 @@ public class MetricProcessor {
     private Double computeComponentTime(Double direction, MetricQueryScope scope) throws Exception {
         List<MetricInstance> metrics = (List<MetricInstance>) allData.get(scope.getDescription());
         final Long lastQueryTime = (Long) allData.get(LAST_QUERY_TIME);
-        final Long now = DateTime.now().getMillis();
-
-        if (metrics == null && (lastQueryTime==null || now <= lastQueryTime)) {
+        final Long nextQueryTime = DateTime.now().minusSeconds(DEFAULT_QUERY_DELAY).getMillis();
+        if (metrics == null || (lastQueryTime != null && nextQueryTime > lastQueryTime)) {
             metrics = initDataSet(scope);
         }
         final List<Double> times = new ArrayList<>();
@@ -119,6 +122,7 @@ public class MetricProcessor {
                 for (final Long instant : m.getTimeStampList()) {
                     if (atLeastOneinstanceIsUp(instant, metrics)) {
                         times.add(DOWN_VALUE);
+                        break;
                     } else {
                         times.add(computeInstanceTime(m, direction));
                     }
@@ -130,6 +134,14 @@ public class MetricProcessor {
         return times.isEmpty() ? 0.0 : times.stream().mapToDouble(Double::doubleValue).max().getAsDouble();
     }
 
+    /**
+     * Compute the generic time.
+     * 
+     * @param direction computing direction (UP or DOWN)
+     * @param scope graphite query period.
+     * @param computeFunction function encapsulated the up or down logic computing.
+     * @return Returns the computed time.
+     */
     private Double computeTime(Double direction, MetricQueryScope scope, BiFunction<Double, String, Double> computeFunction) throws Exception {
         final Double time = computeComponentTime(direction, scope);
         return computeFunction.apply(time, scope.getDescription());
@@ -138,7 +150,7 @@ public class MetricProcessor {
     /**
      * Initialize the dataset.
      * 
-     * @param targetPeriod target period to query.
+     * @param scope target period to query.
      */
     private List<MetricInstance> initDataSet(MetricQueryScope scope) throws Exception {
         final List<Map<String, Object>> data = getData(scope);
@@ -211,6 +223,11 @@ public class MetricProcessor {
         return response.getBody();
     }
 
+    /**
+     * Build the Rest call url.
+     * 
+     * @param targetPeriod period to query.
+     */
     private String buildUrl(String targetPeriod) {
         final StringBuilder sb = new StringBuilder();
         sb.append(graphiteApiUrl).append(targetPeriod).append(graphiteApiQuery);
