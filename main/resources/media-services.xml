@@ -43,6 +43,13 @@
 	            <ref bean="mediaRouterValidator"/>
 	        </list>
 	    </entry>
+        <entry key="EPS Media API">
+            <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                <ref bean="mvelValidator"/>
+                <ref bean="lcmValidator"/>
+                <ref bean="roomValidator"/>
+            </list>
+        </entry>
 	    <entry key="Multisource">
 	        <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
 	            <ref bean="multisourceValidator"/>
@@ -105,7 +112,6 @@
             </map>
         </property>
     </bean>
-
 
     <bean id="mediaUpdateValidator" class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
         <property name="clientRule" value="EPCUpdate" />

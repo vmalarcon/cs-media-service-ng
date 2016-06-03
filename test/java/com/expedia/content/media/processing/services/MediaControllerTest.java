@@ -90,6 +90,7 @@ import com.google.common.collect.Lists;
 public class MediaControllerTest {
 
     private static final String TEST_CLIENT_ID = "a-user";
+    private static final String EPS_MEDIA_API_CLIENT_ID = "EPC Media API";
     private static final String MEDIA_CLOUD_ROUTER_CLIENT_ID = "Media Cloud Router";
     private static final String RESPONSE_FIELD_LCM_MEDIA_ID = "lcmMediaId";
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
