@@ -1629,9 +1629,9 @@ public class MediaControllerTest {
         MetricProcessor metricProcessor = mock(MetricProcessor.class);
         setFieldValue(mediaController, "metricProcessor", metricProcessor);
         mediaController.getComponentPercentageDownTime();
-        verify(metricProcessor).getComponentPercentageDownTime(MetricQueryScope.EVERY_THIRTY_SECONDS);
+        verify(metricProcessor).getComponentPercentageDownTime(MetricQueryScope.HOURLY);
         mediaController.getComponentPercentageUpTime();
-        verify(metricProcessor).getComponentPercentageUpTime(MetricQueryScope.EVERY_THIRTY_SECONDS);
+        verify(metricProcessor).getComponentPercentageUpTime(MetricQueryScope.HOURLY);
         assertTrue(mediaController.liveCount().equals(1));
         assertFalse(!mediaController.liveCount().equals(1));
     }

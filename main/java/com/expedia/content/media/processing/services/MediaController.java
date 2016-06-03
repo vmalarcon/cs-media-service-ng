@@ -331,7 +331,7 @@ public class MediaController extends CommonServiceController {
      */
     @Gauge(name="componentPercentageUpTime")
     public Double getComponentPercentageUpTime() throws Exception {
-        return metricProcessor.getComponentPercentageUpTime(MetricQueryScope.EVERY_THIRTY_SECONDS);
+        return metricProcessor.getComponentPercentageUpTime(MetricQueryScope.HOURLY);
     }
     
     /**
@@ -339,7 +339,7 @@ public class MediaController extends CommonServiceController {
      */
     @Gauge(name="componentPercentageDownTime")
     public Double getComponentPercentageDownTime() throws Exception {
-        return metricProcessor.getComponentPercentageDownTime(MetricQueryScope.EVERY_THIRTY_SECONDS);
+        return metricProcessor.getComponentPercentageDownTime(MetricQueryScope.HOURLY);
     }
     
     private void validateAndInitMap(Map<String, Object> objectMap, String queryId, String serviceUrl, String message, String requestID) throws Exception {
