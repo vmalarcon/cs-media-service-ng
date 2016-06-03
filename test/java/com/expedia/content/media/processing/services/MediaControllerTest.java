@@ -91,6 +91,7 @@ import com.google.common.collect.Lists;
 public class MediaControllerTest {
 
     private static final String TEST_CLIENT_ID = "a-user";
+    private static final String EPS_MEDIA_API_CLIENT_ID = "EPC Media API";
     private static final String MEDIA_CLOUD_ROUTER_CLIENT_ID = "Media Cloud Router";
     private static final String RESPONSE_FIELD_LCM_MEDIA_ID = "lcmMediaId";
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -1628,14 +1629,10 @@ public class MediaControllerTest {
     public void testMetricCalls() throws Exception{
         MetricProcessor metricProcessor = mock(MetricProcessor.class);
         setFieldValue(mediaController, "metricProcessor", metricProcessor);
-        mediaController.getComponentMonthlyDownTime();
-        verify(metricProcessor).getComponentDownTime(MetricQueryScope.MONTHLY);
-        mediaController.getComponentPercentageMonthlyDownTime();
-        verify(metricProcessor).getComponentPercentageDownTime(MetricQueryScope.MONTHLY);
-        mediaController.getComponentPercentageMonthlyUpTime();
-        verify(metricProcessor).getComponentPercentageUpTime(MetricQueryScope.MONTHLY);
-        mediaController.getComponentMonthlyUpTime();
-        verify(metricProcessor).getComponentUpTime(MetricQueryScope.MONTHLY);
+        mediaController.getComponentPercentageDownTime();
+        verify(metricProcessor).getComponentPercentageDownTime(MetricQueryScope.EVERY_THIRTY_SECONDS);
+        mediaController.getComponentPercentageUpTime();
+        verify(metricProcessor).getComponentPercentageUpTime(MetricQueryScope.EVERY_THIRTY_SECONDS);
         assertTrue(mediaController.liveCount().equals(1));
         assertFalse(!mediaController.liveCount().equals(1));
     }

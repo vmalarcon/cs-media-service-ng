@@ -6,9 +6,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.BiFunction;
 
+import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
@@ -20,14 +24,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class MetricProcessor {
 
-    @Value("${graphite.api.url}")
     private String graphiteApiUrl;
-
-    @Value("${graphite.api.query}")
     private String graphiteApiQuery;
-
     private RestTemplate template;
+    final private Map<String, Object> allData = new HashedMap<>();
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(MetricProcessor.class);
     private static final String DATA_POINT_FIELD = "datapoints";
     private static final String TARGET_FIELD = "target";
 
@@ -39,23 +41,36 @@ public class MetricProcessor {
     private static final int Y_INDEX = 0;
     private static final Double UP_VALUE = 1.0;
     private static final Double DOWN_VALUE = 0.0;
+    private static final String LAST_QUERY_TIME = "lastQueryTime";
+    private static final int DEFAULT_QUERY_DELAY = 30;
 
     public MetricProcessor(RestTemplate template) {
         this.template = template;
+    }
+
+    public MetricProcessor(String graphiteApiUrl, String graphiteApiQuery) {
+        this.graphiteApiQuery = graphiteApiQuery;
+        this.graphiteApiUrl = graphiteApiUrl;
     }
 
     /**
      * Compute the up time for the whole component.
      */
     public Double getComponentUpTime(MetricQueryScope scope) throws Exception {
-        return computeComponentTime(UP_VALUE, scope.getValue());
+        return computeTime(UP_VALUE, scope, (time, target) -> {
+            LOGGER.info("Uptime successfuly computed, value =[{}] scope =[{}]", time, target);
+            return time;
+        });
     }
 
     /**
      * Compute the down time for the whole component.
      */
     public Double getComponentDownTime(MetricQueryScope scope) throws Exception {
-        return computeComponentTime(DOWN_VALUE, scope.getValue());
+        return computeTime(DOWN_VALUE, scope, (time, target) -> {
+            LOGGER.info("Downtime successfuly computed, value =[{}] scope =[{}]", time, target);
+            return time;
+        });
     }
 
     /**
@@ -63,14 +78,19 @@ public class MetricProcessor {
      */
     public Double getComponentPercentageUpTime(MetricQueryScope scope) throws Exception {
         final Double uptime = getComponentUpTime(scope);
-        return uptime.equals(DOWN_VALUE) ? DOWN_VALUE : uptime / (uptime + getComponentDownTime(scope));
+        final Double downtime = getComponentDownTime(scope);
+        final Double upercentage = uptime.equals(DOWN_VALUE) ? DOWN_VALUE : uptime / (uptime + downtime);
+        LOGGER.info("Uptime percentage successfuly computed, value =[{}] scope =[{}]", upercentage, scope.getDescription());
+        return upercentage;
     }
 
     /**
      * Compute The percentage of down time for the whole component.
      */
     public Double getComponentPercentageDownTime(MetricQueryScope scope) throws Exception {
-        return (1 - getComponentPercentageUpTime(scope));
+        final Double dpercentage = (1 - getComponentPercentageUpTime(scope));
+        LOGGER.info("Downtime percentage successfuly computed, value =[{}] scope =[{}]", dpercentage, scope.getDescription());
+        return dpercentage;
     }
 
     /**
@@ -89,14 +109,20 @@ public class MetricProcessor {
     /**
      * Compute the time for the whole component.
      */
-    private Double computeComponentTime(Double direction, String targetPeriod) throws Exception {
-        final List<MetricInstance> metrics = initDataSet(targetPeriod);
+    private Double computeComponentTime(Double direction, MetricQueryScope scope) throws Exception {
+        List<MetricInstance> metrics = (List<MetricInstance>) allData.get(scope.getDescription());
+        final Long lastQueryTime = (Long) allData.get(LAST_QUERY_TIME);
+        final Long nextQueryTime = DateTime.now().minusSeconds(DEFAULT_QUERY_DELAY).getMillis();
+        if (metrics == null || (lastQueryTime != null && nextQueryTime > lastQueryTime)) {
+            metrics = initDataSet(scope);
+        }
         final List<Double> times = new ArrayList<>();
         for (final MetricInstance m : metrics) {
             if (DOWN_VALUE.equals(direction)) {
                 for (final Long instant : m.getTimeStampList()) {
                     if (atLeastOneinstanceIsUp(instant, metrics)) {
                         times.add(DOWN_VALUE);
+                        break;
                     } else {
                         times.add(computeInstanceTime(m, direction));
                     }
@@ -105,18 +131,30 @@ public class MetricProcessor {
                 times.add(computeInstanceTime(m, direction));
             }
         }
-        return times.stream().mapToDouble(Double::doubleValue).max().getAsDouble();
+        return times.isEmpty() ? 0.0 : times.stream().mapToDouble(Double::doubleValue).max().getAsDouble();
+    }
 
+    /**
+     * Compute the generic time.
+     * 
+     * @param direction computing direction (UP or DOWN)
+     * @param scope graphite query period.
+     * @param computeFunction function encapsulated the up or down logic computing.
+     * @return Returns the computed time.
+     */
+    private Double computeTime(Double direction, MetricQueryScope scope, BiFunction<Double, String, Double> computeFunction) throws Exception {
+        final Double time = computeComponentTime(direction, scope);
+        return computeFunction.apply(time, scope.getDescription());
     }
 
     /**
      * Initialize the dataset.
      * 
-     * @param targetPeriod target period to query.
+     * @param scope target period to query.
      */
-    private List<MetricInstance> initDataSet(String targetPeriod) throws Exception {
-        final List<Map<String, Object>> data = getData(targetPeriod);
-        return getMetrics(data);
+    private List<MetricInstance> initDataSet(MetricQueryScope scope) throws Exception {
+        final List<Map<String, Object>> data = getData(scope);
+        return getMetrics(data, scope);
     }
 
     /**
@@ -127,7 +165,7 @@ public class MetricProcessor {
      * @param data Raw metrics data to convert.
      * @return Returns the list of metrics.
      */
-    private List<MetricInstance> getMetrics(final List<Map<String, Object>> data) throws Exception {
+    private List<MetricInstance> getMetrics(final List<Map<String, Object>> data, MetricQueryScope scope) throws Exception {
         final List<MetricInstance> metrics = new ArrayList<>();
         final SortedSet<Long> timeStampList = new TreeSet<>();
         if (data != null) {
@@ -139,7 +177,7 @@ public class MetricProcessor {
                 for (int i = 0; i < dataPoints.size(); i++) {
                     final Integer x = (Integer) dataPoints.get(i).get(X_INDEX);
                     final Double y = (Double) dataPoints.get(i).get(Y_INDEX);
-                    startTimestamp = startTimestamp == null ? (long) x : (Integer) dataPoints.get(i - 1).get(X_INDEX);
+                    startTimestamp = startTimestamp == null ? (long) (x - DEFAULT_QUERY_DELAY) : (Integer) dataPoints.get(i - 1).get(X_INDEX);
                     final MetricPoint metricPoint =
                             MetricPoint.builder().startTimestamp(startTimestamp).endTimestamp(x.longValue()).value(y == null ? 0 : y).build();
                     metricPoints.add(metricPoint);
@@ -152,7 +190,8 @@ public class MetricProcessor {
                 metrics.add(metric);
             });
         }
-
+        allData.put(scope.getDescription(), metrics);
+        allData.put(LAST_QUERY_TIME, DateTime.now().getMillis());
         return metrics;
     }
 
@@ -178,12 +217,17 @@ public class MetricProcessor {
     /**
      * Fetch the raw data from graphite.
      */
-    private List<Map<String, Object>> getData(String targetPeriod) throws Exception {
+    private List<Map<String, Object>> getData(MetricQueryScope scope) throws Exception {
         template = template == null ? new RestTemplate() : template;
-        final ResponseEntity<List> response = template.getForEntity(buildUrl(targetPeriod), List.class);
+        final ResponseEntity<List> response = template.getForEntity(buildUrl(scope.getValue()), List.class);
         return response.getBody();
     }
 
+    /**
+     * Build the Rest call url.
+     * 
+     * @param targetPeriod period to query.
+     */
     private String buildUrl(String targetPeriod) {
         final StringBuilder sb = new StringBuilder();
         sb.append(graphiteApiUrl).append(targetPeriod).append(graphiteApiQuery);
