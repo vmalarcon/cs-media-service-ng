@@ -1,7 +1,6 @@
 package com.expedia.content.media.processing.services.metrics;
 
 import java.util.List;
-import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,7 +19,6 @@ public class MetricInstance {
     private final String instanceName;
     private final String environement;
     private final List<MetricPoint> metricPoints;
-    private final Set<Long> timeStampList;
 
     @Override
     public String toString() {

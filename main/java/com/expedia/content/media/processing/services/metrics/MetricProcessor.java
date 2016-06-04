@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.BiFunction;
@@ -32,6 +33,7 @@ public class MetricProcessor {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetricProcessor.class);
     private static final String DATA_POINT_FIELD = "datapoints";
     private static final String TARGET_FIELD = "target";
+    private static final String TIME_STAMP_LIST_FIELD = "timeStampFiled";
 
     private static final int COMPONENT_INDEX = 2;
     private static final int ENVIRONMENT_INDEX = 3;
@@ -100,7 +102,7 @@ public class MetricProcessor {
      * @param direction. Given direction for computing. Up or Down.
      * @return Returns the computed time.
      */
-    private Double computeInstanceTime(MetricInstance metric, Double direction) throws Exception {
+    private Double computeInstanceTime(MetricInstance metric, Double direction) {
         return metric.getMetricPoints().stream().filter(mp -> direction.equals(mp.getValue())).mapToDouble(mp -> {
             return (double) (mp.getEndTimestamp() - mp.getStartTimestamp());
         }).sum();
@@ -109,27 +111,26 @@ public class MetricProcessor {
     /**
      * Compute the time for the whole component.
      */
+    @SuppressWarnings("unchecked")
     private Double computeComponentTime(Double direction, MetricQueryScope scope) throws Exception {
-        List<MetricInstance> metrics = (List<MetricInstance>) allData.get(scope.getDescription());
+        List<MetricInstance> instances = (List<MetricInstance>) allData.get(scope.getDescription());
         final Long lastQueryTime = (Long) allData.get(LAST_QUERY_TIME);
+        final Set<Long> timeStampList = (Set<Long>) allData.get(TIME_STAMP_LIST_FIELD);
+
         final Long nextQueryTime = DateTime.now().minusSeconds(DEFAULT_QUERY_DELAY).getMillis();
-        if (metrics == null || (lastQueryTime != null && nextQueryTime > lastQueryTime)) {
-            metrics = initDataSet(scope);
+        if (instances == null || (lastQueryTime != null && nextQueryTime > lastQueryTime)) {
+            instances = initDataSet(scope);
         }
+        final List<MetricInstance> localInstances = instances;
         final List<Double> times = new ArrayList<>();
-        for (final MetricInstance m : metrics) {
-            if (DOWN_VALUE.equals(direction)) {
-                for (final Long instant : m.getTimeStampList()) {
-                    if (atLeastOneinstanceIsUp(instant, metrics)) {
-                        times.add(DOWN_VALUE);
-                        break;
-                    } else {
-                        times.add(computeInstanceTime(m, direction));
-                    }
-                }
+        if (DOWN_VALUE.equals(direction)) {
+            if (timeStampList.stream().anyMatch(instant -> atLeastOneinstanceIsUp(instant, localInstances))) {
+                times.add(DOWN_VALUE);
             } else {
-                times.add(computeInstanceTime(m, direction));
+                instances.stream().forEach(m -> times.add(computeInstanceTime(m, direction)));
             }
+        } else {
+            instances.stream().forEach(m -> times.add(computeInstanceTime(m, direction)));
         }
         return times.isEmpty() ? 0.0 : times.stream().mapToDouble(Double::doubleValue).max().getAsDouble();
     }
@@ -154,7 +155,7 @@ public class MetricProcessor {
      */
     private List<MetricInstance> initDataSet(MetricQueryScope scope) throws Exception {
         final List<Map<String, Object>> data = getData(scope);
-        return getMetrics(data, scope);
+        return getInstances(data, scope);
     }
 
     /**
@@ -165,7 +166,8 @@ public class MetricProcessor {
      * @param data Raw metrics data to convert.
      * @return Returns the list of metrics.
      */
-    private List<MetricInstance> getMetrics(final List<Map<String, Object>> data, MetricQueryScope scope) throws Exception {
+    @SuppressWarnings("unchecked")
+    private List<MetricInstance> getInstances(final List<Map<String, Object>> data, MetricQueryScope scope) throws Exception {
         final List<MetricInstance> metrics = new ArrayList<>();
         final SortedSet<Long> timeStampList = new TreeSet<>();
         if (data != null) {
@@ -186,12 +188,13 @@ public class MetricProcessor {
                 Collections.sort(metricPoints);
 
                 final MetricInstance metric = MetricInstance.builder().applicationName(target[COMPONENT_INDEX]).instanceName(target[INSTANCE_INDEX])
-                        .environement(target[ENVIRONMENT_INDEX]).timeStampList(timeStampList).metricPoints(metricPoints).build();
+                        .environement(target[ENVIRONMENT_INDEX]).metricPoints(metricPoints).build();
                 metrics.add(metric);
             });
         }
         allData.put(scope.getDescription(), metrics);
         allData.put(LAST_QUERY_TIME, DateTime.now().getMillis());
+        allData.put(TIME_STAMP_LIST_FIELD, timeStampList);
         return metrics;
     }
 
@@ -201,13 +204,8 @@ public class MetricProcessor {
      * @param timeStamp given timestamp.
      * @param metrics collection of instances to verify.
      */
-    private Boolean atLeastOneinstanceIsUp(Long instant, List<MetricInstance> metrics) throws Exception {
-        for (final MetricInstance metric : metrics) {
-            if (instanceIsUp(metric, instant)) {
-                return true;
-            }
-        }
-        return false;
+    private Boolean atLeastOneinstanceIsUp(Long instant, List<MetricInstance> metrics) {
+        return metrics.stream().anyMatch(instance -> instanceIsUp(instance, instant));
     }
 
     private Boolean instanceIsUp(MetricInstance instance, Long timestamp) {
@@ -217,6 +215,7 @@ public class MetricProcessor {
     /**
      * Fetch the raw data from graphite.
      */
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private List<Map<String, Object>> getData(MetricQueryScope scope) throws Exception {
         template = template == null ? new RestTemplate() : template;
         final ResponseEntity<List> response = template.getForEntity(buildUrl(scope.getValue()), List.class);
