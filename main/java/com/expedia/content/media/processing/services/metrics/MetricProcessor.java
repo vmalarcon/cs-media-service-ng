@@ -2,14 +2,14 @@ package com.expedia.content.media.processing.services.metrics;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
-import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -17,23 +17,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import lombok.NoArgsConstructor;
-
 /**
  * Build some specific metrics.
  */
-@NoArgsConstructor
 public class MetricProcessor {
 
     private String graphiteApiUrl;
     private String graphiteApiQuery;
     private RestTemplate template;
-    final private Map<String, Object> allData = new HashedMap<>();
+    final private Map<String, Object> allData = new HashMap<>();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MetricProcessor.class);
     private static final String DATA_POINT_FIELD = "datapoints";
     private static final String TARGET_FIELD = "target";
-    private static final String TIME_STAMP_LIST_FIELD = "timeStampFiled";
 
     private static final int COMPONENT_INDEX = 2;
     private static final int ENVIRONMENT_INDEX = 3;
@@ -108,6 +104,12 @@ public class MetricProcessor {
         }).sum();
     }
 
+    private Double computeInstanceTime(List<MetricPoint> points, Double direction) {
+        return points.stream().filter(mp -> direction.equals(mp.getValue())).mapToDouble(mp -> {
+            return (double) (mp.getEndTimestamp() - mp.getStartTimestamp());
+        }).sum();
+    }
+
     /**
      * Compute the time for the whole component.
      */
@@ -115,24 +117,30 @@ public class MetricProcessor {
     private Double computeComponentTime(Double direction, MetricQueryScope scope) throws Exception {
         List<MetricInstance> instances = (List<MetricInstance>) allData.get(scope.getDescription());
         final Long lastQueryTime = (Long) allData.get(LAST_QUERY_TIME);
-        final Set<Long> timeStampList = (Set<Long>) allData.get(TIME_STAMP_LIST_FIELD);
 
         final Long nextQueryTime = DateTime.now().minusSeconds(DEFAULT_QUERY_DELAY).getMillis();
         if (instances == null || (lastQueryTime != null && nextQueryTime > lastQueryTime)) {
             instances = initDataSet(scope);
         }
-        final List<MetricInstance> localInstances = instances;
         final List<Double> times = new ArrayList<>();
         if (DOWN_VALUE.equals(direction)) {
-            if (timeStampList.stream().anyMatch(instant -> atLeastOneinstanceIsUp(instant, localInstances))) {
-                times.add(DOWN_VALUE);
-            } else {
-                instances.stream().forEach(m -> times.add(computeInstanceTime(m, direction)));
-            }
+            final List<MetricPoint> points = filterDownPoints(instances);
+            times.add(computeInstanceTime(points, direction));
         } else {
-            instances.stream().forEach(m -> times.add(computeInstanceTime(m, direction)));
+            instances.stream().forEach(instance -> times.add(computeInstanceTime(instance, direction)));
         }
         return times.isEmpty() ? 0.0 : times.stream().mapToDouble(Double::doubleValue).max().getAsDouble();
+    }
+
+    /**
+     * Filter all the points where the component is down.
+     * 
+     * @param instances instances of the component
+     * @return Return all the points where the component is down.
+     */
+    private List<MetricPoint> filterDownPoints(List<MetricInstance> instances) {
+        final MetricInstance current = instances.get(0);
+        return current.getMetricPoints().stream().filter(p -> (!atLeastOneinstanceIsUp(p.getEndTimestamp(), instances))).collect(Collectors.toList());
     }
 
     /**
@@ -194,7 +202,6 @@ public class MetricProcessor {
         }
         allData.put(scope.getDescription(), metrics);
         allData.put(LAST_QUERY_TIME, DateTime.now().getMillis());
-        allData.put(TIME_STAMP_LIST_FIELD, timeStampList);
         return metrics;
     }
 

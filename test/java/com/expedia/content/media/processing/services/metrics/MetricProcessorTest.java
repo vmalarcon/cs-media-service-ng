@@ -12,6 +12,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.expedia.content.media.processing.services.metrics.MetricProcessor;
+import com.expedia.content.media.processing.services.metrics.MetricQueryScope;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -46,19 +49,15 @@ public class MetricProcessorTest {
 
     @Test
     public void testUpTime() throws Exception {
-        assertTrue(Double.valueOf(100.0).equals(Math.rint(metricProcessor.getComponentPercentageUpTime(MetricQueryScope.HOURLY) * 100)));
+        assertTrue(Double.valueOf(330.).equals(Math.rint(metricProcessor.getComponentUpTime(MetricQueryScope.HOURLY))));
+        assertTrue(Double.valueOf(52.0).equals(Math.rint(metricProcessor.getComponentPercentageUpTime(MetricQueryScope.HOURLY) * 100)));
 
     }
 
     @Test
     public void testDownTime() throws Exception {
-        assertTrue(Double.valueOf(0.0).equals(Math.rint(metricProcessor.getComponentPercentageDownTime(MetricQueryScope.HOURLY) * 100)));
-    }
-
-    @Test
-    public void testNonArgumentConstructor() {
-        final MetricProcessor metric = new MetricProcessor();
-        assertNotNull(metric);
+        assertTrue(Double.valueOf(300.0).equals(Math.rint(metricProcessor.getComponentDownTime(MetricQueryScope.HOURLY))));
+        assertTrue(Double.valueOf(48.0).equals(Math.rint(metricProcessor.getComponentPercentageDownTime(MetricQueryScope.HOURLY) * 100)));
     }
 
     @Test
@@ -75,6 +74,7 @@ public class MetricProcessorTest {
         final List<List<Object>> dataPoints = new ArrayList<>();
         dataPoints.add(Arrays.asList(null, 1464397800));
         dataPoints.add(Arrays.asList(1.0, 1464398100));
+        dataPoints.add(Arrays.asList(null, 1464398400));
         map.put(DATA_POINT_FIELD, dataPoints);
         data.add(map);
 
@@ -83,6 +83,7 @@ public class MetricProcessorTest {
         final List<List<Object>> dataPoint2s = new ArrayList<>();
         dataPoint2s.add(Arrays.asList(1.0, 1464397800));
         dataPoint2s.add(Arrays.asList(1.0, 1464398100));
+        dataPoint2s.add(Arrays.asList(null, 1464398400));
         map2.put(DATA_POINT_FIELD, dataPoint2s);
         data.add(map2);
 
