@@ -12,20 +12,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.expedia.content.media.processing.services.metrics.MetricProcessor;
-import com.expedia.content.media.processing.services.metrics.MetricQueryScope;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.web.client.RestTemplate;
 
 @RunWith(MockitoJUnitRunner.class)
-@ContextConfiguration(locations = "classpath:media-services.xml")
 public class MetricProcessorTest {
 
     private List<Map<String, Object>> data;
@@ -49,15 +44,15 @@ public class MetricProcessorTest {
 
     @Test
     public void testUpTime() throws Exception {
-        assertTrue(Double.valueOf(330.).equals(Math.rint(metricProcessor.getComponentUpTime(MetricQueryScope.HOURLY))));
-        assertTrue(Double.valueOf(52.0).equals(Math.rint(metricProcessor.getComponentPercentageUpTime(MetricQueryScope.HOURLY) * 100)));
+        assertTrue(Integer.valueOf(3).equals(metricProcessor.getComponentUpTime(MetricQueryScope.HOURLY)));
+        assertTrue(Double.valueOf(75.0).equals(Math.rint(metricProcessor.getComponentPercentageUpTime(MetricQueryScope.HOURLY) * 100)));
 
     }
 
     @Test
     public void testDownTime() throws Exception {
-        assertTrue(Double.valueOf(300.0).equals(Math.rint(metricProcessor.getComponentDownTime(MetricQueryScope.HOURLY))));
-        assertTrue(Double.valueOf(48.0).equals(Math.rint(metricProcessor.getComponentPercentageDownTime(MetricQueryScope.HOURLY) * 100)));
+        assertTrue(Integer.valueOf(1).equals(metricProcessor.getComponentDownTime(MetricQueryScope.HOURLY)));
+        assertTrue(Double.valueOf(25.0).equals(Math.rint(metricProcessor.getComponentPercentageDownTime(MetricQueryScope.HOURLY) * 100)));
     }
 
     @Test
@@ -75,6 +70,7 @@ public class MetricProcessorTest {
         dataPoints.add(Arrays.asList(null, 1464397800));
         dataPoints.add(Arrays.asList(1.0, 1464398100));
         dataPoints.add(Arrays.asList(null, 1464398400));
+        dataPoints.add(Arrays.asList(null, 1464398700));
         map.put(DATA_POINT_FIELD, dataPoints);
         data.add(map);
 
@@ -84,6 +80,7 @@ public class MetricProcessorTest {
         dataPoint2s.add(Arrays.asList(1.0, 1464397800));
         dataPoint2s.add(Arrays.asList(1.0, 1464398100));
         dataPoint2s.add(Arrays.asList(null, 1464398400));
+        dataPoint2s.add(Arrays.asList(1.0, 1464398700));
         map2.put(DATA_POINT_FIELD, dataPoint2s);
         data.add(map2);
 
