@@ -84,7 +84,7 @@ public class MetricProcessor {
     public Double getComponentPercentageUpTime(MetricQueryScope scope) throws Exception {
         final Double uptime = getComponentUpTime(scope).doubleValue();
         final Double downtime = getComponentDownTime(scope).doubleValue();
-        final Double upercentage = uptime.equals(DOWN_VALUE) ? DOWN_VALUE : uptime / (uptime + downtime);
+        final Double upercentage = (uptime + downtime) == 0.0 ? 0.0 : uptime / (uptime + downtime);
         LOGGER.info("Uptime percentage successfuly computed, value =[{}] scope =[{}]", upercentage, scope.getDescription());
         return upercentage;
     }
@@ -145,7 +145,6 @@ public class MetricProcessor {
      */
     private List<MetricPoint> filterPoints(List<MetricInstance> instances, Double direction) {
         final Boolean up = UP_VALUE.equals(direction) ? true : false;
-
         /*@formatter:off*/
         return instances.isEmpty() ? null
                                    : instances.get(0)
