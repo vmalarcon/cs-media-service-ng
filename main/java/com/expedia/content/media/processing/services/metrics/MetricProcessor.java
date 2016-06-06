@@ -132,7 +132,7 @@ public class MetricProcessor {
             instances = initDataSet(scope);
         }
         final List<MetricPoint> points = filterPoints(instances, direction);
-        return points.size();
+        return points == null ? 0 : points.size();
     }
 
     /**
@@ -145,10 +145,15 @@ public class MetricProcessor {
      */
     private List<MetricPoint> filterPoints(List<MetricInstance> instances, Double direction) {
         final Boolean up = UP_VALUE.equals(direction) ? true : false;
-        final MetricInstance instance = instances.get(0);
-        return instance.getMetricPoints().stream()
-                .filter(p -> up ? componentIsUp(p.getEndTimestamp(), instances) : !componentIsUp(p.getEndTimestamp(), instances))
-                .collect(Collectors.toList());
+
+        /*@formatter:off*/
+        return instances.isEmpty() ? null
+                                   : instances.get(0)
+                                   .getMetricPoints().stream()
+                                   .filter(p -> up ? componentIsUp(p.getEndTimestamp(), instances)
+                                   : !componentIsUp(p.getEndTimestamp(), instances))
+                                   .collect(Collectors.toList());      
+        /*@formatter:on*/
     }
 
     /**
@@ -158,7 +163,7 @@ public class MetricProcessor {
      * @return Returns all instances related to the given query scope.
      */
     private List<MetricInstance> initDataSet(MetricQueryScope scope) throws Exception {
-        final List<Map<String, Object>> data = getData(scope);
+        final List<Map<String, Object>> data = getRawData(scope);
         return getInstances(data, scope);
     }
 
@@ -166,7 +171,7 @@ public class MetricProcessor {
      * Convert the data fetched on graphite to a list of Instances.
      * 
      * @param data Raw metrics data to convert.
-     * @param scope graphite query period.
+     * @param scope Graphite query period.
      * @return Returns the list of instances.
      */
     @SuppressWarnings("unchecked")
@@ -181,9 +186,10 @@ public class MetricProcessor {
                 for (int i = 0; i < dataPoints.size(); i++) {
                     final Integer timestamp = (Integer) dataPoints.get(i).get(TIME_STAMP_INDEX);
                     final Double timeValue = (Double) dataPoints.get(i).get(TIME_VALUE_INDEX);
-                    startTimestamp = startTimestamp == null ? (long) (timestamp - DEFAULT_QUERY_DELAY) : (Integer) dataPoints.get(i - 1).get(TIME_STAMP_INDEX);
-                    final MetricPoint metricPoint =
-                            MetricPoint.builder().startTimestamp(startTimestamp).endTimestamp(timestamp.longValue()).value(timeValue == null ? 0 : timeValue).build();
+                    startTimestamp =
+                            startTimestamp == null ? (long) (timestamp - DEFAULT_QUERY_DELAY) : (Integer) dataPoints.get(i - 1).get(TIME_STAMP_INDEX);
+                    final MetricPoint metricPoint = MetricPoint.builder().startTimestamp(startTimestamp).endTimestamp(timestamp.longValue())
+                            .value(timeValue == null ? 0 : timeValue).build();
                     metricPoints.add(metricPoint);
                 }
                 Collections.sort(metricPoints);
@@ -201,9 +207,9 @@ public class MetricProcessor {
     /**
      * Verify if at least one instance is up at a specific time stamp.
      * 
-     * @param timeStamp given time stamp.
-     * @param instances collection of instances to verify.
-     * @return Returns true if at least one instance is up and false if not.
+     * @param timeStamp Given time stamp.
+     * @param instances Collection of instances to verify.
+     * @return Returns true if at least one instance of the current component is up and false if not.
      */
     private Boolean componentIsUp(Long instant, List<MetricInstance> instances) {
         return instances.stream().anyMatch(instance -> instanceIsUp(instance, instant));
@@ -212,8 +218,8 @@ public class MetricProcessor {
     /**
      * Verify if an instance is up at a specific time stamp.
      * 
-     * @param instance Instance
-     * @param timestamp
+     * @param instance Given instance.
+     * @param timestamp given time stamp.
      * @return true if the instance is up and false if not.
      */
     private Boolean instanceIsUp(MetricInstance instance, Long timestamp) {
@@ -226,7 +232,7 @@ public class MetricProcessor {
      * @param scope graphite query period.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private List<Map<String, Object>> getData(MetricQueryScope scope) throws Exception {
+    private List<Map<String, Object>> getRawData(MetricQueryScope scope) throws Exception {
         template = template == null ? new RestTemplate() : template;
         final ResponseEntity<List> response = template.getForEntity(buildUrl(scope.getValue()), List.class);
         return response.getBody();
