@@ -34,8 +34,6 @@ import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
-import com.expedia.content.media.processing.services.metrics.MetricProcessor;
-import com.expedia.content.media.processing.services.metrics.MetricQueryScope;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import com.expedia.content.media.processing.services.util.DomainDataUtil;
@@ -99,6 +97,7 @@ public class MediaController extends CommonServiceController {
     private static final String REG_EX_GUID = "[a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12}";
     private static final String UNAUTHORIZED_USER_MESSAGE = "User is not authorized.";
     private static final String DUPLICATED_STATUS = "DUPLICATE";
+    private static final Integer LIVE_COUNT = 1;
         
     @Resource(name = "providerProperties")
     private Properties providerProperties;
@@ -124,8 +123,6 @@ public class MediaController extends CommonServiceController {
     private MediaUpdateProcessor mediaUpdateProcessor;
     @Autowired
     private SKUGroupCatalogItemDao skuGroupCatalogItemDao;
-    @Autowired
-    private MetricProcessor metricProcessor;
 
     /**
      * web service interface to consume media message.
@@ -322,23 +319,7 @@ public class MediaController extends CommonServiceController {
      */
     @Gauge(name = "isAlive")
     public Integer liveCount() {
-        return metricProcessor.liveCount();
-    }
-
-    /**
-     * Compute the uptime percentage and send back to graphite
-     */
-    @Gauge(name="componentPercentageUpTime")
-    public Double getComponentPercentageUpTime() throws Exception {
-        return metricProcessor.getComponentPercentageUpTime(MetricQueryScope.HOURLY);
-    }
-    
-    /**
-     * Compute the down time percentage and send back to graphite.
-     */
-    @Gauge(name="componentPercentageDownTime")
-    public Double getComponentPercentageDownTime() throws Exception {
-        return metricProcessor.getComponentPercentageDownTime(MetricQueryScope.HOURLY);
+        return LIVE_COUNT;
     }
     
     private void validateAndInitMap(Map<String, Object> objectMap, String queryId, String serviceUrl, String message, String requestID) throws Exception {

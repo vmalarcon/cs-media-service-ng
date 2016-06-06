@@ -34,11 +34,33 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
+import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
+import com.expedia.content.media.processing.pipeline.reporting.Reporting;
+import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
+import com.expedia.content.media.processing.services.dao.LcmDynamoMediaDao;
+import com.expedia.content.media.processing.services.dao.MediaDao;
+import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
+import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
+import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
+import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
+import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaChgSproc;
+import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaGetSproc;
+import com.expedia.content.media.processing.services.dao.sql.MediaLstWithCatalogItemMediaAndMediaFileNameSproc;
 import com.expedia.content.media.processing.services.reqres.Comment;
 import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.validator.MapMessageValidator;
+import com.google.common.collect.Lists;
+
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.codehaus.plexus.util.ReflectionUtils;
 import org.joda.time.format.DateTimeFormat;
@@ -60,30 +82,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.MultiValueMap;
-
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
-import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
-import com.expedia.content.media.processing.pipeline.reporting.Reporting;
-import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
-import com.expedia.content.media.processing.services.dao.LcmDynamoMediaDao;
-import com.expedia.content.media.processing.services.dao.MediaDao;
-import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
-import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
-import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
-import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
-import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
-import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
-import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
-import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaChgSproc;
-import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaGetSproc;
-import com.expedia.content.media.processing.services.dao.sql.MediaLstWithCatalogItemMediaAndMediaFileNameSproc;
-import com.expedia.content.media.processing.services.metrics.MetricProcessor;
-import com.expedia.content.media.processing.services.metrics.MetricQueryScope;
-import com.expedia.content.media.processing.services.validator.MapMessageValidator;
-import com.google.common.collect.Lists;
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
 @RunWith(MockitoJUnitRunner.class)
@@ -1622,18 +1620,6 @@ public class MediaControllerTest {
         ResponseEntity<String> responseEntity = mediaController.getMedia("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6", headers);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode()); 
-    }
-
-    @Test
-    public void testMetricCalls() throws Exception{
-        MetricProcessor metricProcessor = mock(MetricProcessor.class);
-        setFieldValue(mediaController, "metricProcessor", metricProcessor);
-        mediaController.getComponentPercentageDownTime();
-        verify(metricProcessor, times(1)).getComponentPercentageDownTime(MetricQueryScope.HOURLY);
-        mediaController.getComponentPercentageUpTime();
-        verify(metricProcessor, times(1)).getComponentPercentageUpTime(MetricQueryScope.HOURLY);
-        mediaController.liveCount();
-        verify(metricProcessor, times(1)).liveCount();
     }
 
     @SuppressWarnings({"unchecked"})
