@@ -1701,7 +1701,7 @@ public class MediaControllerTest {
         Mockito.doNothing().when(catalogItemMediaDao).deleteParagraph(anyInt());
         Mockito.doNothing().when(catalogItemMediaDao).deleteCatalogItem(anyInt(), anyInt());
         Mockito.doNothing().when(catalogItemMediaDao).addOrUpdateParagraph(anyInt(), anyInt());
-        Mockito.doNothing().when(catalogItemMediaDao).addCatalogItemForRoom(anyInt(), anyInt(), anyObject());
+        Mockito.doNothing().when(catalogItemMediaDao).addCatalogItemForRoom(anyInt(), anyInt(), anyInt(), anyObject());
         FieldUtils.writeField(mockUpdateProcess, "catalogItemMediaDao", catalogItemMediaDao, true);
         FieldUtils.writeField(mockUpdateProcess, "catalogHeroProcessor", catalogHeroProcessor, true);
         return mockUpdateProcess;
