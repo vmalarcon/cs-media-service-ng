@@ -39,6 +39,7 @@ public class MetricProcessor {
     private static final Double DOWN_VALUE = 0.0;
     private static final String LAST_QUERY_TIME = "lastQueryTime";
     private static final int DEFAULT_QUERY_DELAY = 30;
+    private static final Integer LIVE_COUNT = 1;
 
     public MetricProcessor(RestTemplate template) {
         this.template = template;
@@ -74,6 +75,18 @@ public class MetricProcessor {
             return time;
         });
     }
+    
+    /**
+     * Sends the metric server a unique value. This is useful to know:
+     * 1- The number of active or inactive  instances within a period of time.
+     * 2- How long the component was up or down within a period of time.
+     * 
+     * @return Always return a single value.
+     */
+    public Integer liveCount() {
+        return LIVE_COUNT;
+    }
+
 
     /**
      * Compute the percentage of up time for the whole component.

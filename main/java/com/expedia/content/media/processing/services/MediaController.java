@@ -99,7 +99,6 @@ public class MediaController extends CommonServiceController {
     private static final String REG_EX_GUID = "[a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12}";
     private static final String UNAUTHORIZED_USER_MESSAGE = "User is not authorized.";
     private static final String DUPLICATED_STATUS = "DUPLICATE";
-    private static final Integer LIVE_COUNT = 1;
         
     @Resource(name = "providerProperties")
     private Properties providerProperties;
@@ -323,7 +322,7 @@ public class MediaController extends CommonServiceController {
      */
     @Gauge(name = "isAlive")
     public Integer liveCount() {
-        return LIVE_COUNT;
+        return metricProcessor.liveCount();
     }
 
     /**

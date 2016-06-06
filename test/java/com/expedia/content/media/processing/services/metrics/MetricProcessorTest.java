@@ -62,6 +62,11 @@ public class MetricProcessorTest {
         when(response.getBody()).thenReturn(new ArrayList<Map<String, Object>>());
     }
 
+    @Test
+    public void testLiveCount(){
+        assertTrue(Integer.valueOf(1).equals(metricProcessor.liveCount()));
+    }
+    
     private List<Map<String, Object>> buildSampleData() {
         final Map<String, Object> map = new HashMap<>();
         final List<Map<String, Object>> data = new ArrayList<>();
