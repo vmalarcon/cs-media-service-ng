@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 /**
- * Encapsulate a metric object.
+ * Encapsulate a metric for a specific instance.
  */
 @Builder
 @Getter
