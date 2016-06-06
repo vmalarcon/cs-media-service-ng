@@ -5,6 +5,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import com.expedia.content.media.processing.services.metrics.MetricInstance;
+import com.expedia.content.media.processing.services.metrics.MetricPoint;
+
 import org.junit.Before;
 import org.junit.Test;
 

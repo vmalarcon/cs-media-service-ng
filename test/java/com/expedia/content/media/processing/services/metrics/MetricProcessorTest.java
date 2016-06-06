@@ -18,11 +18,9 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.web.client.RestTemplate;
 
 @RunWith(MockitoJUnitRunner.class)
-@ContextConfiguration(locations = "classpath:media-services.xml")
 public class MetricProcessorTest {
 
     private List<Map<String, Object>> data;
@@ -46,19 +44,15 @@ public class MetricProcessorTest {
 
     @Test
     public void testUpTime() throws Exception {
-        assertTrue(Double.valueOf(100.0).equals(Math.rint(metricProcessor.getComponentPercentageUpTime(MetricQueryScope.EVERY_THIRTY_SECONDS) * 100)));
+        assertTrue(Integer.valueOf(3).equals(metricProcessor.getComponentUpTime(MetricQueryScope.HOURLY)));
+        assertTrue(Double.valueOf(75.0).equals(Math.rint(metricProcessor.getComponentPercentageUpTime(MetricQueryScope.HOURLY) * 100)));
 
     }
 
     @Test
     public void testDownTime() throws Exception {
-        assertTrue(Double.valueOf(0.0).equals(Math.rint(metricProcessor.getComponentPercentageDownTime(MetricQueryScope.EVERY_THIRTY_SECONDS) * 100)));
-    }
-
-    @Test
-    public void testNonArgumentConstructor() {
-        final MetricProcessor metric = new MetricProcessor();
-        assertNotNull(metric);
+        assertTrue(Integer.valueOf(1).equals(metricProcessor.getComponentDownTime(MetricQueryScope.HOURLY)));
+        assertTrue(Double.valueOf(25.0).equals(Math.rint(metricProcessor.getComponentPercentageDownTime(MetricQueryScope.HOURLY) * 100)));
     }
 
     @Test
@@ -68,6 +62,11 @@ public class MetricProcessorTest {
         when(response.getBody()).thenReturn(new ArrayList<Map<String, Object>>());
     }
 
+    @Test
+    public void testLiveCount(){
+        assertTrue(Integer.valueOf(1).equals(metricProcessor.liveCount()));
+    }
+    
     private List<Map<String, Object>> buildSampleData() {
         final Map<String, Object> map = new HashMap<>();
         final List<Map<String, Object>> data = new ArrayList<>();
@@ -75,6 +74,8 @@ public class MetricProcessorTest {
         final List<List<Object>> dataPoints = new ArrayList<>();
         dataPoints.add(Arrays.asList(null, 1464397800));
         dataPoints.add(Arrays.asList(1.0, 1464398100));
+        dataPoints.add(Arrays.asList(null, 1464398400));
+        dataPoints.add(Arrays.asList(null, 1464398700));
         map.put(DATA_POINT_FIELD, dataPoints);
         data.add(map);
 
@@ -83,6 +84,8 @@ public class MetricProcessorTest {
         final List<List<Object>> dataPoint2s = new ArrayList<>();
         dataPoint2s.add(Arrays.asList(1.0, 1464397800));
         dataPoint2s.add(Arrays.asList(1.0, 1464398100));
+        dataPoint2s.add(Arrays.asList(null, 1464398400));
+        dataPoint2s.add(Arrays.asList(1.0, 1464398700));
         map2.put(DATA_POINT_FIELD, dataPoint2s);
         data.add(map2);
 

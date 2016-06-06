@@ -2,13 +2,12 @@ package com.expedia.content.media.processing.services.metrics;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
-import org.apache.commons.collections4.map.HashedMap;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -16,18 +15,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import lombok.NoArgsConstructor;
-
 /**
  * Build some specific metrics.
  */
-@NoArgsConstructor
 public class MetricProcessor {
 
     private String graphiteApiUrl;
     private String graphiteApiQuery;
     private RestTemplate template;
-    final private Map<String, Object> allData = new HashedMap<>();
+    final private Map<String, Object> allData = new HashMap<>();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MetricProcessor.class);
     private static final String DATA_POINT_FIELD = "datapoints";
@@ -37,12 +33,19 @@ public class MetricProcessor {
     private static final int ENVIRONMENT_INDEX = 3;
     private static final int INSTANCE_INDEX = 4;
     private static final char REGEX_SEPARATOR = '.';
-    private static final int X_INDEX = 1;
-    private static final int Y_INDEX = 0;
+    private static final int TIME_STAMP_INDEX = 1;
+    private static final int TIME_VALUE_INDEX = 0;
     private static final Double UP_VALUE = 1.0;
     private static final Double DOWN_VALUE = 0.0;
     private static final String LAST_QUERY_TIME = "lastQueryTime";
     private static final int DEFAULT_QUERY_DELAY = 30;
+
+    /**
+     * Unique value sent to the metric server. This is useful to know:
+     * 1- The number of active or inactive instances within a period of time.
+     * 2- How long the component was up or down within a period of time.
+     */
+    private static final Integer LIVE_COUNT = 1;
 
     public MetricProcessor(RestTemplate template) {
         this.template = template;
@@ -55,8 +58,11 @@ public class MetricProcessor {
 
     /**
      * Compute the up time for the whole component.
+     * 
+     * @param scope graphite query period.
+     * @return Returns how long the component was up for the given period.
      */
-    public Double getComponentUpTime(MetricQueryScope scope) throws Exception {
+    public Integer getComponentUpTime(MetricQueryScope scope) throws Exception {
         return computeTime(UP_VALUE, scope, (time, target) -> {
             LOGGER.info("Uptime successfuly computed, value =[{}] scope =[{}]", time, target);
             return time;
@@ -65,8 +71,11 @@ public class MetricProcessor {
 
     /**
      * Compute the down time for the whole component.
+     * 
+     * @param scope graphite query period.
+     * @return Returns how long the component was down for the given period.
      */
-    public Double getComponentDownTime(MetricQueryScope scope) throws Exception {
+    public Integer getComponentDownTime(MetricQueryScope scope) throws Exception {
         return computeTime(DOWN_VALUE, scope, (time, target) -> {
             LOGGER.info("Downtime successfuly computed, value =[{}] scope =[{}]", time, target);
             return time;
@@ -74,18 +83,31 @@ public class MetricProcessor {
     }
 
     /**
+     * Always send 1 to the metric server.
+     */
+    public Integer liveCount() {
+        return LIVE_COUNT;
+    }
+
+    /**
      * Compute the percentage of up time for the whole component.
+     * 
+     * @param scope graphite query period.
+     * @return Returns which percentage of time the component was up for the given period.
      */
     public Double getComponentPercentageUpTime(MetricQueryScope scope) throws Exception {
-        final Double uptime = getComponentUpTime(scope);
-        final Double downtime = getComponentDownTime(scope);
-        final Double upercentage = uptime.equals(DOWN_VALUE) ? DOWN_VALUE : uptime / (uptime + downtime);
+        final Double uptime = getComponentUpTime(scope).doubleValue();
+        final Double downtime = getComponentDownTime(scope).doubleValue();
+        final Double upercentage = (uptime + downtime) == DOWN_VALUE ? DOWN_VALUE : uptime / (uptime + downtime);
         LOGGER.info("Uptime percentage successfuly computed, value =[{}] scope =[{}]", upercentage, scope.getDescription());
         return upercentage;
     }
 
     /**
      * Compute The percentage of down time for the whole component.
+     * 
+     * @param graphite query period.
+     * @return Returns which percentage of time the component was down for the given period.
      */
     public Double getComponentPercentageDownTime(MetricQueryScope scope) throws Exception {
         final Double dpercentage = (1 - getComponentPercentageUpTime(scope));
@@ -94,80 +116,78 @@ public class MetricProcessor {
     }
 
     /**
-     * Compute the time for an instance. The return time could be the up or down
-     * time base on the given direction.
-     * 
-     * @param direction. Given direction for computing. Up or Down.
-     * @return Returns the computed time.
-     */
-    private Double computeInstanceTime(MetricInstance metric, Double direction) throws Exception {
-        return metric.getMetricPoints().stream().filter(mp -> direction.equals(mp.getValue())).mapToDouble(mp -> {
-            return (double) (mp.getEndTimestamp() - mp.getStartTimestamp());
-        }).sum();
-    }
-
-    /**
      * Compute the time for the whole component.
-     */
-    private Double computeComponentTime(Double direction, MetricQueryScope scope) throws Exception {
-        List<MetricInstance> metrics = (List<MetricInstance>) allData.get(scope.getDescription());
-        final Long lastQueryTime = (Long) allData.get(LAST_QUERY_TIME);
-        final Long nextQueryTime = DateTime.now().minusSeconds(DEFAULT_QUERY_DELAY).getMillis();
-        if (metrics == null || (lastQueryTime != null && nextQueryTime > lastQueryTime)) {
-            metrics = initDataSet(scope);
-        }
-        final List<Double> times = new ArrayList<>();
-        for (final MetricInstance m : metrics) {
-            if (DOWN_VALUE.equals(direction)) {
-                for (final Long instant : m.getTimeStampList()) {
-                    if (atLeastOneinstanceIsUp(instant, metrics)) {
-                        times.add(DOWN_VALUE);
-                        break;
-                    } else {
-                        times.add(computeInstanceTime(m, direction));
-                    }
-                }
-            } else {
-                times.add(computeInstanceTime(m, direction));
-            }
-        }
-        return times.isEmpty() ? 0.0 : times.stream().mapToDouble(Double::doubleValue).max().getAsDouble();
-    }
-
-    /**
-     * Compute the generic time.
      * 
      * @param direction computing direction (UP or DOWN)
      * @param scope graphite query period.
      * @param computeFunction function encapsulated the up or down logic computing.
      * @return Returns the computed time.
      */
-    private Double computeTime(Double direction, MetricQueryScope scope, BiFunction<Double, String, Double> computeFunction) throws Exception {
-        final Double time = computeComponentTime(direction, scope);
+    private Integer computeTime(Double direction, MetricQueryScope scope, BiFunction<Integer, String, Integer> computeFunction) throws Exception {
+        final Integer time = collectTime(direction, scope);
         return computeFunction.apply(time, scope.getDescription());
+    }
+
+    /**
+     * Collect the time from all the component instances. The result could be the up or down
+     * time base on the given direction.
+     * 
+     * @param direction. Given direction for computing. Up or Down.
+     * @param scope graphite query period.
+     * @return Returns the collected time for all instances.
+     */
+    @SuppressWarnings("unchecked")
+    private Integer collectTime(Double direction, MetricQueryScope scope) throws Exception {
+        List<MetricInstance> instances = (List<MetricInstance>) allData.get(scope.getDescription());
+        final Long lastQueryTime = (Long) allData.get(LAST_QUERY_TIME);
+
+        final Long nextQueryTime = DateTime.now().minusSeconds(DEFAULT_QUERY_DELAY).getMillis();
+        if (instances == null || (lastQueryTime != null && nextQueryTime > lastQueryTime)) {
+            instances = initDataSet(scope);
+        }
+        final List<MetricPoint> points = filterPoints(instances, direction);
+        return points == null ? 0 : points.size();
+    }
+
+    /**
+     * Filter all the points where the component is down or up.
+     * base on the given direction.
+     * 
+     * @param instances instances of the component
+     * @param direction Given direction for filtering. Up or Down.
+     * @return Return all the points where the component is down or up.
+     */
+    private List<MetricPoint> filterPoints(List<MetricInstance> instances, Double direction) {
+        final Boolean up = UP_VALUE.equals(direction) ? true : false;
+
+        return instances.isEmpty() ? null
+                                   : instances.get(0)
+                                           .getMetricPoints().stream()
+                                           .filter(p -> up ? componentIsUp(p.getEndTimestamp(), instances): !componentIsUp(p.getEndTimestamp(), instances))
+                                           .collect(Collectors.toList());
     }
 
     /**
      * Initialize the dataset.
      * 
      * @param scope target period to query.
+     * @return Returns all instances related to the given query scope.
      */
     private List<MetricInstance> initDataSet(MetricQueryScope scope) throws Exception {
-        final List<Map<String, Object>> data = getData(scope);
-        return getMetrics(data, scope);
+        final List<Map<String, Object>> data = getRawData(scope);
+        return getInstances(data, scope);
     }
 
     /**
-     * Convert the data fetched on graphite to a list of Metric object. We keep
-     * only data belong to the current instance. Filter is done base on the
-     * Instance IP address.
+     * Convert the data fetched on graphite to a list of Instances.
      * 
      * @param data Raw metrics data to convert.
-     * @return Returns the list of metrics.
+     * @param scope Graphite query period.
+     * @return Returns the list of instances.
      */
-    private List<MetricInstance> getMetrics(final List<Map<String, Object>> data, MetricQueryScope scope) throws Exception {
-        final List<MetricInstance> metrics = new ArrayList<>();
-        final SortedSet<Long> timeStampList = new TreeSet<>();
+    @SuppressWarnings("unchecked")
+    private List<MetricInstance> getInstances(final List<Map<String, Object>> data, MetricQueryScope scope) throws Exception {
+        final List<MetricInstance> instances = new ArrayList<>();
         if (data != null) {
             data.stream().forEach(t -> {
                 final String[] target = StringUtils.split((String) t.get(TARGET_FIELD), REGEX_SEPARATOR);
@@ -175,49 +195,55 @@ public class MetricProcessor {
                 final List<MetricPoint> metricPoints = new ArrayList<>();
                 Long startTimestamp = null;
                 for (int i = 0; i < dataPoints.size(); i++) {
-                    final Integer x = (Integer) dataPoints.get(i).get(X_INDEX);
-                    final Double y = (Double) dataPoints.get(i).get(Y_INDEX);
-                    startTimestamp = startTimestamp == null ? (long) (x - DEFAULT_QUERY_DELAY) : (Integer) dataPoints.get(i - 1).get(X_INDEX);
-                    final MetricPoint metricPoint =
-                            MetricPoint.builder().startTimestamp(startTimestamp).endTimestamp(x.longValue()).value(y == null ? 0 : y).build();
+                    final Integer timestamp = (Integer) dataPoints.get(i).get(TIME_STAMP_INDEX);
+                    final Double timeValue = (Double) dataPoints.get(i).get(TIME_VALUE_INDEX);
+                    startTimestamp =
+                            startTimestamp == null ? (long) (timestamp - DEFAULT_QUERY_DELAY) : (Integer) dataPoints.get(i - 1).get(TIME_STAMP_INDEX);
+                    final MetricPoint metricPoint = MetricPoint.builder().startTimestamp(startTimestamp).endTimestamp(timestamp.longValue())
+                            .value(timeValue == null ? 0 : timeValue).build();
                     metricPoints.add(metricPoint);
-                    timeStampList.add(x.longValue());
                 }
                 Collections.sort(metricPoints);
 
                 final MetricInstance metric = MetricInstance.builder().applicationName(target[COMPONENT_INDEX]).instanceName(target[INSTANCE_INDEX])
-                        .environement(target[ENVIRONMENT_INDEX]).timeStampList(timeStampList).metricPoints(metricPoints).build();
-                metrics.add(metric);
+                        .environement(target[ENVIRONMENT_INDEX]).metricPoints(metricPoints).build();
+                instances.add(metric);
             });
         }
-        allData.put(scope.getDescription(), metrics);
+        allData.put(scope.getDescription(), instances);
         allData.put(LAST_QUERY_TIME, DateTime.now().getMillis());
-        return metrics;
+        return instances;
     }
 
     /**
-     * Verify if at least one instance is up at a specific timestamp.
+     * Verify if at least one instance is up at a specific time stamp.
      * 
-     * @param timeStamp given timestamp.
-     * @param metrics collection of instances to verify.
+     * @param timeStamp Given time stamp.
+     * @param instances Collection of instances to verify.
+     * @return Returns true if at least one instance of the current component is up and false if not.
      */
-    private Boolean atLeastOneinstanceIsUp(Long instant, List<MetricInstance> metrics) throws Exception {
-        for (final MetricInstance metric : metrics) {
-            if (instanceIsUp(metric, instant)) {
-                return true;
-            }
-        }
-        return false;
+    private Boolean componentIsUp(Long instant, List<MetricInstance> instances) {
+        return instances.stream().anyMatch(instance -> instanceIsUp(instance, instant));
     }
 
+    /**
+     * Verify if an instance is up at a specific time stamp.
+     * 
+     * @param instance Given instance.
+     * @param timestamp given time stamp.
+     * @return true if the instance is up and false if not.
+     */
     private Boolean instanceIsUp(MetricInstance instance, Long timestamp) {
-        return instance.getMetricPoints().stream().anyMatch(p -> p.getEndTimestamp().equals(timestamp) && UP_VALUE.equals(p.getValue()));
+        return instance.getMetricPoints().stream().filter(p -> p.getEndTimestamp().equals(timestamp)).anyMatch(p -> UP_VALUE.equals(p.getValue()));
     }
 
     /**
      * Fetch the raw data from graphite.
+     * 
+     * @param scope graphite query period.
      */
-    private List<Map<String, Object>> getData(MetricQueryScope scope) throws Exception {
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private List<Map<String, Object>> getRawData(MetricQueryScope scope) throws Exception {
         template = template == null ? new RestTemplate() : template;
         final ResponseEntity<List> response = template.getForEntity(buildUrl(scope.getValue()), List.class);
         return response.getBody();
