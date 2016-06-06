@@ -39,6 +39,12 @@ public class MetricProcessor {
     private static final Double DOWN_VALUE = 0.0;
     private static final String LAST_QUERY_TIME = "lastQueryTime";
     private static final int DEFAULT_QUERY_DELAY = 30;
+
+    /**
+     * Unique value sent to the metric server. This is useful to know:
+     * 1- The number of active or inactive instances within a period of time.
+     * 2- How long the component was up or down within a period of time.
+     */
     private static final Integer LIVE_COUNT = 1;
 
     public MetricProcessor(RestTemplate template) {
@@ -75,18 +81,13 @@ public class MetricProcessor {
             return time;
         });
     }
-    
+
     /**
-     * Sends the metric server a unique value. This is useful to know:
-     * 1- The number of active or inactive  instances within a period of time.
-     * 2- How long the component was up or down within a period of time.
-     * 
-     * @return Always return a single value.
+     * Always send 1 to the metric server.
      */
     public Integer liveCount() {
         return LIVE_COUNT;
     }
-
 
     /**
      * Compute the percentage of up time for the whole component.
@@ -97,7 +98,7 @@ public class MetricProcessor {
     public Double getComponentPercentageUpTime(MetricQueryScope scope) throws Exception {
         final Double uptime = getComponentUpTime(scope).doubleValue();
         final Double downtime = getComponentDownTime(scope).doubleValue();
-        final Double upercentage = (uptime + downtime) == 0.0 ? 0.0 : uptime / (uptime + downtime);
+        final Double upercentage = (uptime + downtime) == DOWN_VALUE ? DOWN_VALUE : uptime / (uptime + downtime);
         LOGGER.info("Uptime percentage successfuly computed, value =[{}] scope =[{}]", upercentage, scope.getDescription());
         return upercentage;
     }
@@ -158,14 +159,12 @@ public class MetricProcessor {
      */
     private List<MetricPoint> filterPoints(List<MetricInstance> instances, Double direction) {
         final Boolean up = UP_VALUE.equals(direction) ? true : false;
-        /*@formatter:off*/
+
         return instances.isEmpty() ? null
                                    : instances.get(0)
-                                   .getMetricPoints().stream()
-                                   .filter(p -> up ? componentIsUp(p.getEndTimestamp(), instances)
-                                   : !componentIsUp(p.getEndTimestamp(), instances))
-                                   .collect(Collectors.toList());      
-        /*@formatter:on*/
+                                           .getMetricPoints().stream()
+                                           .filter(p -> up ? componentIsUp(p.getEndTimestamp(), instances): !componentIsUp(p.getEndTimestamp(), instances))
+                                           .collect(Collectors.toList());
     }
 
     /**
