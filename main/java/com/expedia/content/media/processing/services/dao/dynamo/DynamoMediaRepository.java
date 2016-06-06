@@ -94,6 +94,19 @@ public class DynamoMediaRepository {
                 .collect(Collectors.toList());
     }
 
+    public List<MediaProcessLog> getProcessLogByDomainId(String domainId) {
+        final HashMap<String, AttributeValue> params = new HashMap<>();
+        params.put(":did", new AttributeValue().withS(domainId));
+        final DynamoDBQueryExpression<MediaProcessLog> expression = new DynamoDBQueryExpression<MediaProcessLog>()
+                .withIndexName("cs-mediadb-index-MediaProcessLog-DomainId")
+                .withConsistentRead(false)
+                .withKeyConditionExpression("DomainId = :did")
+                .withExpressionAttributeValues(params);
+        return dynamoMapper.query(MediaProcessLog.class, expression);
+
+    }
+
+
     /**
      * get the Media information from dynamo Media table.
      * @param mediaGuid media Id from JSON

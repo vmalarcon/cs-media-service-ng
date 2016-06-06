@@ -162,7 +162,7 @@ public class LcmDynamoMediaDao implements MediaDao {
             }
         }
 
-        final Map<String,String> fileStatus = buildFileStatusMap(domainIdMedia);
+        final Map<String,String> fileStatus = buildFileNameStatusMap(domainIdMedia, domainId);
         domainIdMedia.stream().forEach(media -> media.setStatus(fileStatus.get(media.getFileName())));
         return MediaByDomainIdResponse.builder().domain(domain.getDomain()).domainId(domainId).totalMediaCount(totalMediaCount)
                 .images(transformMediaListForResponse(domainIdMedia)).build();
@@ -310,33 +310,49 @@ public class LcmDynamoMediaDao implements MediaDao {
      * builds a Map of FileNames to Latest Status. If a media has a guid the status is extracted from the MediaDB
      * otherwise the statuses are extracted from LCM
      *
-     * @param mediaList     list of Media
+     * @param mediaList list of Media
      * @return Map of filenames to their latest statuses
      */
-    private Map<String,String> buildFileStatusMap(List<Media> mediaList) {
+    private Map<String,String> buildFileNameStatusMap(List<Media> mediaList, String domainId) {
         final Map<String,String> fileStatus = new HashMap<>();
-        final List<String> fileNames = new ArrayList<>();
+        final List<String> fileNamesLCM = new ArrayList<>();
+        final List<Media> guidMedias = new ArrayList<>();
         mediaList.stream().forEach(media -> {
             if (media.getMediaGuid() == null) {
-                if (media.getFileName() != null && !fileNames.contains(media.getFileName())) {
-                    fileNames.add(media.getFileName());
+                if (media.getFileName() != null && !fileNamesLCM.contains(media.getFileName())) {
+                    fileNamesLCM.add(media.getFileName());
                 }
             } else {
-                fileStatus.put(media.getFileName(), getLatestStatus(media.getMediaGuid()));
+                guidMedias.add(media);
             }
         });
-        if (fileNames.size() > 0) {
-            fileStatus.putAll(getStatusLoop(paramLimit, fileNames));
+        if (!fileNamesLCM.isEmpty()) {
+            fileStatus.putAll(getStatusLoop(paramLimit, fileNamesLCM));
+        }
+        if (!guidMedias.isEmpty()) {
+            fileStatus.putAll(getMediaDBStatus(guidMedias, domainId));
         }
         return fileStatus;
     }
+
+    private Map<String, String> getMediaDBStatus(List<Media> medias, String domainId) {
+        Map<String, String> filenameStatusMap = new HashMap<>();
+        Map<String, List<MediaProcessLog>> processLogMap = mediaRepo.getProcessLogByDomainId(domainId).stream().collect(Collectors.groupingBy(MediaProcessLog::getMediaGuid));
+        medias.stream().forEach(media -> {
+            List<MediaProcessLog> sortedLog = processLogMap.get(media.getMediaGuid()).stream().sorted((log1, log2) -> log1.getStatusDate().compareTo(log2.getStatusDate()))
+                    .collect(Collectors.toList());
+            filenameStatusMap.put(media.getFileName(), getLatestActivityMapping(sortedLog));
+        });
+        return filenameStatusMap;
+    }
+
 
     /**
      * because of the parameter length limitation in Sproc 'MediaProcessLogGetByFilename', if the fileNames length is bigger than the limitation
      * we call the sproc multiple times to get the result.
      *
-     * @param limit         Sproc parameter limitation.
-     * @param fileNames     File names to fetch the status for.
+     * @param limit Sproc parameter limitation.
+     * @param fileNames File names to fetch the status for.
      * @return List of all status mapped to their file name.
      */
     private Map<String, String> getStatusLoop(int limit, List<String> fileNames) {
@@ -368,7 +384,7 @@ public class LcmDynamoMediaDao implements MediaDao {
      * Pulls the latest processing status of media files. When a file doesn't have any process logs the file is
      * considered old and therefore published.
      *
-     * @param fileNames     File names for which the status is required.
+     * @param fileNames File names for which the status is required.
      * @return The latest status of a media file.
      */
     @Override
@@ -387,7 +403,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     /**
      * Get Latest Status of a Media by guid
      *
-     * @param mediaGuid     GUID identifier for a Media
+     * @param mediaGuid GUID identifier for a Media
      * @return The latest status of a media file.
      */
     public String getLatestStatus(String mediaGuid) {
