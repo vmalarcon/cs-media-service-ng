@@ -55,7 +55,7 @@ import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaChg
 import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.MediaLstWithCatalogItemMediaAndMediaFileNameSproc;
 import com.expedia.content.media.processing.services.reqres.Comment;
-import com.expedia.content.media.processing.services.reqres.DomainIdImage;
+import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import com.expedia.content.media.processing.services.util.JSONUtil;
@@ -1840,14 +1840,14 @@ public class MediaControllerTest {
      * @return The transformed list.
      */
     @SuppressWarnings("CPD-END")
-    private List<DomainIdImage> transformMediaListForResponse(List<Media> mediaList) {
+    private List<DomainIdMedia> transformMediaListForResponse(List<Media> mediaList) {
         return mediaList.stream().map(buildImage).collect(Collectors.toList());
     }
 
     /**
      * builds an Image object out of a MediaGetResponse
      */
-    private Function<Media,DomainIdImage> buildImage = media -> new DomainIdImage(transformSingleMediaForResponse(media));
+    private Function<Media,DomainIdMedia> buildImage = media -> new DomainIdMedia(transformSingleMediaForResponse(media));
 
     private static void setResponseLcmMediaId(Media media) {
         if (media.getLcmMediaId() != null) {
