@@ -31,7 +31,7 @@
     <bean id="retryableAspect" class="com.expedia.content.media.processing.pipeline.retry.RetryableAspect" factory-method="aspectOf" autowire="byType" />
 
     <util:map id="imageMessageValidators">
-        <entry key="EPC">
+        <entry key="DEFAULT">
             <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
                 <ref bean="mvelValidator"/>
                 <ref bean="lcmValidator"/>
@@ -41,13 +41,6 @@
         <entry key="Media Cloud Router">
             <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
                 <ref bean="mediaRouterValidator"/>
-            </list>
-        </entry>
-        <entry key="EPS Media API">
-            <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
-                <ref bean="mvelValidator"/>
-                <ref bean="lcmValidator"/>
-                <ref bean="roomValidator"/>
             </list>
         </entry>
         <entry key="Multisource">
@@ -62,7 +55,7 @@
                 <ref bean="roomValidator"/>
             </list>
         </entry>
-        <entry key="DEFAULT">
+        <entry key="csMediaTools">
             <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
                 <ref bean="mediaRouterValidator"/>
                 <ref bean="lcmValidator"/>
