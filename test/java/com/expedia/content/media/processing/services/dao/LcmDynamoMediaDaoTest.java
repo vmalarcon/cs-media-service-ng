@@ -25,7 +25,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import com.expedia.content.media.processing.services.reqres.Image;
+import com.expedia.content.media.processing.services.reqres.DomainIdImage;
 import com.expedia.content.media.processing.services.util.FileNameUtil;
 import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -114,7 +114,7 @@ public class LcmDynamoMediaDaoTest {
 
         assertEquals(3, testMediaRespomse.getImages().size());
         testMediaRespomse.getImages().stream().filter(media -> media.getDomainFields() != null && media.getDomainFields().get("lcmMediaId") != null).forEach(media -> assertEquals(2, media.getDerivatives().size()));
-        Image testMedia1 = testMediaRespomse.getImages().get(0);
+        DomainIdImage testMedia1 = testMediaRespomse.getImages().get(0);
         Map<String, Object> domainMap = testMedia1.getDomainFields();
         List rooms = (ArrayList)domainMap.get("rooms");
         assertEquals(((HashMap)rooms.get(0)).get("roomId"),"123");
@@ -130,10 +130,10 @@ public class LcmDynamoMediaDaoTest {
         assertEquals("4321", testMedia1.getDomainFields().get("subcategoryId"));
         assertEquals("VirtualTour", testMedia1.getDomainDerivativeCategory());
         assertEquals("s3://fileUrl/imageName.jpg", testMedia1.getFileUrl());
-        Image testMedia2 = testMediaRespomse.getImages().get(2);
+        DomainIdImage testMedia2 = testMediaRespomse.getImages().get(2);
         assertNull(testMedia2.getMediaGuid());
         assertNull(testMedia2.getFileUrl());
-        Image testMedia3 = testMediaRespomse.getImages().get(1);
+        DomainIdImage testMedia3 = testMediaRespomse.getImages().get(1);
         assertEquals(dynamoMedia3.getMediaGuid(), testMedia3.getMediaGuid());
         assertNull(testMedia3.getFileUrl());
     }
@@ -182,7 +182,7 @@ public class LcmDynamoMediaDaoTest {
         setFieldValue(mediaDao, "paramLimit", 1);
         when(mockMediaDBRepo.getMediaProcessLogByMediaGUID(anyString())).thenReturn(getMediaDBProcessLog());
 
-        List<Image> testMediaList = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null).getImages();
+        List<DomainIdImage> testMediaList = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null).getImages();
         verify(lcmProcessLogDao, times(2)).findMediaStatus(any());
         assertEquals(guid1, testMediaList.get(0).getMediaGuid());
         assertEquals("true", testMediaList.get(0).getDomainFields().get("propertyHero"));
@@ -237,7 +237,7 @@ public class LcmDynamoMediaDaoTest {
 
         assertEquals(1, testMediaResponse1.getImages().size());
         testMediaResponse1.getImages().stream().forEach(media -> assertEquals(2, media.getDerivatives().size()));
-        Image testMedia1 = testMediaResponse1.getImages().get(0);
+        DomainIdImage testMedia1 = testMediaResponse1.getImages().get(0);
         assertEquals(mediaList.get(0).getDomainId().toString(), testMediaResponse1.getDomainId());
         assertEquals(mediaList.get(0).getLastUpdatedBy(), testMedia1.getLastUpdatedBy());
         assertEquals(mediaList.get(0).getFileName(), testMedia1.getFileName());
@@ -249,7 +249,7 @@ public class LcmDynamoMediaDaoTest {
         assertEquals(2, testMediaResponse2.getImages().size());
         testMediaResponse2.getImages().stream().filter(media -> media.getDomainFields() != null && media.getDomainFields().get("lcmMediaId") != null)
                 .forEach(media -> assertEquals(2, media.getDerivatives().size()));
-        Image testMedia2 = testMediaResponse2.getImages().get(1);
+        DomainIdImage testMedia2 = testMediaResponse2.getImages().get(1);
         assertEquals(mediaList.get(2).getDomainId().toString(), testMediaResponse2.getDomainId());
         assertEquals(mediaList.get(2).getLastUpdatedBy(), testMedia2.getLastUpdatedBy());
         assertEquals(mediaList.get(2).getFileName(), testMedia2.getFileName());
@@ -355,7 +355,7 @@ public class LcmDynamoMediaDaoTest {
         MediaByDomainIdResponse testMediaResponse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null);
 
         assertEquals(3, testMediaResponse.getImages().size());
-        Image testMedia1 = testMediaResponse.getImages().get(0);
+        DomainIdImage testMedia1 = testMediaResponse.getImages().get(0);
         assertEquals(mediaList.get(0).getDomainId().toString(), testMediaResponse.getDomainId());
         assertEquals(mediaList.get(0).getLastUpdatedBy(), testMedia1.getLastUpdatedBy());
         assertEquals(mediaList.get(0).getFileName(), testMedia1.getFileName());
@@ -365,7 +365,7 @@ public class LcmDynamoMediaDaoTest {
         assertEquals(0, testMedia1.getDerivatives().size());
         assertEquals("true", testMedia1.getDomainFields().get("propertyHero"));
         assertEquals("4321", testMedia1.getDomainFields().get("subcategoryId"));
-        Image testMedia2 = testMediaResponse.getImages().get(2);
+        DomainIdImage testMedia2 = testMediaResponse.getImages().get(2);
         assertNull(testMedia2.getMediaGuid());
         assertEquals(1, testMedia2.getDerivatives().size());
         HashMap derivative = (HashMap) testMedia2.getDerivatives().get(0);
@@ -374,7 +374,7 @@ public class LcmDynamoMediaDaoTest {
         assertEquals(derivative.get("height"), 21);
         assertEquals(derivative.get("type"), "s");
         assertEquals(derivative.get("location"), "https://media.int.expedia.com/image2_s.jpg");
-        Image testMedia3 = testMediaResponse.getImages().get(1);
+        DomainIdImage testMedia3 = testMediaResponse.getImages().get(1);
         assertEquals(dynamoMedia3.getMediaGuid(), testMedia3.getMediaGuid());
         assertNull(testMedia3.getDerivatives());
     }
@@ -625,7 +625,7 @@ public class LcmDynamoMediaDaoTest {
 
         assertEquals(3, testMediaRespomse.getImages().size());
         testMediaRespomse.getImages().stream().filter(media -> media.getDomainFields() != null && media.getDomainFields().get("lcmMediaId") != null).forEach(media -> assertEquals(2, media.getDerivatives().size()));
-        Image testMedia1 = testMediaRespomse.getImages().get(0);
+        DomainIdImage testMedia1 = testMediaRespomse.getImages().get(0);
         Map<String, Object> domainMap = testMedia1.getDomainFields();
         List rooms = (ArrayList)domainMap.get("rooms");
         assertEquals(((HashMap)rooms.get(0)).get("roomId"),"123");
@@ -641,10 +641,10 @@ public class LcmDynamoMediaDaoTest {
         assertEquals("4321", testMedia1.getDomainFields().get("subcategoryId"));
         assertEquals("VirtualTour", testMedia1.getDomainDerivativeCategory());
         assertEquals("s3://fileUrl/imageName.jpg", testMedia1.getFileUrl());
-        Image testMedia2 = testMediaRespomse.getImages().get(2);
+        DomainIdImage testMedia2 = testMediaRespomse.getImages().get(2);
         assertNull(testMedia2.getMediaGuid());
         assertNull(testMedia2.getFileUrl());
-        Image testMedia3 = testMediaRespomse.getImages().get(1);
+        DomainIdImage testMedia3 = testMediaRespomse.getImages().get(1);
         assertEquals(dynamoMedia3.getMediaGuid(), testMedia3.getMediaGuid());
         assertNull(testMedia3.getFileUrl());
     }

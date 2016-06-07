@@ -274,6 +274,8 @@ public class MediaController extends CommonServiceController {
      *                             all then all are returned. All is set a default.
      * @param derivativeTypeFilter Inclusive filter to use to only return certain types of derivatives. Returns all derivatives if not specified.
      * @param headers              Headers of the request.
+     * @param pageSize             Positive integer to filter the number of media displayed per page. pageSize is inclusive with pageIndex.
+     * @param pageIndex            Positive integer to filter the page to display. pageIndex is inclusive with pageSize.
      * @return The list of media data belonging to the domain item.
      * @throws Exception Thrown if processing the message fails.
      */

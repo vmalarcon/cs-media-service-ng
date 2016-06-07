@@ -9,7 +9,7 @@ import java.util.Map;
  * Image object
  */
 @SuppressWarnings({"PMD.UnusedPrivateField","PMD.SingularField"})
-public class Image {
+public class DomainIdImage {
 
     @SuppressWarnings("CPD-START")
     @Getter private final String mediaGuid;
@@ -29,7 +29,7 @@ public class Image {
     @Getter private final List<Comment> comments;
     @SuppressWarnings("CPD-END")
 
-    public Image(MediaGetResponse mediaGetResponse) {
+    public DomainIdImage(MediaGetResponse mediaGetResponse) {
         this.mediaGuid = mediaGetResponse.getMediaGuid();
         this.fileUrl = mediaGetResponse.getFileUrl();
         this.fileName = mediaGetResponse.getFileName();

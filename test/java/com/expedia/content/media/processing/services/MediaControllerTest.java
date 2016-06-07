@@ -55,14 +55,13 @@ import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaChg
 import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.MediaLstWithCatalogItemMediaAndMediaFileNameSproc;
 import com.expedia.content.media.processing.services.reqres.Comment;
-import com.expedia.content.media.processing.services.reqres.Image;
+import com.expedia.content.media.processing.services.reqres.DomainIdImage;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.google.common.collect.Lists;
 
-import com.yammer.metrics.core.MetricProcessor;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.codehaus.plexus.util.ReflectionUtils;
 import org.joda.time.format.DateTimeFormat;
@@ -1841,14 +1840,14 @@ public class MediaControllerTest {
      * @return The transformed list.
      */
     @SuppressWarnings("CPD-END")
-    private List<Image> transformMediaListForResponse(List<Media> mediaList) {
+    private List<DomainIdImage> transformMediaListForResponse(List<Media> mediaList) {
         return mediaList.stream().map(buildImage).collect(Collectors.toList());
     }
 
     /**
      * builds an Image object out of a MediaGetResponse
      */
-    private Function<Media,Image> buildImage = media -> new Image(transformSingleMediaForResponse(media));
+    private Function<Media,DomainIdImage> buildImage = media -> new DomainIdImage(transformSingleMediaForResponse(media));
 
     private static void setResponseLcmMediaId(Media media) {
         if (media.getLcmMediaId() != null) {
