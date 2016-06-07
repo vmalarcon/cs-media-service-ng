@@ -98,6 +98,7 @@ public class MediaController extends CommonServiceController {
     private static final String UNAUTHORIZED_USER_MESSAGE = "User is not authorized.";
     private static final String DUPLICATED_STATUS = "DUPLICATE";
     private static final Integer LIVE_COUNT = 1;
+    private static final String DEFAULT_VALIDATION_RULES = "DEFAULT";
         
     @Resource(name = "providerProperties")
     private Properties providerProperties;
@@ -604,8 +605,12 @@ public class MediaController extends CommonServiceController {
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
         final List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        final List<MapMessageValidator> validatorList = mapValidatorList.get(clientId);
-        if (validatorList == null) {
+        final List<MapMessageValidator> defaultValidatorList = mapValidatorList.get(DEFAULT_VALIDATION_RULES);
+        final List<MapMessageValidator> validatorList = mapValidatorList.getOrDefault(clientId, defaultValidatorList);
+        if (validatorList == defaultValidatorList) {
+            LOGGER.warn("There is no validation specific to user: {}. Using default validations.", clientId);
+        }
+        if (validatorList == null && defaultValidatorList == null) {
             return UNAUTHORIZED_USER_MESSAGE;
         }
         List<Map<String, String>> validationErrorList = null;
