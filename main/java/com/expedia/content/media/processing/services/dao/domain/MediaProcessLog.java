@@ -2,6 +2,7 @@ package com.expedia.content.media.processing.services.dao.domain;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import lombok.NoArgsConstructor;
 
@@ -23,6 +24,7 @@ public class MediaProcessLog {
     private String activityType;
     private String mediaType;
     private String mediaGuid;
+    private String domainId;
 
     public MediaProcessLog(String activityTime, String mediaFileName, String activityNameAndType, String mediaType) {
         this.activityTime = activityTime;
@@ -77,6 +79,16 @@ public class MediaProcessLog {
         this.mediaType = mediaType;
     }
 
+    @DynamoDBAttribute(attributeName = "DomainId")
+    @DynamoDBIndexHashKey(globalSecondaryIndexName = "cs-mediadb-index-MediaProcessLog-DomainId")
+    public String getDomainId() {
+        return domainId;
+    }
+
+    public void setDomainId(String domainId) {
+        this.domainId = domainId;
+    }
+
     public Date getStatusDate() {
         try {
             final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS", Locale.US);
@@ -92,7 +104,7 @@ public class MediaProcessLog {
                 ", mediaFileName='" + mediaFileName + '\'' +
                 ", activityType='" + activityType + '\'' +
                 ", mediaType='" + mediaType + '\'' +
-                ", mediaGudi='" + mediaGuid + '\'' +
+                ", mediaGuid='" + mediaGuid + '\'' +
                 '}';
     }
 }

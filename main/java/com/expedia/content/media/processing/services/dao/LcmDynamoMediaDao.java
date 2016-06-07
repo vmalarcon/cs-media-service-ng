@@ -125,9 +125,9 @@ public class LcmDynamoMediaDao implements MediaDao {
     /**
      * Builds a @MediaByDomainIdResponse
      *
-     * @param domain           Domain the item belongs too.
-     * @param domainId         The id of the domain item media items are needed.
-     * @param activeFilter     Filters active or inactive media. If "all" or null is provided all items are returned.
+     * @param domain Domain the item belongs too.
+     * @param domainId The id of the domain item media items are needed.
+     * @param activeFilter Filters active or inactive media. If "all" or null is provided all items are returned.
      * @param derivativeFilter Inclusive filter of derivatives. A null or empty string will not exclude any derivatives.
      * @param pageSize
      * @param pageIndex
@@ -173,21 +173,21 @@ public class LcmDynamoMediaDao implements MediaDao {
      * Builds a @MediaGetResponse by mediaGuid (Supports LcmMediaId as well, but this feature will be deprecated in feature releases)
      *
      *
-     * @param mediaGUID     String identifier for a Media
+     * @param mediaGUID String identifier for a Media
      * @return A @MediaGetResponse
      */
     @Override
     public MediaGetResponse getMediaByGUID(String mediaGUID) {
         final boolean isLodgingNoGuid = mediaGUID.matches("\\d+");
-        Media guidMedia = isLodgingNoGuid ? resolveMediaByLcmMediaId(mediaGUID) : resolveMediaByGuid(mediaGUID);
-        resolveMediaStatus(guidMedia, isLodgingNoGuid);
-        return transformSingleMediaForResponse(guidMedia);
+        Media media = isLodgingNoGuid ? resolveMediaByLcmMediaId(mediaGUID) : resolveMediaByGuid(mediaGUID);
+        resolveMediaLatestStatus(media, isLodgingNoGuid);
+        return transformSingleMediaForResponse(media);
     }
 
     /**
      * Resolves a Media by it's LcmMediaID
      *
-     * @param lcmMediaIdString  lcmMediaID of a Media
+     * @param lcmMediaIdString lcmMediaID of a Media
      * @return a completed Media object that corresponds to the LcmMediaID
      */
     @SuppressWarnings("unchecked")
@@ -206,7 +206,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     /**
      * Resolves a Media by it's MediaGUID
      *
-     * @param mediaGUID     MediaGuid of a Media
+     * @param mediaGUID MediaGuid of a Media
      * @return a completed Media object that corresponds to the MediaGuid
      */
     private Media resolveMediaByGuid(String mediaGUID) {
@@ -228,10 +228,10 @@ public class LcmDynamoMediaDao implements MediaDao {
     /**
      * Adds corresponding room data and merges LcmMedia and MediaDB data for a Media object
      *
-     * @param lcmMediaId            LcmMediaID for a Media
-     * @param domainId              DomainID of a Media
-     * @param mediaLcmMediaIdMap    Map of LcmMediaId to a Media
-     * @param guidMedia             Partially Resolved Media object
+     * @param lcmMediaId LcmMediaID for a Media
+     * @param domainId DomainID of a Media
+     * @param mediaLcmMediaIdMap Map of LcmMediaId to a Media
+     * @param guidMedia Partially Resolved Media object
      * @return  completed Media Object
      */
     @SuppressWarnings("unchecked")
@@ -249,10 +249,10 @@ public class LcmDynamoMediaDao implements MediaDao {
     /**
      * Get and Set the status for a Media.
      *
-     * @param guidMedia         Media to get the status for
-     * @param isLodgingNoGuid   Boolean to determine whether to get the Status from MediaDB or LCM
+     * @param guidMedia Media to get the status for
+     * @param isLodgingNoGuid Boolean to determine whether to get the Status from MediaDB or LCM
      */
-    private void resolveMediaStatus(Media guidMedia, Boolean isLodgingNoGuid) {
+    private void resolveMediaLatestStatus(Media guidMedia, Boolean isLodgingNoGuid) {
         if (guidMedia != null) {
             String status;
             if (isLodgingNoGuid) {
@@ -271,9 +271,9 @@ public class LcmDynamoMediaDao implements MediaDao {
     /**
      * Returns a ResponseEntity if the pageSize and pageIndex are not both null or not null.
      * 
-     * @param totalMediaCount   Total number of items belonging to the domain.
-     * @param pageSize          Size of the page.
-     * @param pageIndex         Which page to fetch items for.
+     * @param totalMediaCount Total number of items belonging to the domain.
+     * @param pageSize Size of the page.
+     * @param pageIndex Which page to fetch items for.
      * @return A ResponseEntity if the pageSize and pageIndex are not both null or not null.
      */
     private String validatePagination(Integer totalMediaCount, Integer pageSize, Integer pageIndex) {
@@ -293,9 +293,9 @@ public class LcmDynamoMediaDao implements MediaDao {
      * Returns a page of items from a stream. Some request ask not for all items, but for only a page's worth of items.
      * The generics aren't specified in the stream to allow different types to be paginated.
      * 
-     * @param items         Item stream.
-     * @param pageSize      Size of the page.
-     * @param pageIndex     Which page to fetch items for.
+     * @param items Item stream.
+     * @param pageSize Size of the page.
+     * @param pageIndex Which page to fetch items for.
      * @return A stream of items belonging to the desired page.
      */
     @SuppressWarnings("rawtypes")
@@ -311,38 +311,56 @@ public class LcmDynamoMediaDao implements MediaDao {
      * otherwise the statuses are extracted from LCM
      *
      * @param mediaList list of Media
+     * @param domainId Id of a Domain
      * @return Map of filenames to their latest statuses
      */
     private Map<String,String> buildFileNameStatusMap(List<Media> mediaList, String domainId) {
         final Map<String,String> fileStatus = new HashMap<>();
         final List<String> fileNamesLCM = new ArrayList<>();
-        final List<Media> guidMedias = new ArrayList<>();
-        mediaList.stream().forEach(media -> {
+        final List<Media> mediaDBMedia = new ArrayList<>();
+        mediaList.stream().parallel().forEach(media -> {
             if (media.getMediaGuid() == null) {
                 if (media.getFileName() != null && !fileNamesLCM.contains(media.getFileName())) {
                     fileNamesLCM.add(media.getFileName());
                 }
             } else {
-                guidMedias.add(media);
+                mediaDBMedia.add(media);
             }
         });
         if (!fileNamesLCM.isEmpty()) {
             fileStatus.putAll(getStatusLoop(paramLimit, fileNamesLCM));
         }
-        if (!guidMedias.isEmpty()) {
-            fileStatus.putAll(getMediaDBStatus(guidMedias, domainId));
+        if (!mediaDBMedia.isEmpty()) {
+            fileStatus.putAll(getMediaDBStatus(mediaDBMedia, domainId));
         }
         return fileStatus;
     }
 
+    /**
+     * Get the Latest Status of a list of Medias from the MediaDB
+     * From the list of medias a list of MediaGuids is produced which then a query is done on the MediaProcessLog table
+     *
+     * @param medias List of Medias
+     * @param domainId the domainId of the Medias
+     * @return a Map of fileNames to their Latest Status
+     */
     private Map<String, String> getMediaDBStatus(List<Media> medias, String domainId) {
+        List<String> mediaGuids = medias.stream().map(Media::getMediaGuid).collect(Collectors.toList());
         Map<String, String> filenameStatusMap = new HashMap<>();
-        Map<String, List<MediaProcessLog>> processLogMap = mediaRepo.getProcessLogByDomainId(domainId).stream().collect(Collectors.groupingBy(MediaProcessLog::getMediaGuid));
-        medias.stream().forEach(media -> {
-            List<MediaProcessLog> sortedLog = processLogMap.get(media.getMediaGuid()).stream().sorted((log1, log2) -> log1.getStatusDate().compareTo(log2.getStatusDate()))
-                    .collect(Collectors.toList());
-            filenameStatusMap.put(media.getFileName(), getLatestActivityMapping(sortedLog));
+        Map<String, List<MediaProcessLog>> processLogMap = mediaRepo.getProcessLogByDomainId(domainId, mediaGuids)
+                .stream().collect(Collectors.groupingBy(MediaProcessLog::getMediaGuid));
+
+        medias.stream().parallel().forEach(media -> {
+            List<MediaProcessLog> sortedLog = processLogMap.get(media.getMediaGuid());
+            if (sortedLog != null && sortedLog.size() > 1) {
+                sortedLog = processLogMap.get(media.getMediaGuid()).stream().sorted((log1, log2) -> log1.getStatusDate().compareTo(log2.getStatusDate()))
+                        .collect(Collectors.toList());
+            }
+            if (sortedLog != null && sortedLog.size() > 0) {
+                filenameStatusMap.put(media.getFileName(), getLatestActivityMapping(sortedLog));
+            }
         });
+
         return filenameStatusMap;
     }
 
@@ -418,7 +436,7 @@ public class LcmDynamoMediaDao implements MediaDao {
      * Finds the latest activity that is part of the activity white list. The list is expected to
      * be ordered from oldest to latest.
      *
-     * @param logList   The list to search.
+     * @param logList The list to search.
      * @return The found activity mapping. {@code null} if no activity is found.
      */
     private String getLatestActivityMapping(List<MediaProcessLog> logList) {
@@ -519,11 +537,13 @@ public class LcmDynamoMediaDao implements MediaDao {
         if (media != null) {
             if (media.getDomainFields() != null) {
                 try {
-                    media.setDomainData(OBJECT_MAPPER.readValue(media.getDomainFields(), new TypeReference<Map<String, Object>>() {}));
-                    final Object lcmMediaIdObject = media.getDomainData().get("lcmMediaId");
-                    if (lcmMediaIdObject != null) {
-                        final Integer lcmMediaId = lcmMediaIdObject instanceof Integer ? (Integer) lcmMediaIdObject : Integer.parseInt((String) lcmMediaIdObject);
-                        media.setLcmMediaId(lcmMediaId.toString());
+                    if (!"null".equals(media.getDomainFields()) && media.getDomainFields() != null) {
+                        media.setDomainData(OBJECT_MAPPER.readValue(media.getDomainFields(), new TypeReference<Map<String, Object>>() {}));
+                        final Object lcmMediaIdObject = media.getDomainData().get("lcmMediaId");
+                        if (lcmMediaIdObject != null) {
+                            final Integer lcmMediaId = lcmMediaIdObject instanceof Integer ? (Integer) lcmMediaIdObject : Integer.parseInt((String) lcmMediaIdObject);
+                            media.setLcmMediaId(lcmMediaId.toString());
+                        }
                     }
                 } catch (IOException | NullPointerException e) {
                     LOGGER.warn("Domain fields not stored in proper JSON format for media id {}.", media.getMediaGuid(), e);
@@ -710,8 +730,8 @@ public class LcmDynamoMediaDao implements MediaDao {
      * Extract LCM domain data and stores into a passed map to be interpreted the same way as if it would have been pulled in JSON from
      * the media DB.
      *
-     * @param lcmMedia      Data object containing media data from LCM.
-     * @param dynamoMedia   Data object containing media data form the Media DB.
+     * @param lcmMedia Data object containing media data from LCM.
+     * @param dynamoMedia Data object containing media data form the Media DB.
      * @param lcmDomainData Map to store extracted LCM data into.
      */
     private void extractLcmDomainFields(final LcmMedia lcmMedia, final Media dynamoMedia, final Map<String, Object> lcmDomainData) {
