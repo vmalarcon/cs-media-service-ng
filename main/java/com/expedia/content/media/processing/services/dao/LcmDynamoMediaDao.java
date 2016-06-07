@@ -183,6 +183,38 @@ public class LcmDynamoMediaDao implements MediaDao {
     }
 
     /**
+     * Extracts media data for a Hotel from LCM
+     *
+     * @param domainId Id of a hotel
+     * @param derivativeFilter Inclusive filter of derivatives. A null or empty string will not exclude any derivatives.
+     * @param domainIdMedia MediaDB media data
+     */
+    @SuppressWarnings("unchecked")
+    private void extractLcmData(final String domainId, final String derivativeFilter, final List<Media> domainIdMedia) {
+        final Integer domainIdInt = Integer.parseInt(domainId);
+        final Map<String, Media> mediaLcmMediaIdMap = domainIdMedia.stream()
+                .filter(media -> media.getLcmMediaId() != null && !"null".equals(media.getLcmMediaId()))
+                .collect(Collectors.toMap(Media::getLcmMediaId, media -> media));
+        final List<LcmMediaAndDerivative> mediaDerivativeItems = (List<LcmMediaAndDerivative>) lcmMediaListSproc.execute(domainIdInt).get(SQLMediaListSproc.MEDIA_SET);
+        final Map<Integer, List<LcmMediaAndDerivative>> lcmMediaMap =
+                mediaDerivativeItems.stream().collect(Collectors.groupingBy(mediaAndDerivative -> mediaAndDerivative.getMediaId()));
+
+        final List<LcmMediaRoom> mediaRoomItems = (List<LcmMediaRoom>) roomGetByCatalogItemIdSproc.execute(domainIdInt).get(SQLRoomGetSproc.ROOM_SET);
+        final Map<Integer, List<LcmMediaRoom>> lcmRoomMediaMap = mediaRoomItems.stream().collect(
+                Collectors.groupingBy(mediaRoom -> mediaRoom.getMediaId()));
+
+        final Function<Integer, Media> completeMediaWithLcmData = mediaId ->
+                convertMedia(mediaLcmMediaIdMap, lcmRoomMediaMap).apply(convertLcmMediaAndDerivativeToLcmMedia(lcmMediaMap, mediaId, derivativeFilter));
+        /* @formatter:off */
+        final List<Media> lcmMediaList = lcmMediaMap.keySet().stream().parallel()
+                .map(completeMediaWithLcmData)
+                .collect(Collectors.toList());
+        /* @formatter:on */
+        domainIdMedia.removeAll(mediaLcmMediaIdMap.values());
+        domainIdMedia.addAll(0, lcmMediaList);
+    }
+
+    /**
      * Resolves a Media by it's LcmMediaID
      *
      * @param lcmMediaIdString lcmMediaID of a Media
@@ -649,38 +681,6 @@ public class LcmDynamoMediaDao implements MediaDao {
             return mediaBuilder.build();
             /* @formatter:on */
         };
-    }
-
-    /**
-     * Extracts media data for a Hotel from LCM
-     *
-     * @param domainId Id of a hotel
-     * @param derivativeFilter Inclusive filter of derivatives. A null or empty string will not exclude any derivatives.
-     * @param domainIdMedia MediaDB media data
-     */
-    @SuppressWarnings("unchecked")
-    private void extractLcmData(final String domainId, final String derivativeFilter, final List<Media> domainIdMedia) {
-        final Integer domainIdInt = Integer.parseInt(domainId);
-        final Map<String, Media> mediaLcmMediaIdMap = domainIdMedia.stream()
-                .filter(media -> media.getLcmMediaId() != null && !"null".equals(media.getLcmMediaId()))
-                .collect(Collectors.toMap(Media::getLcmMediaId, media -> media));
-        final List<LcmMediaAndDerivative> mediaDerivativeItems = (List<LcmMediaAndDerivative>) lcmMediaListSproc.execute(domainIdInt).get(SQLMediaListSproc.MEDIA_SET);
-        final Map<Integer, List<LcmMediaAndDerivative>> lcmMediaMap =
-                mediaDerivativeItems.stream().collect(Collectors.groupingBy(mediaAndDerivative -> mediaAndDerivative.getMediaId()));
-
-        final List<LcmMediaRoom> mediaRoomItems = (List<LcmMediaRoom>) roomGetByCatalogItemIdSproc.execute(domainIdInt).get(SQLRoomGetSproc.ROOM_SET);
-        final Map<Integer, List<LcmMediaRoom>> lcmRoomMediaMap = mediaRoomItems.stream().collect(
-                Collectors.groupingBy(mediaRoom -> mediaRoom.getMediaId()));
-
-        final Function<Integer, Media> completeMediaWithLcmData = mediaId ->
-                convertMedia(mediaLcmMediaIdMap, lcmRoomMediaMap).apply(convertLcmMediaAndDerivativeToLcmMedia(lcmMediaMap, mediaId, derivativeFilter));
-        /* @formatter:off */
-        final List<Media> lcmMediaList = lcmMediaMap.keySet().stream().parallel()
-                .map(completeMediaWithLcmData)
-                .collect(Collectors.toList());
-        /* @formatter:on */
-        domainIdMedia.removeAll(mediaLcmMediaIdMap.values());
-        domainIdMedia.addAll(0, lcmMediaList);
     }
 
     /**
