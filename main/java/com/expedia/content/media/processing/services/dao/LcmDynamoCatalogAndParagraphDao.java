@@ -2,7 +2,7 @@ package com.expedia.content.media.processing.services.dao;
 
 import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
 import com.expedia.content.media.processing.services.dao.domain.Paragraph;
 import com.expedia.content.media.processing.services.dao.sql.*;
@@ -42,7 +42,8 @@ public class LcmDynamoCatalogAndParagraphDao implements CatalogItemMediaDao {
     private CatalogItemMediaDelSproc catalogItemMediaDelSproc;
     @Autowired
     private AddParagraphSproc addParagraphSproc;
-
+    @Autowired
+    private SQLMediaItemGetSproc lcmMediaItemSproc;
     @Autowired
     private GetParagraphSproc getParagraphSproc;
     @Autowired
@@ -77,13 +78,16 @@ public class LcmDynamoCatalogAndParagraphDao implements CatalogItemMediaDao {
         catalogItemMediaDelSproc.deleteCategory(catalogItemId, mediaId);
     }
 
-    public void addCatalogItemForRoom(final int roomId, int mediaId, ImageMessage imageMessage) {
-        final String subcategory = resolveCategory(imageMessage.getOuterDomainData().getDomainFields());
+    @SuppressWarnings({"unchecked", "PMD.NPathComplexity"})
+    public void addCatalogItemForRoom(final int roomId, int mediaId, Integer expediaId, ImageMessage imageMessage) {
+        final Map<String, Object> mediaResult = lcmMediaItemSproc.execute(expediaId, mediaId);
+        final List<LcmMedia> mediaResultList = mediaResult.get(SQLMediaItemGetSproc.MEDIA_SET) == null ? null : (List<LcmMedia>) mediaResult.get(SQLMediaItemGetSproc.MEDIA_SET);
+        final LcmMedia media = (mediaResultList.isEmpty()) ? null : ((List<LcmMedia>) mediaResult.get(SQLMediaItemGetSproc.MEDIA_SET)).get(0);
 
         addCatalogItemMediaForRoom.addCatalogItemMedia(
                 roomId,
                 mediaId,
-                Integer.parseInt(subcategory),
+                media == null || media.getCategory() == null ? 0 : media.getCategory(),
                 true,
                 MEDIA_USE_TYPE_IMAGE,
                 StringUtils.isNullOrEmpty(imageMessage.getUserId()) ? imageMessage.getClientId() : imageMessage.getUserId(),
