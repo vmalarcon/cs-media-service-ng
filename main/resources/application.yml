@@ -44,7 +44,3 @@ cs:
       port: ${monitoringAgent.statsd.port}
 aws:
   endPoint: "https://dynamodb.${AWS_REGION}.amazonaws.com"
-graphite:
-  api:
-    query: "&target=stats.gauges.cs-media-service.${EXPEDIA_ENVIRONMENT}.ip-*.metrics.MediaController_isAlive.Value&format=json"
-

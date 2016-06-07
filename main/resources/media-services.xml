@@ -356,8 +356,4 @@
     <bean id="lcmUpdateValidator" class="com.expedia.content.media.processing.services.validator.LCMUpdateValidator" />
 
     <bean id="roomValidator" class="com.expedia.content.media.processing.services.validator.RoomValidator" />
-    <bean id="metricProcessor" class="com.expedia.content.media.processing.services.metrics.MetricProcessor">
-        <constructor-arg name="graphiteApiUrl" value="${graphite.api.url}" />
-        <constructor-arg name="graphiteApiQuery" value="${graphite.api.query}" />     
-    </bean>
-</beans>
+ </beans>

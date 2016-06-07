@@ -45,10 +45,11 @@ public interface CatalogItemMediaDao {
      void deleteCatalogItem(final int catalogItemId, final int mediaId);
 
      /**
-      * add a record in CaltalogItemMedia table.
-      * @param roomId
-      * @param mediaId
-      * @param imageMessage
+      * Add a record in CaltalogItemMedia table.
+      * @param roomId Room id the media is going to attach to.
+      * @param mediaId Media to attach to a room.
+      * @param expediaId The property id the room belongs to.
+      * @param imageMessage The content of the image message.
       */
-     void addCatalogItemForRoom(final int roomId, int mediaId,ImageMessage imageMessage);
+     void addCatalogItemForRoom(final int roomId, int mediaId, Integer expediaId, ImageMessage imageMessage);
 }

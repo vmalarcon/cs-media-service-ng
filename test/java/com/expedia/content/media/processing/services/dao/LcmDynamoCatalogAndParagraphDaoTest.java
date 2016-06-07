@@ -1,20 +1,35 @@
 package com.expedia.content.media.processing.services.dao;
 
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.services.dao.domain.Paragraph;
-import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
-import com.expedia.content.media.processing.services.dao.sql.*;
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import java.util.*;
-
-import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.*;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
+import com.expedia.content.media.processing.services.dao.domain.Paragraph;
+import com.expedia.content.media.processing.services.dao.sql.AddCatalogItemMediaForRoomsAndRatePlansSproc;
+import com.expedia.content.media.processing.services.dao.sql.AddParagraphSproc;
+import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaChgSproc;
+import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaDelSproc;
+import com.expedia.content.media.processing.services.dao.sql.GetParagraphSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaItemGetSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetByMediaIdSproc;
+import com.expedia.content.media.processing.services.dao.sql.SetParagraphSproc;
 
 public class LcmDynamoCatalogAndParagraphDaoTest {
 
@@ -25,6 +40,7 @@ public class LcmDynamoCatalogAndParagraphDaoTest {
     private AddParagraphSproc addParagraphSproc;
     private GetParagraphSproc getParagraphSproc;
     private SetParagraphSproc setParagraphSproc;
+    private SQLMediaItemGetSproc lcmMediaItemSproc;
     private ImageMessage imageMessage;
 
     private LcmDynamoCatalogAndParagraphDao lcmDynamoCatalogAndParagraphDao = null;
@@ -62,6 +78,14 @@ public class LcmDynamoCatalogAndParagraphDaoTest {
         Mockito.doNothing().when(setParagraphSproc).setParagraph(anyInt(), anyInt(), anyInt(), anyInt(), anyInt(), anyString(), anyObject(), anyObject(),
                 anyInt(), anyInt(), anyInt(), anyString(), anyString(), anyInt());
 
+        lcmMediaItemSproc = mock(SQLMediaItemGetSproc.class);
+        Map<String, Object> mediaResult = new HashMap<>();
+        List<LcmMedia> mediaResultList = new ArrayList<>();
+        LcmMedia media = LcmMedia.builder().category(22003).build();
+        mediaResultList.add(media);
+        mediaResult.put(SQLMediaItemGetSproc.MEDIA_SET, mediaResultList);
+        when(lcmMediaItemSproc.execute(anyInt(), anyInt())).thenReturn(mediaResult);
+
         lcmDynamoCatalogAndParagraphDao = makeMockMediaDao();
         String jsonMsg = "{  \n"
                 + "   \"userId\":\"bobthegreat\",\n"
@@ -96,6 +120,7 @@ public class LcmDynamoCatalogAndParagraphDaoTest {
         setFieldValue(lcmDynamoCatalogAndParagraphDao, "addParagraphSproc", addParagraphSproc);
         setFieldValue(lcmDynamoCatalogAndParagraphDao, "getParagraphSproc", getParagraphSproc);
         setFieldValue(lcmDynamoCatalogAndParagraphDao, "setParagraphSproc", setParagraphSproc);
+        setFieldValue(lcmDynamoCatalogAndParagraphDao, "lcmMediaItemSproc", lcmMediaItemSproc);
         return lcmDynamoCatalogAndParagraphDao;
     }
 
@@ -112,7 +137,7 @@ public class LcmDynamoCatalogAndParagraphDaoTest {
 
     @Test
     public void addCatalogItemForRoom() {
-        lcmDynamoCatalogAndParagraphDao.addCatalogItemForRoom(928675, 19671339, imageMessage);
+        lcmDynamoCatalogAndParagraphDao.addCatalogItemForRoom(928675, 19671339, 41098, imageMessage);
 
     }
 
