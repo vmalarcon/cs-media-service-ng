@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -71,12 +72,15 @@ public class LcmDynamoMediaDao implements MediaDao {
     private static final String FIELD_DERIVATIVE_FILE_SIZE = "fileSize";
     private static final String RESPONSE_FIELD_LCM_MEDIA_ID = "lcmMediaId";
     private static final String PUBLISHED_ACTIVITY = "PUBLISHED";
+    private static final String REJECTED_ACTIVITY = "REJECTED";
+    private static final String DUPLICATE_ACTIVITY = "DUPLICATE";
     private static final String NULL_FILTER = null;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
     private static final Logger LOGGER = LoggerFactory.getLogger(LcmDynamoMediaDao.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Integer FORMAT_ID_2 = 2;
+    private static final Integer ACTIVITY_COUNT_THRESHOLD = 12;
 
     @Autowired
     private SQLMediaListSproc lcmMediaListSproc;
@@ -461,9 +465,10 @@ public class LcmDynamoMediaDao implements MediaDao {
     /**
      * Finds the latest activity that is part of the activity white list. The list is expected to
      * be ordered from oldest to latest.
+     * If the latest status is REJECTED or DUPLICATE a check is done to see if the Media has been PUBLISHED previously
      *
      * @param logList The list to search.
-     * @return The found activity mapping. {@code null} if no activity is found.
+     * @return The found activity mapping. PUBLISHED if no activity is found, for the media most be old.
      */
     private String getLatestActivityMapping(List<MediaProcessLog> logList) {
         if (logList != null) {
@@ -471,11 +476,33 @@ public class LcmDynamoMediaDao implements MediaDao {
                 final MediaProcessLog mediaProcessLog = logList.get(i);
                 final ActivityMapping activityMapping = JSONUtil.getActivityMappingFromList(activityWhiteList, mediaProcessLog.getActivityType(), mediaProcessLog.getMediaType());
                 if (activityMapping != null) {
-                    return activityMapping.getStatusMessage();
+                    return REJECTED_ACTIVITY.equals(activityMapping.getStatusMessage()) || DUPLICATE_ACTIVITY.equals(activityMapping.getStatusMessage()) ?
+                            checkPreviouslyPublished(logList, activityMapping.getStatusMessage()) : activityMapping.getStatusMessage();
                 }
             }
         }
         return PUBLISHED_ACTIVITY;
+    }
+
+    /**
+     * checks if a Published Log exists in the list of logs
+     * If the size of the list is too small a confident guess can be made that the LatestStatus is the real status
+     * Else check that there is a Published log
+     *
+     * @param logs list of mediaProcessLog
+     * @param latestStatus The latest status of a media from the DB
+     * @return the Status of the original Media
+     */
+    private String checkPreviouslyPublished(List<MediaProcessLog> logs, String latestStatus) {
+        if (logs.size() < ACTIVITY_COUNT_THRESHOLD) {
+            return latestStatus;
+        } else {
+            final Predicate<MediaProcessLog> publishedCheck = mediaProcessLog -> {
+                ActivityMapping activity = JSONUtil.getActivityMappingFromList(activityWhiteList, mediaProcessLog.getActivityType(), mediaProcessLog.getMediaType());
+                return activity != null && PUBLISHED_ACTIVITY.equals(activity.getStatusMessage());
+            };
+            return logs.stream().filter(publishedCheck).findFirst().isPresent() ? PUBLISHED_ACTIVITY : latestStatus;
+        }
     }
 
     /**
