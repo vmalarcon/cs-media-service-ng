@@ -142,7 +142,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     @SuppressWarnings("unchecked")
     public MediaByDomainIdResponse getMediaByDomainId(final Domain domain, final String domainId, final String activeFilter, final String derivativeFilter,
                                                       final Integer pageSize, final Integer pageIndex) throws Exception {
-        List<Media> domainIdMedia = mediaRepo.loadMedia(domain, domainId).stream().parallel().map(media -> completeMedia(media, derivativeFilter)).collect(Collectors.toList());
+        List<Media> domainIdMedia = mediaRepo.loadMedia(domain, domainId).stream().map(media -> completeMedia(media, derivativeFilter)).collect(Collectors.toList());
         if (Domain.LODGING.equals(domain)) {
             extractLcmData(domainId, derivativeFilter, domainIdMedia);
         }
@@ -348,7 +348,7 @@ public class LcmDynamoMediaDao implements MediaDao {
         final Map<String, String> fileStatus = new HashMap<>();
         final List<String> fileNamesLCM = new ArrayList<>();
         final List<Media> mediaDBMedia = new ArrayList<>();
-        mediaList.stream().parallel().forEach(media -> {
+        mediaList.stream().forEach(media -> {
             if (media.getMediaGuid() == null) {
                 if (media.getFileName() != null && !fileNamesLCM.contains(media.getFileName())) {
                     fileNamesLCM.add(media.getFileName());
@@ -380,7 +380,7 @@ public class LcmDynamoMediaDao implements MediaDao {
         final Map<String, List<MediaProcessLog>> processLogMap = mediaRepo.getProcessLogByDomainId(domainId, mediaGuids)
                 .stream().collect(Collectors.groupingBy(MediaProcessLog::getMediaGuid));
 
-        medias.stream().parallel().forEach(media -> {
+        medias.stream().forEach(media -> {
             List<MediaProcessLog> sortedLog = processLogMap.get(media.getMediaGuid());
             if (sortedLog != null && sortedLog.size() > 1) {
                 sortedLog = processLogMap.get(media.getMediaGuid()).stream().sorted((log1, log2) -> log1.getStatusDate().compareTo(log2.getStatusDate()))
