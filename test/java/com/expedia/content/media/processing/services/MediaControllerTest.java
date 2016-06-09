@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
@@ -1804,7 +1805,7 @@ public class MediaControllerTest {
         return catalogHeroProcessor;
     }
 
-    private MediaGetResponse transformSingleMediaForResponse(Media media) {
+    private static MediaGetResponse transformSingleMediaForResponse(Media media) {
         /* @formatter:off */
         setResponseLcmMediaId(media);
         return MediaGetResponse.builder()
@@ -1832,35 +1833,23 @@ public class MediaControllerTest {
         /* @formatter:on */
     }
 
+    /**
+     * Transforms a media list for a media get response format.
+     *
+     * @param mediaList List of media to transform.
+     * @return The transformed list.
+     */
+    @SuppressWarnings("CPD-END")
     private List<DomainIdMedia> transformMediaListForResponse(List<Media> mediaList) {
-        return mediaList.stream().map(media -> {
-            setResponseLcmMediaId(media);
-            /* @formatter:off */
-            return DomainIdMedia.builder()
-                    .mediaGuid(media.getMediaGuid())
-                    .fileUrl(media.getFileUrl())
-                    .fileName(media.getFileName())
-                    .active(media.getActive())
-                    .width(media.getWidth())
-                    .height(media.getHeight())
-                    .fileSize(media.getFileSize())
-                    .status(media.getStatus())
-                    .lastUpdatedBy(media.getUserId())
-                    .lastUpdateDateTime(DATE_FORMATTER.print(media.getLastUpdated().getTime()))
-                    .domainProvider(media.getProvider())
-                    .domainFields(media.getDomainData())
-                    .derivatives(media.getDerivativesList())
-                    .domainDerivativeCategory(media.getDomainDerivativeCategory())
-                    .comments((media.getCommentList() == null) ? null: media.getCommentList().stream()
-                            .map(comment -> Comment.builder().note(comment)
-                                    .timestamp(DATE_FORMATTER.print(media.getLastUpdated().getTime())).build())
-                            .collect(Collectors.toList()))
-                    .build();
-        }).collect(Collectors.toList());
-        /* @formatter:on */
+        return mediaList.stream().map(buildImage).collect(Collectors.toList());
     }
 
-    private void setResponseLcmMediaId(Media media) {
+    /**
+     * builds an Image object out of a MediaGetResponse
+     */
+    private Function<Media,DomainIdMedia> buildImage = media -> new DomainIdMedia(transformSingleMediaForResponse(media));
+
+    private static void setResponseLcmMediaId(Media media) {
         if (media.getLcmMediaId() != null) {
             if (media.getDomainData() == null) {
                 media.setDomainData(new HashMap<>());

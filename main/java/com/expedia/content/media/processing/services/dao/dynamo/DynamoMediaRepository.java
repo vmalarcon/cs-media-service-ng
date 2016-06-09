@@ -3,12 +3,15 @@ package com.expedia.content.media.processing.services.dao.dynamo;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.Metadata;
 import com.expedia.content.media.processing.services.dao.MediaDBException;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaDerivative;
+import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -91,6 +94,45 @@ public class DynamoMediaRepository {
                 .filter(item -> !(Boolean.TRUE.equals(item.isHidden())))
                 .filter(item -> environment.equals(item.getEnvironment()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Get the List of MediaProgressId executing the following query on the MediaProcessLog-DomainId Index
+     * where DomainId = the domainId and MediaGuid in (list of mediaGuids)
+     *
+     * @param domainId the domainId query the index by
+     * @param mediaGuids the list of mediaGuids to match
+     * @return list of MediaProgressId
+     */
+    public List<MediaProcessLog> getProcessLogByDomainId(String domainId, List<String> mediaGuids) {
+        final MediaProcessLog hashKey = new MediaProcessLog();
+        hashKey.setDomainId(domainId);
+        final HashMap<String, Condition> filter = new HashMap<>();
+        final Condition inCondition = new Condition().withComparisonOperator(ComparisonOperator.IN)
+                .withAttributeValueList(mediaGuids.stream().map(guid -> new AttributeValue().withS(guid)).collect(Collectors.toList()));
+        filter.put("MediaGUID", inCondition);
+        final DynamoDBQueryExpression<MediaProcessLog> expression = new DynamoDBQueryExpression<MediaProcessLog>()
+                .withHashKeyValues(hashKey)
+                .withIndexName("cs-mediadb-index-MediaProcessLog-DomainId")
+                .withConsistentRead(false)
+                .withQueryFilter(filter);
+        return dynamoMapper.query(MediaProcessLog.class, expression);
+    }
+
+
+    /**
+     * Get the Media information from dynamo Media table.
+     *
+     * @param mediaGuid media Id from JSON
+     * @return list of Media
+     */
+    public List<MediaProcessLog> getMediaProcessLogByMediaGUID(String mediaGuid) {
+        final MediaProcessLog hashKey = new MediaProcessLog();
+        hashKey.setMediaGuid(mediaGuid);
+        final DynamoDBQueryExpression<MediaProcessLog> expression = new DynamoDBQueryExpression<MediaProcessLog>()
+                .withHashKeyValues(hashKey)
+                .withConsistentRead(false);
+        return dynamoMapper.query(MediaProcessLog.class, expression);
     }
 
     /**
