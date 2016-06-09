@@ -383,7 +383,7 @@ public class MediaControllerTest {
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", null, null, "potato", null, headers);
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", null, null, "potato", null, null, headers);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -394,7 +394,7 @@ public class MediaControllerTest {
 
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("potato", "1234", null, null, "true", null, headers);
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("potato", "1234", null, null, "true", null, null, headers);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
     }
@@ -417,7 +417,7 @@ public class MediaControllerTest {
 
         MediaByDomainIdResponse response = MediaByDomainIdResponse.builder().domain("Lodging").domainId("1234").totalMediaCount(mediaValues.size()).images(transformMediaListForResponse(mediaValues)).build();
         MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
-        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(response);
+        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(response);
         SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
         when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
 
@@ -427,7 +427,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "mapValidatorList", validators);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", null, null, "true", null, headers);
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", null, null, "true", null, null, headers);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         String domainString = "\"domain\":\"Lodging\"";
@@ -482,7 +482,7 @@ public class MediaControllerTest {
 
         MediaByDomainIdResponse response = MediaByDomainIdResponse.builder().domain("Lodging").domainId("1234").totalMediaCount(mediaValues.size()).images(transformMediaListForResponse(mediaValues)).build();
         MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
-        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(response);
+        when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(response);
         SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
         when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
 
@@ -492,7 +492,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "mapValidatorList", validators);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", null, null, "true", null, headers);
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", null, null, "true", null, null, headers);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         Map<String, Object> jsonMap = JSONUtil.buildMapFromJson(responseEntity.getBody());
@@ -513,7 +513,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "mapValidatorList", validators);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
-        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", null, null, "true", null, headers);
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", null, null, "true", null, null, headers);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
         assertEquals("DomainId not found: 1234", responseEntity.getBody());

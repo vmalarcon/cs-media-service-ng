@@ -1,6 +1,7 @@
 package com.expedia.content.media.processing.services.dao;
 
 import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
+import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
@@ -110,7 +111,7 @@ public class LcmDynamoMediaDaoTest {
         properties.put("1", "EPC Internal User");
 
         MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDao());
-        MediaByDomainIdResponse testMediaRespomse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null);
+        MediaByDomainIdResponse testMediaRespomse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null, null);
 
         assertEquals(3, testMediaRespomse.getImages().size());
         testMediaRespomse.getImages().stream().filter(media -> media.getDomainFields() != null && media.getDomainFields().get("lcmMediaId") != null).forEach(media -> assertEquals(2, media.getDerivatives().size()));
@@ -182,7 +183,7 @@ public class LcmDynamoMediaDaoTest {
         setFieldValue(mediaDao, "paramLimit", 1);
         when(mockMediaDBRepo.getMediaProcessLogByMediaGUID(anyString())).thenReturn(getMediaDBProcessLog());
 
-        List<DomainIdMedia> testMediaList = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null).getImages();
+        List<DomainIdMedia> testMediaList = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null, null).getImages();
         verify(lcmProcessLogDao, times(2)).findMediaStatus(any());
         assertEquals(guid1, testMediaList.get(0).getMediaGuid());
         assertEquals("true", testMediaList.get(0).getDomainFields().get("propertyHero"));
@@ -233,7 +234,7 @@ public class LcmDynamoMediaDaoTest {
 
         MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDao());
         when(mockMediaDBRepo.getMediaProcessLogByMediaGUID(anyString())).thenReturn(getMediaDBProcessLog());
-        MediaByDomainIdResponse testMediaResponse1 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, null, null);
+        MediaByDomainIdResponse testMediaResponse1 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, null, null, null);
 
         assertEquals(1, testMediaResponse1.getImages().size());
         testMediaResponse1.getImages().stream().forEach(media -> assertEquals(2, media.getDerivatives().size()));
@@ -244,7 +245,7 @@ public class LcmDynamoMediaDaoTest {
         assertEquals(dynamoMedia1.getMediaGuid(), testMedia1.getMediaGuid());
         assertTrue((mediaList.get(0).getFileSize() * 1024L) == testMedia1.getFileSize());
 
-        MediaByDomainIdResponse testMediaResponse2 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "false", null, null, null);
+        MediaByDomainIdResponse testMediaResponse2 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "false", null, null, null, null);
 
         assertEquals(2, testMediaResponse2.getImages().size());
         testMediaResponse2.getImages().stream().filter(media -> media.getDomainFields() != null && media.getDomainFields().get("lcmMediaId") != null)
@@ -284,7 +285,7 @@ public class LcmDynamoMediaDaoTest {
         properties.put("1", "EPC Internal User");
 
         MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDao());
-        MediaByDomainIdResponse testMediaList1 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, "a,t,b", null, null);
+        MediaByDomainIdResponse testMediaList1 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, "a,t,b", null, null, null);
 
         assertEquals(3, testMediaList1.getImages().size());
         testMediaList1.getImages().stream().filter(media -> media.getDomainFields() != null && media.getDomainFields().get("lcmMediaId") != null).forEach(media -> {
@@ -320,7 +321,7 @@ public class LcmDynamoMediaDaoTest {
         properties.put("1", "EPC Internal User");
 
         MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDao());
-        MediaByDomainIdResponse testMediaList1 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null);
+        MediaByDomainIdResponse testMediaList1 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null, null);
 
         assertEquals(2, testMediaList1.getImages().size());
     }
@@ -352,7 +353,7 @@ public class LcmDynamoMediaDaoTest {
         properties.put("1", "EPC Internal User");
 
         MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDao());
-        MediaByDomainIdResponse testMediaResponse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null);
+        MediaByDomainIdResponse testMediaResponse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null, null);
 
         assertEquals(3, testMediaResponse.getImages().size());
         DomainIdMedia testMedia1 = testMediaResponse.getImages().get(0);
@@ -494,7 +495,7 @@ public class LcmDynamoMediaDaoTest {
         when(mockMediaDBRepo.loadMedia(any(), any())).thenReturn(createMedia());
         MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDao());
 
-        MediaByDomainIdResponse testMediaResponse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, 20, 2);
+        MediaByDomainIdResponse testMediaResponse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, null, 20, 2);
 
         assertTrue(testMediaResponse.getTotalMediaCount() == 50);
         assertNotEquals(testMediaResponse.getImages().get(1).getMediaGuid(), "0aaaaaaa-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww");
@@ -517,7 +518,7 @@ public class LcmDynamoMediaDaoTest {
         when(mockMediaDBRepo.loadMedia(any(), any())).thenReturn(createMedia());
         MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDao());
         try {
-            mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, 20, 3);
+            mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, null, 20, 3);
         } catch (Exception ex) {
             assertEquals("pageIndex is out of bounds", ex.getMessage());
         }
@@ -540,7 +541,7 @@ public class LcmDynamoMediaDaoTest {
         when(mockMediaDBRepo.loadMedia(any(), any())).thenReturn(createMedia());
         MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDao());
         try {
-            mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, 20, null);
+            mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, null, 20, null);
         } catch (Exception ex) {
             assertEquals("pageSize and pageIndex are inclusive, either both fields can be null or not null", ex.getMessage());
         }
@@ -562,7 +563,7 @@ public class LcmDynamoMediaDaoTest {
         when(mockMediaDBRepo.loadMedia(any(), any())).thenReturn(createMedia());
         MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDao());
         try {
-            mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, null, 20);
+            mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, null, null, 20);
         } catch (Exception ex) {
             assertEquals("pageSize and pageIndex are inclusive, either both fields can be null or not null", ex.getMessage());
         }
@@ -585,7 +586,7 @@ public class LcmDynamoMediaDaoTest {
         MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDao());
         setFieldValue(mediaDao, "roomGetByCatalogItemIdSproc", roomGetByCatalogItemIdSproc);
         try {
-            mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, -20, -1);
+            mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, null, -20, -1);
         } catch (Exception ex) {
             assertEquals("pageSize and pageIndex can only be positive integer values", ex.getMessage());
         }
@@ -621,7 +622,7 @@ public class LcmDynamoMediaDaoTest {
         properties.put("1", "EPC Internal User");
 
         MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDao());
-        MediaByDomainIdResponse testMediaRespomse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null);
+        MediaByDomainIdResponse testMediaRespomse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null, null);
 
         assertEquals(3, testMediaRespomse.getImages().size());
         testMediaRespomse.getImages().stream().filter(media -> media.getDomainFields() != null && media.getDomainFields().get("lcmMediaId") != null).forEach(media -> assertEquals(2, media.getDerivatives().size()));
@@ -685,6 +686,80 @@ public class LcmDynamoMediaDaoTest {
         assertEquals(guidMediaGet.getFileName(), resultMedia.getFileName());
         assertEquals(guidMediaGet.getActive(), resultMedia.getActive());
         assertEquals("PUBLISHED", resultMedia.getStatus());
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void testGetMediaByDomainIdFilterVTImages() throws Exception {
+        SQLMediaListSproc mediaListSproc = mock(SQLMediaListSproc.class);
+        List<LcmMediaAndDerivative> mediaList = make2Media2DerivativeMediaResult(true, false, true, true, true, true, 2);
+        Map<String, Object> mediaResult = new HashMap<>();
+        mediaResult.put(SQLMediaListSproc.MEDIA_SET, mediaList);
+        when(mediaListSproc.execute(anyInt())).thenReturn(mediaResult);
+
+        SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
+
+        DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
+        List<Media> dynamoMediaList = new ArrayList<>();
+        String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
+        Media dynamoMedia1 = Media.builder()
+                .mediaGuid(guid1).domain("Lodging").domainId("1234").fileUrl("s3://fileUrl/imageName.jpg")
+                .domainFields("{\"lcmMediaId\":\"1\",\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}")
+                .derivatives("[{\"type\":\"v\",\"width\":179,\"height\":240,\"fileSize\":10622,\"location\":\"s3://ewe-cs-media-test/test/derivative/lodging/1000000/10000/7200/7139/dfec2df8_v.jpg\"}]")
+                .lastUpdated(new Date())
+                .build();
+        String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").lastUpdated(LocalDateTime.now().minusMinutes(5).toDate()).build();
+        dynamoMediaList.add(dynamoMedia1);
+        dynamoMediaList.add(dynamoMedia3);
+        when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
+
+        final Properties properties = new Properties();
+        properties.put("1", "EPC Internal User");
+
+        MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDao());
+        MediaByDomainIdResponse testMediaRespomse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, "Default", null, null);
+
+        assertEquals(2, testMediaRespomse.getImages().size());
+        testMediaRespomse.getImages().stream().filter(media -> media.getDomainFields() != null && media.getDomainFields().get("lcmMediaId") != null).forEach(media -> assertEquals(2, media.getDerivatives().size()));
+        assertFalse(testMediaRespomse.getImages().stream().filter(media -> ("VirtualTour").equals(media.getDomainDerivativeCategory())).findAny().isPresent());
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Test
+    public void testGetMediaByDomainIdOnlyVTImages() throws Exception {
+        SQLMediaListSproc mediaListSproc = mock(SQLMediaListSproc.class);
+        List<LcmMediaAndDerivative> mediaList = make2Media2DerivativeMediaResult(true, false, true, true, true, true, 2);
+        Map<String, Object> mediaResult = new HashMap<>();
+        mediaResult.put(SQLMediaListSproc.MEDIA_SET, mediaList);
+        when(mediaListSproc.execute(anyInt())).thenReturn(mediaResult);
+
+        SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
+
+        DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
+        List<Media> dynamoMediaList = new ArrayList<>();
+        String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
+        Media dynamoMedia1 = Media.builder()
+                .mediaGuid(guid1).domain("Lodging").domainId("1234").fileUrl("s3://fileUrl/imageName.jpg")
+                .domainFields("{\"lcmMediaId\":\"1\",\"subcategoryId\":\"4321\",\"propertyHero\": \"true\"}")
+                .derivatives("[{\"type\":\"v\",\"width\":179,\"height\":240,\"fileSize\":10622,\"location\":\"s3://ewe-cs-media-test/test/derivative/lodging/1000000/10000/7200/7139/dfec2df8_v.jpg\"}]")
+                .lastUpdated(new Date())
+                .build();
+        String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").lastUpdated(LocalDateTime.now().minusMinutes(5).toDate()).build();
+        dynamoMediaList.add(dynamoMedia1);
+        dynamoMediaList.add(dynamoMedia3);
+        when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
+
+        final Properties properties = new Properties();
+        properties.put("1", "EPC Internal User");
+
+        MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDao());
+        MediaByDomainIdResponse testMediaRespomse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, "VirtualTours", null, null);
+
+        assertEquals(1, testMediaRespomse.getImages().size());
+        testMediaRespomse.getImages().stream().filter(media -> media.getDomainFields() != null && media.getDomainFields().get("lcmMediaId") != null).forEach(media -> assertEquals(2, media.getDerivatives().size()));
+        assertFalse(testMediaRespomse.getImages().stream().filter(media -> !("VirtualTour").equals(media.getDomainDerivativeCategory())).findAny().isPresent());
     }
     
     private MediaDao makeMockMediaDao(SQLMediaListSproc mediaIdSproc, SQLMediaItemGetSproc mediaItemSproc, DynamoMediaRepository mockMediaDBRepo,

@@ -291,6 +291,7 @@ public class MediaController extends CommonServiceController {
             @RequestParam(value = "activeFilter", required = false,
                     defaultValue = "all") final String activeFilter,
             @RequestParam(value = "derivativeTypeFilter", required = false) final String derivativeTypeFilter,
+            @RequestParam(value = "derivateCategoryFilter", required = false) final String derivativeCategoryFilter,
             @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
@@ -304,7 +305,7 @@ public class MediaController extends CommonServiceController {
         }
         final MediaByDomainIdResponse response;
         try {
-            response = mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter, pageSize, pageIndex);
+            response = mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter, derivativeCategoryFilter, pageSize, pageIndex);
         } catch (Exception ex) {
             LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                     serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
