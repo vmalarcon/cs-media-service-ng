@@ -169,7 +169,7 @@ public class LcmDynamoMediaDao implements MediaDao {
         final Boolean skipCategoryFiltering = derivativeCategoryFilter == null || derivativeCategoryFilter.isEmpty();
         final List<DomainIdMedia> images = domainIdMedia.stream()
                 .map(buildImage)
-                .filter(media -> skipCategoryFiltering || media.getDomainDerivativeCategory() == null ? derivativeCategoryFilter.contains("null") : derivativeCategoryFilter.contains(media.getDomainDerivativeCategory()))
+                .filter(media -> skipCategoryFiltering || media.getDomainDerivativeCategory() == null ? derivativeCategoryFilter.contains("Default") : derivativeCategoryFilter.contains(media.getDomainDerivativeCategory()))
                 .collect(Collectors.toList());
         return MediaByDomainIdResponse.builder().domain(domain.getDomain()).domainId(domainId).totalMediaCount(totalMediaCount)
                 .images(images).build();

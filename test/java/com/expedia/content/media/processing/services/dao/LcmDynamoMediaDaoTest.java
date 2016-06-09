@@ -718,7 +718,7 @@ public class LcmDynamoMediaDaoTest {
         properties.put("1", "EPC Internal User");
 
         MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDao());
-        MediaByDomainIdResponse testMediaRespomse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, "null,default", null, null);
+        MediaByDomainIdResponse testMediaRespomse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, "Default", null, null);
 
         assertEquals(2, testMediaRespomse.getImages().size());
         testMediaRespomse.getImages().stream().filter(media -> media.getDomainFields() != null && media.getDomainFields().get("lcmMediaId") != null).forEach(media -> assertEquals(2, media.getDerivatives().size()));
