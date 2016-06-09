@@ -133,6 +133,7 @@ public class LcmDynamoMediaDao implements MediaDao {
      * @param domainId The id of the domain item media items are needed.
      * @param activeFilter Filters active or inactive media. If "all" or null is provided all items are returned.
      * @param derivativeFilter Inclusive filter of derivatives. A null or empty string will not exclude any derivatives.
+     * @param derivativeCategoryFilter Inclusive filter of media. A null or empty string will not exclude any media.
      * @param pageSize Positive integer to filter the number of media displayed per page. pageSize is inclusive with pageIndex.
      * @param pageIndex Positive integer to filter the page to display. pageIndex is inclusive with pageSize.
      * @return A @MediaByDomainIdResponse
@@ -141,7 +142,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     @Override
     @SuppressWarnings("unchecked")
     public MediaByDomainIdResponse getMediaByDomainId(final Domain domain, final String domainId, final String activeFilter, final String derivativeFilter,
-                                                      final Integer pageSize, final Integer pageIndex) throws Exception {
+                                                      final String derivativeCategoryFilter, final Integer pageSize, final Integer pageIndex) throws Exception {
         List<Media> domainIdMedia = mediaRepo.loadMedia(domain, domainId).stream().map(media -> completeMedia(media, derivativeFilter)).collect(Collectors.toList());
         if (Domain.LODGING.equals(domain)) {
             extractLcmData(domainId, derivativeFilter, domainIdMedia);
@@ -165,7 +166,11 @@ public class LcmDynamoMediaDao implements MediaDao {
         final Map<String, String> fileStatus = buildFileNameStatusMap(domainIdMedia, domainId);
         domainIdMedia.stream().forEach(media -> media.setStatus(fileStatus.get(media.getFileName())));
         final Function<Media, DomainIdMedia> buildImage = media -> new DomainIdMedia(transformSingleMediaForResponse(media));
-        final List<DomainIdMedia> images = domainIdMedia.stream().map(buildImage).collect(Collectors.toList());
+        final Boolean skipCategoryFiltering = derivativeCategoryFilter == null || derivativeCategoryFilter.isEmpty();
+        final List<DomainIdMedia> images = domainIdMedia.stream()
+                .map(buildImage)
+                .filter(media -> skipCategoryFiltering || media.getDomainDerivativeCategory() == null ? derivativeCategoryFilter.contains("null") : derivativeCategoryFilter.contains(media.getDomainDerivativeCategory()))
+                .collect(Collectors.toList());
         return MediaByDomainIdResponse.builder().domain(domain.getDomain()).domainId(domainId).totalMediaCount(totalMediaCount)
                 .images(images).build();
     }
