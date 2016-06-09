@@ -37,9 +37,14 @@ public class PropertyRoomTypeGetIDSproc extends StoredProcedure {
 
         @Override
         public RoomType mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
+            Timestamp updateDate;
+            try {
+                updateDate = new Timestamp(TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("updateDate")).getTime());
+            } catch (Exception e)  {
+                updateDate = null;
+            }
             final int roomTypeCatalogItemID = resultSet.getInt("roomTypeContentID");
             final int roomTypeID = resultSet.getInt("roomTypeID");
-            final Timestamp updateDate = new Timestamp(TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("updateDate")).getTime());
             final String lastUpdatedBy = resultSet.getString("lastUpdatedBy");
             final String lastUpdateLocation = resultSet.getString("lastUpdateLocation");
             return new RoomType(roomTypeCatalogItemID, roomTypeID, updateDate, lastUpdatedBy, lastUpdateLocation);
