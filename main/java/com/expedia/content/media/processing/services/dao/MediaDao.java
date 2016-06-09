@@ -19,8 +19,8 @@ public interface MediaDao {
      * @param domainId         The id of the domain item media items are needed.
      * @param activeFilter     Filters active or inactive media. If "all" or null is provided all items are returned.
      * @param derivativeFilter Inclusive filter of derivatives. A null or empty string will not exclude any derivatives.
-     * @param pageSize
-     * @param pageIndex
+     * @param pageSize         Positive integer to filter the number of media displayed per page. pageSize is inclusive with pageIndex.
+     * @param pageIndex        Positive integer to filter the page to display. pageIndex is inclusive with pageSize.
      * @return List of media that belongs to the domain item.
      */
     MediaByDomainIdResponse getMediaByDomainId(Domain domain, String domainId, String activeFilter, String derivativeFilter, Integer pageSize, Integer pageIndex) throws Exception;
