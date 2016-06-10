@@ -1,5 +1,7 @@
 package com.expedia.content.media.processing.services.validator;
 
+import com.google.common.net.HttpHeaders;
+import org.apache.http.Header;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -30,11 +32,34 @@ public class HTTPValidator {
         try {
             final HttpHead httpHead = new HttpHead(fileUrl);
             final CloseableHttpResponse response = HTTP_CLIENT.execute(httpHead);
-            return (response.getStatusLine().getStatusCode() == HttpURLConnection.HTTP_OK);
+            if (response.getStatusLine().getStatusCode() == HttpURLConnection.HTTP_OK) {
+                return checkFileIsGreaterThanZero(response);
+            } else {
+                return false;
+            }
+
         } catch (Exception e) {
             LOGGER.warn("Url check failed: [{}]!", fileUrl, e);
             return false;
         }
     }
 
+    /**
+     * Verifies the file is not empty
+     * @param response
+     * @return true if A)Content-Length exists in the header and it is greater than 0
+     * B)Content-Length does not exist in the header (collector can only verify if the image is empty)
+     */
+    @SuppressWarnings({ "PMD.AvoidCatchingNPE"})
+    private static boolean checkFileIsGreaterThanZero(CloseableHttpResponse response) {
+        final Header[] headers = response.getHeaders(HttpHeaders.CONTENT_LENGTH);
+        final long fileSize;
+        try {
+            fileSize = Long.parseLong(headers[0].getValue());
+        } catch (NullPointerException|IndexOutOfBoundsException e) {
+            return true;
+        }
+
+        return fileSize> 0;
+    }
 }
