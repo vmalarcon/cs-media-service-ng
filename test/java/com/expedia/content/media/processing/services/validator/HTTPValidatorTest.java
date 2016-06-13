@@ -19,7 +19,11 @@ public class HTTPValidatorTest {
 
     @Test
     public void testRedAwningUrl() {
-        assertTrue(HTTPValidator.checkFileExists("http://www.redawning.com/sites/default/files/rental_property/681/coh0861-amay.jpg"));
+        assertTrue(HTTPValidator.checkFileExists("https://www.redawning.com/sites/default/files/rental_property/681/coh0861-amay.jpg"));
     }
 
+    @Test
+    public void testFileIsEmpty() {
+        assertFalse(HTTPValidator.checkFileExists("http://photos.hotelbeds.com/giata/bigger/00/008817/008817a_hb_a_002.jpg"));
+    }
 }
