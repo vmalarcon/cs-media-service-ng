@@ -45,10 +45,12 @@ public class HTTPValidator {
     }
 
     /**
-     * Verifies the file is not empty
-     * @param response
-     * @return true if A)Content-Length exists in the header and it is greater than 0
-     * B)Content-Length does not exist in the header (collector can only verify if the image is empty)
+     * Verifies if the file is not empty.
+     * @param response HttpResponse got from the HTTP fileURL
+     * @return true if A)Content-Length exists in the header and it is greater than 0 B)Content-Length does
+     * not exist in the header (collector can only verify if the image is empty)
+     * if the the response does not contain headers (NullPointerException) or the headers do not contain
+     * Content-Length (IndexOutOfBoundsException) it passes so that collector gets to verify the size
      */
     @SuppressWarnings({ "PMD.AvoidCatchingNPE"})
     private static boolean checkFileIsGreaterThanZero(CloseableHttpResponse response) {

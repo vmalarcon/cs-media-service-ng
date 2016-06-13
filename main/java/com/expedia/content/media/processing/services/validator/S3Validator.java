@@ -53,8 +53,8 @@ public class S3Validator {
     }
 
     /**
-     * Verifies the file is not empty
-     * @param object
+     * Verifies if the file is not empty.
+     * @param object S3 object associated to the file
      * @return false iff ObjectMetadata exists and the ContentLength is 0
      */
     private static boolean checkFileIsGreaterThanZero(S3Object object) {
