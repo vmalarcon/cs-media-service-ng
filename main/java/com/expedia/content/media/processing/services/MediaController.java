@@ -66,6 +66,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import expedia.content.solutions.metrics.annotations.Counter;
 import expedia.content.solutions.metrics.annotations.Gauge;
 import expedia.content.solutions.metrics.annotations.Meter;
 import expedia.content.solutions.metrics.annotations.Timer;
@@ -322,6 +323,7 @@ public class MediaController extends CommonServiceController {
      * @return Always return a single value.
      */
     @Gauge(name = "isAlive")
+    @Counter(name = "isAliveCounter")
     public Integer liveCount() {
         return LIVE_COUNT;
     }
