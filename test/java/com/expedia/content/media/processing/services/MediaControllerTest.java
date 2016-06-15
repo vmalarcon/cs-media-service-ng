@@ -758,7 +758,7 @@ public class MediaControllerTest {
         mockHeader.add("request-id", requestId);
 
         mediaControllerSpy = spy(mediaController);
-        doReturn(Boolean.TRUE).when(mediaControllerSpy).verifyUrlExistence(anyString());
+        doReturn(Boolean.TRUE).when(mediaControllerSpy).verifyUrl(anyString());
         ResponseEntity<String> responseEntity = mediaControllerSpy.mediaAdd(jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());

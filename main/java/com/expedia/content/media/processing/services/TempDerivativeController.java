@@ -1,6 +1,7 @@
 package com.expedia.content.media.processing.services;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
 import java.util.HashMap;
@@ -60,9 +61,9 @@ public class TempDerivativeController extends CommonServiceController {
                 LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, errors, requestID, message);
                 return this.buildErrorResponse("JSON request format is invalid. " + errors + " Json message=" + message, serviceUrl, BAD_REQUEST);
             }
-            final ValidationStatus fileValidation = verifyUrlExistence(tempDerivativeMessage.getFileUrl());
+            final ValidationStatus fileValidation = verifyUrl(tempDerivativeMessage.getFileUrl());
             if (!fileValidation.isValid()) {
-                if (BAD_REQUEST.equals(fileValidation.getStatus())) {
+                if (NOT_FOUND.equals(fileValidation.getStatus())) {
                     LOGGER.info("Response not found. Provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
                 } else {
                     LOGGER.info("Returning bad request. Provided 'file is 0 Bytes' for requestId=[{}], message=[{}]", requestID, message);
