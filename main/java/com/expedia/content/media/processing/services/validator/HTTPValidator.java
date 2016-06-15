@@ -8,7 +8,9 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 
+import java.io.IOException;
 import java.net.HttpURLConnection;
 
 /**
@@ -28,19 +30,19 @@ public class HTTPValidator {
      * @param fileUrl The file to verify.
      * @return {@code true} if the file is found; {@code false} otherwise.
      */
-    public static boolean checkFileExists(String fileUrl) {
+    public static ValidationStatus checkFileExists(String fileUrl){
         try {
             final HttpHead httpHead = new HttpHead(fileUrl);
             final CloseableHttpResponse response = HTTP_CLIENT.execute(httpHead);
             if (response.getStatusLine().getStatusCode() == HttpURLConnection.HTTP_OK) {
-                return checkFileIsGreaterThanZero(response);
+                 return checkFileIsGreaterThanZero(response);
             } else {
-                return false;
+                return new ValidationStatus(false, "Provided fileUrl does not exist.", HttpStatus.NOT_FOUND);
             }
 
-        } catch (Exception e) {
+        } catch (IOException e) {
             LOGGER.warn("Url check failed: [{}]!", fileUrl, e);
-            return false;
+            return new ValidationStatus(false, "Provided fileUrl does not exist.", HttpStatus.NOT_FOUND);
         }
     }
 
@@ -53,15 +55,15 @@ public class HTTPValidator {
      * Content-Length (IndexOutOfBoundsException) it passes so that collector gets to verify the size
      */
     @SuppressWarnings({ "PMD.AvoidCatchingNPE"})
-    private static boolean checkFileIsGreaterThanZero(CloseableHttpResponse response) {
+    private static ValidationStatus checkFileIsGreaterThanZero(CloseableHttpResponse response) {
         final Header[] headers = response.getHeaders(HttpHeaders.CONTENT_LENGTH);
         final long fileSize;
         try {
             fileSize = Long.parseLong(headers[0].getValue());
         } catch (NullPointerException|IndexOutOfBoundsException e) {
-            return true;
+            return new ValidationStatus(true, "valid", HttpStatus.OK);
         }
 
-        return fileSize> 0;
+        return new ValidationStatus(fileSize > 0, "Provided file is 0 Bytes", HttpStatus.BAD_REQUEST);
     }
 }

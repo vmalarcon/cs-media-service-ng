@@ -8,6 +8,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 
 /**
  * Verifies if a file exists in the S3 repo.
@@ -26,20 +27,20 @@ public class S3Validator {
      * @param fileUrl The file to verify.
      * @return true if found, false otherwise.
      */
-    public static boolean checkFileExists(String fileUrl) {
-        boolean exist = false;
+    public static ValidationStatus checkFileExists(String fileUrl) {
+        ValidationStatus validationStatus = new ValidationStatus(false, "Provided fileUrl does not exist.", HttpStatus.NOT_FOUND);
         try {
             final String bucketName = getBucketName(fileUrl);
             final String objectName = getObjectName(fileUrl);
             final AmazonS3 s3Client = new AmazonS3Client();
             final S3Object object = s3Client.getObject(new GetObjectRequest(bucketName, objectName));
             if (object != null) {
-                exist = checkFileIsGreaterThanZero(object);
+                validationStatus = checkFileIsGreaterThanZero(object);
             }
         } catch (AmazonServiceException e) {
             LOGGER.error("s3 key query exception", e);
         }
-        return exist;
+        return validationStatus;
     }
 
     private static String getBucketName(String fileUrl) {
@@ -57,11 +58,8 @@ public class S3Validator {
      * @param object S3 object associated to the file
      * @return false iff ObjectMetadata exists and the ContentLength is 0
      */
-    private static boolean checkFileIsGreaterThanZero(S3Object object) {
+    private static ValidationStatus checkFileIsGreaterThanZero(S3Object object) {
         final ObjectMetadata objectMetadata = object.getObjectMetadata();
-        if (objectMetadata == null || (objectMetadata != null && objectMetadata.getContentLength() > 0)) {
-            return true;
-        }
-            return false;
+        return new ValidationStatus(objectMetadata == null || (objectMetadata.getContentLength() > 0), "Provided file is 0 Bytes", HttpStatus.BAD_REQUEST);
     }
 }

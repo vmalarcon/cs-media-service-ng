@@ -1,12 +1,12 @@
 package com.expedia.content.media.processing.services;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,10 +60,10 @@ public class TempDerivativeController extends CommonServiceController {
                 LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, errors, requestID, message);
                 return this.buildErrorResponse("JSON request format is invalid. " + errors + " Json message=" + message, serviceUrl, BAD_REQUEST);
             }
-            final boolean fileExists = verifyUrlExistence(tempDerivativeMessage.getFileUrl());
-            if (!fileExists) {
-                LOGGER.info("Response bad request provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
-                return this.buildErrorResponse("Provided fileUrl does not exist.", serviceUrl, NOT_FOUND);
+            final ValidationStatus fileValidation = verifyUrlExistence(tempDerivativeMessage.getFileUrl());
+            if (!fileValidation.isValid()) {
+                LOGGER.info("Response not found. Provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
+                return this.buildErrorResponse(fileValidation.getMessage(), serviceUrl, fileValidation.getStatus());
             }
             final Map<String, String> response = new HashMap<>();
             response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnailProcessor.createTempDerivativeThumbnail(tempDerivativeMessage));

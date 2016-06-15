@@ -42,6 +42,7 @@ import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaReplacement;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
+import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 
@@ -449,10 +450,10 @@ public class MediaController extends CommonServiceController {
             return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
         }
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
-        final boolean fileExists = verifyUrlExistence(imageMessage.getFileUrl());
-        if (!fileExists) {
+        final ValidationStatus fileValidation = verifyUrlExistence(imageMessage.getFileUrl());
+        if (!fileValidation.isValid()) {
             LOGGER.info("Response not found. Provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
-            return this.buildErrorResponse("Provided fileUrl does not exist.", serviceUrl, NOT_FOUND);
+            return this.buildErrorResponse(fileValidation.getMessage(), serviceUrl, fileValidation.getStatus());
         }
         final Map<String, Object> messageState = updateImageMessage(imageMessage, requestID, clientId);
         final ImageMessage imageMessageNew = (ImageMessage) messageState.get(IMAGE_MESSAGE_FIELD);

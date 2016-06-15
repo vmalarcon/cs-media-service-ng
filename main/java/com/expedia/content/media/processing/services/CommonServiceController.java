@@ -3,6 +3,7 @@ package com.expedia.content.media.processing.services;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.validator.HTTPValidator;
 import com.expedia.content.media.processing.services.validator.S3Validator;
+import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import expedia.content.solutions.metrics.annotations.Counter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,7 +51,7 @@ public abstract class CommonServiceController {
      * @param fileUrl Incoming imageMessage's fileUrl.
      * @return {@code true} if the file exists; {@code false} otherwise.
      */
-    public boolean verifyUrlExistence(final String fileUrl) {
+    public ValidationStatus verifyUrlExistence(final String fileUrl) {
         if (fileUrl.startsWith(S3Validator.S3_PREFIX)) {
             return S3Validator.checkFileExists(patchURL(fileUrl));
         } else {
