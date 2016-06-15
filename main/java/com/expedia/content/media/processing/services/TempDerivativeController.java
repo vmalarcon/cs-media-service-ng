@@ -62,7 +62,11 @@ public class TempDerivativeController extends CommonServiceController {
             }
             final ValidationStatus fileValidation = verifyUrlExistence(tempDerivativeMessage.getFileUrl());
             if (!fileValidation.isValid()) {
-                LOGGER.info("Response not found. Provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
+                if (BAD_REQUEST.equals(fileValidation.getStatus())) {
+                    LOGGER.info("Response not found. Provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
+                } else {
+                    LOGGER.info("Response bad request. Provided 'file is 0 Bytes' for requestId=[{}], message=[{}]", requestID, message);
+                }
                 return this.buildErrorResponse(fileValidation.getMessage(), serviceUrl, fileValidation.getStatus());
             }
             final Map<String, String> response = new HashMap<>();

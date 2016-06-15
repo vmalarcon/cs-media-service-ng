@@ -452,7 +452,11 @@ public class MediaController extends CommonServiceController {
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
         final ValidationStatus fileValidation = verifyUrlExistence(imageMessage.getFileUrl());
         if (!fileValidation.isValid()) {
-            LOGGER.info("Response not found. Provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
+            if (BAD_REQUEST.equals(fileValidation.getStatus())) {
+                LOGGER.info("Response not found. Provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
+            } else {
+                LOGGER.info("Response bad request. Provided 'file is 0 Bytes' for requestId=[{}], message=[{}]", requestID, message);
+            }
             return this.buildErrorResponse(fileValidation.getMessage(), serviceUrl, fileValidation.getStatus());
         }
         final Map<String, Object> messageState = updateImageMessage(imageMessage, requestID, clientId);
