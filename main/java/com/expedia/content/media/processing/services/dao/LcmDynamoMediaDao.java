@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -70,11 +71,15 @@ public class LcmDynamoMediaDao implements MediaDao {
     private static final String FIELD_DERIVATIVE_HEIGHT = "height";
     private static final String FIELD_DERIVATIVE_FILE_SIZE = "fileSize";
     private static final String RESPONSE_FIELD_LCM_MEDIA_ID = "lcmMediaId";
+    private static final String PUBLISHED_ACTIVITY = "PUBLISHED";
+    private static final String REJECTED_ACTIVITY = "REJECTED";
+    private static final String DUPLICATE_ACTIVITY = "DUPLICATE";
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
     private static final Logger LOGGER = LoggerFactory.getLogger(LcmDynamoMediaDao.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Integer FORMAT_ID_2 = 2;
+    private static final Integer ACTIVITY_COUNT_THRESHOLD = 12;
 
     @Autowired
     private SQLMediaListSproc lcmMediaListSproc;
@@ -167,8 +172,8 @@ public class LcmDynamoMediaDao implements MediaDao {
 
         final Boolean skipCategoryFiltering = derivativeCategoryFilter == null || derivativeCategoryFilter.isEmpty();
         final List<DomainIdMedia> images = transformMediaListForResponse(domainIdMedia).stream()
-                .filter(media -> skipCategoryFiltering || media.getDomainDerivativeCategory() == null ? derivativeCategoryFilter.contains("Default")
-                        : derivativeCategoryFilter.contains(media.getDomainDerivativeCategory()))
+                .filter(media -> skipCategoryFiltering || (media.getDomainDerivativeCategory() == null ? derivativeCategoryFilter.contains("Default")
+                        : derivativeCategoryFilter.contains(media.getDomainDerivativeCategory())))
                 .collect(Collectors.toList());
         return MediaByDomainIdResponse.builder().domain(domain.getDomain()).domainId(domainId).totalMediaCount(totalMediaCount)
                 .images(images).build();
@@ -354,8 +359,7 @@ public class LcmDynamoMediaDao implements MediaDao {
 
         return fileNames.stream().distinct().collect(Collectors.toMap(String::toString, fileName -> {
             final List<MediaProcessLog> logList = fileNameLogListMap.get(fileName);
-            final ActivityMapping activityStatus = (logList == null) ? null : getLatestActivityMapping(logList);
-            return activityStatus == null ? "PUBLISHED" : activityStatus.getStatusMessage();
+            return getLatestActivityMapping(logList);
         }));
     }
 
@@ -573,18 +577,39 @@ public class LcmDynamoMediaDao implements MediaDao {
      * @param logList The list to search.
      * @return The found activity mapping. {@code null} if no activity is found.
      */
-    private ActivityMapping getLatestActivityMapping(List<MediaProcessLog> logList) {
-        ActivityMapping activityMapping = null;
-        for (int i = logList.size() - 1; i >= 0; i--) {
-            final MediaProcessLog mediaProcessLog = logList.get(i);
-            activityMapping = JSONUtil.getActivityMappingFromList(activityWhiteList, mediaProcessLog.getActivityType(), mediaProcessLog.getMediaType());
-            if (activityMapping == null) {
-                continue;
-            } else {
-                return activityMapping;
+    private String getLatestActivityMapping(List<MediaProcessLog> logList) {
+        if (logList != null) {
+            for (int i = logList.size() - 1; i >= 0; i--) {
+                final MediaProcessLog mediaProcessLog = logList.get(i);
+                final ActivityMapping activityMapping = JSONUtil.getActivityMappingFromList(activityWhiteList, mediaProcessLog.getActivityType(), mediaProcessLog.getMediaType());
+                if (activityMapping != null) {
+                    return REJECTED_ACTIVITY.equals(activityMapping.getStatusMessage()) || DUPLICATE_ACTIVITY.equals(activityMapping.getStatusMessage()) ?
+                            checkPreviouslyPublished(logList, activityMapping.getStatusMessage()) : activityMapping.getStatusMessage();
+                    }
+                }
             }
+        return PUBLISHED_ACTIVITY;
+    }
+
+    /**
+     * checks if a Published Log exists in the list of logs
+     * If the size of the list is too small a confident guess can be made that the LatestStatus is the real status
+     * Else check that there is a Published log
+     *
+     * @param logs list of mediaProcessLog
+     * @param latestStatus The latest status of a media from the DB
+     * @return the Status of the original Media
+     */
+    private String checkPreviouslyPublished(List<MediaProcessLog> logs, String latestStatus) {
+        if (logs.size() < ACTIVITY_COUNT_THRESHOLD) {
+            return latestStatus;
+        } else {
+            final Predicate<MediaProcessLog> publishedCheck = mediaProcessLog -> {
+                ActivityMapping activity = JSONUtil.getActivityMappingFromList(activityWhiteList, mediaProcessLog.getActivityType(), mediaProcessLog.getMediaType());
+                return activity != null && PUBLISHED_ACTIVITY.equals(activity.getStatusMessage());
+            };
+            return logs.stream().filter(publishedCheck).findFirst().isPresent() ? PUBLISHED_ACTIVITY : latestStatus;
         }
-        return activityMapping;
     }
 
     /**

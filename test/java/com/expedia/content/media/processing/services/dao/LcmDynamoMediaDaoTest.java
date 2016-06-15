@@ -811,11 +811,16 @@ public class LcmDynamoMediaDaoTest {
 
     private List<ActivityMapping> makeActivityWhitelist() {
         List<ActivityMapping> whitelist = new ArrayList<>();
-        ActivityMapping activityMapping = new ActivityMapping();
-        activityMapping.setActivityType("Publish");
-        activityMapping.setMediaType(".*");
-        activityMapping.setStatusMessage("PUBLISHED");
-        whitelist.add(activityMapping);
+        ActivityMapping activityMapping1 = new ActivityMapping();
+        activityMapping1.setActivityType("Publish");
+        activityMapping1.setMediaType(".*");
+        activityMapping1.setStatusMessage("PUBLISHED");
+        ActivityMapping activityMapping2 = new ActivityMapping();
+        activityMapping2.setActivityType("Reject");
+        activityMapping2.setMediaType(".*");
+        activityMapping2.setStatusMessage("REJECTED");
+        whitelist.add(activityMapping1);
+        whitelist.add(activityMapping2);
         return whitelist;
     }
 
