@@ -455,7 +455,7 @@ public class MediaController extends CommonServiceController {
             if (BAD_REQUEST.equals(fileValidation.getStatus())) {
                 LOGGER.info("Response not found. Provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
             } else {
-                LOGGER.info("Response bad request. Provided 'file is 0 Bytes' for requestId=[{}], message=[{}]", requestID, message);
+                LOGGER.info("Returning bad request. Provided 'file is 0 Bytes' for requestId=[{}], message=[{}]", requestID, message);
             }
             return this.buildErrorResponse(fileValidation.getMessage(), serviceUrl, fileValidation.getStatus());
         }

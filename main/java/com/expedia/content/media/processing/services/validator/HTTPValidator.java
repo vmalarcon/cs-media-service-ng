@@ -35,7 +35,7 @@ public class HTTPValidator {
             final HttpHead httpHead = new HttpHead(fileUrl);
             final CloseableHttpResponse response = HTTP_CLIENT.execute(httpHead);
             if (response.getStatusLine().getStatusCode() == HttpURLConnection.HTTP_OK) {
-                 return checkFileIsGreaterThanZero(response);
+                return checkFileIsGreaterThanZero(response);
             } else {
                 return new ValidationStatus(false, "Provided fileUrl does not exist.", HttpStatus.NOT_FOUND);
             }
