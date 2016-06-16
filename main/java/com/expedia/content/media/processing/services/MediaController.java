@@ -293,7 +293,7 @@ public class MediaController extends CommonServiceController {
             @RequestParam(value = "activeFilter", required = false,
                     defaultValue = "all") final String activeFilter,
             @RequestParam(value = "derivativeTypeFilter", required = false) final String derivativeTypeFilter,
-            @RequestParam(value = "derivateCategoryFilter", required = false) final String derivativeCategoryFilter,
+            @RequestParam(value = "derivativeCategoryFilter", required = false) final String derivativeCategoryFilter,
             @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();

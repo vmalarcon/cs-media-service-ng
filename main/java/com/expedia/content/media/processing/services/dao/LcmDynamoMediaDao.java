@@ -74,6 +74,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     private static final String PUBLISHED_ACTIVITY = "PUBLISHED";
     private static final String REJECTED_ACTIVITY = "REJECTED";
     private static final String DUPLICATE_ACTIVITY = "DUPLICATE";
+    private static final String DEFAULT_FILTER = "Default";
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
     private static final Logger LOGGER = LoggerFactory.getLogger(LcmDynamoMediaDao.class);
@@ -157,7 +158,7 @@ public class LcmDynamoMediaDao implements MediaDao {
 
         List<String> fileNames = domainIdMedia.stream().filter(media -> media.getFileName() != null).map(media -> media.getFileName()).distinct()
                 .collect(Collectors.toList());
-        final Integer totalMediaCount = fileNames.size();
+        Integer totalMediaCount = fileNames.size();
         if (pageSize != null || pageIndex != null) {
             final String errorResponse = validatePagination(totalMediaCount, pageSize, pageIndex);
             if (errorResponse == null) {
@@ -172,9 +173,10 @@ public class LcmDynamoMediaDao implements MediaDao {
 
         final Boolean skipCategoryFiltering = derivativeCategoryFilter == null || derivativeCategoryFilter.isEmpty();
         final List<DomainIdMedia> images = transformMediaListForResponse(domainIdMedia).stream()
-                .filter(media -> skipCategoryFiltering || (media.getDomainDerivativeCategory() == null ? derivativeCategoryFilter.contains("Default")
+                .filter(media -> skipCategoryFiltering || (media.getDomainDerivativeCategory() == null ? derivativeCategoryFilter.contains(DEFAULT_FILTER)
                         : derivativeCategoryFilter.contains(media.getDomainDerivativeCategory())))
                 .collect(Collectors.toList());
+        totalMediaCount = images.size();
         return MediaByDomainIdResponse.builder().domain(domain.getDomain()).domainId(domainId).totalMediaCount(totalMediaCount)
                 .images(images).build();
     }
