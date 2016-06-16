@@ -2,40 +2,41 @@ package com.expedia.content.media.processing.services.util;
 
 import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import org.apache.commons.io.FilenameUtils;
 
-
+import java.util.Locale;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
  * Utility class for resolving file names
- * --ALL PROVIDERS ADDED TO THE ENUM SHOULD USE THE FUNCTION guidProviderNameToFileNameFunction--
+ * --ALL PROVIDERS ADDED TO THE ENUM SHOULD USE THE FUNCTION guidProviderNameToFileName--
  */
 public class FileNameUtil {
+    private FileNameUtil () {
+        /** no-on **/
+    }
 
     /**
-     * --THIS FUNCTION SHOULD BE USED FOR ALL FUTURE PROVIDERS ADDED TO THE ENUM--
-     * This function takes in the ImageMessage with mediaGuid and returns the fileName in the following format:
+     * --THIS METHOD SHOULD BE USED FOR ALL FUTURE PROVIDERS ADDED TO THE ENUM--
+     * This method takes in the ImageMessage with mediaGuid and returns the fileName in the following format:
      * EID_ProviderName_MediaGUID.jpg
      *
      */
-    private static final Function<ImageMessage, String> guidProviderNameToFileNameFunction = (consumedImageMessage) -> {
+    private static final String guidProviderNameToFileName(ImageMessage consumedImageMessage) {
         final String fileNameFromMediaGUID = consumedImageMessage.getOuterDomainData().getDomainId() + "_" + StringUtils.replace(consumedImageMessage.getOuterDomainData().getProvider(), " ", "")
                 + "_" + consumedImageMessage.getMediaGuid() + "." + FilenameUtils.getExtension(consumedImageMessage.getFileUrl());
         return fileNameFromMediaGUID;
     };
 
     /**
-     * This function takes in the ImageMessage and returns the fileName from the imageMessage if it is already set and if it is not
+     * This method takes in the ImageMessage and returns the fileName from the imageMessage if it is already set and if it is not
      * it is set in the following format: 
      * baseNameOfFileURL.jpg
      *
      */
-    private static final Function<ImageMessage, String> fileURLToFileNameFunction = (consumedImageMessage) -> {
+    private static final String fileURLToFileName(ImageMessage consumedImageMessage) {
         if (StringUtils.isNullOrEmpty(consumedImageMessage.getFileName())) {
             final String fileNameFromFileUrl =
                     FilenameUtils.getBaseName(consumedImageMessage.getFileUrl()) + "." + FilenameUtils.getExtension(consumedImageMessage.getFileUrl());
@@ -45,14 +46,14 @@ public class FileNameUtil {
     };
 
     /**
-     * Mapping enum for LCM:MediaProvider to function logic for resolving a fileName
+     * Mapping enum for LCM:MediaProvider
      */
     public enum MediaProvider {
-        DESPEGAR("despegar", guidProviderNameToFileNameFunction),
-        FREETOBOOK("freetobook", guidProviderNameToFileNameFunction),
-        EPC_INTERNAL_USER("epc internal user", guidProviderNameToFileNameFunction),
-        EPC_EXTERNAL_USER("epc external user", guidProviderNameToFileNameFunction),
-        SCORE("score", guidProviderNameToFileNameFunction),
+        DESPEGAR("despegar"),
+        FREETOBOOK("freetobook"),
+        EPC_INTERNAL_USER("epc internal user"),
+        EPC_EXTERNAL_USER("epc external user"),
+        SCORE("score"),
         EPC_LEGACY("epc legacy"),
         MOBILE("mobile"),
         EEM_MIGRATION("eem migration"),
@@ -105,16 +106,9 @@ public class FileNameUtil {
         REPLACEPROVIDER("replaceprovider");
 
         private final String name;
-        private final Function<ImageMessage, String> function;
 
-        // FOR LEGACY PROVIDERS ONLY
         MediaProvider(String mediaProvider) {
-            this(mediaProvider, fileURLToFileNameFunction);
-        }
-
-        MediaProvider(String mediaProvider, Function<ImageMessage, String> function) {
             this.name = mediaProvider;
-            this.function = function;
         }
 
         private String getName() {
@@ -122,7 +116,7 @@ public class FileNameUtil {
         }
 
         private static Optional<MediaProvider> findMediaProviderByProviderName(String providerName) {
-            return Stream.of(MediaProvider.values()).filter(mediaProvider -> mediaProvider.getName().equals(providerName.toLowerCase())).findFirst();
+            return Stream.of(MediaProvider.values()).filter(mediaProvider -> mediaProvider.getName().equals(providerName.toLowerCase(Locale.US))).findFirst();
         }
     }
 
@@ -133,12 +127,12 @@ public class FileNameUtil {
      * @param imageMessage
      */
     public static String resolveFileNameByProvider(ImageMessage imageMessage) {
-        String providerName = imageMessage.getOuterDomainData().getProvider();
-        Optional<MediaProvider> mediaProvider = MediaProvider.findMediaProviderByProviderName(providerName);
+        final String providerName = imageMessage.getOuterDomainData().getProvider();
+        final Optional<MediaProvider> mediaProvider = MediaProvider.findMediaProviderByProviderName(providerName);
         if (mediaProvider.isPresent()) {
-            return mediaProvider.get().function.apply(imageMessage);
+            return fileURLToFileName(imageMessage);
         }
-        return guidProviderNameToFileNameFunction.apply(imageMessage);
+        return guidProviderNameToFileName(imageMessage);
     }
 
     /**
@@ -179,5 +173,4 @@ public class FileNameUtil {
     public static String getFileNameFromUrl(final String url, final String extension) {
         return FilenameUtils.getBaseName(url) + extension;
     }
-
 }
