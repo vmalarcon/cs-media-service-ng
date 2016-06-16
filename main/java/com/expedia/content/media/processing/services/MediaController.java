@@ -275,6 +275,7 @@ public class MediaController extends CommonServiceController {
      * @param activeFilter         Filter determining what images to return. When true only active are returned. When false only inactive media is returned. When
      *                             all then all are returned. All is set a default.
      * @param derivativeTypeFilter Inclusive filter to use to only return certain types of derivatives. Returns all derivatives if not specified.
+     * @param derivativeCategoryFilter Inclusive filter to use to only return certain types of medias. Returns all medias if not specified.
      * @param headers              Headers of the request.
      * @param pageSize             Positive integer to filter the number of media displayed per page. pageSize is inclusive with pageIndex.
      * @param pageIndex            Positive integer to filter the page to display. pageIndex is inclusive with pageSize.
