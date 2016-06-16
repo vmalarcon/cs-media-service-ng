@@ -8,7 +8,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -37,12 +36,12 @@ public class HTTPValidator {
             if (response.getStatusLine().getStatusCode() == HttpURLConnection.HTTP_OK) {
                 return checkFileIsGreaterThanZero(response);
             } else {
-                return new ValidationStatus(false, "Provided fileUrl does not exist.", HttpStatus.NOT_FOUND);
+                return new ValidationStatus(false, "Provided fileUrl does not exist.", ValidationStatus.NOT_FOUND);
             }
 
         } catch (IOException e) {
             LOGGER.warn("Url check failed: [{}]!", fileUrl, e);
-            return new ValidationStatus(false, "Provided fileUrl does not exist.", HttpStatus.NOT_FOUND);
+            return new ValidationStatus(false, "Provided fileUrl does not exist.", ValidationStatus.NOT_FOUND);
         }
     }
 
@@ -61,9 +60,9 @@ public class HTTPValidator {
         try {
             fileSize = Long.parseLong(headers[0].getValue());
         } catch (NullPointerException|IndexOutOfBoundsException e) {
-            return new ValidationStatus(true, "valid", HttpStatus.OK);
+            return new ValidationStatus(true, "valid", ValidationStatus.VALID);
         }
 
-        return new ValidationStatus(fileSize > 0, "Provided file is 0 Bytes", HttpStatus.BAD_REQUEST);
+        return new ValidationStatus(fileSize > 0, "Provided file is 0 Bytes", ValidationStatus.ZERO_BYTES);
     }
 }

@@ -101,6 +101,12 @@ public class MediaController extends CommonServiceController {
     private static final String DUPLICATED_STATUS = "DUPLICATE";
     private static final Integer LIVE_COUNT = 1;
     private static final String DEFAULT_VALIDATION_RULES = "DEFAULT";
+    private static final Map<String, HttpStatus> STATUS_MAP = new HashMap<>();
+    static {
+        STATUS_MAP.put(ValidationStatus.NOT_FOUND, NOT_FOUND);
+        STATUS_MAP.put(ValidationStatus.ZERO_BYTES, BAD_REQUEST);
+        STATUS_MAP.put(ValidationStatus.VALID, OK);
+    }
         
     @Resource(name = "providerProperties")
     private Properties providerProperties;
@@ -452,12 +458,12 @@ public class MediaController extends CommonServiceController {
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
         final ValidationStatus fileValidation = verifyUrl(imageMessage.getFileUrl());
         if (!fileValidation.isValid()) {
-            if (NOT_FOUND.equals(fileValidation.getStatus())) {
+            if (ValidationStatus.NOT_FOUND.equals(fileValidation.getStatus())) {
                 LOGGER.info("Response not found. Provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
             } else {
                 LOGGER.info("Returning bad request. Provided 'file is 0 Bytes' for requestId=[{}], message=[{}]", requestID, message);
             }
-            return this.buildErrorResponse(fileValidation.getMessage(), serviceUrl, fileValidation.getStatus());
+            return this.buildErrorResponse(fileValidation.getMessage(), serviceUrl, STATUS_MAP.get(fileValidation.getStatus()));
         }
         final Map<String, Object> messageState = updateImageMessage(imageMessage, requestID, clientId);
         final ImageMessage imageMessageNew = (ImageMessage) messageState.get(IMAGE_MESSAGE_FIELD);

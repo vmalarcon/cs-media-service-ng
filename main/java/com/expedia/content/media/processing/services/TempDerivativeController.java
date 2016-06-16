@@ -11,6 +11,7 @@ import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -34,6 +35,12 @@ public class TempDerivativeController extends CommonServiceController {
     private static final Logger LOGGER = LoggerFactory.getLogger(TempDerivativeController.class);
     private static final String RESPONSE_FIELD_THUMBNAIL_URL = "thumbnailUrl";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final Map<String, HttpStatus> STATUS_MAP = new HashMap<>();
+    static {
+        STATUS_MAP.put(ValidationStatus.NOT_FOUND, NOT_FOUND);
+        STATUS_MAP.put(ValidationStatus.ZERO_BYTES, BAD_REQUEST);
+        STATUS_MAP.put(ValidationStatus.VALID, OK);
+    }
 
     @Autowired
     private ThumbnailProcessor thumbnailProcessor;
@@ -63,12 +70,12 @@ public class TempDerivativeController extends CommonServiceController {
             }
             final ValidationStatus fileValidation = verifyUrl(tempDerivativeMessage.getFileUrl());
             if (!fileValidation.isValid()) {
-                if (NOT_FOUND.equals(fileValidation.getStatus())) {
+                if (ValidationStatus.NOT_FOUND.equals(fileValidation.getStatus())) {
                     LOGGER.info("Response not found. Provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
                 } else {
                     LOGGER.info("Returning bad request. Provided 'file is 0 Bytes' for requestId=[{}], message=[{}]", requestID, message);
                 }
-                return this.buildErrorResponse(fileValidation.getMessage(), serviceUrl, fileValidation.getStatus());
+                return this.buildErrorResponse(fileValidation.getMessage(), serviceUrl, STATUS_MAP.get(fileValidation.getStatus()));
             }
             final Map<String, String> response = new HashMap<>();
             response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnailProcessor.createTempDerivativeThumbnail(tempDerivativeMessage));

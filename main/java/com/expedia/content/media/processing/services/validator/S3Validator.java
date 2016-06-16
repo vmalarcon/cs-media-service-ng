@@ -8,7 +8,6 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 
 /**
  * Verifies if a file exists in the S3 repo.
@@ -28,7 +27,7 @@ public class S3Validator {
      * @return true if found, false otherwise.
      */
     public static ValidationStatus checkFileExists(String fileUrl) {
-        ValidationStatus validationStatus = new ValidationStatus(false, "Provided fileUrl does not exist.", HttpStatus.NOT_FOUND);
+        ValidationStatus validationStatus = new ValidationStatus(false, "Provided fileUrl does not exist.", ValidationStatus.NOT_FOUND);
         try {
             final String bucketName = getBucketName(fileUrl);
             final String objectName = getObjectName(fileUrl);
@@ -60,6 +59,6 @@ public class S3Validator {
      */
     private static ValidationStatus checkFileIsGreaterThanZero(S3Object object) {
         final ObjectMetadata objectMetadata = object.getObjectMetadata();
-        return new ValidationStatus(objectMetadata == null || (objectMetadata.getContentLength() > 0), "Provided file is 0 Bytes", HttpStatus.BAD_REQUEST);
+        return new ValidationStatus(objectMetadata == null || (objectMetadata.getContentLength() > 0), "Provided file is 0 Bytes", ValidationStatus.ZERO_BYTES);
     }
 }
