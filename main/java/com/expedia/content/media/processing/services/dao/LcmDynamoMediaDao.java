@@ -163,7 +163,7 @@ public class LcmDynamoMediaDao implements MediaDao {
 
         List<String> fileNames = domainIdMedia.stream().filter(media -> media.getFileName() != null).map(media -> media.getFileName()).distinct()
                 .collect(Collectors.toList());
-        Integer totalMediaCount = domainIdMedia.size();
+        final Integer totalMediaCount = domainIdMedia.size();
         if (pageSize != null || pageIndex != null) {
             final String errorResponse = validatePagination(totalMediaCount, pageSize, pageIndex);
             if (errorResponse == null) {
