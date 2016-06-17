@@ -19,6 +19,7 @@ import java.util.UUID;
 import javax.annotation.Resource;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.Event;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
@@ -100,7 +101,11 @@ public class MediaController extends CommonServiceController {
     private static final String DUPLICATED_STATUS = "DUPLICATE";
     private static final Integer LIVE_COUNT = 1;
     private static final String DEFAULT_VALIDATION_RULES = "DEFAULT";
-        
+
+    private Event startProcessingEvent;
+    @SuppressWarnings("PMD.SingularField")
+    private Event endProcessingEvent;
+
     @Resource(name = "providerProperties")
     private Properties providerProperties;
     @Autowired
@@ -141,6 +146,7 @@ public class MediaController extends CommonServiceController {
     @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST)
     @Deprecated
     public ResponseEntity<String> acquireMedia(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
+        startProcessingEvent = new Event(Event.Location.MEDIA_SERVICE, Event.Type.PROCESSING_START, System.currentTimeMillis());
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.ACQUIRE_MEDIA.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl, message, requestID);
@@ -171,8 +177,10 @@ public class MediaController extends CommonServiceController {
     @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST)
     public ResponseEntity<String> mediaAdd(@RequestBody final String message,
             @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+        startProcessingEvent = new Event(Event.Location.MEDIA_SERVICE, Event.Type.PROCESSING_START, System.currentTimeMillis());
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
+
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
         try {
             final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -586,6 +594,8 @@ public class MediaController extends CommonServiceController {
     @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     @RetryableMethod
     private void publishMsg(final ImageMessage message) {
+        endProcessingEvent = new Event(Event.Location.MEDIA_SERVICE, Event.Type.PROCESSING_END, System.currentTimeMillis());
+        message.getEvents().addAll(Arrays.asList(startProcessingEvent, endProcessingEvent));
         final String jsonMessage = message.toJSONMessage();
         try {
             messagingTemplate.send(publishQueue, MessageBuilder.withPayload(jsonMessage).build());
