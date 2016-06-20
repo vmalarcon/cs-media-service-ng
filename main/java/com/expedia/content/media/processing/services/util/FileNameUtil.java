@@ -5,10 +5,6 @@ import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import org.apache.commons.io.FilenameUtils;
 
-import java.util.Locale;
-import java.util.Optional;
-import java.util.stream.Stream;
-
 /**
  * Utility class for resolving file names
  * --ALL PROVIDERS ADDED TO THE ENUM SHOULD USE THE FUNCTION guidProviderNameToFileName--
@@ -28,21 +24,6 @@ public class FileNameUtil {
         final String fileNameFromMediaGUID = consumedImageMessage.getOuterDomainData().getDomainId() + "_" + StringUtils.replace(consumedImageMessage.getOuterDomainData().getProvider(), " ", "")
                 + "_" + consumedImageMessage.getMediaGuid() + "." + FilenameUtils.getExtension(consumedImageMessage.getFileUrl());
         return fileNameFromMediaGUID;
-    };
-
-    /**
-     * This method takes in the ImageMessage and returns the fileName from the imageMessage if it is already set and if it is not
-     * it is set in the following format: 
-     * baseNameOfFileURL.jpg
-     *
-     */
-    private static final String fileURLToFileName(ImageMessage consumedImageMessage) {
-        if (StringUtils.isNullOrEmpty(consumedImageMessage.getFileName())) {
-            final String fileNameFromFileUrl =
-                    FilenameUtils.getBaseName(consumedImageMessage.getFileUrl()) + "." + FilenameUtils.getExtension(consumedImageMessage.getFileUrl());
-            return fileNameFromFileUrl;
-        }
-        return consumedImageMessage.getFileName();
     };
 
     /**
@@ -114,10 +95,6 @@ public class FileNameUtil {
         private String getName() {
             return name;
         }
-
-        private static Optional<MediaProvider> findMediaProviderByProviderName(String providerName) {
-            return Stream.of(MediaProvider.values()).filter(mediaProvider -> mediaProvider.getName().equals(providerName.toLowerCase(Locale.US))).findFirst();
-        }
     }
 
 
@@ -126,12 +103,7 @@ public class FileNameUtil {
      *
      * @param imageMessage
      */
-    public static String resolveFileNameByProvider(ImageMessage imageMessage) {
-        final String providerName = imageMessage.getOuterDomainData().getProvider();
-        final Optional<MediaProvider> mediaProvider = MediaProvider.findMediaProviderByProviderName(providerName);
-        if (mediaProvider.isPresent()) {
-            return fileURLToFileName(imageMessage);
-        }
+    public static String resolveFileName(ImageMessage imageMessage) {
         return guidProviderNameToFileName(imageMessage);
     }
 
