@@ -160,13 +160,14 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
         assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+        ImageMessage response = ImageMessage.parseJsonMessage(responseEntity.getBody());
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
         verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
-        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_EPCInternalUser_(.*).jpg\"(.*)"));
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"1238_EPCInternalUser_" + response.getMediaGuid() + ".jpg\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"providedName\":\"NASA_ISS-4.jpg\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
@@ -201,13 +202,14 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
         assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+        ImageMessage response = ImageMessage.parseJsonMessage(responseEntity.getBody());
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
         verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
-        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_EPCLegacy_(.*).jpg\"(.*)"));
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"1238_EPCLegacy_" + response.getMediaGuid() + ".jpg\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"providedName\":\"3PRGFii.jpg\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
@@ -647,13 +649,14 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
         assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+        ImageMessage response = ImageMessage.parseJsonMessage(responseEntity.getBody());
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
         verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
-        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_SCORE_(.*).jpg\"(.*)"));
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"1238_SCORE_" + response.getMediaGuid() + ".jpg\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
@@ -687,13 +690,14 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
         assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+        ImageMessage response = ImageMessage.parseJsonMessage(responseEntity.getBody());
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
         verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
-        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_freetobook_(.*).jpg\"(.*)"));
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"1238_freetobook_" + response.getMediaGuid() + ".jpg\""));
         verifyZeroInteractions(mockLcmDynamoMediaDao);
     }
 
@@ -723,13 +727,14 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
         assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+        ImageMessage response = ImageMessage.parseJsonMessage(responseEntity.getBody());
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
         verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
-        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_Despegar_(.*).jpg\"(.*)"));
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"1238_Despegar_" + response.getMediaGuid() + ".jpg\""));
         verifyZeroInteractions(mockLcmDynamoMediaDao);
     }
 
@@ -763,13 +768,14 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
         assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+        ImageMessage response = ImageMessage.parseJsonMessage(responseEntity.getBody());
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
         verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
-        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_EPCInternalUser_(.*).jpg\"(.*)"));
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"1238_EPCInternalUser_" + response.getMediaGuid() + ".jpg\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"providedName\":\"NASA_ISS-4.jpg\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));

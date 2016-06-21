@@ -31,7 +31,7 @@ public class FileNameUtil {
 
     /**
      * This function takes in the ImageMessage and returns the fileName from the imageMessage if it is already set and if it is not
-     * it is set in the following format: 
+     * it is set in the following format:
      * baseNameOfFileURL.jpg
      *
      */
