@@ -1,23 +1,5 @@
 package com.expedia.content.media.processing.services;
 
-import static org.springframework.http.HttpStatus.ACCEPTED;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.OK;
-
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.UUID;
-
-import javax.annotation.Resource;
-
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
@@ -44,7 +26,10 @@ import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
-
+import expedia.content.solutions.metrics.annotations.Counter;
+import expedia.content.solutions.metrics.annotations.Gauge;
+import expedia.content.solutions.metrics.annotations.Meter;
+import expedia.content.solutions.metrics.annotations.Timer;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,10 +51,22 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import expedia.content.solutions.metrics.annotations.Counter;
-import expedia.content.solutions.metrics.annotations.Gauge;
-import expedia.content.solutions.metrics.annotations.Meter;
-import expedia.content.solutions.metrics.annotations.Timer;
+import javax.annotation.Resource;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.UUID;
+
+import static org.springframework.http.HttpStatus.ACCEPTED;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.OK;
 
 /**
  * Web service controller for media resources.
@@ -100,7 +97,7 @@ public class MediaController extends CommonServiceController {
     private static final String DUPLICATED_STATUS = "DUPLICATE";
     private static final Integer LIVE_COUNT = 1;
     private static final String DEFAULT_VALIDATION_RULES = "DEFAULT";
-        
+
     @Resource(name = "providerProperties")
     private Properties providerProperties;
     @Autowired
@@ -320,7 +317,7 @@ public class MediaController extends CommonServiceController {
      * Sends the metric server a unique value. This is useful to know:
      * 1- The number of active or inactive  instances within a period of time.
      * 2- How long the component was up or down within a period of time.
-     * 
+     *
      * @return Always return a single value.
      */
     @Gauge(name = "isAlive")
@@ -328,7 +325,7 @@ public class MediaController extends CommonServiceController {
     public Integer liveCount() {
         return LIVE_COUNT;
     }
-    
+
     private void validateAndInitMap(Map<String, Object> objectMap, String queryId, String serviceUrl, String message, String requestID) throws Exception {
         Media dynamoMedia = null;
         if (queryId.matches(GUID_REG)) {
@@ -550,8 +547,6 @@ public class MediaController extends CommonServiceController {
 
     private boolean processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder, String clientId ) {
         if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
-            LOGGER.info("This is a replacement: mediaGuid=[{}], filename=[{}], requestId=[{}]", imageMessage.getMediaGuid(), imageMessage.getFileName(),
-                    imageMessage.getRequestId());
             final List<Media> mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
             final Optional<Media> bestMedia = MediaReplacement
                     .selectBestMedia(mediaList, imageMessage.getOuterDomainData().getDomainId(), imageMessage.getOuterDomainData().getProvider());
@@ -563,7 +558,7 @@ public class MediaController extends CommonServiceController {
                 imageMessageBuilder.outerDomainData(domainBuilder.build());
                 imageMessageBuilder.mediaGuid(media.getMediaGuid());
                 imageMessageBuilder.providedName(media.getProvidedName());
-                LOGGER.info("The replacement information is: mediaGuid=[{}], filename=[{}], requestId=[{}], lcmMediaId=[{}]", media.getMediaGuid(),
+                LOGGER.info("This is a replacement: mediaGuid=[{}], filename=[{}], requestId=[{}], lcmMediaId=[{}]", media.getMediaGuid(),
                         imageMessage.getFileName(), imageMessage.getRequestId(), media.getDomainId());
                 return true;
             } else {
@@ -669,5 +664,5 @@ public class MediaController extends CommonServiceController {
             }
         }
         return null;
-    }   
+    }
 }
