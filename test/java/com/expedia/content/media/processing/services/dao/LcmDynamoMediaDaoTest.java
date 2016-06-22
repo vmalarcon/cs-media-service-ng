@@ -26,7 +26,6 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
 import com.expedia.content.media.processing.services.util.FileNameUtil;
 import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -49,6 +48,7 @@ import com.expedia.content.media.processing.services.dao.sql.SQLMediaListSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetByCatalogItemIdSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetByMediaIdSproc;
 import com.expedia.content.media.processing.services.reqres.Comment;
+import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
@@ -109,6 +109,7 @@ public class LcmDynamoMediaDaoTest {
 
         final Properties properties = new Properties();
         properties.put("1", "EPC Internal User");
+
 
         MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDao());
         MediaByDomainIdResponse testMediaRespomse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null, null);
@@ -180,8 +181,7 @@ public class LcmDynamoMediaDaoTest {
         MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDao());
         LcmProcessLogDao lcmProcessLogDao = makeMockProcessLogDao();
         setFieldValue(mediaDao, "processLogDao", lcmProcessLogDao);
-        setFieldValue(mediaDao, "paramLimit", 1);
-        when(mockMediaDBRepo.getMediaProcessLogByMediaGUID(anyString())).thenReturn(getMediaDBProcessLog());
+        setFieldValue(mediaDao, "paramLimit", 2);
 
         List<DomainIdMedia> testMediaList = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null, null).getImages();
         verify(lcmProcessLogDao, times(2)).findMediaStatus(any());
@@ -233,7 +233,6 @@ public class LcmDynamoMediaDaoTest {
         properties.put("1", "EPC Internal User");
 
         MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDao());
-        when(mockMediaDBRepo.getMediaProcessLogByMediaGUID(anyString())).thenReturn(getMediaDBProcessLog());
         MediaByDomainIdResponse testMediaResponse1 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, null, null, null);
 
         assertEquals(1, testMediaResponse1.getImages().size());
@@ -679,7 +678,7 @@ public class LcmDynamoMediaDaoTest {
         DynamoMediaRepository mediaDynamo = mock(DynamoMediaRepository.class);
         when(mediaDynamo.getMedia(guid)).thenReturn(guidMedia);
 
-        MediaDao mediaDao = makeMockMediaDao(null, null, mediaDynamo, mockProperties, null, makeMockProcessLogPreviouslyPublishedDao(mediaDynamo));
+        MediaDao mediaDao = makeMockMediaDao(null, null, mediaDynamo, mockProperties, null, makeMockProcessLogPreviouslyPublishedDao());
         MediaGetResponse resultMedia = mediaDao.getMediaByGUID(guid);
         MediaGetResponse guidMediaGet = transformSingleMediaForResponse(guidMedia);
         assertEquals(guidMediaGet.getMediaGuid(), resultMedia.getMediaGuid());
@@ -761,6 +760,7 @@ public class LcmDynamoMediaDaoTest {
         testMediaRespomse.getImages().stream().filter(media -> media.getDomainFields() != null && media.getDomainFields().get("lcmMediaId") != null).forEach(media -> assertEquals(2, media.getDerivatives().size()));
         assertFalse(testMediaRespomse.getImages().stream().filter(media -> !("VirtualTour").equals(media.getDomainDerivativeCategory())).findAny().isPresent());
     }
+
     
     private MediaDao makeMockMediaDao(SQLMediaListSproc mediaIdSproc, SQLMediaItemGetSproc mediaItemSproc, DynamoMediaRepository mockMediaDBRepo,
                                       final Properties properties, SQLMediaGetSproc mediaGetSproc, LcmProcessLogDao processLogDao) throws NoSuchFieldException, IllegalAccessException {
@@ -769,6 +769,7 @@ public class LcmDynamoMediaDaoTest {
         setFieldValue(mediaDao, "lcmMediaSproc", mediaGetSproc);
         setFieldValue(mediaDao, "lcmMediaItemSproc", mediaItemSproc);
         setFieldValue(mediaDao, "paramLimit", 50);
+
         setFieldValue(mediaDao, "mediaRepo", mockMediaDBRepo);
         setFieldValue(mediaDao, "providerProperties", properties);
         setFieldValue(mediaDao, "processLogDao", processLogDao);
@@ -778,6 +779,34 @@ public class LcmDynamoMediaDaoTest {
         setFieldValue(mediaDao, "roomGetByCatalogItemIdSproc", roomGetByCatalogItemIdSproc);
         
         return mediaDao;
+    }
+
+    private LcmProcessLogDao makeMockProcessLogPreviouslyPublishedDao() {
+        LcmProcessLogDao mockProcessLogDao = mock(LcmProcessLogDao.class);
+        List<MediaProcessLog> mediaLogStatuses = new ArrayList<MediaProcessLog>();
+        MediaProcessLog mediaLogStatus1 = new MediaProcessLog("2014-07-29 10:08:11.6890000 -07:00", "image1.jpg", "Something", "Lodging");
+        mediaLogStatuses.add(mediaLogStatus1);
+        mediaLogStatuses.add(mediaLogStatus1);
+        mediaLogStatuses.add(mediaLogStatus1);
+        mediaLogStatuses.add(mediaLogStatus1);
+        mediaLogStatuses.add(mediaLogStatus1);
+        mediaLogStatuses.add(mediaLogStatus1);
+        mediaLogStatuses.add(mediaLogStatus1);
+        mediaLogStatuses.add(mediaLogStatus1);
+        MediaProcessLog mediaLogStatus2 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "image1.jpg", "Publish", "Lodging");
+        mediaLogStatuses.add(mediaLogStatus2);
+        mediaLogStatuses.add(mediaLogStatus1);
+        mediaLogStatuses.add(mediaLogStatus1);
+        mediaLogStatuses.add(mediaLogStatus1);
+        mediaLogStatuses.add(mediaLogStatus1);
+        mediaLogStatuses.add(mediaLogStatus1);
+        mediaLogStatuses.add(mediaLogStatus1);
+        mediaLogStatuses.add(mediaLogStatus1);
+        mediaLogStatuses.add(mediaLogStatus1);
+        MediaProcessLog mediaLogStatus3 = new MediaProcessLog("2014-07-29 10:08:14.6890000 -07:00", "image1.jpg", "Reject", "Lodging");
+        mediaLogStatuses.add(mediaLogStatus3);
+        when(mockProcessLogDao.findMediaStatus(any())).thenReturn(mediaLogStatuses);
+        return mockProcessLogDao;
     }
 
     private List<ActivityMapping> makeActivityWhitelist() {
@@ -804,44 +833,6 @@ public class LcmDynamoMediaDaoTest {
         mediaLogStatuses.add(mediaLogStatus2);
         when(mockProcessLogDao.findMediaStatus(any())).thenReturn(mediaLogStatuses);
         return mockProcessLogDao;
-    }
-
-    private LcmProcessLogDao makeMockProcessLogPreviouslyPublishedDao(DynamoMediaRepository mockMediaDBRepo) {
-        LcmProcessLogDao mockProcessLogDao = mock(LcmProcessLogDao.class);
-        List<MediaProcessLog> mediaLogStatuses = new ArrayList<MediaProcessLog>();
-        MediaProcessLog mediaLogStatus1 = new MediaProcessLog("2014-07-29 10:08:11.6890000 -07:00", "image1.jpg", "Something", "Lodging");
-        mediaLogStatuses.add(mediaLogStatus1);
-        mediaLogStatuses.add(mediaLogStatus1);
-        mediaLogStatuses.add(mediaLogStatus1);
-        mediaLogStatuses.add(mediaLogStatus1);
-        mediaLogStatuses.add(mediaLogStatus1);
-        mediaLogStatuses.add(mediaLogStatus1);
-        mediaLogStatuses.add(mediaLogStatus1);
-        mediaLogStatuses.add(mediaLogStatus1);
-        MediaProcessLog mediaLogStatus2 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "image1.jpg", "Publish", "Lodging");
-        mediaLogStatuses.add(mediaLogStatus2);
-        mediaLogStatuses.add(mediaLogStatus1);
-        mediaLogStatuses.add(mediaLogStatus1);
-        mediaLogStatuses.add(mediaLogStatus1);
-        mediaLogStatuses.add(mediaLogStatus1);
-        mediaLogStatuses.add(mediaLogStatus1);
-        mediaLogStatuses.add(mediaLogStatus1);
-        mediaLogStatuses.add(mediaLogStatus1);
-        mediaLogStatuses.add(mediaLogStatus1);
-        MediaProcessLog mediaLogStatus3 = new MediaProcessLog("2014-07-29 10:08:14.6890000 -07:00", "image1.jpg", "Reject", "Lodging");
-        mediaLogStatuses.add(mediaLogStatus3);
-        when(mockProcessLogDao.findMediaStatus(any())).thenReturn(mediaLogStatuses);
-        when(mockMediaDBRepo.getMediaProcessLogByMediaGUID(anyString())).thenReturn(mediaLogStatuses);
-        return mockProcessLogDao;
-    }
-
-    private List<MediaProcessLog> getMediaDBProcessLog() {
-        List<MediaProcessLog> mediaLogStatuses = new ArrayList<MediaProcessLog>();
-        MediaProcessLog mediaLogStatus1 = new MediaProcessLog("2014-07-29 10:08:11.6890000 -07:00", "image1.jpg", "Something", "Lodging");
-        mediaLogStatuses.add(mediaLogStatus1);
-        MediaProcessLog mediaLogStatus2 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "image1.jpg", "Publish", "Lodging");
-        mediaLogStatuses.add(mediaLogStatus2);
-        return mediaLogStatuses;
     }
 
     private MediaGetResponse transformSingleMediaForResponse(Media media) {
