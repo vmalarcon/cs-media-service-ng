@@ -21,7 +21,7 @@ public class FileNameUtilTest {
                 .outerDomainData(new OuterDomain(Domain.LODGING, "123", "Hotel Provided", null, null))
                 .build();
 
-        String result = FileNameUtil.resolveFileName(message);
+        String result = FileNameUtil.resolveFileNameByProvider(message);
         assertEquals("123_HotelProvided_222.jpg", result);
     }
 
