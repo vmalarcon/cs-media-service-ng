@@ -68,15 +68,23 @@ public class TempDerivativeController extends CommonServiceController {
                 LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, errors, requestID, message);
                 return this.buildErrorResponse("JSON request format is invalid. " + errors + " Json message=" + message, serviceUrl, BAD_REQUEST);
             }
+            @SuppressWarnings("CPD-START")
             final ValidationStatus fileValidation = verifyUrl(tempDerivativeMessage.getFileUrl());
             if (!fileValidation.isValid()) {
-                if (ValidationStatus.NOT_FOUND.equals(fileValidation.getStatus())) {
-                    LOGGER.info("Response not found. Provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
-                } else {
-                    LOGGER.info("Returning bad request. Provided 'file is 0 Bytes' for requestId=[{}], message=[{}]", requestID, message);
+                switch (fileValidation.getStatus()) {
+                    case ValidationStatus.NOT_FOUND :
+                        LOGGER.info("Response not found. Provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
+                        break;
+                    case ValidationStatus.ZERO_BYTES :
+                        LOGGER.info("Returning bad request. Provided 'file is 0 Bytes' for requestId=[{}], message=[{}]", requestID, message);
+                        break;
+                    default :
+                        LOGGER.info("Returning bad request. requestId=[{}], message=[{}]", requestID, message);
+                        break;
                 }
-                return this.buildErrorResponse(fileValidation.getMessage(), serviceUrl, STATUS_MAP.get(fileValidation.getStatus()));
+                return this.buildErrorResponse(fileValidation.getMessage(), serviceUrl, STATUS_MAP.get(fileValidation.getStatus()) == null ? BAD_REQUEST : STATUS_MAP.get(fileValidation.getStatus()));
             }
+            @SuppressWarnings("CPD-END")
             final Map<String, String> response = new HashMap<>();
             response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnailProcessor.createTempDerivativeThumbnail(tempDerivativeMessage));
             return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);

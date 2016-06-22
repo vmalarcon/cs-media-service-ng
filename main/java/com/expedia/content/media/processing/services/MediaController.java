@@ -453,20 +453,24 @@ public class MediaController extends CommonServiceController {
             LOGGER.warn("Returning bad request for messageName={}, requestId=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, requestID, message, json);
             return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
         }
+        @SuppressWarnings("CPD-START")
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
         final ValidationStatus fileValidation = verifyUrl(imageMessage.getFileUrl());
         if (!fileValidation.isValid()) {
             switch (fileValidation.getStatus()) {
                 case ValidationStatus.NOT_FOUND :
                     LOGGER.info("Response not found. Provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
+                    break;
                 case ValidationStatus.ZERO_BYTES :
                     LOGGER.info("Returning bad request. Provided 'file is 0 Bytes' for requestId=[{}], message=[{}]", requestID, message);
+                    break;
                 default :
                     LOGGER.info("Returning bad request. requestId=[{}], message=[{}]", requestID, message);
-
+                    break;
             }
             return this.buildErrorResponse(fileValidation.getMessage(), serviceUrl, STATUS_MAP.get(fileValidation.getStatus()) == null ? BAD_REQUEST : STATUS_MAP.get(fileValidation.getStatus()));
         }
+        @SuppressWarnings("CPD-END")
         final Map<String, Object> messageState = updateImageMessage(imageMessage, requestID, clientId);
         final ImageMessage imageMessageNew = (ImageMessage) messageState.get(IMAGE_MESSAGE_FIELD);
         final Boolean isReprocessing = (Boolean) messageState.get(REPROCESSING_STATE_FIELD);
