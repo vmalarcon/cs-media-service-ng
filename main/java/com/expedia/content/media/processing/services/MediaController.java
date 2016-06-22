@@ -309,7 +309,8 @@ public class MediaController extends CommonServiceController {
         try {
             response = mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter, derivativeCategoryFilter, pageSize, pageIndex);
         } catch (Exception ex) {
-            LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+            LOGGER.warn(
+                    "INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                     serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
             return new ResponseEntity<>(ex.getMessage(), BAD_REQUEST);
         }
@@ -564,9 +565,21 @@ public class MediaController extends CommonServiceController {
                 imageMessageBuilder.mediaGuid(media.getMediaGuid());
                 imageMessageBuilder.providedName(media.getProvidedName());
                 LOGGER.info("The replacement information is: mediaGuid=[{}], filename=[{}], requestId=[{}], lcmMediaId=[{}]", media.getMediaGuid(),
-                        imageMessage.getFileName(), imageMessage.getRequestId(), media.getDomainId());
+                        imageMessage.getFileName(), imageMessage.getRequestId(), media.getLcmMediaId());
                 return true;
             } else {
+                final List<LcmMedia> lcmMediaList = mediaDao.getMediaByFilenameInLCM(Integer.valueOf(imageMessage.getOuterDomainData().getDomainId()),imageMessage.getFileName());
+                final Optional<LcmMedia> existMedia = lcmMediaList.stream().filter(lcmMedia -> lcmMedia.getActive()).findFirst();
+                if(existMedia.isPresent()){
+                    final LcmMedia lcmMedia = existMedia.get();
+                    final OuterDomain.OuterDomainBuilder domainBuilder = OuterDomain.builder().from(imageMessage.getOuterDomainData());
+                    domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, lcmMedia.getMediaId().toString());
+                    imageMessageBuilder.outerDomainData(domainBuilder.build());
+                    LOGGER.info("The replacement information by lcm is:  filename=[{}], requestId=[{}], lcmMediaId=[{}]",
+                            imageMessage.getFileName(), imageMessage.getRequestId(), lcmMedia.getMediaId());
+                    return true;
+
+                }
                 LOGGER.info("Could not find the best media for the filename=[{}] on the list: [{}]. Will create a new GUID.", imageMessage.getFileName(),
                         Joiner.on("; ").join(mediaList));
             }
