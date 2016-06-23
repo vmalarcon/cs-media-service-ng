@@ -10,17 +10,17 @@ public class S3ValidatorTest {
 
     @Test
     public void testFileFound() {
-        assertTrue(S3Validator.checkFileExists("s3://ewe-cs-media-test/source/10962099_26.jpg"));
+        assertTrue(S3Validator.checkFileExists("s3://ewe-cs-media-test/source/10962099_26.jpg").isValid());
     }
 
     @Test
     public void testFileNotFound() {
-        assertFalse(S3Validator.checkFileExists("s3://ewe-cs-media-test/source/blahblahbalah.jpg"));
+        assertFalse(S3Validator.checkFileExists("s3://ewe-cs-media-test/source/blahblahbalah.jpg").isValid());
     }
 
     @Test
     public void testFileIsEmpty() {
-        assertFalse(S3Validator.checkFileExists("s3://ewe-cs-media-test/rejected/ZeroKb.jpg"));
+        assertFalse(S3Validator.checkFileExists("s3://ewe-cs-media-test/rejected/ZeroKb.jpg").isValid());
     }
 
 }
