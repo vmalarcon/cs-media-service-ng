@@ -73,8 +73,7 @@
                     <list>
                         <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
                         <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
-                        <value>(imageMessage.fileUrl != null &amp;&amp; (!imageMessage.fileUrl.toLowerCase.endsWith(".jpg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".jpeg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".png")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".bmp")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".gif"))) ? "fileUrl extension is malformed." : "valid"</value>
-                        <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
+                         <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
                         <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
                         <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
                         <value>(domainData.domain.domain.endsWith('Lodging') &amp;&amp; domainData.domainId != null &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
@@ -98,7 +97,6 @@
                     <list>
                         <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
                         <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
-                        <value>(imageMessage.fileUrl != null &amp;&amp; (!imageMessage.fileUrl.toLowerCase.endsWith(".jpg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".jpeg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".png")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".bmp")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".gif"))) ? "fileUrl extension is malformed." : "valid"</value>
                         <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
                         <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
                         <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
@@ -133,7 +131,6 @@
                     <list>
                         <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
                         <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
-                        <value>(imageMessage.fileUrl != null &amp;&amp; (!imageMessage.fileUrl.toLowerCase.endsWith(".jpg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".jpeg") &amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".png")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".bmp")&amp;&amp;!imageMessage.fileUrl.toLowerCase.endsWith(".gif"))) ? "fileUrl extension is malformed." : "valid"</value>
                         <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
                         <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
                         <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
@@ -152,7 +149,6 @@
             <list>
                 <value>tempDerivativeMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
                 <value>(tempDerivativeMessage.fileUrl != null &amp;&amp; !tempDerivativeMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
-                <value>(tempDerivativeMessage.fileUrl != null &amp;&amp; (!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".jpg") &amp;&amp;!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".jpeg") &amp;&amp;!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".png")&amp;&amp;!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".bmp")&amp;&amp;!tempDerivativeMessage.fileUrl.toLowerCase.endsWith(".gif"))) ? "fileUrl extension is malformed." : "valid"</value>
                 <value>(tempDerivativeMessage.rotation == null) ? "valid" : (tempDerivativeMessage.rotation.matches("[0-9]+") &amp;&amp; Integer.parseInt(tempDerivativeMessage.rotation)%90 == 0  &amp;&amp; Integer.parseInt(tempDerivativeMessage.rotation) &lt;= 270) ? "valid" : "rotation accepted values are 0, 90, 180, and 270."</value>
                 <value>tempDerivativeMessage.width != null ? "valid" : "width is required."</value>
                 <value>tempDerivativeMessage.height != null ? "valid" : "height is required."</value>
