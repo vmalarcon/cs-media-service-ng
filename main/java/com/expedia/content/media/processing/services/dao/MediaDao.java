@@ -35,6 +35,14 @@ public interface MediaDao {
     List<Media> getMediaByFilename(String fileName);
 
     /**
+     * Given a fileName returns all the media that were saved with that name by query LCM.
+     *
+     * @param fileName File name of the Media.
+     * @return List of Media with the requested Filename.
+     */
+    List<LcmMedia> getMediaByFilenameInLCM(int domainId, String fileName);
+
+    /**
      * Retrieves a media by its GUID.
      *
      * @param mediaGUID GUID of the required media.

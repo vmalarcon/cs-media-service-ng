@@ -7,9 +7,11 @@ import static org.springframework.http.HttpStatus.OK;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,6 +35,12 @@ public class TempDerivativeController extends CommonServiceController {
     private static final Logger LOGGER = LoggerFactory.getLogger(TempDerivativeController.class);
     private static final String RESPONSE_FIELD_THUMBNAIL_URL = "thumbnailUrl";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final Map<String, HttpStatus> STATUS_MAP = new HashMap<>();
+    static {
+        STATUS_MAP.put(ValidationStatus.NOT_FOUND, NOT_FOUND);
+        STATUS_MAP.put(ValidationStatus.ZERO_BYTES, BAD_REQUEST);
+        STATUS_MAP.put(ValidationStatus.VALID, OK);
+    }
 
     @Autowired
     private ThumbnailProcessor thumbnailProcessor;
@@ -60,11 +68,23 @@ public class TempDerivativeController extends CommonServiceController {
                 LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, errors, requestID, message);
                 return this.buildErrorResponse("JSON request format is invalid. " + errors + " Json message=" + message, serviceUrl, BAD_REQUEST);
             }
-            final boolean fileExists = verifyUrlExistence(tempDerivativeMessage.getFileUrl());
-            if (!fileExists) {
-                LOGGER.info("Response bad request provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
-                return this.buildErrorResponse("Provided fileUrl does not exist.", serviceUrl, NOT_FOUND);
+            @SuppressWarnings("CPD-START")
+            final ValidationStatus fileValidation = verifyUrl(tempDerivativeMessage.getFileUrl());
+            if (!fileValidation.isValid()) {
+                switch (fileValidation.getStatus()) {
+                    case ValidationStatus.NOT_FOUND :
+                        LOGGER.info("Response not found. Provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
+                        break;
+                    case ValidationStatus.ZERO_BYTES :
+                        LOGGER.info("Returning bad request. Provided 'file is 0 Bytes' for requestId=[{}], message=[{}]", requestID, message);
+                        break;
+                    default :
+                        LOGGER.info("Returning bad request. requestId=[{}], message=[{}]", requestID, message);
+                        break;
+                }
+                return this.buildErrorResponse(fileValidation.getMessage(), serviceUrl, STATUS_MAP.get(fileValidation.getStatus()) == null ? BAD_REQUEST : STATUS_MAP.get(fileValidation.getStatus()));
             }
+            @SuppressWarnings("CPD-END")
             final Map<String, String> response = new HashMap<>();
             response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnailProcessor.createTempDerivativeThumbnail(tempDerivativeMessage));
             return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);

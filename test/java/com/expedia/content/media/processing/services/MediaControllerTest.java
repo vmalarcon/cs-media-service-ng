@@ -1,39 +1,5 @@
 package com.expedia.content.media.processing.services;
 
-import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-import static com.expedia.content.media.processing.services.util.MediaReplacementTest.createByFileNameMedia;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.reporting.Activity;
@@ -61,7 +27,6 @@ import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.google.common.collect.Lists;
-
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.codehaus.plexus.util.ReflectionUtils;
 import org.joda.time.format.DateTimeFormat;
@@ -83,6 +48,40 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.MultiValueMap;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
+import static com.expedia.content.media.processing.services.util.MediaReplacementTest.createByFileNameMedia;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
 @RunWith(MockitoJUnitRunner.class)
@@ -162,13 +161,14 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
         assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+        ImageMessage response = ImageMessage.parseJsonMessage(responseEntity.getBody());
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
         verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
-        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_EPCInternalUser_(.*).jpg\"(.*)"));
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"1238_EPCInternalUser_" + response.getMediaGuid() + ".jpg\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"providedName\":\"NASA_ISS-4.jpg\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
@@ -205,13 +205,14 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
         assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+        ImageMessage response = ImageMessage.parseJsonMessage(responseEntity.getBody());
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
         verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
-        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"3PRGFii.jpg\""));
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"1238_EPCLegacy_" + response.getMediaGuid() + ".jpg\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"providedName\":\"3PRGFii.jpg\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
@@ -573,6 +574,59 @@ public class MediaControllerTest {
         verify(mockMediaDao, times(1)).getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"));
     }
 
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Test
+    public void testReplaceImageWhenDynamoNotFound() throws Exception {
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(MEDIA_CLOUD_ROUTER_CLIENT_ID);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"123_1_NASA_ISS-4.jpg\", "+ "\"mediaGuid\": \"newGuid\", "
+                + "\"userId\": \"bobthegreat\", " + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"SCORE\", "
+                + "\"domainFields\": { " + "    \"replace\": \"true\" " + "  } " + "}";
+
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+
+        MediaDao mockMediaDao = mock(MediaDao.class);
+        when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg")))
+                .thenReturn(Lists.newArrayList(createByFileNameMedia("old-but-inactive", "1238", "false", DATE_FORMAT.parse("2016-10-10 12:00:00"), "456")));
+        LcmMedia lcmMedia = LcmMedia.builder().mediaId(4567).active(true).build();
+
+        when(mockMediaDao.getMediaByFilenameInLCM(eq(1238), eq("123_1_NASA_ISS-4.jpg")))
+                .thenReturn(Lists.newArrayList(lcmMedia));
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+
+        ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
+        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
+        verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
+        final Message<String> publishedMessageValue = publishedMessage.getValue();
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"123_1_NASA_ISS-4.jpg\""));
+        assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
+        assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + MEDIA_CLOUD_ROUTER_CLIENT_ID));
+        assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
+        assertTrue(publishedMessageValue.getPayload().contains("\"lcmMediaId\":\"" + "4567"));
+        verify(mockMediaDao, times(1)).getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"));
+    }
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testReplaceImageButNoOldFound() throws Exception {
@@ -651,13 +705,14 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
         assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+        ImageMessage response = ImageMessage.parseJsonMessage(responseEntity.getBody());
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
         verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
-        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_SCORE_(.*).jpg\"(.*)"));
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"1238_SCORE_" + response.getMediaGuid() + ".jpg\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
@@ -691,13 +746,14 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
         assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+        ImageMessage response = ImageMessage.parseJsonMessage(responseEntity.getBody());
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
         verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
-        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_freetobook_(.*).jpg\"(.*)"));
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"1238_freetobook_" + response.getMediaGuid() + ".jpg\""));
         verifyZeroInteractions(mockLcmDynamoMediaDao);
     }
 
@@ -727,13 +783,14 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
         assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+        ImageMessage response = ImageMessage.parseJsonMessage(responseEntity.getBody());
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
         verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
-        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_Despegar_(.*).jpg\"(.*)"));
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"1238_Despegar_" + response.getMediaGuid() + ".jpg\""));
         verifyZeroInteractions(mockLcmDynamoMediaDao);
     }
 
@@ -760,20 +817,21 @@ public class MediaControllerTest {
         mockHeader.add("request-id", requestId);
 
         mediaControllerSpy = spy(mediaController);
-        doReturn(Boolean.TRUE).when(mediaControllerSpy).verifyUrlExistence(anyString());
+        doReturn(Boolean.TRUE).when(mediaControllerSpy).verifyUrl(anyString());
         ResponseEntity<String> responseEntity = mediaControllerSpy.mediaAdd(jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\""));
         assertFalse(responseEntity.getBody().contains("\"mediaGuid\":null"));
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+        ImageMessage response = ImageMessage.parseJsonMessage(responseEntity.getBody());
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
         verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
-        assertTrue(publishedMessageValue.getPayload().matches("(.*)\"fileName\":\"1238_EPCInternalUser_(.*).jpg\"(.*)"));
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"1238_EPCInternalUser_" + response.getMediaGuid() + ".jpg\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"providedName\":\"NASA_ISS-4.jpg\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
