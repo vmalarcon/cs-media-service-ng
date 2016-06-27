@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.reporting.Activity;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
@@ -163,7 +164,7 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
-        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
@@ -172,6 +173,8 @@ public class MediaControllerTest {
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
+        assertTrue(publishedMessageValue.getPayload().contains("\"logEntries\":[{\"activity\":\"" + Activity.RECEPTION.getName() + "\""));
+        assertTrue(publishedMessageValue.getPayload().contains("\"activity\":\"" + Activity.MEDIA_MESSAGE_RECEIVED.getName() + "\""));
         verifyZeroInteractions(mockLcmDynamoMediaDao);
     }
 
@@ -204,7 +207,7 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
-        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
@@ -253,7 +256,7 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"thumbnailUrl\":\"" + thumbnailUrl + "\""));
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
-        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), any());
         verifyZeroInteractions(mockLcmDynamoMediaDao);
     }
@@ -295,7 +298,7 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"thumbnailUrl\":\"" + thumbnailUrl + "\""));
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
-        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), any());
     }
 
@@ -356,7 +359,7 @@ public class MediaControllerTest {
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
-        verify(mockLogActivityProcess, times(0)).log(logEntryCaptor.capture(), eq(reporting));
+        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
         verify(queueMessagingTemplateMock, times(0)).send(anyString(), any());
     }
 
@@ -557,7 +560,7 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
-        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
@@ -608,7 +611,7 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
-        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
@@ -650,7 +653,7 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
-        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
@@ -690,7 +693,7 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
-        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
@@ -726,7 +729,7 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
-        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
@@ -766,7 +769,7 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
-        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
@@ -815,7 +818,7 @@ public class MediaControllerTest {
         assertFalse(responseEntity.getBody().contains("\"thumbnailUrl\":\"" + thumbnailUrl + "\""));
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
-        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), any());
         verifyZeroInteractions(mockLcmDynamoMediaDao);
     }
@@ -1451,8 +1454,9 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"error message\":\"Unable to generate thumbnail with url: http://i.imgur.com/3PRGFii.jpg\""));
         assertTrue(responseEntity.getBody().contains("\"status\":\"REJECTED\""));
 
-        verifyZeroInteractions(mockLogActivityProcess);
-        verifyZeroInteractions(queueMessagingTemplateMock);
+        ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
+        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        verify(queueMessagingTemplateMock, times(0)).send(anyString(), any());
         verifyZeroInteractions(mockLcmDynamoMediaDao);
         verify(thumbnailProcessor, times(1)).createThumbnail(any(ImageMessage.class));
         verifyZeroInteractions(thumbnail);
