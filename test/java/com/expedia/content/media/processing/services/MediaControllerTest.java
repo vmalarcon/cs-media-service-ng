@@ -26,6 +26,7 @@ import com.expedia.content.media.processing.services.reqres.MediaByDomainIdRespo
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
+import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.codehaus.plexus.util.ReflectionUtils;
@@ -615,7 +616,7 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
-        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
         final Message<String> publishedMessageValue = publishedMessage.getValue();
@@ -817,7 +818,7 @@ public class MediaControllerTest {
         mockHeader.add("request-id", requestId);
 
         mediaControllerSpy = spy(mediaController);
-        doReturn(Boolean.TRUE).when(mediaControllerSpy).verifyUrl(anyString());
+        when(mediaControllerSpy.verifyUrl(anyString())).thenReturn(new ValidationStatus(Boolean.TRUE, "validated", "valid"));
         ResponseEntity<String> responseEntity = mediaControllerSpy.mediaAdd(jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
