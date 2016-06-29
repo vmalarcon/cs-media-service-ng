@@ -75,6 +75,8 @@ public class LcmDynamoMediaDao implements MediaDao {
     private static final String PUBLISHED_ACTIVITY = "PUBLISHED";
     private static final String REJECTED_ACTIVITY = "REJECTED";
     private static final String DUPLICATE_ACTIVITY = "DUPLICATE";
+    private static final String DEFAULT_LANG_ID = "1033";
+    private static final int CONTENT_PROVIDER_ID = 1;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
     private static final Logger LOGGER = LoggerFactory.getLogger(LcmDynamoMediaDao.class);
@@ -116,7 +118,7 @@ public class LcmDynamoMediaDao implements MediaDao {
 
     @Override
     public List<LcmMedia> getMediaByFilenameInLCM(int domainId, String fileName) {
-        return (List<LcmMedia>)getMediaIDSproc.execute(domainId, fileName).get(GetMediaIDSproc.MEDIA_SET);
+        return (List<LcmMedia>) getMediaIDSproc.execute(domainId, DEFAULT_LANG_ID, CONTENT_PROVIDER_ID, fileName).get(GetMediaIDSproc.MEDIA_SET);
     }
 
     @Override

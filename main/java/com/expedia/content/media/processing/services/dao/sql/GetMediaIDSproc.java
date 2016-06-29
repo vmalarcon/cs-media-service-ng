@@ -28,7 +28,7 @@ public class GetMediaIDSproc extends StoredProcedure {
         declareParameter(new SqlParameter("@pCatalogItemID", Types.INTEGER));
         declareParameter(new SqlParameter("@pLangID", Types.INTEGER));
         declareParameter(new SqlParameter("@pContentProviderID", Types.INTEGER));
-        declareParameter(new SqlParameter("@pContentProviderMediaName", Types.INTEGER));
+        declareParameter(new SqlParameter("@pContentProviderMediaName", Types.VARCHAR));
         declareParameter(new SqlReturnResultSet(MEDIA_SET, new MediaRowMapper()));
     }
 
