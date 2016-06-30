@@ -146,6 +146,7 @@ public class MediaController extends CommonServiceController {
     @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST)
     @Deprecated
     public ResponseEntity<String> acquireMedia(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
+        final Date timeReceived = new Date();
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.ACQUIRE_MEDIA.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl, message, requestID);
@@ -155,7 +156,7 @@ public class MediaController extends CommonServiceController {
             final String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, providerProperties);
             LOGGER.info("converted to - common message =[{}]", mediaCommonMessage);
             final String userName = "Multisource";
-            return processRequest(mediaCommonMessage, requestID, serviceUrl, userName, OK);
+            return processRequest(mediaCommonMessage, requestID, serviceUrl, userName, OK, timeReceived);
         } catch (IllegalStateException | ImageMessageException ex) {
             LOGGER.error("ERROR - messageName={}, JSONMessage=[{}], error=[{}], requestId=[{}] .", serviceUrl, message, ex.getMessage(), requestID, ex);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
@@ -176,13 +177,14 @@ public class MediaController extends CommonServiceController {
     @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST)
     public ResponseEntity<String> mediaAdd(@RequestBody final String message,
             @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+        final Date timeReceived = new Date();
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
         try {
             final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             final String clientId = auth.getName();
-            return processRequest(message, requestID, serviceUrl, clientId, ACCEPTED);
+            return processRequest(message, requestID, serviceUrl, clientId, ACCEPTED, timeReceived);
         } catch (IllegalStateException | ImageMessageException ex) {
             LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
@@ -444,12 +446,13 @@ public class MediaController extends CommonServiceController {
      * @param serviceUrl    URL of the message called.
      * @param clientId      Web service client id.
      * @param successStatus Status to return when successful.
+     * @param timeReceived  The time at which MediaService received the request
      * @return The response for the service call.
      * @throws Exception Thrown if the message can't be validated or the response can't be serialized.
      */
     @SuppressWarnings({"PMD.PrematureDeclaration"})
     private ResponseEntity<String> processRequest(final String message, final String requestID, final String serviceUrl, final String clientId,
-            HttpStatus successStatus) throws Exception {
+                                                  HttpStatus successStatus, Date timeReceived) throws Exception {
         final String json = validateImageMessage(message, clientId);
         if (!"[]".equals(json)) {
             LOGGER.warn("Returning bad request for messageName={}, requestId=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, requestID, message, json);
@@ -457,8 +460,6 @@ public class MediaController extends CommonServiceController {
         }
         @SuppressWarnings("CPD-START")
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
-        imageMessage.addLogEntry(new LogEntry(App.MEDIA_SERVICE, Activity.RECEPTION, new Date()));
-        logActivity(imageMessage, Activity.RECEPTION);
         final ValidationStatus fileValidation = verifyUrl(imageMessage.getFileUrl());
         if (!fileValidation.isValid()) {
             switch (fileValidation.getStatus()) {
@@ -477,6 +478,8 @@ public class MediaController extends CommonServiceController {
         @SuppressWarnings("CPD-END")
         final Map<String, Object> messageState = updateImageMessage(imageMessage, requestID, clientId);
         final ImageMessage imageMessageNew = (ImageMessage) messageState.get(IMAGE_MESSAGE_FIELD);
+        imageMessageNew.addLogEntry(new LogEntry(App.MEDIA_SERVICE, Activity.RECEPTION, timeReceived));
+        logActivity(imageMessageNew, Activity.RECEPTION);
         final Boolean isReprocessing = (Boolean) messageState.get(REPROCESSING_STATE_FIELD);
 
         final Map<String, String> response = new HashMap<>();

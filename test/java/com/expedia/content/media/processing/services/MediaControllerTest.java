@@ -76,7 +76,6 @@ import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -333,8 +332,7 @@ public class MediaControllerTest {
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
 
-        ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
-        verify(mockLogActivityProcess, times(0)).log(logEntryCaptor.capture(), eq(reporting));
+        verifyZeroInteractions(mockLogActivityProcess);
         verify(queueMessagingTemplateMock, times(0)).send(anyString(), any());
     }
 
@@ -360,8 +358,7 @@ public class MediaControllerTest {
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
 
-        ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
-        verify(mockLogActivityProcess, times(1)).log(logEntryCaptor.capture(), eq(reporting));
+        verifyZeroInteractions(mockLogActivityProcess);
         verify(queueMessagingTemplateMock, times(0)).send(anyString(), any());
     }
 
