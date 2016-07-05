@@ -669,6 +669,7 @@ public class MediaController extends CommonServiceController {
      *
      * @param imageMessage The imageMessage of the file being processed.
      * @param activity     The activity to log.
+     * @param date         The timestamp at which the activity happened, if null the latest timestamp will be generated .
      */
     private void logActivity(final ImageMessage imageMessage, final Activity activity, final Date date) throws URISyntaxException {
         final Date logDate = (date == null) ? new Date() : date;
