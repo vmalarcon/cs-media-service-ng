@@ -479,7 +479,7 @@ public class MediaController extends CommonServiceController {
         final Map<String, Object> messageState = updateImageMessage(imageMessage, requestID, clientId);
         final ImageMessage imageMessageNew = (ImageMessage) messageState.get(IMAGE_MESSAGE_FIELD);
         imageMessageNew.addLogEntry(new LogEntry(App.MEDIA_SERVICE, Activity.RECEPTION, timeReceived));
-        logActivity(imageMessageNew, Activity.RECEPTION);
+        logActivity(imageMessageNew, Activity.RECEPTION, timeReceived);
         final Boolean isReprocessing = (Boolean) messageState.get(REPROCESSING_STATE_FIELD);
 
         final Map<String, String> response = new HashMap<>();
@@ -625,7 +625,7 @@ public class MediaController extends CommonServiceController {
         try {
             messagingTemplate.send(publishQueue, MessageBuilder.withPayload(jsonMessage).build());
             LOGGER.info("Sending message to queue done : message=[{}] ", jsonMessage);
-            logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED);
+            logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED, null);
         } catch (Exception ex) {
             LOGGER.error("Error publishing : message=[{}], error=[{}]", jsonMessage, ex.getMessage(), ex);
             throw new RuntimeException("Error publishing message=[" + jsonMessage + "]", ex);
@@ -669,10 +669,12 @@ public class MediaController extends CommonServiceController {
      *
      * @param imageMessage The imageMessage of the file being processed.
      * @param activity     The activity to log.
+     * @param date         The timestamp at which the activity happened, if null the latest timestamp will be generated .
      */
-    private void logActivity(final ImageMessage imageMessage, final Activity activity) throws URISyntaxException {
+    private void logActivity(final ImageMessage imageMessage, final Activity activity, final Date date) throws URISyntaxException {
+        final Date logDate = (date == null) ? new Date() : date;
         final LogEntry logEntry =
-                new LogEntry(imageMessage.getFileName(), imageMessage.getMediaGuid(), activity, new Date(), imageMessage.getOuterDomainData().getDomain(),
+                new LogEntry(imageMessage.getFileName(), imageMessage.getMediaGuid(), activity, logDate, imageMessage.getOuterDomainData().getDomain(),
                         imageMessage.getOuterDomainData().getDomainId(), imageMessage.getOuterDomainData().getDerivativeCategory());
         logActivityProcess.log(logEntry, reporting);
     }

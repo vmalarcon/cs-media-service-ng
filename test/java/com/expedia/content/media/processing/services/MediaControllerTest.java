@@ -173,8 +173,10 @@ public class MediaControllerTest {
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
-        assertTrue(publishedMessageValue.getPayload().contains("\"logEntries\":[{\"activity\":\"" + Activity.RECEPTION.getName() + "\""));
-        assertTrue(publishedMessageValue.getPayload().contains("\"activity\":\"" + Activity.MEDIA_MESSAGE_RECEIVED.getName() + "\""));
+        assertTrue(publishedMessageValue.getPayload().contains("\"logEntries\":[{\"activity\":\"" + Activity.RECEPTION.getName() + "\""
+                + ",\"appName\":\"cs-media-service\",\"activityTime\":" ));
+        assertTrue(publishedMessageValue.getPayload().contains("\"activity\":\"" + Activity.MEDIA_MESSAGE_RECEIVED.getName() + "\""
+                + ",\"appName\":\"cs-media-service\",\"activityTime\":" ));
         verifyZeroInteractions(mockLcmDynamoMediaDao);
     }
 
@@ -1010,7 +1012,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "mapValidatorList", validators);
 
         CatalogHeroProcessor catalogHeroProcessor = getCatalogMock();
-        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);       
+        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);
         setFieldValue(mediaController, "mediaUpdateProcessor", mockUpdateProcess);
 
         MultiValueMap<String, String> headers = new HttpHeaders();
@@ -1126,7 +1128,7 @@ public class MediaControllerTest {
                 Media.builder().fileName("file").lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
                         .build();
         when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
-        
+
         final Map<String, String> status = new HashMap<>();
         status.put("file", "PUBLISHED");
         when(mockMediaDao.getLatestStatus(anyObject())).thenReturn(status);
@@ -1189,7 +1191,7 @@ public class MediaControllerTest {
         Media dynamoMedia =
                 Media.builder().fileName("file").domain("Lodging").lcmMediaId("19671339").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
                         .build();
-        when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);      
+        when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
         final Map<String, String> status = new HashMap<>();
         status.put("file", "PUBLISHED");
         when(mockMediaDao.getLatestStatus(anyObject())).thenReturn(status);
@@ -1568,7 +1570,7 @@ public class MediaControllerTest {
         final Map<String, String> status = new HashMap<>();
         status.put("file", "PUBLISHED");
         when(mockMediaDao.getLatestStatus(anyObject())).thenReturn(status);
- 
+
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -1666,10 +1668,10 @@ public class MediaControllerTest {
                 + "      ]\n"
                 + "   }";
 
-       MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
-       Media dynamoMedia =  Media.builder()
-               .domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6")
-               .domainFields(dynamoField).hidden(true).build();
+        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+        Media dynamoMedia =  Media.builder()
+                .domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6")
+                .domainFields(dynamoField).hidden(true).build();
         DynamoDBMapper dynamo = mock(DynamoDBMapper.class);
         when(dynamo.load(eq(Media.class),eq("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6"))).thenReturn(dynamoMedia);
         MultiValueMap<String, String> headers = new HttpHeaders();
@@ -1679,7 +1681,7 @@ public class MediaControllerTest {
 
         ResponseEntity<String> responseEntity = mediaController.getMedia("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6", headers);
         assertNotNull(responseEntity);
-        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode()); 
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
     }
 
     @SuppressWarnings({"unchecked"})
