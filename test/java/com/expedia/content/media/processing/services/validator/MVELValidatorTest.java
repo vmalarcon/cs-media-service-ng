@@ -24,7 +24,7 @@ import static org.junit.Assert.assertTrue;
 // For faster tests, uncomment the following line
 @ContextConfiguration(locations = "classpath:mvel-validator.xml")
 //@ContextConfiguration(classes = Application.class)
-public class EPCMVELValidatorTest {
+public class MVELValidatorTest {
 
     @BeforeClass
     public static void setUp() {
@@ -33,7 +33,7 @@ public class EPCMVELValidatorTest {
     }
 
     @Autowired
-    EPCMVELValidator mvelValidator;
+    MVELValidator mvelValidator;
 
     @Before
     public void setUPValidator() throws Exception{

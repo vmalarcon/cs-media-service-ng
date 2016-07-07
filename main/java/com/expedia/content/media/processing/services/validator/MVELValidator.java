@@ -14,8 +14,8 @@ import java.util.Map;
 /**
  * validation {@code ImageMessage} list based on MVEL rule that defined in xml configuration
  */
-public class EPCMVELValidator implements MapMessageValidator {
-    private static final Logger LOGGER = LoggerFactory.getLogger(EPCMVELValidator.class);
+public class MVELValidator implements MapMessageValidator {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MVELValidator.class);
     private String clientRule = "";
     private static final String RULE_PREFIX = "domainData";
 
