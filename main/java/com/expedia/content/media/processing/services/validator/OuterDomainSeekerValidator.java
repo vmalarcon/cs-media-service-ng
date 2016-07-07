@@ -7,7 +7,7 @@ import java.util.Map;
 /**
  * Abstract class to help validators to seek through the outer domain fields.
  *
- * @deprecated Use EPCMVELValidator instead
+ * @deprecated Use MVELValidator instead
  */
 @Deprecated
 @SuppressWarnings({"PMD.AbstractClassWithoutAbstractMethod"})

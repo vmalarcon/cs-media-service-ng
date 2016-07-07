@@ -11,7 +11,7 @@
                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
 
 
-    <bean id="mvelValidator" class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
+    <bean id="mvelValidator" class="com.expedia.content.media.processing.services.validator.MVELValidator">
       <property name="ruleMaps">
           <map>
               <entry key ="EPC">

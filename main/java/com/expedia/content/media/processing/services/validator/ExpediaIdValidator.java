@@ -10,7 +10,7 @@ import java.text.MessageFormat;
 /**
  * ExpediaIdValidator will check whether expediaId is a number or is missing.
  *
- * @deprecated Use EPCMVELValidator instead
+ * @deprecated Use MVELValidator instead
  */
 @Deprecated
 public class ExpediaIdValidator extends NumericValidator {

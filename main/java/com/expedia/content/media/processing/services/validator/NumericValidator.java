@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
  * Base implementation of ImageMessage numeric field validation. Also verifies outer domain fields.
  * If the fields doesn't exist the validation passes.
  *
- * @deprecated Use EPCMVELValidator instead
+ * @deprecated Use MVELValidator instead
  */
 @Deprecated
 public class NumericValidator extends OuterDomainSeekerValidator implements MediaMessageValidator {

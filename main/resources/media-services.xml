@@ -66,7 +66,7 @@
 
     <aws-messaging:queue-messaging-template id="queueMessagingTemplate" />
 
-    <bean id="mediaAddValidator" class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
+    <bean id="mediaAddValidator" class="com.expedia.content.media.processing.services.validator.MVELValidator">
         <property name="clientRule" value="mediaAdd" />
         <property name="ruleMaps">
             <map>
@@ -89,7 +89,7 @@
         </property>
     </bean>
 
-    <bean id="mediaUpdateValidator" class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
+    <bean id="mediaUpdateValidator" class="com.expedia.content.media.processing.services.validator.MVELValidator">
         <property name="clientRule" value="mediaUpdate" />
         <property name="ruleMaps">
             <map>
@@ -102,7 +102,7 @@
         </property>
     </bean>
 
-    <bean id="multisourceValidator" class="com.expedia.content.media.processing.services.validator.EPCMVELValidator">
+    <bean id="multisourceValidator" class="com.expedia.content.media.processing.services.validator.MVELValidator">
         <property name="clientRule" value="Multisource" />
         <property name="ruleMaps">
             <map>
