@@ -3,8 +3,6 @@ package com.expedia.content.media.processing.services.validator;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
-import org.apache.commons.lang.reflect.FieldUtils;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,10 +33,6 @@ public class MVELValidatorTest {
     @Autowired
     MVELValidator mvelValidator;
 
-    @Before
-    public void setUPValidator() throws Exception{
-        FieldUtils.writeField(mvelValidator, "clientRule", "EPC", true);
-    }
     @Test
     public void testLoadContext() {
         assertNotNull(mvelValidator);

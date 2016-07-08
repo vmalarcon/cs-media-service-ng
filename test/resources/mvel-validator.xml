@@ -12,9 +12,10 @@
 
 
     <bean id="mvelValidator" class="com.expedia.content.media.processing.services.validator.MVELValidator">
-      <property name="ruleMaps">
+        <property name="clientRule" value="mediaAdd" />
+        <property name="ruleMaps">
           <map>
-              <entry key ="EPC">
+              <entry key ="mediaAdd">
                   <list>
                       <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
                       <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
