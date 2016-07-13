@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.List;
 import java.util.Map;
@@ -20,14 +21,14 @@ import java.util.Map;
  * This SProc returns attributes from CatalogItemMedia and DynamoMedia tables for the given
  * CatalogItem and MediaID
  * RESULT Set:
- *from CatalogItemMedia TABLE
- *2)  MediaID
- *3)  MediaUseRank
- *8)  UpdateDate
- *9)  LastUpdatedBy
+ * from CatalogItemMedia TABLE
+ * 2) MediaID
+ * 3) MediaUseRank
+ * 8) UpdateDate
+ * 9) LastUpdatedBy
  */
 @Component
-public class CatalogItemMediaGetSproc extends StoredProcedure{
+public class CatalogItemMediaGetSproc extends StoredProcedure {
     private static final String PROC_NAME = "CatalogItemMediaGet#01";
     private static final String PROC_RESULT = "result";
 
@@ -42,13 +43,16 @@ public class CatalogItemMediaGetSproc extends StoredProcedure{
     private static class CatalogItemMediaRowMapper implements RowMapper<LcmCatalogItemMedia> {
         @Override
         public LcmCatalogItemMedia mapRow(ResultSet resultSet, int i) throws SQLException {
-            final LcmCatalogItemMedia media = LcmCatalogItemMedia.builder()
-                    .catalogItemId(resultSet.getInt("CatalogItemID"))
-                    .mediaId(resultSet.getInt("MediaId"))
-                    .mediaUseRank(resultSet.getInt("MediaUseRank"))
-                    .lastUpdateDate(TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("UpdateDate")))
-                    .lastUpdatedBy(resultSet.getString("LastUpdatedBy"))
-                    .build();
+            Timestamp updateDate;
+            try {
+                updateDate = new Timestamp(TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("UpdateDate")).getTime());
+            } catch (Exception e) {
+                updateDate = null;
+            }
+            final LcmCatalogItemMedia media = LcmCatalogItemMedia.builder().catalogItemId(resultSet.getInt("CatalogItemID"))
+                    .mediaId(resultSet.getInt("MediaId")).mediaUseRank(resultSet.getInt("MediaUseRank"))
+                    .lastUpdateDate(updateDate)
+                    .lastUpdatedBy(resultSet.getString("LastUpdatedBy")).build();
             return media;
         }
     }
