@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  */
 @Component
 public class MediaDomainCategoriesDao {
-    private static final int SKIP_NULL_DELETED_AND_FEATURE_CATEGORIES = 3;
+    private static final int SKIP_FEATURE_CATEGORIES = 3;
     private final SQLMediaDomainCategoriesSproc sproc;
     private MediaSubCategoryCache mediaSubCategoryCache;
     private final static String SUBCATEGORY_ID = "subcategoryId";
@@ -67,7 +67,7 @@ public class MediaDomainCategoriesDao {
         final List<MediaSubCategory> mediaSubCategories = (List<MediaSubCategory>) results.get(SQLMediaDomainCategoriesSproc.MEDIA_SUB_CATEGORY_RESULT_SET);
 
         final Map<Integer, List<MediaCategory>> categoryMap = mediaCategories.stream()
-                .filter(category -> Integer.parseInt(category.getMediaCategoryID()) > SKIP_NULL_DELETED_AND_FEATURE_CATEGORIES)
+                .filter(category -> Integer.parseInt(category.getMediaCategoryID()) != SKIP_FEATURE_CATEGORIES)
                 .collect(Collectors.groupingBy(category -> Integer.parseInt(category.getMediaCategoryID())));
         final Map<Integer, List<MediaSubCategory>> subCategoryMap = mediaSubCategories.stream()
                 .collect(Collectors.groupingBy(subCategory -> Integer.parseInt(subCategory.getMediaCategoryID())));

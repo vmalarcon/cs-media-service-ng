@@ -1,10 +1,11 @@
 package com.expedia.content.media.processing.services;
 
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-
-import java.util.List;
-
+import com.expedia.content.media.processing.services.dao.DomainNotFoundException;
+import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
+import com.expedia.content.media.processing.services.dao.domain.Category;
+import com.expedia.content.media.processing.services.dao.domain.Subcategory;
+import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,11 +21,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.expedia.content.media.processing.services.dao.DomainNotFoundException;
-import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
-import com.expedia.content.media.processing.services.dao.domain.Category;
-import com.expedia.content.media.processing.services.util.JSONUtil;
-import com.expedia.content.media.processing.services.util.MediaServiceUrl;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 /**
  * Web service controller for domain categories.
@@ -33,6 +34,7 @@ import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 public class CategoryController extends CommonServiceController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CategoryController.class);
+    private static final String SKIP_NULL_CATEGORIES = "0";
 
     @Autowired
     private MediaDomainCategoriesDao mediaDomainCategoriesDao;
@@ -72,14 +74,31 @@ public class CategoryController extends CommonServiceController {
 
     /**
      * query LCM DB to get the Categories of a Domain
-     *
+     * if a category has at least one 0 subcategory, the category is not returned
      * @param domain The domain to query
      * @param localeId The localization Id to query by
-     * @return JSON message of Categories for the specified Domain and LocaleId
+     * @return JSON message of Categories for the specified Domain and LocaleId without category 0
      * @throws DomainNotFoundException
      */
     private String getDomainCategories(String domain, String localeId) throws DomainNotFoundException {
         final List<Category> domainCategories = mediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
-        return JSONUtil.generateJsonByCategoryList(domainCategories, domain);
+
+        final List<Category> categoriesWithNonNullSubCategories = domainCategories.stream()
+                .filter(category -> !containsNullSubCategory(category.getSubcategories()))
+                .map(category -> new Category(category.getCategoryId(), category.getCategoryName()
+                        , category.getSubcategories()))
+                .collect(Collectors.toList());
+        return JSONUtil.generateJsonByCategoryList(categoriesWithNonNullSubCategories, domain);
+    }
+
+    /**
+     * returns true is the category has at least one subcategory 0
+     * this is because /media/v1/domaincategories/{domainName} should not display subcategory 0
+     * @param subcategories
+     * @return
+     */
+    private boolean containsNullSubCategory(List<Subcategory> subcategories) {
+        return subcategories.stream()
+                .anyMatch(subcategory -> subcategory.getSubcategoryId().equals(SKIP_NULL_CATEGORIES));
     }
 }

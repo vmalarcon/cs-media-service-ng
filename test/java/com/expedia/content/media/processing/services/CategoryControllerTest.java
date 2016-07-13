@@ -1,57 +1,77 @@
 package com.expedia.content.media.processing.services;
 
-import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.ArrayList;
-import java.util.List;
-
+import com.expedia.content.media.processing.services.dao.DomainNotFoundException;
+import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
+import com.expedia.content.media.processing.services.dao.domain.MediaCategory;
+import com.expedia.content.media.processing.services.dao.domain.MediaSubCategory;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaDomainCategoriesSproc;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 
-import com.expedia.content.media.processing.services.dao.DomainNotFoundException;
-import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
-import com.expedia.content.media.processing.services.dao.domain.Category;
-import com.expedia.content.media.processing.services.dao.domain.LocalizedName;
-import com.expedia.content.media.processing.services.dao.domain.Subcategory;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
+
+@RunWith(MockitoJUnitRunner.class)
 public class CategoryControllerTest {
+
+    @Mock
+    SQLMediaDomainCategoriesSproc mockSQLMediaDomainCategoriesSproc;
+
+
+    Map<String, Object> mediaProviderMockResults;
+    Map<String, Object> catMockResults;
+    final String LOCALID = "1033";
+    List<MediaCategory> mockMediaCategories;
+    List<MediaSubCategory> mockMediaSubCategories;
+    MediaDomainCategoriesDao mockMediaDomainCategoriesDao;
+    
+    @Before
+    public void setup(){
+        mediaProviderMockResults = new HashMap<>();
+        catMockResults = new HashMap<>();
+        mockMediaCategories = new ArrayList<>();
+        mockMediaCategories.add(new MediaCategory("3", LOCALID, "Primary Image"));
+        mockMediaCategories.add(new MediaCategory("1234", LOCALID, "cat-name"));
+        mockMediaCategories.add(new MediaCategory("1", LOCALID, ""));
+        mockMediaSubCategories = new ArrayList<>();
+        mockMediaSubCategories.add(new MediaSubCategory("3", "3", LOCALID, "Featured Image"));
+        mockMediaSubCategories.add(new MediaSubCategory("1234", "4321", LOCALID, "sub-name"));
+        mockMediaSubCategories.add(new MediaSubCategory("1", "0", LOCALID, ""));
+        catMockResults.put(SQLMediaDomainCategoriesSproc.MEDIA_SUB_CATEGORY_RESULT_SET, mockMediaSubCategories);
+        catMockResults.put(SQLMediaDomainCategoriesSproc.MEDIA_CATEGORY_RESULT_SET, mockMediaCategories);
+        mockMediaDomainCategoriesDao = spy(new MediaDomainCategoriesDao(mockSQLMediaDomainCategoriesSproc));
+        when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
+    }
 
     @Test
     public void testSuccess() throws Exception {
         CategoryController categoryController = new CategoryController();
 
         final String lodgingDoman = "lodging";
-        final String localId = "1033";
-        MediaDomainCategoriesDao mockMediaDomainCategoriesDao = mock(MediaDomainCategoriesDao.class);
-        LocalizedName subcategoryName = new LocalizedName("sub-name", localId);
-        List<LocalizedName> subCategoryNames = new ArrayList<>();
-        subCategoryNames.add(subcategoryName);
-        Subcategory mockSubcategory = new Subcategory("4321", subCategoryNames);
-        List<Subcategory> subCategories = new ArrayList<>();
-        subCategories.add(mockSubcategory);
-
-        LocalizedName categoryName = new LocalizedName("cat-name", localId);
-        List<LocalizedName> categoryNames = new ArrayList<>();
-        categoryNames.add(categoryName);
-        Category mockCategory = new Category("1234", categoryNames, subCategories);
-        List<Category> categories = new ArrayList<>();
-        categories.add(mockCategory);
-        when(mockMediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(lodgingDoman, localId)).thenReturn(categories);
         setFieldValue(categoryController, "mediaDomainCategoriesDao", mockMediaDomainCategoriesDao);
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
 
-        ResponseEntity<String> response = categoryController.domainCategories(mockHeader, lodgingDoman, localId);
+        ResponseEntity<String> response = categoryController.domainCategories(mockHeader, lodgingDoman, LOCALID);
         assertEquals(200, response.getStatusCode().value());
         assertEquals(
                 /* @formatter:off */
@@ -89,7 +109,7 @@ public class CategoryControllerTest {
         CategoryController categoryController = new CategoryController();
 
         final String lodgingDoman = "potato";
-        final String localId = "1033";
+        final String localId = LOCALID;
         MediaDomainCategoriesDao mockMediaDomainCategoriesDao = mock(MediaDomainCategoriesDao.class);
         when(mockMediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(lodgingDoman, localId)).thenThrow(new DomainNotFoundException("test exception"));
         setFieldValue(categoryController, "mediaDomainCategoriesDao", mockMediaDomainCategoriesDao);
