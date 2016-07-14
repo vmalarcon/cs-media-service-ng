@@ -85,8 +85,6 @@ public class CategoryController extends CommonServiceController {
 
         final List<Category> categoriesWithNonNullSubCategories = domainCategories.stream()
                 .filter(category -> !containsNullSubCategory(category.getSubcategories()))
-                .map(category -> new Category(category.getCategoryId(), category.getCategoryName()
-                        , category.getSubcategories()))
                 .collect(Collectors.toList());
         return JSONUtil.generateJsonByCategoryList(categoriesWithNonNullSubCategories, domain);
     }
