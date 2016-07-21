@@ -81,10 +81,12 @@ public class LCMValidatorTest {
         mockMediaCategories = new ArrayList<>();
         mockMediaCategories.add(new MediaCategory("3", "1033", "Primary Image"));
         mockMediaCategories.add(new MediaCategory("4", "1033", "Lobby"));
+        mockMediaCategories.add(new MediaCategory("1", "1033", ""));
         mockMediaSubCategories = new ArrayList<>();
         mockMediaSubCategories.add(new MediaSubCategory("3", "3", "1033", "Featured Image"));
         mockMediaSubCategories.add(new MediaSubCategory("4", "10000", "1033", "Interior Entrance"));
         mockMediaSubCategories.add(new MediaSubCategory("4", "10001", "1033", "Lobby"));
+        mockMediaSubCategories.add(new MediaSubCategory("1", "0", "1033", ""));
         catMockResults.put(SQLMediaDomainCategoriesSproc.MEDIA_SUB_CATEGORY_RESULT_SET, mockMediaSubCategories);
         catMockResults.put(SQLMediaDomainCategoriesSproc.MEDIA_CATEGORY_RESULT_SET, mockMediaCategories);
         mockMediaDomainCategoriesDao = spy(new MediaDomainCategoriesDao(mockSQLMediaDomainCategoriesSproc));
@@ -460,5 +462,79 @@ public class LCMValidatorTest {
         verify(mockProviderProperties, times(1)).entrySet();
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
         verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(anyInt());
+    }
+
+    @Test
+    public void testSubCategory0() throws Exception {
+        final String jsonMsg =
+                "         { " +
+                        "    \"fileUrl\": \"http://well-formed-url/hello.jpg\"," +
+                        "    \"fileName\": \"Something\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
+                        "    \"domain\": \"Lodging\", " +
+                        "    \"domainId\": \"123\", " +
+                        "    \"userId\": \"user-id\", " +
+                        "    \"domainProvider\": \"EPC Internal User\", " +
+                        "    \"domainFields\": { " +
+                        "          \"subcategoryId\": \"0\"," +
+                        "          \"propertyHero\": \"true\"," +
+                        "          \"rooms\": [ " +
+                        "               {" +
+                        "                 \"roomId\": \"222\", " +
+                        "                 \"roomHero\": \"true\" " +
+                        "               }" +
+                        "                     ]" +
+                        "                       }" +
+                        " }";
+        final ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        final List<ImageMessage> imageMessageList = new ArrayList<>();
+        imageMessageList.add(imageMessage);
+        when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
+        when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
+        when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
+        final List<Map<String, String>> errorList = lcmValidator.validateImages(imageMessageList);
+        assertTrue(errorList.size() == 0);
+        verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
+        verify(mockProviderProperties, times(1)).entrySet();
+        verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
+        verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
+    }
+
+    @Test
+    public void testSubCategory3() throws Exception {
+        final String jsonMsg =
+                "         { " +
+                        "    \"fileUrl\": \"http://well-formed-url/hello.jpg\"," +
+                        "    \"fileName\": \"Something\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
+                        "    \"domain\": \"Lodging\", " +
+                        "    \"domainId\": \"123\", " +
+                        "    \"userId\": \"user-id\", " +
+                        "    \"domainProvider\": \"EPC Internal User\", " +
+                        "    \"domainFields\": { " +
+                        "          \"subcategoryId\": \"3\"," +
+                        "          \"propertyHero\": \"true\"," +
+                        "          \"rooms\": [ " +
+                        "               {" +
+                        "                 \"roomId\": \"222\", " +
+                        "                 \"roomHero\": \"true\" " +
+                        "               }" +
+                        "                     ]" +
+                        "                       }" +
+                        " }";
+        final ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        final List<ImageMessage> imageMessageList = new ArrayList<>();
+        imageMessageList.add(imageMessage);
+        when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
+        when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
+        when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
+        final List<Map<String, String>> errorList = lcmValidator.validateImages(imageMessageList);
+        assertTrue(errorList.size() == 1);
+        assertTrue(errorList.get(0).get("error").equals("The category does not exist in LCM."));
+        assertTrue(errorList.get(0).get("fileName").equals("Something"));
+        verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
+        verify(mockProviderProperties, times(1)).entrySet();
+        verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
+        verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
     }
 }
