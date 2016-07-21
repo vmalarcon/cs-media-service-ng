@@ -24,6 +24,7 @@ import com.expedia.content.media.processing.services.util.FileNameUtil;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaReplacement;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
+import com.expedia.content.media.processing.services.util.URLUtil;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -103,6 +104,7 @@ public class MediaController extends CommonServiceController {
     static {
         STATUS_MAP.put(ValidationStatus.NOT_FOUND, NOT_FOUND);
         STATUS_MAP.put(ValidationStatus.ZERO_BYTES, BAD_REQUEST);
+        STATUS_MAP.put(ValidationStatus.INVALID, BAD_REQUEST);
         STATUS_MAP.put(ValidationStatus.VALID, OK);
     }
 
@@ -518,6 +520,7 @@ public class MediaController extends CommonServiceController {
     private Map<String, Object> updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId) {
         ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
         imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
+        imageMessageBuilder.fileUrl(URLUtil.normalizeURI(imageMessage.getFileUrl()));
         imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
         final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
         imageMessageBuilder.outerDomainData(outerDomain);
