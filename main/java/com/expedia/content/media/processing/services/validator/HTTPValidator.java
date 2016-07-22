@@ -4,7 +4,6 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import org.apache.commons.io.FilenameUtils;
 import org.apache.http.Header;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpHead;
@@ -28,23 +27,14 @@ public class HTTPValidator {
     }
 
     /**
-     * Verifies the existence of an HTTP URL file. Handles invalid URI characters in the file name and encodes them only when
-     * the file name is the last part of the path.
+     * Verifies the existence of an HTTP URL file.
      * 
      * @param fileUrl The file to verify.
      * @return {@code true} if the file is found; {@code false} otherwise.
      */
     public static ValidationStatus checkFileExists(String fileUrl) {
         try {
-            URI fileURI;
-            try {
-                fileURI = new URI(fileUrl);
-            } catch (URISyntaxException use) {
-                if (FilenameUtils.getExtension(fileUrl).isEmpty()) {
-                    throw use;
-                }
-                fileURI = new URI(URLUtil.normalizeURI(fileUrl));
-            }
+            final URI fileURI = new URI(URLUtil.patchURL(fileUrl));
             final HttpHead httpHead = new HttpHead(fileURI);
             final CloseableHttpResponse response = HTTP_CLIENT.execute(httpHead);
             if (response.getStatusLine().getStatusCode() == HttpURLConnection.HTTP_OK) {

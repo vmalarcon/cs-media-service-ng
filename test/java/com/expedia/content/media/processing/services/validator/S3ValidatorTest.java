@@ -23,4 +23,9 @@ public class S3ValidatorTest {
         assertFalse(S3Validator.checkFileExists("s3://ewe-cs-media-test/rejected/ZeroKb.jpg").isValid());
     }
 
+    @Test
+    public void testBracket() {
+        assertTrue(S3Validator.checkFileExists("s3://ewe-cs-media-test/e2e/images/Hotel-lobby-decorations[la-la-la].jpg").isValid());
+    }
+
 }

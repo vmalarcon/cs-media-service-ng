@@ -34,17 +34,15 @@ public class HTTPValidatorTest {
     }
 
     @Test
-    public void testSquareBracketUrlNotFile() {
-        ValidationStatus status = HTTPValidator.checkFileExists("https://www.google.com/images/branding/googlelogo/1x/[googlelogo]_[color]_[272x92dp]");
-        assertFalse(status.isValid());
-        assertEquals(ValidationStatus.INVALID, status.getStatus());
-    }
-
-    @Test
     public void testInvalidDomainUrl() {
         ValidationStatus status = HTTPValidator.checkFileExists("https://potatosoft.int/default/files/rental_property/65905/CropperCapture[6].jpg");
         assertFalse(status.isValid());
         assertEquals(ValidationStatus.NOT_FOUND, status.getStatus());
+    }
+    
+    @Test
+    public void testSpaceUrl() {
+        assertTrue(HTTPValidator.checkFileExists("http://images.xtravelsystem.com/slide/files/public/89/0/7/9/Images/c_89079 hotel2.jpg").isValid());
     }
 
 }
