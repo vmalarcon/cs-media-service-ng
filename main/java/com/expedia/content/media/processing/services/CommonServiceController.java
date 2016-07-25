@@ -5,6 +5,7 @@ import com.expedia.content.media.processing.services.validator.HTTPValidator;
 import com.expedia.content.media.processing.services.validator.S3Validator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import expedia.content.solutions.metrics.annotations.Counter;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
@@ -52,6 +53,9 @@ public abstract class CommonServiceController {
      * @return {@code true} if the file exists; {@code false} otherwise.
      */
     public ValidationStatus verifyUrl(final String fileUrl) {
+        if(StringUtils.isEmpty(fileUrl)) {
+            return new ValidationStatus(false, "No fileUrl provided.", "");
+        }
         if (fileUrl.startsWith(S3Validator.S3_PREFIX)) {
             return S3Validator.checkFileExists(patchURL(fileUrl));
         } else {

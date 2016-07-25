@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services;
 
+import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.DomainNotFoundException;
 import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
 import com.expedia.content.media.processing.services.dao.domain.Category;
@@ -10,6 +11,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,13 +40,17 @@ public class CategoryController extends CommonServiceController {
 
     @Autowired
     private MediaDomainCategoriesDao mediaDomainCategoriesDao;
+    @Value("${cs.poke.hip-chat.room}")
+    private String hipChatRoom;
+    private Poker poker;
+
 
     /**
      * Media domain categories service. Returns all categories for a domain. Can be filtered by a locale.
      *
-     * @param headers Request header contains the requestId and the clientId.
+     * @param headers    Request header contains the requestId and the clientId.
      * @param domainName Domain for which the categories are required.
-     * @param localeId Id of the locale to filter in.
+     * @param localeId   Id of the locale to filter in.
      * @return Returns a JSON response for the domain categories request.
      */
     @RequestMapping(value = "/media/v1/domaincategories/{domainName}", method = RequestMethod.GET)
@@ -55,27 +61,34 @@ public class CategoryController extends CommonServiceController {
         final String localePath = (localeId == null) ? "" : "?localeId=" + localeId;
         LOGGER.info("RECEIVED REQUEST - url=[{}][{}][{}], requestId=[{}]", MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl(), domainName, localePath,
                 getRequestId(headers));
-        if (localeId != null) {
-            if (!StringUtils.isNumeric(localeId) || localeId.length() > 5) {
-                return buildErrorResponse("Requested localeId " + localeId + " must be a number less than 5 characters.",
-                        MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + domainName + localePath, BAD_REQUEST);
-            }
-        }
-
+        String response = null;
         try {
-            final String response = getDomainCategories(domainName, localeId);
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            if (localeId != null) {
+                if (!StringUtils.isNumeric(localeId) || localeId.length() > 5) {
+                    return buildErrorResponse("Requested localeId " + localeId + " must be a number less than 5 characters.",
+                            MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + domainName + localePath, BAD_REQUEST);
+                }
+            }
+            response = getDomainCategories(domainName, localeId);
         } catch (DomainNotFoundException e) {
             LOGGER.error("ERROR - message=[{}], requestId=[{}]", e.getMessage(), headers.get(REQUEST_ID), e);
             return buildErrorResponse("Requested resource with ID " + domainName + " was not found.",
                     MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + "/" + domainName + localePath, NOT_FOUND);
+        } catch (Exception ex) {
+            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], domainName=[{}].", MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl(),
+                    ex.getMessage(), headers.get(REQUEST_ID), domainName, ex);
+            poker.poke("Media Services failed to process a domainCategories request - RequestId: " + headers.get(REQUEST_ID), hipChatRoom,
+                    MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + "/" + domainName + localePath, ex);
+            throw ex;
         }
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     /**
      * query LCM DB to get the Categories of a Domain
      * if a category has at least one 0 subcategory, the category is not returned
-     * @param domain The domain to query
+     *
+     * @param domain   The domain to query
      * @param localeId The localization Id to query by
      * @return JSON message of Categories for the specified Domain and LocaleId without category 0
      * @throws DomainNotFoundException
@@ -92,6 +105,7 @@ public class CategoryController extends CommonServiceController {
     /**
      * returns true is the category has at least one subcategory 0
      * this is because /media/v1/domaincategories/{domainName} should not display subcategory 0
+     *
      * @param subcategories
      * @return
      */

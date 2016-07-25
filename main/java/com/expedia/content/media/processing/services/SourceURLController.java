@@ -1,13 +1,13 @@
 package com.expedia.content.media.processing.services;
 
+import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.util.FileSourceFinder;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import com.expedia.content.media.processing.services.util.RequestMessageException;
-
-import com.expedia.content.media.processing.services.util.FileSourceFinder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import expedia.content.solutions.metrics.annotations.Meter;
 import expedia.content.solutions.metrics.annotations.Timer;
@@ -23,10 +23,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +51,9 @@ public class SourceURLController extends CommonServiceController {
     private String bucketName;
     @Value("${media.bucket.prefix.name}")
     private String bucketPrefix;
+    @Value("${cs.poke.hip-chat.room}")
+    private String hipChatRoom;
+    private Poker poker;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
@@ -69,6 +72,7 @@ public class SourceURLController extends CommonServiceController {
         final String requestID = getRequestId(headers);
         LOGGER.info("RECEIVED REQUEST - url=[{}], message=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message,
                 requestID);
+        String jsonResponse = null;
         try {
             final Map messageMap = JSONUtil.buildMapFromJson(message);
             final String fileUrl = (String) messageMap.get("mediaUrl");
@@ -91,15 +95,20 @@ public class SourceURLController extends CommonServiceController {
             final Map<String, String> response = new HashMap<>();
             response.put("contentProviderMediaName", lcmMedia.getFileName());
             response.put("mediaSourceUrl", sourcePath);
-            final String jsonResponse = OBJECT_MAPPER.writeValueAsString(response);
+            jsonResponse = OBJECT_MAPPER.writeValueAsString(response);
             LOGGER.info("RESPONSE - url=[{}], responseMsg=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), jsonResponse,
                     requestID);
-            return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
         } catch (RequestMessageException ex) {
             LOGGER.error("ERROR - url=[{}], imageMessage=[{}], error=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message,
                     ex.getMessage(), ex, requestID);
             return buildErrorResponse(ex.getMessage(), MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), BAD_REQUEST);
+        } catch (Exception ex) {
+            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], JSONMessage=[{}].", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), ex.getMessage(), requestID, message, ex);
+            poker.poke("Media Services failed to process a getSourceURL request - RequestId: " + requestID, hipChatRoom,
+                    message, ex);
+            throw ex;
         }
+        return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
     }
 
     private boolean checkDBResultValid(LcmMedia lcmMedia) {

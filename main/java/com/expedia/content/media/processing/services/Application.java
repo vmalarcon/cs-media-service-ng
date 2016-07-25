@@ -14,6 +14,7 @@ import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import expedia.content.solutions.metrics.spring.EnableMetrics;
+import expedia.content.solutions.poke.spring.support.EnablePoke;
 
 /**
  * MPP media service application.
@@ -23,6 +24,7 @@ import expedia.content.solutions.metrics.spring.EnableMetrics;
 @ComponentScan(basePackages = "com.expedia.content.media.processing")
 @ImportResource("classpath:media-services.xml")
 @EnableMetrics
+@EnablePoke
 @EnableTransactionManagement
 @SuppressWarnings({"PMD.UseUtilityClass"})
 public class Application extends SpringBootServletInitializer {
