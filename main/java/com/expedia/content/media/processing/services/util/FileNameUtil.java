@@ -102,7 +102,8 @@ public class FileNameUtil {
         EVIIVO("eviivo", guidProviderNameToFileNameFunction),
         PRODUCT_API_TEST("productapi-test", guidProviderNameToFileNameFunction),
         ORBITZ("orbitz", guidProviderNameToFileNameFunction),
-        REPLACEPROVIDER("replaceprovider", guidProviderNameToFileNameFunction);
+        REPLACEPROVIDER("replaceprovider", guidProviderNameToFileNameFunction),
+        TOURICO("Tourico", guidProviderNameToFileNameFunction);
 
         private final String name;
         private final Function<ImageMessage, String> function;
