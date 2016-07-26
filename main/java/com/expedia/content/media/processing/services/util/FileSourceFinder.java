@@ -7,7 +7,11 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Find file path from S3 or window share.
@@ -22,27 +26,30 @@ public class FileSourceFinder {
     public static final String SOURCE_DIR = "\\\\CHE-FILIDXIMG01\\GSO_media\\lodging";
     public static final String SOURCE_DIR_NEW = "\\\\CHE-FILIDXIMG01\\GSO_MediaNew\\lodging";
 
+    public static final List<String> IMAGEFORMATS = Arrays.asList(".jpg", ".JPG", ".gif", ".GIF", ".png", ".PNG", ".bmp", ".BMP", "tiff", ".TIFF");
+
+    @Value("${media.source.query.s3only}")
+    private boolean queryS3BucketOnly;
+
     /**
      * get the file source URL from S3 repo.
      *
      * @return true if found, false otherwise.
      */
     public String getGUIDFilePath(String bucketName, String prefix, String millonFolder, String guid) {
-        try {
-            final AmazonS3 s3Client = new AmazonS3Client();
-            String objectName = prefix + millonFolder + guid + ".jpg";
-            S3Object object = s3Client.getObject(new GetObjectRequest(bucketName, objectName));
-            if (object == null) {
-                objectName = prefix + millonFolder + guid + ".JPG";
+
+        final AmazonS3 s3Client = new AmazonS3Client();
+        S3Object object;
+        for (final String extension : IMAGEFORMATS) {
+            final String objectName = prefix + millonFolder + guid + extension;
+            try {
                 object = s3Client.getObject(new GetObjectRequest(bucketName, objectName));
                 if (object != null) {
                     return S3_PREFIX + bucketName + "/" + objectName;
                 }
-            } else {
-                return S3_PREFIX + bucketName + "/" + objectName;
+            } catch (AmazonServiceException e) {
+                LOGGER.error("s3 query exception", e);
             }
-        } catch (AmazonServiceException e) {
-            LOGGER.error("s3 query exception", e);
         }
         return "";
     }
@@ -60,7 +67,7 @@ public class FileSourceFinder {
         final String fileName = getFileNameFromUrl(fileUrl);
         final String pattern = "_[\\w]{1}.jpg";
         final String millonFolder = getMillonFolderFromUrl(fileUrl);
-        if (matchGuid(fileName)) {
+        if (matchGuid(fileName) || queryS3BucketOnly) {
             return getGUIDFilePath(bucketName, prefix, millonFolder, guid);
         } else {
             if (domainId < MILLION_FOLDER_LIMIT) {
