@@ -322,8 +322,8 @@ public class MediaController extends CommonServiceController {
         } catch (Exception ex) {
             LOGGER.warn(
                     "INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
-                    serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
-            return new ResponseEntity<>(ex.getMessage(), BAD_REQUEST);
+                    serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter, ex);
+            throw ex;
         }
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);
     }
