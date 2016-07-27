@@ -185,8 +185,7 @@ public class MediaController extends CommonServiceController {
     @Timer(name = "addMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST)
-    public ResponseEntity<String> mediaAdd(@RequestBody final String message,
-                                           @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+    public ResponseEntity<String> mediaAdd(@RequestBody final String message, @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
         final Date timeReceived = new Date();
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
@@ -321,8 +320,7 @@ public class MediaController extends CommonServiceController {
     public ResponseEntity<String> getMediaByDomainId(@PathVariable("domainName") final String domainName, @PathVariable("domainId") final String domainId,
                                                      @RequestParam(value = "pageSize", required = false) final Integer pageSize,
                                                      @RequestParam(value = "pageIndex", required = false) final Integer pageIndex,
-                                                     @RequestParam(value = "activeFilter", required = false,
-                                                             defaultValue = "all") final String activeFilter,
+                                                     @RequestParam(value = "activeFilter", required = false, defaultValue = "all") final String activeFilter,
                                                      @RequestParam(value = "derivativeTypeFilter", required = false) final String derivativeTypeFilter,
                                                      @RequestParam(value = "derivativeCategoryFilter", required = false) final String derivativeCategoryFilter,
                                                      @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
