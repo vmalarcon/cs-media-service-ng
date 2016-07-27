@@ -110,8 +110,8 @@ public class MediaController extends CommonServiceController {
 
     @Resource(name = "providerProperties")
     private Properties providerProperties;
-    @Autowired private
-    LogActivityProcess logActivityProcess;
+    @Autowired
+    private LogActivityProcess logActivityProcess;
     @Autowired
     private Reporting reporting;
     @Value("#{imageMessageValidators}")
