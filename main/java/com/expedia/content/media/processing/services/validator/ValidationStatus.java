@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 public class ValidationStatus {
     public static final String ZERO_BYTES = "0 Bytes";
     public static final String NOT_FOUND = "not found";
+    public static final String INVALID = "invalid";
     public static final String VALID = "valid";
 
     private boolean isValid;
