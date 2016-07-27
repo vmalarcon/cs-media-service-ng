@@ -110,8 +110,8 @@ public class MediaController extends CommonServiceController {
 
     @Resource(name = "providerProperties")
     private Properties providerProperties;
-    @Autowired
-    private LogActivityProcess logActivityProcess;
+    @Autowired private
+    LogActivityProcess logActivityProcess;
     @Autowired
     private Reporting reporting;
     @Value("#{imageMessageValidators}")
@@ -148,9 +148,8 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "acquireMessageCounter")
     @Timer(name = "acquireMessageTimer")
     @SuppressWarnings({"PMD.SignatureDeclareThrowsException", "rawtypes"})
-    @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST)
-    @Deprecated
-    public ResponseEntity<String> acquireMedia(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
+    @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST) @Deprecated public ResponseEntity<String> acquireMedia(
+            @RequestBody final String message, @RequestHeader MultiValueMap<String,String> headers) throws Exception {
         final Date timeReceived = new Date();
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.ACQUIRE_MEDIA.getUrl();
@@ -184,8 +183,8 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "addMessageCounter")
     @Timer(name = "addMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST)
-    public ResponseEntity<String> mediaAdd(@RequestBody final String message, @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+    @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST) public ResponseEntity<String> mediaAdd(@RequestBody final String message,
+            @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
         final Date timeReceived = new Date();
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
@@ -217,9 +216,9 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "updateMessageCounter")
     @Timer(name = "updateMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/images/{queryId}", method = RequestMethod.PUT)
-    public ResponseEntity<String> mediaUpdate(@PathVariable("queryId") final String queryId, @RequestBody final String message,
-                                              @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+    @RequestMapping(value = "/media/v1/images/{queryId}", method = RequestMethod.PUT) public ResponseEntity<String> mediaUpdate(
+            @PathVariable("queryId") final String queryId, @RequestBody final String message, @RequestHeader final MultiValueMap<String,String> headers)
+            throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl() + "/" + queryId;
         LOGGER.info("RECEIVED update REQUEST - serviceUrl={}, queryId=[{}], requestId=[{}], JSONMessage=[{}]", serviceUrl, queryId, requestID, message);
@@ -257,17 +256,15 @@ public class MediaController extends CommonServiceController {
      * Web services interface to retrieve media information by its GUID.
      *
      * @param mediaGUID The GUID of the requested media.
-     * @param headers   Headers of the request.
+     * @param headers Headers of the request.
      * @return The requested media information.
      * @throws Exception Thrown if processing the message fails.
      */
     @Meter(name = "getMediaByGUIDMessageCounter")
     @Timer(name = "getMediaByGUIDMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/images/{mediaGUID}", method = RequestMethod.GET)
-    @Transactional
-    public ResponseEntity<String> getMedia(@PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String, String> headers)
-            throws Exception {
+    @RequestMapping(value = "/media/v1/images/{mediaGUID}", method = RequestMethod.GET) @Transactional public ResponseEntity<String> getMedia(
+            @PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
         MediaGetResponse mediaResponse = null;
@@ -290,8 +287,7 @@ public class MediaController extends CommonServiceController {
             }
         } catch (Exception ex) {
             LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], GUID=[{}].", serviceUrl, ex.getMessage(), requestID, mediaGUID, ex);
-            poker.poke("Media Services failed to process a getMedia request - RequestId: " + requestID, hipChatRoom,
-                    mediaGUID, ex);
+            poker.poke("Media Services failed to process a getMedia request - RequestId: " + requestID, hipChatRoom, mediaGUID, ex);
             throw ex;
         }
         return new ResponseEntity<String>(OBJECT_MAPPER.writeValueAsString(mediaResponse), OK);
@@ -315,32 +311,33 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "getMediaByDomainIdMessageCounter")
     @Timer(name = "getMediaByDomainIdMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/imagesbydomain/{domainName}/domainId/{domainId}", method = RequestMethod.GET)
-    @Transactional
+    @RequestMapping(value = "/media/v1/imagesbydomain/{domainName}/domainId/{domainId}", method = RequestMethod.GET) @Transactional
     public ResponseEntity<String> getMediaByDomainId(@PathVariable("domainName") final String domainName, @PathVariable("domainId") final String domainId,
-                                                     @RequestParam(value = "pageSize", required = false) final Integer pageSize,
-                                                     @RequestParam(value = "pageIndex", required = false) final Integer pageIndex,
-                                                     @RequestParam(value = "activeFilter", required = false, defaultValue = "all") final String activeFilter,
-                                                     @RequestParam(value = "derivativeTypeFilter", required = false) final String derivativeTypeFilter,
-                                                     @RequestParam(value = "derivativeCategoryFilter", required = false) final String derivativeCategoryFilter,
-                                                     @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+            @RequestParam(value = "pageSize", required = false) final Integer pageSize,
+            @RequestParam(value = "pageIndex", required = false) final Integer pageIndex,
+            @RequestParam(value = "activeFilter", required = false, defaultValue = "all") final String activeFilter,
+            @RequestParam(value = "derivativeTypeFilter", required = false) final String derivativeTypeFilter,
+            @RequestParam(value = "derivativeCategoryFilter", required = false) final String derivativeCategoryFilter,
+            @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
-        LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+        LOGGER.info(
+                "RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                 serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
         final ResponseEntity<String> validationResponse = validateMediaByDomainIdRequest(domainName, domainId, activeFilter);
         if (validationResponse != null) {
-            LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+            LOGGER.warn(
+                    "INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                     serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
             return validationResponse;
         }
         MediaByDomainIdResponse response = null;
         try {
-            response = mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter, derivativeCategoryFilter, pageSize, pageIndex);
+            response = mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter,
+                    derivativeCategoryFilter, pageSize, pageIndex);
         } catch (Exception ex) {
             LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], domainId=[{}].", serviceUrl, ex.getMessage(), requestID, domainId, ex);
-            poker.poke("Media Services failed to process a getMediaByDomainId request - RequestId: " + requestID, hipChatRoom,
-                    domainId, ex);
+            poker.poke("Media Services failed to process a getMediaByDomainId request - RequestId: " + requestID, hipChatRoom, domainId, ex);
             throw ex;
         }
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);
@@ -438,7 +435,6 @@ public class MediaController extends CommonServiceController {
         return new ObjectMapper().writeValueAsString(jsonMap);
     }
 
-
     /**
      * Validates the media by domain id request.
      *
@@ -473,8 +469,8 @@ public class MediaController extends CommonServiceController {
      * @throws Exception Thrown if the message can't be validated or the response can't be serialized.
      */
     @SuppressWarnings({"PMD.PrematureDeclaration"})
-    private ResponseEntity<String> processRequest(final String message, final String requestID, final String serviceUrl, final String clientId,
-                                                  HttpStatus successStatus, Date timeReceived) throws Exception {
+    private ResponseEntity<String> processRequest(final String message, final String requestID,
+            final String serviceUrl, final String clientId, HttpStatus successStatus, Date timeReceived) throws Exception {
         final String json = validateImageMessage(message, clientId);
         if (!"[]".equals(json)) {
             LOGGER.warn("Returning bad request for messageName={}, requestId=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, requestID, message, json);

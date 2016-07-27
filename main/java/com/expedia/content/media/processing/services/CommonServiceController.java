@@ -31,7 +31,8 @@ public abstract class CommonServiceController {
      * @return A response with an error code.
      */
     @Counter(name = "badRequestCounter")
-    public ResponseEntity<String> buildErrorResponse(final String errorMessage, final String resourcePath, final HttpStatus httpStatus) {
+    public ResponseEntity<String> buildErrorResponse(final String errorMessage, final String resourcePath,
+            final HttpStatus httpStatus) {
         final String responseMessage = JSONUtil.generateJsonForErrorResponse(errorMessage, resourcePath, httpStatus.value(), httpStatus.getReasonPhrase());
         return new ResponseEntity<>(responseMessage, httpStatus);
     }
@@ -42,7 +43,7 @@ public abstract class CommonServiceController {
      * @param headers Header value map.
      * @return The request id
      */
-    protected String getRequestId(MultiValueMap<String, String> headers) {
+    protected String getRequestId(MultiValueMap<String,String> headers) {
         return headers.getFirst(REQUEST_ID);
     }
 
@@ -53,7 +54,7 @@ public abstract class CommonServiceController {
      * @return {@code true} if the file exists; {@code false} otherwise.
      */
     public ValidationStatus verifyUrl(final String fileUrl) {
-        if(StringUtils.isEmpty(fileUrl)) {
+        if (StringUtils.isEmpty(fileUrl)) {
             return new ValidationStatus(false, "No fileUrl provided.", "");
         }
         if (fileUrl.startsWith(S3Validator.S3_PREFIX)) {

@@ -44,7 +44,6 @@ public class CategoryController extends CommonServiceController {
     private String hipChatRoom;
     private Poker poker;
 
-
     /**
      * Media domain categories service. Returns all categories for a domain. Can be filtered by a locale.
      *
@@ -55,9 +54,8 @@ public class CategoryController extends CommonServiceController {
      */
     @RequestMapping(value = "/media/v1/domaincategories/{domainName}", method = RequestMethod.GET)
     @Transactional
-    public ResponseEntity<String> domainCategories(final @RequestHeader MultiValueMap<String, String> headers,
-                                                   final @PathVariable("domainName") String domainName,
-                                                   final @RequestParam(value = "localeId", required = false) String localeId) {
+    public ResponseEntity<String> domainCategories(final @RequestHeader MultiValueMap<String,String> headers,
+            final @PathVariable("domainName") String domainName, final @RequestParam(value = "localeId", required = false) String localeId) {
         final String localePath = (localeId == null) ? "" : "?localeId=" + localeId;
         LOGGER.info("RECEIVED REQUEST - url=[{}][{}][{}], requestId=[{}]", MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl(), domainName, localePath,
                 getRequestId(headers));
