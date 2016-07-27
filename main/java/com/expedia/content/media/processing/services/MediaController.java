@@ -301,15 +301,15 @@ public class MediaController extends CommonServiceController {
     /**
      * Web services interface to retrieve media information by domain name and id.
      *
-     * @param domainName               Name of the domain the domain id belongs to.
-     * @param domainId                 Identification of the domain item the media is required.
-     * @param activeFilter             Filter determining what images to return. When true only active are returned. When false only inactive media is returned. When
-     *                                 all then all are returned. All is set a default.
-     * @param derivativeTypeFilter     Inclusive filter to use to only return certain types of derivatives. Returns all derivatives if not specified.
+     * @param domainName Name of the domain the domain id belongs to.
+     * @param domainId Identification of the domain item the media is required.
+     * @param activeFilter Filter determining what images to return. When true only active are returned. When false only inactive media is returned. When
+     * all then all are returned. All is set a default.
+     * @param derivativeTypeFilter Inclusive filter to use to only return certain types of derivatives. Returns all derivatives if not specified.
      * @param derivativeCategoryFilter Inclusive filter to use to only return certain types of medias. Returns all medias if not specified.
-     * @param headers                  Headers of the request.
-     * @param pageSize                 Positive integer to filter the number of media displayed per page. pageSize is inclusive with pageIndex.
-     * @param pageIndex                Positive integer to filter the page to display. pageIndex is inclusive with pageSize.
+     * @param headers Headers of the request.
+     * @param pageSize Positive integer to filter the number of media displayed per page. pageSize is inclusive with pageIndex.
+     * @param pageIndex Positive integer to filter the page to display. pageIndex is inclusive with pageSize.
      * @return The list of media data belonging to the domain item.
      * @throws Exception Thrown if processing the message fails.
      */
@@ -411,7 +411,7 @@ public class MediaController extends CommonServiceController {
      * An image can be permanently hidden from all messages, including further updates.
      * This is not applied to published images. only unpublished images (Duplicated and Rejected) can be hidden.
      *
-     * @param media   Media to verify
+     * @param media Media to verify
      * @param message Incoming update message.
      * @return returns true if the media can be hidden or false if not.
      */
@@ -444,7 +444,7 @@ public class MediaController extends CommonServiceController {
     /**
      * Validates the media by domain id request.
      *
-     * @param domainName   Domain to validate.
+     * @param domainName Domain to validate.
      * @param activeFilter Active filter to validate.
      * @return Returns a response if the validation fails; null otherwise.
      */
@@ -465,12 +465,12 @@ public class MediaController extends CommonServiceController {
     /**
      * Common processing between mediaAdd and the AWS portion of aquireMedia. Can be transfered into mediaAdd once aquireMedia is removed.
      *
-     * @param message       JSON formated ImageMessage.
-     * @param requestID     The id of the request. Used for tracking purposes.
-     * @param serviceUrl    URL of the message called.
-     * @param clientId      Web service client id.
+     * @param message JSON formated ImageMessage.
+     * @param requestID The id of the request. Used for tracking purposes.
+     * @param serviceUrl URL of the message called.
+     * @param clientId Web service client id.
      * @param successStatus Status to return when successful.
-     * @param timeReceived  The time at which MediaService received the request
+     * @param timeReceived The time at which MediaService received the request
      * @return The response for the service call.
      * @throws Exception Thrown if the message can't be validated or the response can't be serialized.
      */
@@ -534,8 +534,8 @@ public class MediaController extends CommonServiceController {
      * published to the next work queue.
      *
      * @param imageMessage The incoming image message.
-     * @param requestID    The id of the request. Used for tracking purposes.
-     * @param clientId     Web service client id.
+     * @param requestID The id of the request. Used for tracking purposes.
+     * @param clientId Web service client id.
      * @return A Map contains the updated message with request and other data added
      * and if the file is checked for reprocessing .
      */
@@ -589,9 +589,9 @@ public class MediaController extends CommonServiceController {
      * populate the replacement queryId and GUID on the ImageMessageBuilder.
      * </p>
      *
-     * @param imageMessage        Original message received.
+     * @param imageMessage Original message received.
      * @param imageMessageBuilder Builder for the new/mutated ImageMessage.
-     * @param clientId            Existing in the message header, represents the client (EPC, Media Cloud Router, Multisource, GSO Media Tools)
+     * @param clientId Existing in the message header, represents the client (EPC, Media Cloud Router, Multisource, GSO Media Tools)
      * @return returns true if reprocessing and false if not.
      */
 
@@ -660,7 +660,7 @@ public class MediaController extends CommonServiceController {
      * Get validator list by different client, and do validation by rules and DAO validator (later)
      * return the validation error list that combine all of the error result.
      *
-     * @param message  input json message.
+     * @param message input json message.
      * @param clientId Web service client id.
      * @return JSON string contains fileName and error description.
      * @throws Exception when message to ImageMessage and convert java list to json.
@@ -692,8 +692,8 @@ public class MediaController extends CommonServiceController {
      * Logs a completed activity and its time. and exepdiaId is appended before the file name
      *
      * @param imageMessage The imageMessage of the file being processed.
-     * @param activity     The activity to log.
-     * @param date         The timestamp at which the activity happened, if null the latest timestamp will be generated .
+     * @param activity The activity to log.
+     * @param date The timestamp at which the activity happened, if null the latest timestamp will be generated .
      */
     private void logActivity(final ImageMessage imageMessage, final Activity activity, final Date date) throws URISyntaxException {
         final Date logDate = (date == null) ? new Date() : date;

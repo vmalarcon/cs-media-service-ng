@@ -42,5 +42,17 @@ cs:
     statsd:
       hostname: ${monitoringAgent.statsd.hostname}
       port: ${monitoringAgent.statsd.port}
+    # Poke configuration
+     poke:
+        enabled: false
+        group: ${project.name}
+        instance: ${project.name}.${application.environment}
+        hip-chat:
+          enabled: true
+          room: "EWE CS: Phoenix Notifications"
+        email:
+          enabled: true
+          address: phoenix@expedia.com
+        server: http://poke-service.us-west-2.test.expedia.com:80/api/poke
 aws:
   endPoint: "https://dynamodb.${AWS_REGION}.amazonaws.com"

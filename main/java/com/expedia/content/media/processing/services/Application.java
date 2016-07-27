@@ -28,7 +28,7 @@ import expedia.content.solutions.poke.spring.support.EnablePoke;
 @EnableTransactionManagement
 @SuppressWarnings({"PMD.UseUtilityClass"})
 public class Application extends SpringBootServletInitializer {
-    
+
     public static void main(String[] args) throws Exception {
         if (OSDetector.detectOS() == OSDetector.OS.WINDOWS) {
             final String path = System.getenv("PATH").replace('\\', '/');

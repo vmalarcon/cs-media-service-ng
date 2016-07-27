@@ -48,9 +48,9 @@ public class CategoryController extends CommonServiceController {
     /**
      * Media domain categories service. Returns all categories for a domain. Can be filtered by a locale.
      *
-     * @param headers    Request header contains the requestId and the clientId.
+     * @param headers Request header contains the requestId and the clientId.
      * @param domainName Domain for which the categories are required.
-     * @param localeId   Id of the locale to filter in.
+     * @param localeId Id of the locale to filter in.
      * @return Returns a JSON response for the domain categories request.
      */
     @RequestMapping(value = "/media/v1/domaincategories/{domainName}", method = RequestMethod.GET)
@@ -88,7 +88,7 @@ public class CategoryController extends CommonServiceController {
      * query LCM DB to get the Categories of a Domain
      * if a category has at least one 0 subcategory, the category is not returned
      *
-     * @param domain   The domain to query
+     * @param domain The domain to query
      * @param localeId The localization Id to query by
      * @return JSON message of Categories for the specified Domain and LocaleId without category 0
      * @throws DomainNotFoundException

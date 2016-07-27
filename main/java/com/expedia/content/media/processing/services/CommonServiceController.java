@@ -26,7 +26,7 @@ public abstract class CommonServiceController {
      * Builds an error response.
      *
      * @param errorMessage Failed message from validate.
-     * @param resourcePath Path of the accessed resource. 
+     * @param resourcePath Path of the accessed resource.
      * @param httpStatus HTTP status of the error.
      * @return A response with an error code.
      */
@@ -38,7 +38,7 @@ public abstract class CommonServiceController {
 
     /**
      * Pulls the request id from the header values.
-     * 
+     *
      * @param headers Header value map.
      * @return The request id
      */
