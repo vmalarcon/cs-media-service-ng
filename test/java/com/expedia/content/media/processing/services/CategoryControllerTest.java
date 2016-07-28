@@ -1,12 +1,10 @@
 package com.expedia.content.media.processing.services;
 
-import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.DomainNotFoundException;
 import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
 import com.expedia.content.media.processing.services.dao.domain.MediaCategory;
 import com.expedia.content.media.processing.services.dao.domain.MediaSubCategory;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaDomainCategoriesSproc;
-import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,10 +24,8 @@ import static com.expedia.content.media.processing.services.testing.TestingUtil.
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -45,7 +41,7 @@ public class CategoryControllerTest {
     List<MediaCategory> mockMediaCategories;
     List<MediaSubCategory> mockMediaSubCategories;
     MediaDomainCategoriesDao mockMediaDomainCategoriesDao;
-
+    
     @Before
     public void setup(){
         mediaProviderMockResults = new HashMap<>();
@@ -107,7 +103,7 @@ public class CategoryControllerTest {
                 /* @formatter:on */
                 response.getBody());
     }
-
+    
     @Test
     public void testDomainNotFound() throws Exception {
         CategoryController categoryController = new CategoryController();
@@ -139,24 +135,4 @@ public class CategoryControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void pokeTest() throws Exception {
-        CategoryController categoryController = new CategoryController();
-
-        final String lodgingDoman = "lodging";
-        setFieldValue(categoryController, "mediaDomainCategoriesDao", mockMediaDomainCategoriesDao);
-        IllegalStateException exception = new IllegalStateException("this is a runtime exception");
-        setFieldValue(categoryController, "hipChatRoom", "EWE CS: Phoenix Notifications");
-        Poker poker = mock(Poker.class);
-        setFieldValue(categoryController, "poker", poker);
-
-        String requestId = "test-request-id";
-        MultiValueMap<String, String> mockHeader = new HttpHeaders();
-        mockHeader.add("request-id", requestId);
-        when(categoryController.domainCategories(mockHeader, lodgingDoman, LOCALID)).thenThrow(exception);
-
-        categoryController.domainCategories(mockHeader, lodgingDoman, LOCALID);
-        verify(poker).poke("Media Services failed to process a domainCategories request - RequestId: test-request-id", "EWE CS: Phoenix Notifications",
-                MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + "/" + lodgingDoman + LOCALID, eq(exception));
-    }
 }

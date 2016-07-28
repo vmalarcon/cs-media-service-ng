@@ -1,21 +1,14 @@
 package com.expedia.content.media.processing.services;
 
-import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
-import com.expedia.content.media.processing.pipeline.util.Poker;
-import com.expedia.content.media.processing.services.dao.ProcessLogDao;
-import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
-import com.expedia.content.media.processing.services.util.ActivityMapping;
-import com.expedia.content.media.processing.services.util.JSONUtil;
-import com.expedia.content.media.processing.services.util.MediaServiceUrl;
-import com.expedia.content.media.processing.services.util.RequestMessageException;
-import com.expedia.content.media.processing.services.validator.RequestMessageValidator;
-import com.expedia.content.media.processing.services.validator.ValidationStatus;
-import expedia.content.solutions.metrics.annotations.Meter;
-import expedia.content.solutions.metrics.annotations.Timer;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -28,11 +21,18 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
+import com.expedia.content.media.processing.services.dao.ProcessLogDao;
+import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
+import com.expedia.content.media.processing.services.util.ActivityMapping;
+import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.util.MediaServiceUrl;
+import com.expedia.content.media.processing.services.util.RequestMessageException;
+import com.expedia.content.media.processing.services.validator.RequestMessageValidator;
+import com.expedia.content.media.processing.services.validator.ValidationStatus;
 
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import expedia.content.solutions.metrics.annotations.Meter;
+import expedia.content.solutions.metrics.annotations.Timer;
 
 /**
  * Web service controller for media status.
@@ -49,9 +49,6 @@ public class StatusController extends CommonServiceController {
     private List<ActivityMapping> activityWhiteList;
     @Autowired
     private ProcessLogDao processLogDao;
-    @Value("${cs.poke.hip-chat.room}")
-    private String hipChatRoom;
-    private Poker poker;
 
     /**
      * Web service interface to get the latest media file process status.
@@ -69,27 +66,21 @@ public class StatusController extends CommonServiceController {
         final String requestID = getRequestId(headers);
         LOGGER.info("RECEIVED REQUEST - url=[{}], imageMessage=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_STATUS.getUrl(), message,
                 requestID);
-        String jsonResponse = null;
         try {
             final ValidationStatus validationStatus = validateMediaStatus(message);
             if (!validationStatus.isValid()) {
                 return buildErrorResponse(validationStatus.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl(), BAD_REQUEST);
             }
             final Map<String, Object> map = JSONUtil.buildMapFromJson(message);
-            jsonResponse = getMediaStatusList((List<String>) map.get("mediaNames"));
+            final String jsonResponse = getMediaStatusList((List<String>) map.get("mediaNames"));
             LOGGER.info("RESPONSE - url=[{}], imageMessage=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_STATUS.getUrl(), jsonResponse,
                     requestID);
+            return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
         } catch (RequestMessageException ex) {
             LOGGER.error("ERROR - url=[{}], imageMessage=[{}], error=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_STATUS.getUrl(), message,
                     ex.getMessage(), requestID, ex);
             return buildErrorResponse(ex.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl(), BAD_REQUEST);
-        } catch (Exception ex) {
-            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], JSONMessage=[{}].", MediaServiceUrl.MEDIA_STATUS.getUrl(), ex.getMessage(), requestID, message, ex);
-            poker.poke("Media Services failed to process a getMediaLatestStatus request - RequestId: " + requestID, hipChatRoom,
-                    message, ex);
-            throw ex;
         }
-        return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
     }
 
     /**
@@ -98,7 +89,7 @@ public class StatusController extends CommonServiceController {
      *
      * @param message input json message
      * @return ValidationStatus contain the validation status, {@code true} when successful or
-     * {@code false} when the validation fails. When the validation fails a message is also set in the ValidationStatus.
+     *         {@code false} when the validation fails. When the validation fails a message is also set in the ValidationStatus.
      * @throws Exception when the message is not valid json format.
      */
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
