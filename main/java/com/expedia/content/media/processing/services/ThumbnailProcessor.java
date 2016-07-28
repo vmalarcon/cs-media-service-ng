@@ -123,7 +123,7 @@ public class ThumbnailProcessor {
             }
         } catch (Exception e) {
             LOGGER.error("Unable to generate thumbnail with url: " + fileUrl, e);
-            throw new ThumbnailGenerationException("Unable to generate thumbnail with url: " + fileUrl + " and GUID: " + guid, e);
+            throw new RuntimeException("Unable to generate thumbnail with url: " + fileUrl + " and GUID: " + guid, e);
         }
         LOGGER.debug("Created thumbnail url=[{}] guid=[{}]", fileUrl, guid);
         return thumbnail;

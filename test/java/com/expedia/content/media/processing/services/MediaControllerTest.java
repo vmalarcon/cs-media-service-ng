@@ -6,6 +6,7 @@ import com.expedia.content.media.processing.pipeline.reporting.Activity;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
+import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
 import com.expedia.content.media.processing.services.dao.LcmDynamoMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDao;
@@ -76,6 +77,7 @@ import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -90,6 +92,7 @@ public class MediaControllerTest {
     private static final String TEST_CLIENT_ID = "a-user";
     private static final String EPS_MEDIA_API_CLIENT_ID = "EPC Media API";
     private static final String MEDIA_CLOUD_ROUTER_CLIENT_ID = "Media Cloud Router";
+    private static final String MULTISOURCE = "Multisource";
     private static final String RESPONSE_FIELD_LCM_MEDIA_ID = "lcmMediaId";
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
@@ -1475,6 +1478,7 @@ public class MediaControllerTest {
 
     /**
      * CSPB-532224 Thumbail processor must return 422 error when an unprocessable image is received
+     *
      * @throws Exception
      */
     @Test
@@ -1684,6 +1688,155 @@ public class MediaControllerTest {
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
     }
 
+    @Test(expected = RuntimeException.class)
+         public void pokeTestAcquireMedia() throws Exception {
+
+        String jsonMessage = "{  \n" + "   \"mediaProviderId\":\"1001\",\n" + "   \"fileUrl\":\"http://www.offtoeurope.com/wp-content/uploads/2010/06/radisson-pool.jpg\",\n"
+                + "   \"imageType\":\"Lodging\",\n" + "   \"stagingKey\":{  \n" + "      \"externalId\":\"222\",\n" + "      \"providerId\":\"300\",\n"
+                + "      \"sourceId\":\"99\"\n" + "   },\n" + "   \"expediaId\":\"123\",\n" + "   \"subcategoryId\":\"801\",\n"
+                + "   \"callback\":\"http://multi.source.callback/callback\",\n" + "   \"caption\":\"caption\" \n}";
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+        LcmDynamoMediaDao mockLcmDynamoMediaDao = mock(LcmDynamoMediaDao.class);
+        setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
+        DynamoMediaRepository mockDynamoMediaRepository = mock(DynamoMediaRepository.class);
+        setFieldValue(mediaController, "dynamoMediaRepository", mockDynamoMediaRepository);
+        RuntimeException exception = new RuntimeException("this is a RuntimeException exception");
+        doThrow(exception).when(mockDynamoMediaRepository).storeMediaAddMessage(any(ImageMessage.class), any(null));
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        setFieldValue(mediaController, "hipChatRoom", "EWE CS: Phoenix Notifications");
+        Poker poker = mock(Poker.class);
+        setFieldValue(mediaController, "poker", poker);
+        mockHeader.add("request-id", requestId);
+
+        mediaController.acquireMedia(jsonMessage, mockHeader);
+        verify(poker).poke(eq("Media Services failed to process an acquireMedia request - RequestId: " + requestId), eq("EWE CS: Phoenix Notifications"),
+                eq(jsonMessage), eq(exception));
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void pokeTestAddMedia() throws Exception {
+
+        String jsonMessage = "{  \n" + "   \"mediaProviderId\":\"1001\",\n" + "   \"fileUrl\":\"http://www.offtoeurope.com/wp-content/uploads/2010/06/radisson-pool.jpg\",\n"
+                + "   \"imageType\":\"Lodging\",\n" + "   \"stagingKey\":{  \n" + "      \"externalId\":\"222\",\n" + "      \"providerId\":\"300\",\n"
+                + "      \"sourceId\":\"99\"\n" + "   },\n" + "   \"expediaId\":\"123\",\n" + "   \"subcategoryId\":\"801\",\n"
+                + "   \"callback\":\"http://multi.source.callback/callback\",\n" + "   \"caption\":\"caption\" \n}";
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+        LcmDynamoMediaDao mockLcmDynamoMediaDao = mock(LcmDynamoMediaDao.class);
+        setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
+        DynamoMediaRepository mockDynamoMediaRepository = mock(DynamoMediaRepository.class);
+        setFieldValue(mediaController, "dynamoMediaRepository", mockDynamoMediaRepository);
+        RuntimeException exception = new RuntimeException("this is a RuntimeException exception");
+        doThrow(exception).when(mockDynamoMediaRepository).storeMediaAddMessage(any(ImageMessage.class), any(null));
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        setFieldValue(mediaController, "hipChatRoom", "EWE CS: Phoenix Notifications");
+        Poker poker = mock(Poker.class);
+        setFieldValue(mediaController, "poker", poker);
+        mockHeader.add("request-id", requestId);
+
+        mediaController.mediaAdd(jsonMessage, mockHeader);
+        verify(poker).poke(eq("Media Services failed to process a mediaAdd request - RequestId: " + requestId), eq("EWE CS: Phoenix Notifications"),
+                eq(jsonMessage), eq(exception));
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void pokeTestMediaUpdate() throws Exception {
+
+        String jsonMessage = "{  \n" + "   \"mediaProviderId\":\"1001\",\n" + "   \"fileUrl\":\"http://www.offtoeurope.com/wp-content/uploads/2010/06/radisson-pool.jpg\",\n"
+                + "   \"imageType\":\"Lodging\",\n" + "   \"stagingKey\":{  \n" + "      \"externalId\":\"222\",\n" + "      \"providerId\":\"300\",\n"
+                + "      \"sourceId\":\"99\"\n" + "   },\n" + "   \"expediaId\":\"123\",\n" + "   \"subcategoryId\":\"801\",\n"
+                + "   \"callback\":\"http://multi.source.callback/callback\",\n" + "   \"comment\":\"comment\" \n}";
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+        MediaDao mockMediaDao = mock(MediaDao.class);
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        RuntimeException exception = new RuntimeException("this is a RuntimeException exception");
+        doThrow(exception).when(mockMediaDao).getMediaByMediaId(eq("123456"));
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        setFieldValue(mediaController, "hipChatRoom", "EWE CS: Phoenix Notifications");
+        Poker poker = mock(Poker.class);
+        setFieldValue(mediaController, "poker", poker);
+        mockHeader.add("request-id", requestId);
+
+        mediaController.mediaUpdate("123456", jsonMessage, mockHeader);
+        verify(poker).poke(eq("Media Services failed to process a mediaUpdate request - RequestId: " + requestId), eq("EWE CS: Phoenix Notifications"),
+                eq(jsonMessage), eq(exception));
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void pokeTestGetMedia() throws Exception {
+
+        String jsonMessage = "{  \n" + "   \"mediaProviderId\":\"1001\",\n" + "   \"fileUrl\":\"http://www.offtoeurope.com/wp-content/uploads/2010/06/radisson-pool.jpg\",\n"
+                + "   \"imageType\":\"Lodging\",\n" + "   \"stagingKey\":{  \n" + "      \"externalId\":\"222\",\n" + "      \"providerId\":\"300\",\n"
+                + "      \"sourceId\":\"99\"\n" + "   },\n" + "   \"expediaId\":\"123\",\n" + "   \"subcategoryId\":\"801\",\n"
+                + "   \"callback\":\"http://multi.source.callback/callback\",\n" + "   \"comment\":\"comment\" \n}";
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+        MediaDao mockMediaDao = mock(MediaDao.class);
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        RuntimeException exception = new RuntimeException("this is a RuntimeException exception");
+        doThrow(exception).when(mockMediaDao).getMediaByGUID(eq("156b1953-3bb4-404f-8773-edc04b3d8562"));
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        setFieldValue(mediaController, "hipChatRoom", "EWE CS: Phoenix Notifications");
+        Poker poker = mock(Poker.class);
+        setFieldValue(mediaController, "poker", poker);
+        mockHeader.add("request-id", requestId);
+
+        mediaController.getMedia(eq("156b1953-3bb4-404f-8773-edc04b3d8562"), mockHeader);
+        verify(poker).poke(eq("Media Services failed to process a getMedia request - RequestId: " + requestId), eq("EWE CS: Phoenix Notifications"),
+                eq(jsonMessage), eq(exception));
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void pokeTestGetMediaByDomainId() throws Exception {
+
+        String jsonMessage = "{  \n" + "   \"mediaProviderId\":\"1001\",\n" + "   \"fileUrl\":\"http://www.offtoeurope.com/wp-content/uploads/2010/06/radisson-pool.jpg\",\n"
+                + "   \"imageType\":\"Lodging\",\n" + "   \"stagingKey\":{  \n" + "      \"externalId\":\"222\",\n" + "      \"providerId\":\"300\",\n"
+                + "      \"sourceId\":\"99\"\n" + "   },\n" + "   \"expediaId\":\"123\",\n" + "   \"subcategoryId\":\"801\",\n"
+                + "   \"callback\":\"http://multi.source.callback/callback\",\n" + "   \"comment\":\"comment\" \n}";
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+        MediaDao mockMediaDao = mock(MediaDao.class);
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        RuntimeException exception = new RuntimeException("this is a RuntimeException exception");
+        doThrow(exception).when(mockMediaDao).getMediaByGUID(eq("156b1953-3bb4-404f-8773-edc04b3d8562"));
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        setFieldValue(mediaController, "hipChatRoom", "EWE CS: Phoenix Notifications");
+        Poker poker = mock(Poker.class);
+        setFieldValue(mediaController, "poker", poker);
+        mockHeader.add("request-id", requestId);
+
+        mediaController.getMediaByDomainId("lodging", "123", 100, 8, "true", "", "", mockHeader);
+        verify(poker).poke(eq("Media Services failed to process a getMedia request - RequestId: " + requestId), eq("EWE CS: Phoenix Notifications"),
+                eq(jsonMessage), eq(exception));
+    }
+
     @SuppressWarnings({"unchecked"})
     private static Map<String, List<MapMessageValidator>> getMockValidators() {
         Map<String, List<MapMessageValidator>> validators = new HashMap<>();
@@ -1694,6 +1847,7 @@ public class MediaControllerTest {
         messageValidator.add(mockMessageValidator);
         validators.put(TEST_CLIENT_ID, messageValidator);
         validators.put(MEDIA_CLOUD_ROUTER_CLIENT_ID, messageValidator);
+        validators.put(MULTISOURCE, messageValidator);
         return validators;
     }
 

@@ -1,14 +1,11 @@
 package com.expedia.content.media.processing.services;
 
-import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Mockito.when;
-
-import java.util.ArrayList;
-import java.util.List;
-
+import com.expedia.content.media.processing.pipeline.util.Poker;
+import com.expedia.content.media.processing.services.dao.ProcessLogDao;
+import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
+import com.expedia.content.media.processing.services.util.ActivityMapping;
+import com.expedia.content.media.processing.services.validator.MediaNamesValidator;
+import com.expedia.content.media.processing.services.validator.RequestMessageValidator;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,11 +15,17 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 
-import com.expedia.content.media.processing.services.dao.ProcessLogDao;
-import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
-import com.expedia.content.media.processing.services.util.ActivityMapping;
-import com.expedia.content.media.processing.services.validator.MediaNamesValidator;
-import com.expedia.content.media.processing.services.validator.RequestMessageValidator;
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class StatusControllerTest {
@@ -407,6 +410,37 @@ public class StatusControllerTest {
         assertEquals(400, response.getStatusCode().value());
         assertTrue(response.getBody().toString().startsWith(
                 "{\"error\":\"Bad Request\",\"message\":\"Error parsing/converting Json message: {\\\"mediaNames\\\":\\\"1037678_109010ice.jpg\\\",\\\"1055797_1742165ice.jpg\\\"]}\",\"path\":\"/media/v1/lateststatus\",\"status\":400,\"timestamp\""));
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Test(expected = RuntimeException.class)
+    public void pokeTest() throws Exception {
+        List<RequestMessageValidator> validators = new ArrayList<>();
+        List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
+        MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "Publish", "Lodging");
+        mediaLogStatuses.add(mediaLogStatus);
+        List<String> fileNameList = new ArrayList<>();
+        fileNameList.add("1037678_109010ice.jpg");
+        RuntimeException exception = new RuntimeException("this is a runtime exception");
+        when(lcmProcessLogDao.findMediaStatus(anyList())).thenThrow(exception);
+        Poker poker = mock(Poker.class);
+
+        StatusController statusController = new StatusController();
+        setFieldValue(statusController, "poker", poker);
+        setFieldValue(statusController, "hipChatRoom", "EWE CS: Phoenix Notifications");
+        setFieldValue(statusController, "mediaStatusValidatorList", validators);
+        setFieldValue(statusController, "activityWhiteList", whitelist);
+        setFieldValue(statusController, "processLogDao", lcmProcessLogDao);
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        String message = "{\"mediaNames\":[\"1037678_109010ice.jpg\"]}";
+        statusController.getMediaLatestStatus(message, mockHeader);
+        verify(poker).poke(eq("Media Services failed to process a getMediaLatestStatus request - RequestId: " + requestId), eq("EWE CS: Phoenix Notifications"),
+                eq(message), eq(exception));
+
     }
 
 }

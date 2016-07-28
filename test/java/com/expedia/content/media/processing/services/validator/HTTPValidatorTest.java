@@ -1,38 +1,45 @@
 package com.expedia.content.media.processing.services.validator;
 
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
 public class HTTPValidatorTest {
+
+    private ValidationStatus status;
+    // used to release the mocked HTTP_CLIENT and use the real one
+    private static final CloseableHttpClient HTTP_CLIENT = HttpClients.createDefault();
 
     @Test
     public void testFileFound() {
-        assertTrue(HTTPValidator.checkFileExists("https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png").isValid());
+        ValidationStatus status = HTTPValidator.checkFileExists("https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png");
+        assertTrue(status.isValid());
+        assertEquals(ValidationStatus.VALID, status.getStatus());
     }
 
     @Test
     public void testFileNotFound() {
-        assertFalse(HTTPValidator.checkFileExists("https://images.trvl-media.net/hotels/captain_potato_pants.jpg").isValid());
+        ValidationStatus status =  HTTPValidator.checkFileExists("https://images.trvl-media.net/hotels/captain_potato_pants.jpg");
+        assertFalse(status.isValid());
+        assertEquals(ValidationStatus.NOT_FOUND, status.getStatus());
     }
 
     @Test
     public void testRedAwningUrl() {
-        assertTrue(HTTPValidator.checkFileExists("https://www.redawning.com/sites/default/files/rental_property/681/coh0861-amay.jpg").isValid());
+        ValidationStatus status = HTTPValidator.checkFileExists("https://www.redawning.com/sites/default/files/rental_property/681/coh0861-amay.jpg");
+        assertTrue(status.isValid());
+        assertEquals(ValidationStatus.VALID, status.getStatus());
     }
 
-    @Test
-    public void testFileIsEmpty() {
-        assertFalse(HTTPValidator.checkFileExists("http://photos.hotelbeds.com/giata/bigger/00/008817/008817a_hb_a_002.jpg").isValid());
-    }
-
-    @Ignore
     @Test
     public void testSquareBracketUrl() {
-        assertTrue(HTTPValidator.checkFileExists("https://assets01.redawning.com/sites/default/files/rental_property/65905/CropperCapture[6].jpg").isValid());
+        ValidationStatus status = HTTPValidator.checkFileExists("https://assets01.redawning.com/sites/default/files/rental_property/65905/CropperCapture[6].jpg");
+        assertTrue(status.isValid());
+        assertEquals(ValidationStatus.VALID, status.getStatus());
     }
 
     @Test
@@ -44,7 +51,8 @@ public class HTTPValidatorTest {
     
     @Test
     public void testSpaceUrl() {
-        assertTrue(HTTPValidator.checkFileExists("http://images.xtravelsystem.com/slide/files/public/89/0/7/9/Images/c_89079 hotel2.jpg").isValid());
+        ValidationStatus status = HTTPValidator.checkFileExists("http://images.xtravelsystem.com/slide/files/public/89/0/7/9/Images/c_89079 hotel2.jpg");
+        assertTrue(status.isValid());
+        assertEquals(ValidationStatus.VALID, status.getStatus());
     }
-
 }

@@ -145,7 +145,7 @@ public class CategoryControllerTest {
 
         final String lodgingDoman = "lodging";
         setFieldValue(categoryController, "mediaDomainCategoriesDao", mockMediaDomainCategoriesDao);
-        IllegalStateException exception = new IllegalStateException("this is a runtime exception");
+        IllegalStateException exception = new IllegalStateException("this is an IllegalStateException exception");
         setFieldValue(categoryController, "hipChatRoom", "EWE CS: Phoenix Notifications");
         Poker poker = mock(Poker.class);
         setFieldValue(categoryController, "poker", poker);

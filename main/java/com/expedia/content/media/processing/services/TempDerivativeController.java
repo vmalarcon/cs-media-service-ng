@@ -91,11 +91,8 @@ public class TempDerivativeController extends CommonServiceController {
             final Map<String, String> response = new HashMap<>();
             response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnailProcessor.createTempDerivativeThumbnail(tempDerivativeMessage));
             return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);
-        } catch (ThumbnailGenerationException ex) {
-            LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
-            return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         } catch (Exception ex) {
-            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], domainName=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
+            LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
             poker.poke("Media Services failed to process a getTempDerivative request - RequestId: " + requestID, hipChatRoom,
                     message, ex);
             throw ex;
