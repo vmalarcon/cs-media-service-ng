@@ -45,7 +45,7 @@ public class CategoryControllerTest {
     List<MediaCategory> mockMediaCategories;
     List<MediaSubCategory> mockMediaSubCategories;
     MediaDomainCategoriesDao mockMediaDomainCategoriesDao;
-
+    
     @Before
     public void setup(){
         mediaProviderMockResults = new HashMap<>();
@@ -107,7 +107,7 @@ public class CategoryControllerTest {
                 /* @formatter:on */
                 response.getBody());
     }
-
+    
     @Test
     public void testDomainNotFound() throws Exception {
         CategoryController categoryController = new CategoryController();

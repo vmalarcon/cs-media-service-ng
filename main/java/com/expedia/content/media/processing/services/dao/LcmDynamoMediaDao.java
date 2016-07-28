@@ -195,7 +195,7 @@ public class LcmDynamoMediaDao implements MediaDao {
         final Integer domainIdInt = Integer.parseInt(domainId);
         final Map<String, Media> mediaLcmMediaIdMap = domainIdMedia.stream()
                 .filter(media -> media.getLcmMediaId() != null && !"null".equals(media.getLcmMediaId()))
-                .collect(Collectors.toMap(Media::getLcmMediaId, media -> media));
+                .collect(Collectors.toMap(Media::getLcmMediaId, media -> media, (m1, m2) -> m1));
         final List<LcmMediaAndDerivative> mediaDerivativeItems = (List<LcmMediaAndDerivative>) lcmMediaListSproc.execute(domainIdInt).get(SQLMediaListSproc.MEDIA_SET);
         final Map<Integer, List<LcmMediaAndDerivative>> lcmMediaMap =
                 mediaDerivativeItems.stream().collect(Collectors.groupingBy(mediaAndDerivative -> mediaAndDerivative.getMediaId()));

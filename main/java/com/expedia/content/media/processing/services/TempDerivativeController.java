@@ -60,7 +60,8 @@ public class TempDerivativeController extends CommonServiceController {
      * @throws Exception
      */
     @RequestMapping(value = "/media/v1/tempderivative", method = RequestMethod.POST)
-    public ResponseEntity<String> getTempDerivative(@RequestBody final String message, @RequestHeader MultiValueMap<String,String> headers) throws Exception {
+    public ResponseEntity<String> getTempDerivative(@RequestBody final String message,
+                                                    @RequestHeader MultiValueMap<String, String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_TEMP_DERIVATIVE.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
@@ -75,13 +76,13 @@ public class TempDerivativeController extends CommonServiceController {
             final ValidationStatus fileValidation = verifyUrl(tempDerivativeMessage.getFileUrl());
             if (!fileValidation.isValid()) {
                 switch (fileValidation.getStatus()) {
-                    case ValidationStatus.NOT_FOUND:
+                    case ValidationStatus.NOT_FOUND :
                         LOGGER.info("Response not found. Provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
                         break;
-                    case ValidationStatus.ZERO_BYTES:
+                    case ValidationStatus.ZERO_BYTES :
                         LOGGER.info("Returning bad request. Provided 'file is 0 Bytes' for requestId=[{}], message=[{}]", requestID, message);
                         break;
-                    default:
+                    default :
                         LOGGER.info("Returning bad request. requestId=[{}], message=[{}]", requestID, message);
                         break;
                 }
