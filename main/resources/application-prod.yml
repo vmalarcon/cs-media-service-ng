@@ -6,4 +6,3 @@ cs:
       server: http://poke-service.us-west-1.prod-p.expedia.com:80/api/poke
       enabled: true
 
-
