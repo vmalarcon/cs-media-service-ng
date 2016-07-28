@@ -133,7 +133,7 @@ public class TempDerivativeControllerTest {
 
     @Test
     public void testTemporaryDerivativeInvalidRequest() throws Exception {
-        String jsonMessage = " " + "\"fileUrl\": \"http://i.imgurdd.com/3PRGF.jpg/why/would/someone/name/all/of/their/files/original.jpg\", "
+        String jsonMessage = " { " + "\"fileUrl\": \"http://i.imgurdd.com/3PRGF.jpg/why/would/someone/name/all/of/their/files/original.jpg\", "
                 + "\"rotation\": \"90\", " + "\"width\": 180, " + "\"height\": 180" + "}";
         TempDerivativeMVELValidator tempDerivativeMVELValidator = mock(TempDerivativeMVELValidator.class);
         when(tempDerivativeMVELValidator.validateTempDerivativeMessage(any())).thenReturn("");
@@ -151,7 +151,7 @@ public class TempDerivativeControllerTest {
         mockHeader.add("request-id", requestId);
 
         ResponseEntity<String> responseEntity = tempDerivativeController.getTempDerivative(jsonMessage, mockHeader);
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
     }
 
     @Test(expected = RuntimeException.class)
