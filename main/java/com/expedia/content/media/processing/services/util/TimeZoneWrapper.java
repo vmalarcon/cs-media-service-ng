@@ -3,7 +3,6 @@ package com.expedia.content.media.processing.services.util;
 import com.expedia.content.media.processing.pipeline.util.TimeZoneUtil;
 import org.apache.commons.lang.StringUtils;
 
-import java.text.ParseException;
 import java.util.Date;
 
 public class TimeZoneWrapper {
@@ -16,7 +15,7 @@ public class TimeZoneWrapper {
         dateAsString = StringUtils.defaultIfEmpty(dateAsString, StringUtils.EMPTY);
         try {
             date = TimeZoneUtil.convertLCMTimeZoneDate(dateAsString);
-        } catch (ParseException ex) {
+        } catch (Exception ex) {
             return date;
         }
         return date;
