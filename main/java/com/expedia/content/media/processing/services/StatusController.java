@@ -51,6 +51,7 @@ public class StatusController extends CommonServiceController {
     private ProcessLogDao processLogDao;
     @Value("${cs.poke.hip-chat.room}")
     private String hipChatRoom;
+    @Autowired
     private Poker poker;
 
     /**

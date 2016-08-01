@@ -42,6 +42,7 @@ public class CategoryController extends CommonServiceController {
     private MediaDomainCategoriesDao mediaDomainCategoriesDao;
     @Value("${cs.poke.hip-chat.room}")
     private String hipChatRoom;
+    @Autowired
     private Poker poker;
 
     /**

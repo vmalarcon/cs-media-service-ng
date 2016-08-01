@@ -135,6 +135,7 @@ public class MediaController extends CommonServiceController {
     private SKUGroupCatalogItemDao skuGroupCatalogItemDao;
     @Value("${cs.poke.hip-chat.room}")
     private String hipChatRoom;
+    @Autowired
     private Poker poker;
 
     /**

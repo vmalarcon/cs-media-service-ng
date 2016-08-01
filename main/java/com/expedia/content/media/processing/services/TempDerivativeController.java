@@ -49,6 +49,7 @@ public class TempDerivativeController extends CommonServiceController {
     private TempDerivativeMVELValidator tempDerivativeMVELValidator;
     @Value("${cs.poke.hip-chat.room}")
     private String hipChatRoom;
+    @Autowired
     private Poker poker;
 
     /**

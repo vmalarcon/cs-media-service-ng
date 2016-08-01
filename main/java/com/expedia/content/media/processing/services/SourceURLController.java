@@ -53,6 +53,7 @@ public class SourceURLController extends CommonServiceController {
     private String bucketPrefix;
     @Value("${cs.poke.hip-chat.room}")
     private String hipChatRoom;
+    @Autowired
     private Poker poker;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
