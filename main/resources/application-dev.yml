@@ -1,5 +1,9 @@
 monitoringAgent:
   statsd:
     hostname: "statsd-lab.test.expedia.com"
+cs:
+  poke:
+    enabled: true
+    server: http://poke-service.us-west-2.test.expedia.com:80/api/poke
 
 

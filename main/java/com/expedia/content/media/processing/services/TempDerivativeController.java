@@ -1,16 +1,17 @@
 package com.expedia.content.media.processing.services;
 
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.OK;
-
-import java.util.HashMap;
-import java.util.Map;
-
+import com.expedia.content.media.processing.pipeline.util.Poker;
+import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
+import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.util.MediaServiceUrl;
+import com.expedia.content.media.processing.services.util.RequestMessageException;
+import com.expedia.content.media.processing.services.validator.TempDerivativeMVELValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
@@ -20,12 +21,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
-import com.expedia.content.media.processing.services.util.JSONUtil;
-import com.expedia.content.media.processing.services.util.MediaServiceUrl;
-import com.expedia.content.media.processing.services.util.RequestMessageException;
-import com.expedia.content.media.processing.services.validator.TempDerivativeMVELValidator;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.OK;
 
 /**
  * Web service controller for temporary derivatives.
@@ -46,6 +47,9 @@ public class TempDerivativeController extends CommonServiceController {
     private ThumbnailProcessor thumbnailProcessor;
     @Autowired
     private TempDerivativeMVELValidator tempDerivativeMVELValidator;
+    @Value("${cs.poke.hip-chat.room}")
+    private String hipChatRoom;
+    private Poker poker;
 
     /**
      * Web services interface to create a temporary derivative of a given image with given specifications.
@@ -56,8 +60,7 @@ public class TempDerivativeController extends CommonServiceController {
      * @throws Exception
      */
     @RequestMapping(value = "/media/v1/tempderivative", method = RequestMethod.POST)
-    public ResponseEntity<String> getTempDerivative(@RequestBody final String message,
-                                                    @RequestHeader MultiValueMap<String, String> headers) throws Exception {
+    public ResponseEntity<String> getTempDerivative(@RequestBody final String message, @RequestHeader MultiValueMap<String,String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_TEMP_DERIVATIVE.getUrl();
         LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
@@ -72,13 +75,13 @@ public class TempDerivativeController extends CommonServiceController {
             final ValidationStatus fileValidation = verifyUrl(tempDerivativeMessage.getFileUrl());
             if (!fileValidation.isValid()) {
                 switch (fileValidation.getStatus()) {
-                    case ValidationStatus.NOT_FOUND :
+                    case ValidationStatus.NOT_FOUND:
                         LOGGER.info("Response not found. Provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
                         break;
-                    case ValidationStatus.ZERO_BYTES :
+                    case ValidationStatus.ZERO_BYTES:
                         LOGGER.info("Returning bad request. Provided 'file is 0 Bytes' for requestId=[{}], message=[{}]", requestID, message);
                         break;
-                    default :
+                    default:
                         LOGGER.info("Returning bad request. requestId=[{}], message=[{}]", requestID, message);
                         break;
                 }
@@ -90,7 +93,9 @@ public class TempDerivativeController extends CommonServiceController {
             return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);
         } catch (Exception ex) {
             LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
-            return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
+            poker.poke("Media Services failed to process a getTempDerivative request - RequestId: " + requestID, hipChatRoom,
+                    message, ex);
+            throw ex;
         }
     }
 

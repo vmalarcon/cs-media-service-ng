@@ -1,9 +1,7 @@
 package com.expedia.content.media.processing.services;
 
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
-import com.expedia.content.media.processing.services.SourceURLController;
-import com.expedia.content.media.processing.services.TempDerivativeController;
-import com.expedia.content.media.processing.services.ThumbnailProcessor;
+import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.LcmDynamoMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
@@ -14,7 +12,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,11 +25,14 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-import static org.junit.Assert.*;
-import static org.mockito.Matchers.any;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
@@ -127,5 +127,29 @@ public class SourceURLControllerTest {
         ResponseEntity<String> responseEntity = sourceURLController.getSourceURL(jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void pokeTest() throws Exception {
+
+        String jsonMessage = "{ \n"
+                + "  \"mediaUrl\":\"http://images.trvl-media.com/hotels/5000000/4610000/4600500/4600417/4600417_2_y.jpg\" \n"
+                + "}";
+        RuntimeException exception = new RuntimeException("this is an RuntimeException exception");
+        setFieldValue(sourceURLController, "hipChatRoom", "EWE CS: Phoenix Notifications");
+        Poker poker = mock(Poker.class);
+        setFieldValue(sourceURLController, "poker", poker);
+        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+        when(mockMediaDao.getContentProviderName(anyString())).thenThrow(exception);
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+        FileSourceFinder fileSourceFinder = new FileSourceFinder();
+        setFieldValue(sourceURLController, "fileSourceFinder", fileSourceFinder);
+        setFieldValue(sourceURLController, "mediaDao", mockMediaDao);
+        sourceURLController.getSourceURL(jsonMessage, mockHeader);
+
+        verify(poker).poke(eq("Media Services failed to process a getSourceURL request - RequestId: " + requestId), eq("EWE CS: Phoenix Notifications"),
+                eq(jsonMessage), eq(exception));
     }
 }

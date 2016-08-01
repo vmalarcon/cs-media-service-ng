@@ -1,23 +1,38 @@
 package com.expedia.content.media.processing.services;
 
-import static org.springframework.http.HttpStatus.ACCEPTED;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.OK;
-
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.UUID;
-
-import javax.annotation.Resource;
-
+import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
+import com.expedia.content.media.processing.pipeline.reporting.Activity;
+import com.expedia.content.media.processing.pipeline.reporting.App;
+import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
+import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
+import com.expedia.content.media.processing.pipeline.reporting.Reporting;
+import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
+import com.expedia.content.media.processing.pipeline.util.Poker;
+import com.expedia.content.media.processing.services.dao.MediaDao;
+import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
+import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
+import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
+import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
+import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
+import com.expedia.content.media.processing.services.util.DomainDataUtil;
+import com.expedia.content.media.processing.services.util.FileNameUtil;
+import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.util.MediaReplacement;
+import com.expedia.content.media.processing.services.util.MediaServiceUrl;
+import com.expedia.content.media.processing.services.validator.MapMessageValidator;
+import com.expedia.content.media.processing.services.validator.ValidationStatus;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Joiner;
+import expedia.content.solutions.metrics.annotations.Counter;
+import expedia.content.solutions.metrics.annotations.Gauge;
+import expedia.content.solutions.metrics.annotations.Meter;
+import expedia.content.solutions.metrics.annotations.Timer;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,39 +54,22 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.expedia.content.media.processing.pipeline.domain.Domain;
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
-import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
-import com.expedia.content.media.processing.pipeline.reporting.Activity;
-import com.expedia.content.media.processing.pipeline.reporting.App;
-import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
-import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
-import com.expedia.content.media.processing.pipeline.reporting.Reporting;
-import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
-import com.expedia.content.media.processing.services.dao.MediaDao;
-import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
-import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
-import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
-import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
-import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
-import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
-import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
-import com.expedia.content.media.processing.services.util.DomainDataUtil;
-import com.expedia.content.media.processing.services.util.FileNameUtil;
-import com.expedia.content.media.processing.services.util.JSONUtil;
-import com.expedia.content.media.processing.services.util.MediaReplacement;
-import com.expedia.content.media.processing.services.util.MediaServiceUrl;
-import com.expedia.content.media.processing.services.validator.MapMessageValidator;
-import com.expedia.content.media.processing.services.validator.ValidationStatus;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Joiner;
+import javax.annotation.Resource;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.UUID;
 
-import expedia.content.solutions.metrics.annotations.Counter;
-import expedia.content.solutions.metrics.annotations.Gauge;
-import expedia.content.solutions.metrics.annotations.Meter;
-import expedia.content.solutions.metrics.annotations.Timer;
+import static org.springframework.http.HttpStatus.ACCEPTED;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.OK;
 
 /**
  * Web service controller for media resources.
@@ -103,6 +101,7 @@ public class MediaController extends CommonServiceController {
     private static final Integer LIVE_COUNT = 1;
     private static final String DEFAULT_VALIDATION_RULES = "DEFAULT";
     private static final Map<String, HttpStatus> STATUS_MAP = new HashMap<>();
+
     static {
         STATUS_MAP.put(ValidationStatus.NOT_FOUND, NOT_FOUND);
         STATUS_MAP.put(ValidationStatus.ZERO_BYTES, BAD_REQUEST);
@@ -134,6 +133,9 @@ public class MediaController extends CommonServiceController {
     private MediaUpdateProcessor mediaUpdateProcessor;
     @Autowired
     private SKUGroupCatalogItemDao skuGroupCatalogItemDao;
+    @Value("${cs.poke.hip-chat.room}")
+    private String hipChatRoom;
+    private Poker poker;
 
     /**
      * web service interface to consume media message.
@@ -147,13 +149,12 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "acquireMessageCounter")
     @Timer(name = "acquireMessageTimer")
     @SuppressWarnings({"PMD.SignatureDeclareThrowsException", "rawtypes"})
-    @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST)
-    @Deprecated
-    public ResponseEntity<String> acquireMedia(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
+    @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST) @Deprecated public ResponseEntity<String> acquireMedia(
+            @RequestBody final String message, @RequestHeader MultiValueMap<String,String> headers) throws Exception {
         final Date timeReceived = new Date();
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.ACQUIRE_MEDIA.getUrl();
-        LOGGER.info("RECEIVED REQUEST - messageName={}, JSONMessage=[{}], requestId=[{}]", serviceUrl, message, requestID);
+        LOGGER.info("RECEIVED REQUEST - serviceUrl={}, JSONMessage=[{}], requestId=[{}]", serviceUrl, message, requestID);
         try {
             final ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
             final Map messageMap = JSONUtil.buildMapFromJson(message);
@@ -162,8 +163,13 @@ public class MediaController extends CommonServiceController {
             final String userName = "Multisource";
             return processRequest(mediaCommonMessage, requestID, serviceUrl, userName, OK, timeReceived);
         } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - messageName={}, JSONMessage=[{}], error=[{}], requestId=[{}] .", serviceUrl, message, ex.getMessage(), requestID, ex);
+            LOGGER.error("ERROR - serviceUrl={}, JSONMessage=[{}], error=[{}], requestId=[{}] .", serviceUrl, message, ex.getMessage(), requestID, ex);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
+        } catch (Exception ex) {
+            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
+            poker.poke("Media Services failed to process an acquireMedia request - RequestId: " + requestID, hipChatRoom,
+                    message, ex);
+                throw ex;
         }
     }
 
@@ -178,20 +184,24 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "addMessageCounter")
     @Timer(name = "addMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST)
-    public ResponseEntity<String> mediaAdd(@RequestBody final String message,
-            @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+    @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST) public ResponseEntity<String> mediaAdd(@RequestBody final String message,
+            @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
         final Date timeReceived = new Date();
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
-        LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
+        LOGGER.info("RECEIVED REQUEST - serviceUrl={}, requestId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
         try {
             final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             final String clientId = auth.getName();
             return processRequest(message, requestID, serviceUrl, clientId, ACCEPTED, timeReceived);
-        } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - messageName={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
+        } catch (ImageMessageException ex) {
+            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
+        } catch (Exception ex) {
+            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
+            poker.poke("Media Services failed to process a mediaAdd request - RequestId: " + requestID, hipChatRoom,
+                    message, ex);
+            throw ex;
         }
     }
 
@@ -207,9 +217,9 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "updateMessageCounter")
     @Timer(name = "updateMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/images/{queryId}", method = RequestMethod.PUT)
-    public ResponseEntity<String> mediaUpdate(@PathVariable("queryId") final String queryId, @RequestBody final String message,
-            @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+    @RequestMapping(value = "/media/v1/images/{queryId}", method = RequestMethod.PUT) public ResponseEntity<String> mediaUpdate(
+            @PathVariable("queryId") final String queryId, @RequestBody final String message, @RequestHeader final MultiValueMap<String,String> headers)
+            throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl() + "/" + queryId;
         LOGGER.info("RECEIVED update REQUEST - serviceUrl={}, queryId=[{}], requestId=[{}], JSONMessage=[{}]", serviceUrl, queryId, requestID, message);
@@ -231,14 +241,15 @@ public class MediaController extends CommonServiceController {
                 final ImageMessage imageMessageNew = removeActiveFromImageMessage(imageMessage);
                 return mediaUpdateProcessor.processRequest(imageMessageNew, lcmMediaId, domainId, dynamoMedia);
             }
-        } catch (IllegalStateException | ImageMessageException ex) {
+        } catch (ImageMessageException ex) {
             LOGGER.error("ERROR - serviceUrl={}, error=[{}], queryId=[{}], requestId=[{}],JSONMessage=[{}].", serviceUrl, ex.getMessage(), queryId,
                     requestID, message, ex);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         } catch (Exception ex) {
-            LOGGER.error("ERROR when update media -serviceUrl={}, error=[{}], queryId=[{}],requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(),
-                    queryId, requestID, message, ex);
-            return this.buildErrorResponse("update failure with message=" + ex.getMessage(), serviceUrl, HttpStatus.INTERNAL_SERVER_ERROR);
+            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
+            poker.poke("Media Services failed to process a mediaUpdate request - RequestId: " + requestID, hipChatRoom,
+                    message, ex);
+            throw ex;
         }
     }
 
@@ -246,34 +257,39 @@ public class MediaController extends CommonServiceController {
      * Web services interface to retrieve media information by its GUID.
      *
      * @param mediaGUID The GUID of the requested media.
-     * @param headers   Headers of the request.
+     * @param headers Headers of the request.
      * @return The requested media information.
      * @throws Exception Thrown if processing the message fails.
      */
     @Meter(name = "getMediaByGUIDMessageCounter")
     @Timer(name = "getMediaByGUIDMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/images/{mediaGUID}", method = RequestMethod.GET)
-    @Transactional
-    public ResponseEntity<String> getMedia(@PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String, String> headers)
-            throws Exception {
+    @RequestMapping(value = "/media/v1/images/{mediaGUID}", method = RequestMethod.GET) @Transactional public ResponseEntity<String> getMedia(
+            @PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
-        LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
-        //TODO Once lodging data transfered to media DB the second condition, numeric, will need to be removed.
-        if (!mediaGUID.matches(REG_EX_GUID) && !mediaGUID.matches(REG_EX_NUMERIC)) {
-            LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
-            return this.buildErrorResponse("Invalid media GUID provided.", serviceUrl, BAD_REQUEST);
-        }
-        final String dynamoGuid = getGuidByMediaId(mediaGUID);
-        if (dynamoGuid != null) {
-            LOGGER.info("Media GUID [{}] exists, please use GUID in request. requestId=[{}]", mediaGUID, requestID);
-            return this.buildErrorResponse("Media GUID " + dynamoGuid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
-        }
-        final MediaGetResponse mediaResponse = mediaDao.getMediaByGUID(mediaGUID);
-        if (mediaResponse == null) {
-            LOGGER.info("Response not found. Provided media GUID does not exist' for requestId=[{}], mediaGUID=[{}]", requestID, mediaGUID);
-            return this.buildErrorResponse("Provided media GUID does not exist.", serviceUrl, NOT_FOUND);
+        MediaGetResponse mediaResponse = null;
+        try {
+            LOGGER.info("RECEIVED REQUEST - serviceUrl={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
+            //TODO Once lodging data transfered to media DB the second condition, numeric, will need to be removed.
+            if (!mediaGUID.matches(REG_EX_GUID) && !mediaGUID.matches(REG_EX_NUMERIC)) {
+                LOGGER.warn("INVALID REQUEST - serviceUrl={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
+                return this.buildErrorResponse("Invalid media GUID provided.", serviceUrl, BAD_REQUEST);
+            }
+            final String dynamoGuid = getGuidByMediaId(mediaGUID);
+            if (dynamoGuid != null) {
+                LOGGER.info("Media GUID [{}] exists, please use GUID in request. requestId=[{}]", mediaGUID, requestID);
+                return this.buildErrorResponse("Media GUID " + dynamoGuid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
+            }
+            mediaResponse = mediaDao.getMediaByGUID(mediaGUID);
+            if (mediaResponse == null) {
+                LOGGER.info("Response not found. Provided media GUID does not exist' for requestId=[{}], mediaGUID=[{}]", requestID, mediaGUID);
+                return this.buildErrorResponse("Provided media GUID does not exist.", serviceUrl, NOT_FOUND);
+            }
+        } catch (Exception ex) {
+            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], GUID=[{}].", serviceUrl, ex.getMessage(), requestID, mediaGUID, ex);
+            poker.poke("Media Services failed to process a getMedia request - RequestId: " + requestID, hipChatRoom, mediaGUID, ex);
+            throw ex;
         }
         return new ResponseEntity<String>(OBJECT_MAPPER.writeValueAsString(mediaResponse), OK);
     }
@@ -281,49 +297,51 @@ public class MediaController extends CommonServiceController {
     /**
      * Web services interface to retrieve media information by domain name and id.
      *
-     * @param domainName           Name of the domain the domain id belongs to.
-     * @param domainId             Identification of the domain item the media is required.
-     * @param activeFilter         Filter determining what images to return. When true only active are returned. When false only inactive media is returned. When
-     *                             all then all are returned. All is set a default.
+     * @param domainName Name of the domain the domain id belongs to.
+     * @param domainId Identification of the domain item the media is required.
+     * @param activeFilter Filter determining what images to return. When true only active are returned. When false only inactive media is returned. When
+     * all then all are returned. All is set a default.
      * @param derivativeTypeFilter Inclusive filter to use to only return certain types of derivatives. Returns all derivatives if not specified.
      * @param derivativeCategoryFilter Inclusive filter to use to only return certain types of medias. Returns all medias if not specified.
-     * @param headers              Headers of the request.
-     * @param pageSize             Positive integer to filter the number of media displayed per page. pageSize is inclusive with pageIndex.
-     * @param pageIndex            Positive integer to filter the page to display. pageIndex is inclusive with pageSize.
+     * @param headers Headers of the request.
+     * @param pageSize Positive integer to filter the number of media displayed per page. pageSize is inclusive with pageIndex.
+     * @param pageIndex Positive integer to filter the page to display. pageIndex is inclusive with pageSize.
      * @return The list of media data belonging to the domain item.
      * @throws Exception Thrown if processing the message fails.
      */
     @Meter(name = "getMediaByDomainIdMessageCounter")
     @Timer(name = "getMediaByDomainIdMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/imagesbydomain/{domainName}/domainId/{domainId}", method = RequestMethod.GET)
-    @Transactional
+    @RequestMapping(value = "/media/v1/imagesbydomain/{domainName}/domainId/{domainId}", method = RequestMethod.GET) @Transactional
     public ResponseEntity<String> getMediaByDomainId(@PathVariable("domainName") final String domainName, @PathVariable("domainId") final String domainId,
             @RequestParam(value = "pageSize", required = false) final Integer pageSize,
             @RequestParam(value = "pageIndex", required = false) final Integer pageIndex,
-            @RequestParam(value = "activeFilter", required = false,
-                    defaultValue = "all") final String activeFilter,
+            @RequestParam(value = "activeFilter", required = false, defaultValue = "all") final String activeFilter,
             @RequestParam(value = "derivativeTypeFilter", required = false) final String derivativeTypeFilter,
             @RequestParam(value = "derivativeCategoryFilter", required = false) final String derivativeCategoryFilter,
-            @RequestHeader final MultiValueMap<String, String> headers) throws Exception {
+            @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
-        LOGGER.info("RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+        LOGGER.info(
+                "RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                 serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
         final ResponseEntity<String> validationResponse = validateMediaByDomainIdRequest(domainName, domainId, activeFilter);
         if (validationResponse != null) {
-            LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
-                    serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
-            return validationResponse;
-        }
-        final MediaByDomainIdResponse response;
-        try {
-            response = mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter, derivativeCategoryFilter, pageSize, pageIndex);
-        } catch (Exception ex) {
             LOGGER.warn(
                     "INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
                     serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
-            return new ResponseEntity<>(ex.getMessage(), BAD_REQUEST);
+            return validationResponse;
+        }
+        MediaByDomainIdResponse response = null;
+        try {
+            response = mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter,
+                    derivativeCategoryFilter, pageSize, pageIndex);
+        } catch (Exception ex) {
+            LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+                    serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter, ex);
+            poker.poke("Media Services failed to process a getMediaByDomainId request - RequestId: " + requestID, hipChatRoom,
+                    domainId, ex);
+            throw ex;
         }
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);
     }
@@ -381,15 +399,15 @@ public class MediaController extends CommonServiceController {
             objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse(jsonError, serviceUrl, BAD_REQUEST));
             return;
         }
-        if (mediaCannotBeHidden(dynamoMedia, newJson)){
+        if (mediaCannotBeHidden(dynamoMedia, newJson)) {
             objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("Only unpublished media can be hidden", serviceUrl, BAD_REQUEST));
         }
     }
 
     /**
-     *  Verify if a media can be hidden.
-     *  An image can be permanently hidden from all messages, including further updates.
-     *  This is not applied to published images. only unpublished images (Duplicated and Rejected) can be hidden.
+     * Verify if a media can be hidden.
+     * An image can be permanently hidden from all messages, including further updates.
+     * This is not applied to published images. only unpublished images (Duplicated and Rejected) can be hidden.
      *
      * @param media Media to verify
      * @param message Incoming update message.
@@ -420,11 +438,10 @@ public class MediaController extends CommonServiceController {
         return new ObjectMapper().writeValueAsString(jsonMap);
     }
 
-
     /**
      * Validates the media by domain id request.
      *
-     * @param domainName   Domain to validate.
+     * @param domainName Domain to validate.
      * @param activeFilter Active filter to validate.
      * @return Returns a response if the validation fails; null otherwise.
      */
@@ -445,18 +462,18 @@ public class MediaController extends CommonServiceController {
     /**
      * Common processing between mediaAdd and the AWS portion of aquireMedia. Can be transfered into mediaAdd once aquireMedia is removed.
      *
-     * @param message       JSON formated ImageMessage.
-     * @param requestID     The id of the request. Used for tracking purposes.
-     * @param serviceUrl    URL of the message called.
-     * @param clientId      Web service client id.
+     * @param message JSON formated ImageMessage.
+     * @param requestID The id of the request. Used for tracking purposes.
+     * @param serviceUrl URL of the message called.
+     * @param clientId Web service client id.
      * @param successStatus Status to return when successful.
-     * @param timeReceived  The time at which MediaService received the request
+     * @param timeReceived The time at which MediaService received the request
      * @return The response for the service call.
      * @throws Exception Thrown if the message can't be validated or the response can't be serialized.
      */
     @SuppressWarnings({"PMD.PrematureDeclaration"})
-    private ResponseEntity<String> processRequest(final String message, final String requestID, final String serviceUrl, final String clientId,
-                                                  HttpStatus successStatus, Date timeReceived) throws Exception {
+    private ResponseEntity<String> processRequest(final String message, final String requestID,
+            final String serviceUrl, final String clientId, HttpStatus successStatus, Date timeReceived) throws Exception {
         final String json = validateImageMessage(message, clientId);
         if (!"[]".equals(json)) {
             LOGGER.warn("Returning bad request for messageName={}, requestId=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, requestID, message, json);
@@ -467,13 +484,13 @@ public class MediaController extends CommonServiceController {
         final ValidationStatus fileValidation = verifyUrl(imageMessage.getFileUrl());
         if (!fileValidation.isValid()) {
             switch (fileValidation.getStatus()) {
-                case ValidationStatus.NOT_FOUND :
+                case ValidationStatus.NOT_FOUND:
                     LOGGER.info("Response not found. Provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
                     break;
-                case ValidationStatus.ZERO_BYTES :
+                case ValidationStatus.ZERO_BYTES:
                     LOGGER.info("Returning bad request. Provided 'file is 0 Bytes' for requestId=[{}], message=[{}]", requestID, message);
                     break;
-                default :
+                default:
                     LOGGER.info("Returning bad request. requestId=[{}], message=[{}]", requestID, message);
                     break;
             }
@@ -514,8 +531,8 @@ public class MediaController extends CommonServiceController {
      * published to the next work queue.
      *
      * @param imageMessage The incoming image message.
-     * @param requestID    The id of the request. Used for tracking purposes.
-     * @param clientId     Web service client id.
+     * @param requestID The id of the request. Used for tracking purposes.
+     * @param clientId Web service client id.
      * @return A Map contains the updated message with request and other data added
      * and if the file is checked for reprocessing .
      */
@@ -569,13 +586,13 @@ public class MediaController extends CommonServiceController {
      * populate the replacement queryId and GUID on the ImageMessageBuilder.
      * </p>
      *
-     * @param imageMessage        Original message received.
+     * @param imageMessage Original message received.
      * @param imageMessageBuilder Builder for the new/mutated ImageMessage.
-     * @param clientId            Existing in the message header, represents the client (EPC, Media Cloud Router, Multisource, GSO Media Tools)
+     * @param clientId Existing in the message header, represents the client (EPC, Media Cloud Router, Multisource, GSO Media Tools)
      * @return returns true if reprocessing and false if not.
      */
 
-    private boolean processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder, String clientId ) {
+    private boolean processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder, String clientId) {
         if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
             final List<Media> mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
             final Optional<Media> bestMedia = MediaReplacement
@@ -593,9 +610,9 @@ public class MediaController extends CommonServiceController {
                         imageMessage.getFileName(), imageMessage.getRequestId(), media.getDomainId());
                 return true;
             } else {
-                final List<LcmMedia> lcmMediaList = mediaDao.getMediaByFilenameInLCM(Integer.valueOf(imageMessage.getOuterDomainData().getDomainId()),imageMessage.getFileName());
+                final List<LcmMedia> lcmMediaList = mediaDao.getMediaByFilenameInLCM(Integer.valueOf(imageMessage.getOuterDomainData().getDomainId()), imageMessage.getFileName());
                 final Optional<LcmMedia> existMedia = lcmMediaList.stream().filter(lcmMedia -> lcmMedia.getActive()).findFirst();
-                if(existMedia.isPresent()){
+                if (existMedia.isPresent()) {
                     final LcmMedia lcmMedia = existMedia.get();
                     final OuterDomain.OuterDomainBuilder domainBuilder = OuterDomain.builder().from(imageMessage.getOuterDomainData());
                     domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, lcmMedia.getMediaId().toString());
@@ -640,7 +657,7 @@ public class MediaController extends CommonServiceController {
      * Get validator list by different client, and do validation by rules and DAO validator (later)
      * return the validation error list that combine all of the error result.
      *
-     * @param message  input json message.
+     * @param message input json message.
      * @param clientId Web service client id.
      * @return JSON string contains fileName and error description.
      * @throws Exception when message to ImageMessage and convert java list to json.
@@ -672,8 +689,8 @@ public class MediaController extends CommonServiceController {
      * Logs a completed activity and its time. and exepdiaId is appended before the file name
      *
      * @param imageMessage The imageMessage of the file being processed.
-     * @param activity     The activity to log.
-     * @param date         The timestamp at which the activity happened, if null the latest timestamp will be generated .
+     * @param activity The activity to log.
+     * @param date The timestamp at which the activity happened, if null the latest timestamp will be generated .
      */
     private void logActivity(final ImageMessage imageMessage, final Activity activity, final Date date) throws URISyntaxException {
         final Date logDate = (date == null) ? new Date() : date;
@@ -702,11 +719,11 @@ public class MediaController extends CommonServiceController {
      * @param mediaId
      * @return The GUID or null if no media found in dynamo.
      */
-    private String getGuidByMediaId(String mediaId){
+    private String getGuidByMediaId(String mediaId) {
         if (StringUtils.isNumeric(mediaId)) {
             final List<Media> mediaList = mediaDao.getMediaByMediaId(mediaId);
             if (!mediaList.isEmpty()) {
-                 return mediaList.stream().findFirst().get().getMediaGuid();
+                return mediaList.stream().findFirst().get().getMediaGuid();
             }
         }
         return null;
