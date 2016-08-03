@@ -2,9 +2,8 @@ package com.expedia.content.media.processing.services.validator;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Base implementation of ImageMessage required field validation. Also verifies outer domain fields.
@@ -13,7 +12,7 @@ import org.slf4j.LoggerFactory;
  */
 @Deprecated
 public class RequiredValidator extends OuterDomainSeekerValidator implements MediaMessageValidator {
-    private static final Logger LOGGER = LoggerFactory.getLogger(RequiredValidator.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(RequiredValidator.class);
 
     /**
      * Validates that a specified field exists in the message.
@@ -47,7 +46,7 @@ public class RequiredValidator extends OuterDomainSeekerValidator implements Med
         try {
             fieldValue = ReflectionUtil.getFieldValue(imageMessage, fieldName);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            LOGGER.info("Required field validation reflection call failed! error=[{}]", e.getMessage(), e);
+            LOGGER.info(e, "Required field validation reflection call failed ErrorMessage={}", e.getMessage());
         }
         if ((fieldValue == null || StringUtils.isEmpty(fieldValue.toString())) && imageMessage.getOuterDomainData() != null) {
             fieldValue = seekOuterDomainFields(imageMessage);

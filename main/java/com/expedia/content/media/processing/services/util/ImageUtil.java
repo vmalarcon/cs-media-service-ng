@@ -5,8 +5,7 @@ import java.nio.file.Path;
 
 import javax.imageio.ImageIO;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 
 import com.expedia.content.media.processing.pipeline.domain.Metadata;
 
@@ -16,7 +15,7 @@ import com.expedia.content.media.processing.pipeline.domain.Metadata;
 
 public final class ImageUtil {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ImageUtil.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(ImageUtil.class);
     
 
     private ImageUtil(){
@@ -39,13 +38,13 @@ public final class ImageUtil {
                 bufferedImage = ImageIO.read(sourcePath.toFile());
                 height = bufferedImage.getHeight();
                 width = bufferedImage.getWidth();
-                LOGGER.debug("Media width: " + width);
+                LOGGER.debug("Media Metadata File={} Width={}", sourcePath.getFileName(), width);
                 sourceSize = sourcePath.toFile().length();
-                LOGGER.debug("Media size: " + sourceSize);
+                LOGGER.debug("Media Metadata File={} Size={}", sourcePath.getFileName(), sourceSize);
                 imageMetadata = Metadata.builder().fileSize((int) sourcePath.toFile().length()).width(width).height(height).build();
 
             } catch (Exception e) {
-                LOGGER.debug("The source path is not associate to an image file " + sourcePath.getFileName());
+                LOGGER.debug(e, "The source path is not associate to an image File={}", sourcePath.getFileName());
             }
         }
         return imageMetadata;

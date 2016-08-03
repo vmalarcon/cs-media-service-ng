@@ -6,6 +6,7 @@ import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
 import com.expedia.content.media.processing.pipeline.reporting.Activity;
 import com.expedia.content.media.processing.pipeline.reporting.App;
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
@@ -34,8 +35,6 @@ import expedia.content.solutions.metrics.annotations.Gauge;
 import expedia.content.solutions.metrics.annotations.Meter;
 import expedia.content.solutions.metrics.annotations.Timer;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
@@ -83,7 +82,7 @@ public class MediaController extends CommonServiceController {
     private static final String REJECTED_STATUS = "REJECTED";
     private static final String RESPONSE_FIELD_THUMBNAIL_URL = "thumbnailUrl";
     private static final String RESPONSE_FIELD_LCM_MEDIA_ID = "lcmMediaId";
-    private static final Logger LOGGER = LoggerFactory.getLogger(MediaController.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(MediaController.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final String GUID_REG = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
     private static final String MEDIA_CLOUD_ROUTER_CLIENT_ID = "Media Cloud Router";
@@ -155,19 +154,19 @@ public class MediaController extends CommonServiceController {
         final Date timeReceived = new Date();
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.ACQUIRE_MEDIA.getUrl();
-        LOGGER.info("RECEIVED REQUEST - serviceUrl={}, JSONMessage=[{}], requestId=[{}]", serviceUrl, message, requestID);
+        LOGGER.info("RECEIVED ACQUIRE REQUEST ServiceUrl={} RequestId={} JsonMessage={}", serviceUrl, requestID, message);
         try {
             final ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
             final Map messageMap = JSONUtil.buildMapFromJson(message);
             final String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, providerProperties);
-            LOGGER.info("converted to - common message =[{}]", mediaCommonMessage);
+            LOGGER.info("ACQUIRE REQUEST CONVERTED RequestId={}", Arrays.asList(requestID), mediaCommonMessage);
             final String userName = "Multisource";
             return processRequest(mediaCommonMessage, requestID, serviceUrl, userName, OK, timeReceived);
         } catch (IllegalStateException | ImageMessageException ex) {
-            LOGGER.error("ERROR - serviceUrl={}, JSONMessage=[{}], error=[{}], requestId=[{}] .", serviceUrl, message, ex.getMessage(), requestID, ex);
+            LOGGER.error(ex, "ERROR ServiceUrl={} RequestId=[{}] ErrorMessage={} JSONMessage={}", serviceUrl, requestID, ex.getMessage(), message);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         } catch (Exception ex) {
-            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
+            LOGGER.error(ex, "ERROR ServiceUrl={} RequestId=[{}] ErrorMessage={} JSONMessage={}", serviceUrl, requestID, ex.getMessage(), message);
             poker.poke("Media Services failed to process an acquireMedia request - RequestId: " + requestID, hipChatRoom,
                     message, ex);
                 throw ex;
@@ -190,16 +189,16 @@ public class MediaController extends CommonServiceController {
         final Date timeReceived = new Date();
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
-        LOGGER.info("RECEIVED REQUEST - serviceUrl={}, requestId=[{}], JSONMessage=[{}]", serviceUrl, requestID, message);
+        LOGGER.info("RECEIVED ADD REQUEST ServiceUrl={} RequestId={} JSONMessage={}", serviceUrl, requestID, message);
         try {
             final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             final String clientId = auth.getName();
             return processRequest(message, requestID, serviceUrl, clientId, ACCEPTED, timeReceived);
         } catch (ImageMessageException ex) {
-            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
+            LOGGER.error(ex, "ERROR ServiceUrl={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, requestID, ex.getMessage()), message);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         } catch (Exception ex) {
-            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
+            LOGGER.error(ex, "ERROR ServiceUrl={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, requestID, ex.getMessage()), message);
             poker.poke("Media Services failed to process a mediaAdd request - RequestId: " + requestID, hipChatRoom,
                     message, ex);
             throw ex;
@@ -223,7 +222,7 @@ public class MediaController extends CommonServiceController {
             throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl() + "/" + queryId;
-        LOGGER.info("RECEIVED update REQUEST - serviceUrl={}, queryId=[{}], requestId=[{}], JSONMessage=[{}]", serviceUrl, queryId, requestID, message);
+        LOGGER.info("RECEIVED UPDATE REQUEST ServiceUrl={} QueryId={} RequestId={} JSONMessage={}", serviceUrl, queryId, requestID, message);
         try {
             final Map<String, Object> objectMap = new HashMap<>();
             validateAndInitMap(objectMap, queryId, serviceUrl, message, requestID);
@@ -243,11 +242,12 @@ public class MediaController extends CommonServiceController {
                 return mediaUpdateProcessor.processRequest(imageMessageNew, lcmMediaId, domainId, dynamoMedia);
             }
         } catch (ImageMessageException ex) {
-            LOGGER.error("ERROR - serviceUrl={}, error=[{}], queryId=[{}], requestId=[{}],JSONMessage=[{}].", serviceUrl, ex.getMessage(), queryId,
-                    requestID, message, ex);
+            LOGGER.error(ex, "ERROR ServiceUrl={} QueryId={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, queryId,
+                    requestID, ex.getMessage()), message);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         } catch (Exception ex) {
-            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], JSONMessage=[{}].", serviceUrl, ex.getMessage(), requestID, message, ex);
+            LOGGER.error(ex, "ERROR ServiceUrl={} QueryId={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, queryId,
+                    requestID, ex.getMessage()), message);
             poker.poke("Media Services failed to process a mediaUpdate request - RequestId: " + requestID, hipChatRoom,
                     message, ex);
             throw ex;
@@ -271,24 +271,24 @@ public class MediaController extends CommonServiceController {
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
         MediaGetResponse mediaResponse = null;
         try {
-            LOGGER.info("RECEIVED REQUEST - serviceUrl={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
+            LOGGER.info("RECEIVED GET REQUEST ServiceUrl={} RequestId={} MediaGUID={}", serviceUrl, requestID, mediaGUID);
             //TODO Once lodging data transfered to media DB the second condition, numeric, will need to be removed.
             if (!mediaGUID.matches(REG_EX_GUID) && !mediaGUID.matches(REG_EX_NUMERIC)) {
-                LOGGER.warn("INVALID REQUEST - serviceUrl={}, requestId=[{}], mediaGUID=[{}]", serviceUrl, requestID, mediaGUID);
+                LOGGER.warn("INVALID GET REQUEST ServiceUrl={} RequestId={} MediaGUID={}", serviceUrl, requestID, mediaGUID);
                 return this.buildErrorResponse("Invalid media GUID provided.", serviceUrl, BAD_REQUEST);
             }
             final String dynamoGuid = getGuidByMediaId(mediaGUID);
             if (dynamoGuid != null) {
-                LOGGER.info("Media GUID [{}] exists, please use GUID in request. requestId=[{}]", mediaGUID, requestID);
+                LOGGER.info("INVALID GET REQUEST ErrorMessage=\"Media GUID exists please use GUID in request\" MediaID={} MediaGuid={} RequestId={}", mediaGUID, dynamoGuid, requestID);
                 return this.buildErrorResponse("Media GUID " + dynamoGuid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
             }
             mediaResponse = mediaDao.getMediaByGUID(mediaGUID);
             if (mediaResponse == null) {
-                LOGGER.info("Response not found. Provided media GUID does not exist' for requestId=[{}], mediaGUID=[{}]", requestID, mediaGUID);
+                LOGGER.info("INVALID GET REQUEST ErrorMessage=\"Response not found. Provided media GUID does not exist\" MediaGUID={} RequestId={}", mediaGUID, requestID);
                 return this.buildErrorResponse("Provided media GUID does not exist.", serviceUrl, NOT_FOUND);
             }
         } catch (Exception ex) {
-            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], GUID=[{}].", serviceUrl, ex.getMessage(), requestID, mediaGUID, ex);
+            LOGGER.error(ex, "ERROR ServiceUrl={} RequestId={} MediaGuid={} ErrorMessage={}", serviceUrl, requestID, mediaGUID, ex.getMessage());
             poker.poke("Media Services failed to process a getMedia request - RequestId: " + requestID, hipChatRoom, mediaGUID, ex);
             throw ex;
         }
@@ -323,13 +323,13 @@ public class MediaController extends CommonServiceController {
             @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
-        LOGGER.info(
-                "RECEIVED REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+        LOGGER.info("RECEIVED GET BY DOMAIN ID REQUEST " +
+                        "ServiceUrl={} RequestId={} DomainName={} DomainId={} PageSize={} PageIndex={} ActiveFilter={} DerivativeTypeFilter={}",
                 serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
         final ResponseEntity<String> validationResponse = validateMediaByDomainIdRequest(domainName, domainId, activeFilter);
         if (validationResponse != null) {
-            LOGGER.warn(
-                    "INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
+            LOGGER.warn("INVALID GET BY DOMAIN ID REQUEST " +
+                            "ServiceUrl={} RequestId={} DomainName={} DomainId={} PageSize={} PageIndex={} ActiveFilter={} DerivativeTypeFilter={}",
                     serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
             return validationResponse;
         }
@@ -338,8 +338,9 @@ public class MediaController extends CommonServiceController {
             response = mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter,
                     derivativeCategoryFilter, pageSize, pageIndex);
         } catch (Exception ex) {
-            LOGGER.warn("INVALID REQUEST - messageName={}, requestId=[{}], domainName=[{}], domainId=[{}], pageSize=[{}], pageIndex=[{}], activeFilter=[{}], derivativeTypeFilter=[{}]",
-                    serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter, ex);
+            LOGGER.warn(ex, "INVALID GET BY DOMAIN ID REQUEST " +
+                    "ServiceUrl={} RequestId={} DomainName={} DomainId={} PageSize={} PageIndex={} ActiveFilter={} DerivativeTypeFilter={}",
+                    serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
             poker.poke("Media Services failed to process a getMediaByDomainId request - RequestId: " + requestID, hipChatRoom,
                     domainId, ex);
             throw ex;
@@ -395,7 +396,7 @@ public class MediaController extends CommonServiceController {
         objectMap.put(NEW_JASON_FIELD, newJson);
         final String jsonError = validateImageMessage(newJson, "EPCUpdate");
         if (!"[]".equals(jsonError)) {
-            LOGGER.error("Returning BAD_REQUEST for serviceUrl={}, queryId=[{}],requestId=[{}], JSONMessage=[{}], Errors=[{}]", serviceUrl, queryId,
+            LOGGER.error("VALIDATION ERROR Returning BAD_REQUEST ServiceUrl={} QueryId={} RequestId={} JSONMessage={} ErrorMessage={}", serviceUrl, queryId,
                     requestID, message, jsonError);
             objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse(jsonError, serviceUrl, BAD_REQUEST));
             return;
@@ -477,7 +478,7 @@ public class MediaController extends CommonServiceController {
             final String serviceUrl, final String clientId, HttpStatus successStatus, Date timeReceived) throws Exception {
         final String json = validateImageMessage(message, clientId);
         if (!"[]".equals(json)) {
-            LOGGER.warn("Returning bad request for messageName={}, requestId=[{}], JSONMessage=[{}]. Errors=[{}]", serviceUrl, requestID, message, json);
+            LOGGER.warn("Returning bad request ServiceUrl={} ClientId={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, clientId, requestID, json), message);
             return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
         }
         @SuppressWarnings("CPD-START")
@@ -486,13 +487,13 @@ public class MediaController extends CommonServiceController {
         if (!fileValidation.isValid()) {
             switch (fileValidation.getStatus()) {
                 case ValidationStatus.NOT_FOUND:
-                    LOGGER.info("Response not found. Provided 'fileUrl does not exist' for requestId=[{}], message=[{}]", requestID, message);
+                    LOGGER.info("NOT FOUND Reason=\"Provided 'fileUrl does not exist'\" ServiceUrl={} ClientId={} RequestId={}", Arrays.asList(serviceUrl, clientId, requestID), message);
                     break;
                 case ValidationStatus.ZERO_BYTES:
-                    LOGGER.info("Returning bad request. Provided 'file is 0 Bytes' for requestId=[{}], message=[{}]", requestID, message);
+                    LOGGER.info("BAD REQUEST Reason=\"Provided 'file is 0 Bytes'\" ServiceUrl={} ClientId={} RequestId={}", Arrays.asList(serviceUrl, clientId, requestID), message);
                     break;
                 default:
-                    LOGGER.info("Returning bad request. requestId=[{}], message=[{}]", requestID, message);
+                    LOGGER.info("BAD REQUEST ServiceUrl={} ClientId={} RequestId={}", Arrays.asList(serviceUrl, clientId, requestID), message);
                     break;
             }
             return this.buildErrorResponse(fileValidation.getMessage(), serviceUrl, STATUS_MAP.get(fileValidation.getStatus()) == null ? BAD_REQUEST : STATUS_MAP.get(fileValidation.getStatus()));
@@ -522,8 +523,7 @@ public class MediaController extends CommonServiceController {
             dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);
         }
         publishMsg(imageMessageNew);
-        LOGGER.info("SUCCESS - messageName={}, requestId=[{}], mediaGuid=[{}], JSONMessage=[{}]", serviceUrl, requestID, imageMessageNew.getMediaGuid(),
-                message);
+        LOGGER.info("SUCCESS ServiceUrl={}", Arrays.asList(serviceUrl), imageMessageNew);
         return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
     }
 
@@ -607,8 +607,7 @@ public class MediaController extends CommonServiceController {
                 imageMessageBuilder.mediaGuid(media.getMediaGuid());
                 imageMessageBuilder.providedName(media.getProvidedName());
 
-                LOGGER.info("This is a replacement: mediaGuid=[{}], filename=[{}], requestId=[{}], lcmMediaId=[{}]", media.getMediaGuid(),
-                        imageMessage.getFileName(), imageMessage.getRequestId(), media.getDomainId());
+                LOGGER.info("REPLACEMENT MEDIA MediaGuid={} lcmMediaId=[{}]", Arrays.asList(media.getMediaGuid(), media.getDomainId()), imageMessage);
                 return true;
             } else {
                 final List<LcmMedia> lcmMediaList = mediaDao.getMediaByFilenameInLCM(Integer.valueOf(imageMessage.getOuterDomainData().getDomainId()), imageMessage.getFileName());
@@ -618,13 +617,12 @@ public class MediaController extends CommonServiceController {
                     final OuterDomain.OuterDomainBuilder domainBuilder = OuterDomain.builder().from(imageMessage.getOuterDomainData());
                     domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, lcmMedia.getMediaId().toString());
                     imageMessageBuilder.outerDomainData(domainBuilder.build());
-                    LOGGER.info("The replacement information by lcm is:  filename=[{}], requestId=[{}], lcmMediaId=[{}]",
-                            imageMessage.getFileName(), imageMessage.getRequestId(), lcmMedia.getMediaId());
+                    LOGGER.info("REPLACEMENT MEDIA LCM INFORMATION LcmMediaId={}", Arrays.asList(lcmMedia.getMediaId()), imageMessage);
                     return true;
 
                 }
-                LOGGER.info("Could not find the best media for the filename=[{}] on the list: [{}]. Will create a new GUID.", imageMessage.getFileName(),
-                        Joiner.on("; ").join(mediaList));
+                LOGGER.info("CREATING NEW GUID Reason-\"could not find the best media\" MediaList[{}]",
+                        Arrays.asList(String.valueOf(Joiner.on("; ").join(mediaList))), imageMessage);
             }
         }
         return false;
@@ -646,10 +644,10 @@ public class MediaController extends CommonServiceController {
         final String jsonMessage = message.toJSONMessage();
         try {
             messagingTemplate.send(publishQueue, MessageBuilder.withPayload(jsonMessage).build());
-            LOGGER.info("Sending message to queue done : message=[{}] ", jsonMessage);
+            LOGGER.info("Sending message to queue done", jsonMessage);
             logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED, null);
         } catch (Exception ex) {
-            LOGGER.error("Error publishing : message=[{}], error=[{}]", jsonMessage, ex.getMessage(), ex);
+            LOGGER.error(ex, "Error publishing ErrorMessage={}", Arrays.asList(ex.getMessage()), message);
             throw new RuntimeException("Error publishing message=[" + jsonMessage + "]", ex);
         }
     }
@@ -671,7 +669,7 @@ public class MediaController extends CommonServiceController {
         final List<MapMessageValidator> defaultValidatorList = mapValidatorList.get(DEFAULT_VALIDATION_RULES);
         final List<MapMessageValidator> validatorList = mapValidatorList.getOrDefault(clientId, defaultValidatorList);
         if (validatorList == defaultValidatorList) {
-            LOGGER.warn("There is no validation specific to user: {}. Using default validations.", clientId);
+            LOGGER.warn("NO VALIDATION FOR USER  Action=\"Using default validations\" ClientId={}", Arrays.asList(clientId), imageMessage);
         }
         if (validatorList == null && defaultValidatorList == null) {
             return UNAUTHORIZED_USER_MESSAGE;

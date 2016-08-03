@@ -7,6 +7,7 @@ import com.expedia.content.media.processing.pipeline.domain.DerivativeType;
 import com.expedia.content.media.processing.pipeline.domain.Image;
 import com.expedia.content.media.processing.pipeline.domain.ResizeCrop;
 import com.expedia.content.media.processing.pipeline.domain.ResizeMethod;
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.TemporaryWorkFolder;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
@@ -16,8 +17,6 @@ import expedia.content.solutions.metrics.annotations.Timer;
 import org.im4java.core.ConvertCmd;
 import org.im4java.core.IM4JavaException;
 import org.im4java.core.IMOperation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -44,7 +43,7 @@ import static com.expedia.content.media.processing.services.util.URLUtil.patchUR
 @Component
 public class ThumbnailProcessor {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ThumbnailProcessor.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(ThumbnailProcessor.class);
 
     private static final int THUMBNAIL_WIDTH = 180;
     private static final int THUMBNAIL_HEIGHT = 180;
@@ -102,7 +101,7 @@ public class ThumbnailProcessor {
     private Thumbnail createGenericThumbnail(final String fileUrl, final int width, final int height, final Integer rotation, final String guid,
                                              final String domain, final String domainId) {
 
-        LOGGER.debug("Creating thumbnail url=[{}] guid=[{}]", fileUrl, guid);
+        LOGGER.debug("CREATE THUMBNAIL FileUrl={} MediaGuid=[{}]", fileUrl, guid);
         String thumbnailUrl;
         Path thumbnailPath;
         Path sourcePath;
@@ -113,19 +112,19 @@ public class ThumbnailProcessor {
             sourcePath = fetchUrl(patchURL(fileUrl), guid, workFolder);
             thumbnailPath = generateThumbnail(sourcePath, width, height, (rotation == null) ? 0 : rotation);
             thumbnailUrl = computeS3thumbnailPath(guid, domain, domainId);
-            LOGGER.debug("Writing thumbnail: " + thumbnailUrl);
+            LOGGER.debug("WRITING THUMBNAIL ThumbnailUrl={}", thumbnailUrl);
             final WritableResource writableResource = (WritableResource) resourceLoader.getResource(thumbnailUrl);
             try (OutputStream out = writableResource.getOutputStream(); FileInputStream file = new FileInputStream(thumbnailPath.toFile())) {
                 out.write(IOUtils.toByteArray(file));
-                LOGGER.debug("Wrote thumbnail: " + thumbnailUrl);
+                LOGGER.debug("WROTE THUMBNAIL ThumbnailUrl={}", thumbnailUrl);
                 thumbnailUrl = thumbnailUrl.replaceFirst(S3_PREFIX, "https://s3-" + this.regionName + ".amazonaws.com");
                 thumbnail = buildThumbnail(thumbnailPath, thumbnailUrl, sourcePath);
             }
         } catch (Exception e) {
-            LOGGER.error("Unable to generate thumbnail with url: " + fileUrl, e);
+            LOGGER.error(e, "Unable to generate thumbnail FileUrl={}", fileUrl);
             throw new RuntimeException("Unable to generate thumbnail with url: " + fileUrl + " and GUID: " + guid, e);
         }
-        LOGGER.debug("Created thumbnail url=[{}] guid=[{}]", fileUrl, guid);
+        LOGGER.debug("CREATED THUMBNAIL FileUrl={} MediaGuid=[{}]", fileUrl, guid);
         return thumbnail;
     }
 
@@ -148,7 +147,7 @@ public class ThumbnailProcessor {
      */
     private Path generateThumbnail(final Path sourcePath, int width, int height, Integer rotation) throws IOException, InterruptedException,
             IM4JavaException, URISyntaxException {
-        LOGGER.debug("Generating thumbnail -> " + sourcePath);
+        LOGGER.debug("GENERATING THUMBNAIL SourcePath={}", sourcePath);
 
         if (rotation != 0) {
             rotateImage(sourcePath, rotation);
@@ -168,10 +167,10 @@ public class ThumbnailProcessor {
         operation.addImage(thumbnailPath.toString());
 
         final ConvertCmd convertCmd = new ConvertCmd();
-        LOGGER.debug("convert.thumb> {}", "convert " + operation.getCmdArgs().toString().replaceAll(",", ""));
+        LOGGER.debug("CONVERT THUMBNAIL Command={}", "convert " + operation.getCmdArgs().toString().replaceAll(",", ""));
         convertCmd.run(operation);
         verifyCommandResult(convertCmd);
-        LOGGER.debug("Generated thumbnail" + sourcePath);
+        LOGGER.debug("GENERATED THUMBNAIL SourcePath={}", sourcePath);
         return thumbnailPath;
     }
 
@@ -188,7 +187,7 @@ public class ThumbnailProcessor {
         operation.addImage(sourcePath.toString());
         operation.addImage(sourcePath.toString());
         final ConvertCmd convertCmd = new ConvertCmd();
-        LOGGER.debug("convert.thumb> {}", "convert " + operation.getCmdArgs().toString().replaceAll(",", ""));
+        LOGGER.debug("CONVERT THUMBNAIL Command={}", "convert " + operation.getCmdArgs().toString().replaceAll(",", ""));
         convertCmd.run(operation);
         verifyCommandResult(convertCmd);
     }
@@ -220,7 +219,7 @@ public class ThumbnailProcessor {
     private static void verifyCommandResult(final ConvertCmd convertCommand) throws IM4JavaException {
         final List<String> errorTexts = convertCommand.getErrorText();
         final String errorText = Joiner.on('\n').join(errorTexts);
-        LOGGER.debug("command results=[{}]", errorText);
+        LOGGER.debug("Command Results ErrorMessage={}", errorText);
         if (!org.apache.commons.lang.StringUtils.isEmpty(errorText)) {
             throw new IM4JavaException("IM Exception. Please see log for details");
         }
@@ -254,12 +253,12 @@ public class ThumbnailProcessor {
     @Timer(name = "FetchUrlTimer")
     private Path fetchUrl(final String fileUrl, final String guid, TemporaryWorkFolder workFolder) throws IOException {
         final Resource resource = resourceLoader.getResource(fileUrl);
-        LOGGER.debug("Fetching URL -> " + fileUrl);
+        LOGGER.debug("FETCHING URL FileUrl={}", fileUrl);
         final Path filePath = Paths.get(workFolder.getWorkPath().toString(), guid + ".jpg");
         try (FileOutputStream fileOutputStream = new FileOutputStream(filePath.toString())) {
             IOUtils.copy(resource.getInputStream(), fileOutputStream);
         }
-        LOGGER.debug("Fetched  URL -> " + fileUrl);
+        LOGGER.debug("FETCHED URL FileUrl={}", fileUrl);
         return filePath;
     }
 

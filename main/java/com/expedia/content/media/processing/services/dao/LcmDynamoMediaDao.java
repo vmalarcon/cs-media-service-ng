@@ -2,6 +2,7 @@ package com.expedia.content.media.processing.services.dao;
 
 import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaAndDerivative;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
@@ -29,8 +30,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -79,7 +78,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     private static final int CONTENT_PROVIDER_ID = 1;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
-    private static final Logger LOGGER = LoggerFactory.getLogger(LcmDynamoMediaDao.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(LcmDynamoMediaDao.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Integer FORMAT_ID_2 = 2;
     private static final Integer ACTIVITY_COUNT_THRESHOLD = 12;
@@ -500,7 +499,8 @@ public class LcmDynamoMediaDao implements MediaDao {
                         media.setLcmMediaId(lcmMediaId.toString());
                     }
                 } catch (IOException | NullPointerException e) {
-                    LOGGER.warn("Domain fields not stored in proper JSON format for media id {}.", media.getMediaGuid(), e);
+                    LOGGER.warn(e, "Domain fields not stored in proper JSON format MediaGuid={} ClientId={} FileName={}",
+                            media.getMediaGuid(), media.getClientId(), media.getFileName());
                 }
             }
             if (media.getDerivatives() != null) {
@@ -512,7 +512,8 @@ public class LcmDynamoMediaDao implements MediaDao {
                             .filter(derivative -> (skipDerivativeFiltering || derivativeFilter.contains((String) derivative.get("type"))))
                             .collect(Collectors.toList()));
                 } catch (IOException e) {
-                    LOGGER.warn("Derivatives not stored in proper JSON format for media id {}.", media.getMediaGuid(), e);
+                    LOGGER.warn(e, "Derivatives not stored in proper JSON format MediaGuid={} ClientId={} FileName={}",
+                            media.getMediaGuid(), media.getClientId(), media.getFileName());
                 }
             }
         }
@@ -640,7 +641,8 @@ public class LcmDynamoMediaDao implements MediaDao {
                 });
                 dynamoMedia.setDomainData(domainData);
             } catch (IOException e) {
-                LOGGER.warn("Domain fields not stored in proper JSON format for media id {}.", dynamoMedia.getMediaGuid(), e);
+                LOGGER.warn(e, "Domain fields not stored in proper JSON format MediaGuid={} ClientId={} FileName={}",
+                        dynamoMedia.getMediaGuid(), dynamoMedia.getClientId(), dynamoMedia.getFileName());
             }
         }
         final Map<String, Object> lcmDomainData = new HashMap<String, Object>();

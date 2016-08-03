@@ -1,7 +1,6 @@
 package com.expedia.content.media.processing.services.dao.sql;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +23,7 @@ import javax.sql.DataSource;
 @Component
 public class AddCatalogItemMediaForRoomsAndRatePlansSproc extends AddCatalogItemBaseSproc {
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(AddCatalogItemMediaForRoomsAndRatePlansSproc.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(AddCatalogItemMediaForRoomsAndRatePlansSproc.class);
 
     private static final String PROC_NAME = "CatalogItemMediaAdd#02";
     
@@ -34,7 +33,7 @@ public class AddCatalogItemMediaForRoomsAndRatePlansSproc extends AddCatalogItem
     }
 
     @Override
-    protected Logger getLogger() {
+    protected FormattedLogger getLogger() {
         return LOGGER;
     }
 

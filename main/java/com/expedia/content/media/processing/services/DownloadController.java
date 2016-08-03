@@ -1,10 +1,9 @@
 package com.expedia.content.media.processing.services;
 
 import com.amazonaws.util.IOUtils;
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import expedia.content.solutions.metrics.annotations.Counter;
 import expedia.content.solutions.metrics.annotations.Timer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.ResourcePatternResolver;
@@ -30,7 +29,7 @@ import static org.springframework.http.HttpStatus.NO_CONTENT;
  */
 @RestController
 public class DownloadController extends CommonServiceController {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DownloadController.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(DownloadController.class);
 
     @Autowired
     private ResourcePatternResolver resourcePatternResolver;
@@ -41,16 +40,16 @@ public class DownloadController extends CommonServiceController {
     @Timer(name = "S3DownloadTimer")
     public ResponseEntity<byte[]> download(@RequestParam("url") String fromUrl,
                                            @RequestParam(value = "contentType", required = false, defaultValue = "image/jpeg") String contentType) throws Exception {
-        LOGGER.info("BEGIN - fromUrl=[{}], contentType=[{}]", fromUrl, contentType);
+        LOGGER.info("BEGIN Url={} ContentType={}", fromUrl, contentType);
         try {
             final Resource[] resources = resourcePatternResolver.getResources(fromUrl);
             if (Stream.of(resources).filter(Resource::exists).count() > 1) {
-                LOGGER.error("Multiple resources matched: [{}]. Resources: [{}]", fromUrl, Stream.of(resources).count());
+                LOGGER.error("Multiple resources matched Url={} Resources={}", fromUrl, Stream.of(resources).count());
                 return new ResponseEntity<>(CONFLICT);
             }
 
             if (Stream.of(resources).noneMatch(Resource::exists)) {
-                LOGGER.error("Resource not found: [{}]", fromUrl);
+                LOGGER.error("Resource not found Url={}", fromUrl);
                 return new ResponseEntity<>(NOT_FOUND);
             }
 
@@ -61,16 +60,16 @@ public class DownloadController extends CommonServiceController {
 
             return new ResponseEntity<>(IOUtils.toByteArray(streamFrom), headers, HttpStatus.OK);
         } catch (Exception e) {
-            LOGGER.error("FAILURE - Processing image error=[{}], fromUrl=[{}], contentType=[{}]", e.getMessage(), fromUrl, contentType, e);
+            LOGGER.error(e, "FAILURE Processing image ErrorMessage={} Url={} ContentType={}", e.getMessage(), fromUrl, contentType);
         } finally {
-            LOGGER.info("END - fromUrl=[{}], contentType=[{}]", fromUrl, contentType);
+            LOGGER.info("END Url={} ContentType={}", fromUrl, contentType);
         }
         return new ResponseEntity<>(NO_CONTENT);
     }
 
     @Counter(name = "FetchedS3Resource")
     public InputStream fetchS3Resource(Resource resource) throws Exception {
-        LOGGER.info("Opening S3 Resource -> [{}]", resource.getURL());
+        LOGGER.info("Opening S3 Resource Url={}", resource.getURL());
         return resource.getInputStream();
     }
 }

@@ -1,7 +1,7 @@
 package com.expedia.content.media.processing.services.dao.sql;
 
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.MediaDBException;
-import org.slf4j.Logger;
 import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.jdbc.object.StoredProcedure;
 
@@ -50,16 +50,16 @@ public abstract class AddCatalogItemBaseSproc extends StoredProcedure {
                                     boolean paragraphDisplay,
                                     String lastUpdateLocation) {
 
-        getLogger().info("Calling: {} with: {" +
-                        "catalogItemID=[{}], " +
-                        "mediaId=[{}], " +
-                        "mediauseRank=[{}], " +
-                        "galleryDisplayBool=[{}], " +
-                        "mediaUserTypeId=[{}], " +
-                        "lastUpdatedBy=[{}], " +
-                        "pictureShowDisplayBool=[{}], " +
-                        "paragraphDisplayBool=[{}], " +
-                        "lastUpdateLocation=[{}]",
+        getLogger().info("Calling {} " +
+                        "CatalogItemID={} " +
+                        "MediaId={} " +
+                        "MediauseRank={} " +
+                        "GalleryDisplayBool={} " +
+                        "MediaUserTypeId={} " +
+                        "LastUpdatedBy={} " +
+                        "PictureShowDisplayBool={} " +
+                        "ParagraphDisplayBool={} " +
+                        "LastUpdateLocation={}",
                 getProcName(),
                 catalogItemID,
                 mediaId,
@@ -82,11 +82,11 @@ public abstract class AddCatalogItemBaseSproc extends StoredProcedure {
                     paragraphDisplay,
                     lastUpdateLocation);
         } catch (Exception e) {
-            getLogger().error("Error invoking: " + getProcName(), e);
+            getLogger().error(e, "Error invoking Sproc={}", getProcName());
             throw new MediaDBException("Error executing: " + getProcName(), e);
         }
     }
 
-    protected abstract Logger getLogger();
+    protected abstract FormattedLogger getLogger();
     protected abstract String getProcName();
 }

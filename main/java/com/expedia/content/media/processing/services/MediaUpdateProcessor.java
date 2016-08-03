@@ -3,6 +3,7 @@ package com.expedia.content.media.processing.services;
 import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
@@ -13,8 +14,6 @@ import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaRoomUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang.reflect.FieldUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +21,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +29,7 @@ import java.util.HashMap;
 
 @Component
 public class MediaUpdateProcessor {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MediaUpdateProcessor.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(MediaUpdateProcessor.class);
     public static final String MESSAGE_PROPERTY_HERO = "propertyHero";
     public static final String MESSAGE_SUB_CATEGORY_ID = "subcategoryId";
     public static final String MESSAGE_ROOMS = "rooms";
@@ -71,7 +71,7 @@ public class MediaUpdateProcessor {
             }
             // step 3 update room table.
             processRooms(imageMessage, mediaId, expediaId);
-            LOGGER.info("update  imageMessage=[{}], mediaId=[{}] to LCM done", imageMessage.toJSONMessage(), mediaId);
+            LOGGER.info("LCM UPDATE DONE mediaId={}", Arrays.asList(mediaId), imageMessage);
         }
         // step 4. save media to dynamo
         if (dynamoMedia != null) {

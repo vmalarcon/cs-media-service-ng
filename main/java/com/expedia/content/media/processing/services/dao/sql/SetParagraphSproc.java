@@ -1,8 +1,7 @@
 package com.expedia.content.media.processing.services.dao.sql;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.jdbc.object.StoredProcedure;
@@ -18,7 +17,7 @@ import java.sql.Types;
 @Component
 public class SetParagraphSproc extends StoredProcedure {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SetParagraphSproc.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(SetParagraphSproc.class);
 
     private static final String PROC_NAME = "ParagraphItemSet#02";
 
@@ -55,21 +54,21 @@ public class SetParagraphSproc extends StoredProcedure {
                              String lastUpdatedBy,
                              String lastUpdateLocation,
                              Integer updateParagraphNbr) {
-        LOGGER.info("Calling: {} with: {" +
-                "catalogItemId=[{}]," +
-                "sectionTypeId=[{}]," +
-                "paragraphNbr=[{}]," +
-                "paragraphMediaId=[{}]," +
-                "langId=[{}]," +
-                "paragraphTxt=[{}]," +
-                "effectiveStartDate=[{}]," +
-                "effectiveEndDate=[{}]," +
-                "semanticDesc=[{}]," +
-                "paragraphTypeId=[{}]," +
-                "mediaSizeTypeId=[{}]," +
-                "lastUpdatedBy=[{}]," +
-                "lastUpdateLocation=[{}]," +
-                "updateParagraphNbr=[{}]}",
+        LOGGER.info("Calling {} " +
+                "CatalogItemId={} " +
+                "SectionTypeId={} " +
+                "ParagraphNbr={} " +
+                "ParagraphMediaId={} " +
+                "LangId={} " +
+                "ParagraphTxt={} " +
+                "EffectiveStartDate={} " +
+                "EffectiveEndDate={} " +
+                "SemanticDesc={} " +
+                "ParagraphTypeId={} " +
+                "MediaSizeTypeId={} " +
+                "LastUpdatedBy={} " +
+                "LastUpdateLocation={} " +
+                "UpdateParagraphNbr={}",
                 PROC_NAME,
                 catalogItemId,
                 sectionTypeId,

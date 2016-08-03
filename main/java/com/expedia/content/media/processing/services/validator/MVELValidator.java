@@ -1,10 +1,9 @@
 package com.expedia.content.media.processing.services.validator;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import com.expedia.content.media.processing.services.util.ValidatorUtil;
 import org.mvel2.MVEL;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,7 +14,7 @@ import java.util.Map;
  * validation {@code ImageMessage} list based on MVEL rule that defined in xml configuration
  */
 public class MVELValidator implements MapMessageValidator {
-    private static final Logger LOGGER = LoggerFactory.getLogger(MVELValidator.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(MVELValidator.class);
     private String clientRule = "";
     private static final String RULE_PREFIX = "domainData";
 
@@ -76,7 +75,7 @@ public class MVELValidator implements MapMessageValidator {
                     validationError = MVEL.eval(rule, objectMap).toString();
                 }
             } catch (Exception ex) {
-                LOGGER.error("rule compare exception:", ex);
+                LOGGER.error(ex, "Rule compare exception");
             }
             if (!validationError.contains("valid") && !"".equals(validationError)) {
                 errorMsg.append(validationError).append("\r\n");
@@ -93,10 +92,10 @@ public class MVELValidator implements MapMessageValidator {
 
                 }
             } catch (Exception ex) {
-                LOGGER.warn("rule compare exception:", ex);
-                //not very good solution here, later we need to define a validation Object for domain field Map
+                LOGGER.warn(ex, "Rule compare exception");
+                //TODO: not very good solution here, later we need to define a validation Object for domain field Map
                 //now domainFields like domainData.domainDataFields.categoryId is not required any more
-               // String exceptionMsg = ex.getMessage();
+                // String exceptionMsg = ex.getMessage();
                 //validationError = composeValidtionError(exceptionMsg, index);
             }
             if (!validationError.contains("valid") && !"".equals(validationError) && !errorMsg.toString().contains(validationError)) {

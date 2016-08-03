@@ -2,8 +2,7 @@ package com.expedia.content.media.processing.services.validator;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 
 import java.text.MessageFormat;
 
@@ -15,7 +14,7 @@ import java.text.MessageFormat;
 @Deprecated
 public class ExpediaIdValidator extends NumericValidator {
     
-    private static final Logger LOGGER = LoggerFactory.getLogger(ExpediaIdValidator.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(ExpediaIdValidator.class);
     
     /**
      * Validate whether the expediaId missed or is a number. Ignores the validation if the image type
@@ -61,7 +60,7 @@ public class ExpediaIdValidator extends NumericValidator {
         validationStatus.setValid(false);
         errorMsg = MessageFormat.format(errorMsg, image.getOuterDomainData().getDomain());
         validationStatus.setMessage(errorMsg);
-        LOGGER.debug(errorMsg);
+        LOGGER.debug("ErrorMessage=\"" + errorMsg + "\"");
         return validationStatus;
     }
 }

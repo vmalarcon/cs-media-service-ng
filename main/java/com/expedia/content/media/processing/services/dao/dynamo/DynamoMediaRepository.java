@@ -5,19 +5,20 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.MessageConstants;
 import com.expedia.content.media.processing.pipeline.domain.Metadata;
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.MediaDBException;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaDerivative;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +31,7 @@ import java.util.stream.Collectors;
 @Repository
 public class DynamoMediaRepository {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(DynamoMediaRepository.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(DynamoMediaRepository.class);
     private final static ObjectWriter WRITER = new ObjectMapper().writer();
     private final DynamoDBMapper dynamoMapper;
     private final String environment;
@@ -101,7 +102,7 @@ public class DynamoMediaRepository {
         try {
             dynamoMapper.save(media);
         } catch (Exception e) {
-            LOGGER.error("ERROR when trying to save in dynamodb - error message={}.", e.getMessage(), e);
+            LOGGER.error(e, "ERROR when trying to save in dynamodb ErrorMessage={}.", e.getMessage());
             throw new MediaDBException(e.getMessage(), e);
         }
     }
@@ -165,7 +166,7 @@ public class DynamoMediaRepository {
                     .filter(item -> environment.equals(item.getEnvironment()))
                     .collect(Collectors.toList());
         } catch (Exception e) {
-            LOGGER.error("ERROR - message={}.", e.getMessage(), e);
+            LOGGER.error(e, "ERROR ErrorMessage={}", e.getMessage());
             throw new MediaDBException(e.getMessage(), e);
         }
     }
@@ -179,16 +180,14 @@ public class DynamoMediaRepository {
     public void storeMediaAddMessage(ImageMessage imageMessage, Thumbnail thumbnail) {
         try {
             dynamoMapper.save(buildMedia(imageMessage, thumbnail));
-            LOGGER.info("Media successfully added in dynamodb : GUID=[{}], file url =[{}], RequestId=[{}] ", imageMessage.getMediaGuid(),
-                    imageMessage.getFileUrl(),
-                    imageMessage.getRequestId());
+            LOGGER.info("Media successfully added in dynamodb", imageMessage, MessageConstants.FILE_URL);
             if (imageMessage.isGenerateThumbnail()) {
                 dynamoMapper.save(buildDerivative(imageMessage, thumbnail));
-                LOGGER.info("Thumbnail derivative successfully added in dynamodb : Derivatives=[{}], RequestId=[{}] ", thumbnail,
-                        imageMessage.getRequestId());
+                LOGGER.info("Thumbnail derivative successfully added in dynamodb ThumbnailDerivative={}",
+                        Arrays.asList(String.valueOf(thumbnail)), imageMessage);
             }
         } catch (Exception e) {
-            LOGGER.error("ERROR when trying to save in dynamodb - error message={}.", e.getMessage(), e);
+            LOGGER.error(e, "ERROR when trying to save in dynamodb ErrorMessage={}", e.getMessage());
             throw new MediaDBException(e.getMessage(), e);
         }
     }

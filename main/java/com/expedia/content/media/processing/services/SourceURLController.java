@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services;
 
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
@@ -12,8 +13,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import expedia.content.solutions.metrics.annotations.Meter;
 import expedia.content.solutions.metrics.annotations.Timer;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -42,7 +41,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @RestController
 public class SourceURLController extends CommonServiceController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SourceURLController.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(SourceURLController.class);
     @Autowired
     private MediaDao mediaDao;
     @Autowired
@@ -71,7 +70,7 @@ public class SourceURLController extends CommonServiceController {
     @Transactional
     public ResponseEntity getSourceURL(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
         final String requestID = getRequestId(headers);
-        LOGGER.info("RECEIVED REQUEST - url=[{}], message=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message,
+        LOGGER.info("RECEIVED SOURCE URL REQUEST ServiceUrl={} RequestMessage={} RequestId={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message,
                 requestID);
         String jsonResponse = null;
         try {
@@ -97,14 +96,15 @@ public class SourceURLController extends CommonServiceController {
             response.put("contentProviderMediaName", lcmMedia.getFileName());
             response.put("mediaSourceUrl", sourcePath);
             jsonResponse = OBJECT_MAPPER.writeValueAsString(response);
-            LOGGER.info("RESPONSE - url=[{}], responseMsg=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), jsonResponse,
+            LOGGER.info("SOURCE URL RESPONSE ServiceUrl={} ResponseMessage={} RequestId={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), jsonResponse,
                     requestID);
         } catch (RequestMessageException ex) {
-            LOGGER.error("ERROR - url=[{}], imageMessage=[{}], error=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message,
-                    ex.getMessage(), ex, requestID);
+            LOGGER.error(ex, "ERROR ServiceUrl={} RequestMessage={} RequestId={} ErrorMessage={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message, requestID,
+                    ex.getMessage());
             return buildErrorResponse(ex.getMessage(), MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), BAD_REQUEST);
         } catch (Exception ex) {
-            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], JSONMessage=[{}].", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), ex.getMessage(), requestID, message, ex);
+            LOGGER.error(ex, "ERROR ServiceUrl={} RequestMessage={} RequestId={} ErrorMessage={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message, requestID,
+                    ex.getMessage());
             poker.poke("Media Services failed to process a getSourceURL request - RequestId: " + requestID, hipChatRoom,
                     message, ex);
             throw ex;

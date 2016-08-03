@@ -5,8 +5,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,7 +13,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class FileSourceFinder {
-    private static final Logger LOGGER = LoggerFactory.getLogger(FileSourceFinder.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(FileSourceFinder.class);
 
     public static final String S3_PREFIX = "s3://";
     public static final String HOTELS = "/hotels";
@@ -42,7 +41,7 @@ public class FileSourceFinder {
                 return S3_PREFIX + bucketName + "/" + objectName;
             }
         } catch (AmazonServiceException e) {
-            LOGGER.error("s3 query exception", e);
+            LOGGER.error(e, "s3 query exception");
         }
         return "";
     }

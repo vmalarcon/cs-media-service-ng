@@ -1,12 +1,11 @@
 package com.expedia.content.media.processing.services.validator;
 
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import com.expedia.content.media.processing.services.util.URLUtil;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpHead;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -16,7 +15,7 @@ import java.net.URISyntaxException;
  * Verifies if the HTTP URL exists.
  */
 public class HTTPValidator {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HTTPValidator.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(HTTPValidator.class);
 
     private static final CloseableHttpClient HTTP_CLIENT = HttpClients.createDefault();
 
@@ -40,10 +39,10 @@ public class HTTPValidator {
                 return new ValidationStatus(false, "Provided fileUrl does not exist.", ValidationStatus.NOT_FOUND);
             }
         } catch (URISyntaxException use) {
-            LOGGER.warn("Url check failed: [{}]!", fileUrl, use);
+            LOGGER.warn(use, "Url check failed Url={}", fileUrl);
             return new ValidationStatus(false, "Provided fileUrl is invalid.", ValidationStatus.INVALID);
         } catch (Exception e) {
-            LOGGER.warn("Url check failed: [{}]!", fileUrl, e);
+            LOGGER.warn(e, "Url check failed Url={}", fileUrl);
             return new ValidationStatus(false, "Provided fileUrl does not exist.", ValidationStatus.NOT_FOUND);
         }
     }

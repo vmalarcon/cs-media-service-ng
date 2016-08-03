@@ -1,8 +1,7 @@
 package com.expedia.content.media.processing.services.dao.sql;
 
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.MediaDBException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.jdbc.object.StoredProcedure;
@@ -22,7 +21,7 @@ import java.sql.Types;
 @Component
 public class CatalogItemMediaDelSproc extends StoredProcedure {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CatalogItemMediaDelSproc.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(CatalogItemMediaDelSproc.class);
 
     private static final String PROC_NAME = "CatalogItemMediaDel";
 
@@ -38,8 +37,8 @@ public class CatalogItemMediaDelSproc extends StoredProcedure {
      * Update the category for a catalog item media record.
      */
     public void deleteCategory(int cataLogItemId, int mediaId) {
-        LOGGER.info("Calling: {} with:  mediaId=[{}]",
-                PROC_NAME, mediaId);
+        LOGGER.info("Calling {} MediaId={} CatalogItemId={}",
+                PROC_NAME, mediaId, cataLogItemId);
         try {
             execute(cataLogItemId, mediaId);
         } catch (Exception e) {

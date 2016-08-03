@@ -6,14 +6,13 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 
 /**
  * Verifies if a file exists in the S3 repo.
  */
 public class S3Validator {
-    private static final Logger LOGGER = LoggerFactory.getLogger(S3Validator.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(S3Validator.class);
 
     public static final String S3_PREFIX = "s3://";
 
@@ -37,7 +36,7 @@ public class S3Validator {
                 validationStatus = checkFileIsGreaterThanZero(object);
             }
         } catch (AmazonServiceException e) {
-            LOGGER.error("s3 key query exception", e);
+            LOGGER.error(e, "s3 key query exception");
         }
         return validationStatus;
     }

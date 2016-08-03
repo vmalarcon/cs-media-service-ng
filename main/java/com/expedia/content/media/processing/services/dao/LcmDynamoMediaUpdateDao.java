@@ -2,11 +2,10 @@ package com.expedia.content.media.processing.services.dao;
 
 import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.sql.MediaChgSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +18,7 @@ import java.util.Map;
 @Component
 public class LcmDynamoMediaUpdateDao implements MediaUpdateDao {
     private static final String UPDATED_BY = "Media Service";
-    private static final Logger LOGGER = LoggerFactory.getLogger(LcmDynamoMediaUpdateDao.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(LcmDynamoMediaUpdateDao.class);
     @Autowired
     private MediaChgSproc mediaChgSproc;
     @Autowired
@@ -27,7 +26,7 @@ public class LcmDynamoMediaUpdateDao implements MediaUpdateDao {
 
     public void updateMedia(ImageMessage imageMessage, int mediaId) {
         String statusCode = null;
-        LOGGER.info("update media media[{}]" + mediaId);
+        LOGGER.info("Update Media", imageMessage);
         if (imageMessage.isActive() != null) {
             statusCode = imageMessage.isActive() ? "A" : "I";
         }

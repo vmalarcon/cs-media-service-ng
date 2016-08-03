@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services;
 
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.DomainNotFoundException;
 import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
@@ -8,8 +9,6 @@ import com.expedia.content.media.processing.services.dao.domain.Subcategory;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -35,7 +34,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @RestController
 public class CategoryController extends CommonServiceController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CategoryController.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(CategoryController.class);
     private static final String SKIP_NULL_CATEGORIES = "0";
 
     @Autowired
@@ -58,7 +57,7 @@ public class CategoryController extends CommonServiceController {
     public ResponseEntity<String> domainCategories(final @RequestHeader MultiValueMap<String,String> headers,
             final @PathVariable("domainName") String domainName, final @RequestParam(value = "localeId", required = false) String localeId) {
         final String localePath = (localeId == null) ? "" : "?localeId=" + localeId;
-        LOGGER.info("RECEIVED REQUEST - url=[{}][{}][{}], requestId=[{}]", MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl(), domainName, localePath,
+        LOGGER.info("RECEIVED REQUEST Url={} RequestId={}", MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + "/" + domainName + localePath,
                 getRequestId(headers));
         String response = null;
         try {
@@ -70,12 +69,12 @@ public class CategoryController extends CommonServiceController {
             }
             response = getDomainCategories(domainName, localeId);
         } catch (DomainNotFoundException e) {
-            LOGGER.error("ERROR - message=[{}], requestId=[{}]", e.getMessage(), headers.get(REQUEST_ID), e);
+            LOGGER.error(e, "ERROR ErrorMessage={} DomainName={} RequestId={}", e.getMessage(), domainName, headers.get(REQUEST_ID));
             return buildErrorResponse("Requested resource with ID " + domainName + " was not found.",
                     MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + "/" + domainName + localePath, NOT_FOUND);
         } catch (Exception ex) {
-            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], domainName=[{}].", MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl(),
-                    ex.getMessage(), headers.get(REQUEST_ID), domainName, ex);
+            LOGGER.error(ex, "ERROR ServiceUrl={} ErrorMessage={} RequestId={} DomainName={}", MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl(),
+                    ex.getMessage(), headers.get(REQUEST_ID), domainName);
             poker.poke("Media Services failed to process a domainCategories request - RequestId: " + headers.get(REQUEST_ID), hipChatRoom,
                     MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + "/" + domainName + localePath, ex);
             throw ex;

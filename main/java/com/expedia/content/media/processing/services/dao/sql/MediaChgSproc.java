@@ -1,8 +1,7 @@
 package com.expedia.content.media.processing.services.dao.sql;
 
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.MediaDBException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.SqlParameter;
 import org.springframework.jdbc.object.StoredProcedure;
@@ -34,7 +33,7 @@ import java.sql.Types;
 @Component
 public class MediaChgSproc extends StoredProcedure {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MediaChgSproc.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(MediaChgSproc.class);
 
     private static final String PROC_NAME = "MediaSet#03";
 
@@ -65,10 +64,8 @@ public class MediaChgSproc extends StoredProcedure {
 
     public void updateMedia(int mediaId, String mediaCommentTxt,
             String statusCode, String lastUpdateBy, String lastUpdateLocation) {
-        LOGGER.info(
-                "Calling: {} with:mediaId=[{}],mediaCommentTxt=[{}], "
-                        + "statusCode=[{}], "
-                        + "lastUpdateBy=[{}],lastUpdateLocation=[{}]",
+        LOGGER.info("Calling {} MediaId={} MediaCommentTxt={} "
+                        + "StatusCode={} LastUpdateBy={} LastUpdateLocation={}",
                 PROC_NAME, mediaId, mediaCommentTxt, statusCode,
                 lastUpdateBy, lastUpdateLocation);
         try {

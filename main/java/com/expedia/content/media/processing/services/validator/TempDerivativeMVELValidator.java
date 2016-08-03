@@ -1,9 +1,8 @@
 package com.expedia.content.media.processing.services.validator;
 
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
 import org.mvel2.MVEL;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -14,7 +13,7 @@ import java.util.Map;
  * validation {@code TempDerivative} list based on the Temporary Derivative API
  */
 public class TempDerivativeMVELValidator {
-    private static final Logger LOGGER = LoggerFactory.getLogger(TempDerivativeMVELValidator.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(TempDerivativeMVELValidator.class);
     private List<String> ruleList;
 
 
@@ -42,7 +41,7 @@ public class TempDerivativeMVELValidator {
                 validationError = MVEL.eval(rule, objectMap).toString();
 
             } catch (Exception ex) {
-                LOGGER.error("rule compare exception:", ex);
+                LOGGER.error(ex, "rule compare exception");
             }
             if (!validationError.contains("valid") && !"".equals(validationError)) {
                 errorMsg.append(validationError).append("\r\n");

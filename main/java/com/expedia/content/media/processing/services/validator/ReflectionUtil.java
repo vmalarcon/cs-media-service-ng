@@ -1,7 +1,6 @@
 package com.expedia.content.media.processing.services.validator;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 
 import java.lang.reflect.Field;
 
@@ -10,7 +9,7 @@ import java.lang.reflect.Field;
  */
 public final class ReflectionUtil {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(NumericValidator.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(NumericValidator.class);
 
     private ReflectionUtil() {
     }
@@ -31,10 +30,10 @@ public final class ReflectionUtil {
                 objectValue = field.get(obj);
             }
         } catch (NoSuchFieldException e) {
-            LOGGER.error("getFieldValue failed : error=[{}]", e.getMessage(), e);
+            LOGGER.error(e, "getFieldValue failed ErrorMessage={}", e.getMessage());
             throw e;
         }
-        LOGGER.debug("getFiledValue for field={}, return value=[{}]", fieldName, objectValue);
+        LOGGER.debug("getFiledValue Field={} ReturnedValue={}", fieldName, objectValue);
         return objectValue;
     }
 }

@@ -2,9 +2,8 @@ package com.expedia.content.media.processing.services.validator;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Base implementation of ImageMessage numeric field validation. Also verifies outer domain fields.
@@ -14,7 +13,7 @@ import org.slf4j.LoggerFactory;
  */
 @Deprecated
 public class NumericValidator extends OuterDomainSeekerValidator implements MediaMessageValidator {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NumericValidator.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(NumericValidator.class);
     
     /**
      * Validates if a specified field is a number.
@@ -48,7 +47,7 @@ public class NumericValidator extends OuterDomainSeekerValidator implements Medi
         try {
             fieldValue = ReflectionUtil.getFieldValue(imageMessage, fieldName);
         } catch (NoSuchFieldException | IllegalAccessException e) {
-            LOGGER.info("Numeric field validation reflection call failed! error=[{}]", e.getMessage(), e);
+            LOGGER.info(e, "Numeric field validation reflection call failed ErrorMessage={}", e.getMessage());
         }
         if (fieldValue == null && imageMessage.getOuterDomainData() != null) {
             fieldValue = seekOuterDomainFields(imageMessage);

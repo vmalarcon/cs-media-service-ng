@@ -1,8 +1,7 @@
 package com.expedia.content.media.processing.services;
 
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import expedia.content.solutions.metrics.annotations.Counter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
@@ -17,7 +16,7 @@ import java.io.IOException;
  */
 @Component
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
-    private static final Logger LOGGER = LoggerFactory.getLogger(CustomAuthenticationEntryPoint.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(CustomAuthenticationEntryPoint.class);
 
     /**
      * Builds an response when http Unauthorized exception happen.
@@ -34,6 +33,6 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         response.sendError(HttpServletResponse.SC_UNAUTHORIZED, autheticationException.getMessage());
         final String userName =
                 autheticationException.getAuthentication() == null ? "not provided" : autheticationException.getAuthentication().getPrincipal().toString();
-        LOGGER.info("Unauthorized user : username={}", userName);
+        LOGGER.info("Unauthorized User Username={}", userName);
     }
 }

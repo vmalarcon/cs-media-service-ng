@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services;
 
+import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.ProcessLogDao;
@@ -12,8 +13,6 @@ import com.expedia.content.media.processing.services.validator.RequestMessageVal
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import expedia.content.solutions.metrics.annotations.Meter;
 import expedia.content.solutions.metrics.annotations.Timer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -41,7 +40,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 @RestController
 public class StatusController extends CommonServiceController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(StatusController.class);
+    private static final FormattedLogger LOGGER = new FormattedLogger(StatusController.class);
 
     @Autowired
     private List<RequestMessageValidator> mediaStatusValidatorList;
@@ -68,8 +67,8 @@ public class StatusController extends CommonServiceController {
     @Transactional
     public ResponseEntity getMediaLatestStatus(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
         final String requestID = getRequestId(headers);
-        LOGGER.info("RECEIVED REQUEST - url=[{}], imageMessage=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_STATUS.getUrl(), message,
-                requestID);
+        LOGGER.info("RECEIVED LATEST STATUS REQUEST ServiceUrl={} RequestId={} RequestMessage={}",
+                MediaServiceUrl.MEDIA_STATUS.getUrl(), requestID, message);
         String jsonResponse = null;
         try {
             final ValidationStatus validationStatus = validateMediaStatus(message);
@@ -78,14 +77,15 @@ public class StatusController extends CommonServiceController {
             }
             final Map<String, Object> map = JSONUtil.buildMapFromJson(message);
             jsonResponse = getMediaStatusList((List<String>) map.get("mediaNames"));
-            LOGGER.info("RESPONSE - url=[{}], imageMessage=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_STATUS.getUrl(), jsonResponse,
-                    requestID);
+            LOGGER.info("RESPONSE ServiceUrl={} RequestId={} ResponseMessage={}",
+                    MediaServiceUrl.MEDIA_STATUS.getUrl(), requestID, jsonResponse);
         } catch (RequestMessageException ex) {
-            LOGGER.error("ERROR - url=[{}], imageMessage=[{}], error=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_STATUS.getUrl(), message,
-                    ex.getMessage(), requestID, ex);
+            LOGGER.error(ex, "ERROR ServiceUrl={} RequestId={} RequestMessage={} ErrorMessage={}",
+                    MediaServiceUrl.MEDIA_STATUS.getUrl(), requestID, message, ex.getMessage());
             return buildErrorResponse(ex.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl(), BAD_REQUEST);
         } catch (Exception ex) {
-            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], JSONMessage=[{}].", MediaServiceUrl.MEDIA_STATUS.getUrl(), ex.getMessage(), requestID, message, ex);
+            LOGGER.error(ex, "ERROR ServiceUrl={} RequestId={} RequestMessage={} ErrorMessage={}",
+                    MediaServiceUrl.MEDIA_STATUS.getUrl(), requestID, message, ex.getMessage());
             poker.poke("Media Services failed to process a getMediaLatestStatus request - RequestId: " + requestID, hipChatRoom,
                     message, ex);
             throw ex;
