@@ -17,7 +17,7 @@
         <param name="MaxBackupIndex" value="100"/>
         <layout class="org.apache.log4j.EnhancedPatternLayout">
             <param name="ConversionPattern"
-                   value="DateTime=%d{ISO8601}{GMT} Application=${project.name} Thread=[%.30t] Logger=%c Type=%p Message=%m%n"/>
+                   value="Application=${project.name} Type=%p Message=%m%n DateTime=%d{ISO8601}{GMT} Logger=[%c] Thread=[%.30t] "/>
         </layout>
     </appender>
 
