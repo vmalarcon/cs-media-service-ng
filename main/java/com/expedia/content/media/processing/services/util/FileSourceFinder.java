@@ -1,12 +1,16 @@
 package com.expedia.content.media.processing.services.util;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3Client;
-import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.ImageCopy;
+import org.apache.commons.io.FilenameUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Find file path from S3 or window share.
@@ -21,27 +25,31 @@ public class FileSourceFinder {
     public static final String SOURCE_DIR = "\\\\CHE-FILIDXIMG01\\GSO_media\\lodging";
     public static final String SOURCE_DIR_NEW = "\\\\CHE-FILIDXIMG01\\GSO_MediaNew\\lodging";
 
+    public static final List<String> IMAGEFORMATS = Arrays.asList(".jpg", ".JPG", ".gif", ".GIF", ".png", ".PNG", ".bmp", ".BMP", "tiff", ".TIFF");
+
+    @Value("${media.source.query.s3only}")
+    private boolean queryS3BucketOnly;
+
+    @Autowired
+    private ImageCopy imageCopy;
+
     /**
      * get the file source URL from S3 repo.
      *
      * @return true if found, false otherwise.
      */
     public String getGUIDFilePath(String bucketName, String prefix, String millonFolder, String guid) {
-        try {
-            final AmazonS3 s3Client = new AmazonS3Client();
-            String objectName = prefix + millonFolder + guid + ".jpg";
-            S3Object object = s3Client.getObject(new GetObjectRequest(bucketName, objectName));
-            if (object == null) {
-                objectName = prefix + millonFolder + guid + ".JPG";
-                object = s3Client.getObject(new GetObjectRequest(bucketName, objectName));
+        S3Object object;
+        for (final String extension : IMAGEFORMATS) {
+            final String objectName = prefix + millonFolder + guid + extension;
+            try {
+                object = imageCopy.getImage(bucketName, objectName);
                 if (object != null) {
                     return S3_PREFIX + bucketName + "/" + objectName;
                 }
-            } else {
-                return S3_PREFIX + bucketName + "/" + objectName;
+            } catch (AmazonServiceException e) {
+                LOGGER.error(e, "s3 query exception");
             }
-        } catch (AmazonServiceException e) {
-            LOGGER.error(e, "s3 query exception");
         }
         return "";
     }
@@ -57,11 +65,16 @@ public class FileSourceFinder {
      */
     public String getSourcePath(String bucketName, String prefix, String fileUrl, int domainId, String guid) {
         final String fileName = getFileNameFromUrl(fileUrl);
-        final String pattern = "_[\\w]{1}.jpg";
         final String millonFolder = getMillonFolderFromUrl(fileUrl);
         if (matchGuid(fileName)) {
             return getGUIDFilePath(bucketName, prefix, millonFolder, guid);
-        } else {
+        }
+        final String pattern = "_[\\w]{1}.jpg";
+        if (queryS3BucketOnly) {
+            final String sourceName = fileName.replaceFirst(pattern, ".jpg");
+            return getGUIDFilePath(bucketName, prefix, millonFolder, FilenameUtils.getBaseName(sourceName));
+        }
+        else {
             if (domainId < MILLION_FOLDER_LIMIT) {
                 return SOURCE_DIR + millonFolder.replace("/", "\\") + fileName.replaceFirst(pattern, ".jpg");
             } else {
