@@ -24,7 +24,6 @@ public class MediaReplacement {
      */
     public static Optional<Media> selectBestMedia(List<Media> mediaList, String domainId, String provider) {
         return mediaList.stream()
-                .filter(m -> m.getActive().equalsIgnoreCase("true"))
                 .filter(m -> m.getDomainId().equalsIgnoreCase(domainId))
                 //avoid NPE when legacy data record in dynamo does not have "provider".
                 .filter(m -> provider.equalsIgnoreCase(m.getProvider()))
