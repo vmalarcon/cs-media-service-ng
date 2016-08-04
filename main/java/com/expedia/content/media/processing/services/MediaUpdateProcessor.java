@@ -4,6 +4,7 @@ import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
@@ -64,14 +65,7 @@ public class MediaUpdateProcessor {
             if (imageMessage.getComment() != null || imageMessage.isActive() != null) {
                 mediaUpdateDao.updateMedia(imageMessage, Integer.valueOf(mediaId));
             }
-            // step 2 update property hero in catalogItemMedia
-            if (imageMessage.getOuterDomainData() != null && (imageMessage.getOuterDomainData().getDomainFieldValue(MESSAGE_PROPERTY_HERO) != null
-                    || imageMessage.getOuterDomainData().getDomainFieldValue(MESSAGE_SUB_CATEGORY_ID) != null)) {
-                handleLCMPropertyHero(imageMessage, Integer.valueOf(mediaId), expediaId, dynamoMedia);
-            }
-            // step 3 update room table.
-            processRooms(imageMessage, mediaId, expediaId);
-            LOGGER.info("LCM UPDATE DONE mediaId={}", Arrays.asList(mediaId), imageMessage);
+            processCategory(imageMessage, mediaId, dynamoMedia, expediaId);
         }
         // step 4. save media to dynamo
         if (dynamoMedia != null) {
@@ -84,6 +78,23 @@ public class MediaUpdateProcessor {
         response.put("status", Integer.valueOf(200));
         final String jsonResponse = new ObjectMapper().writeValueAsString(response);
         return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
+    }
+
+    @RetryableMethod
+    private void processCategory(final ImageMessage imageMessage, final String mediaId, Media dynamoMedia, Integer expediaId)
+            throws Exception {
+        try {
+            if (imageMessage.getOuterDomainData() != null && (imageMessage.getOuterDomainData().getDomainFieldValue(MESSAGE_PROPERTY_HERO) != null
+                    || imageMessage.getOuterDomainData().getDomainFieldValue(MESSAGE_SUB_CATEGORY_ID) != null)) {
+                handleLCMPropertyHero(imageMessage, Integer.valueOf(mediaId), expediaId, dynamoMedia);
+            }
+            // step 3 update room table.
+            processRooms(imageMessage, mediaId, expediaId);
+            LOGGER.info("LCM UPDATE DONE mediaId={}", Arrays.asList(mediaId), imageMessage);
+            //throw new RuntimeException("testdd");
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     /**
