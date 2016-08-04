@@ -133,7 +133,7 @@ public class TempDerivativeControllerTest {
 
     @Test
     public void testTemporaryDerivativeInvalidRequest() throws Exception {
-        String jsonMessage = " { " + "\"fileUrl\": \"http://i.imgurdd.com/3PRGF.jpg/why/would/someone/name/all/of/their/files/original.jpg\", "
+        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgurdd.com/3PRGF.jpg/why/would/someone/name/all/of/their/files/original.jpg\", "
                 + "\"rotation\": \"90\", " + "\"width\": 180, " + "\"height\": 180" + "}";
         TempDerivativeMVELValidator tempDerivativeMVELValidator = mock(TempDerivativeMVELValidator.class);
         when(tempDerivativeMVELValidator.validateTempDerivativeMessage(any())).thenReturn("");

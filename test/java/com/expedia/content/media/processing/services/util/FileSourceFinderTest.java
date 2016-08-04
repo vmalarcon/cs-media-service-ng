@@ -35,6 +35,8 @@ public class FileSourceFinderTest {
 
     @Test
     public void testGenerateJsonResponse() throws Exception {
+        FileImageCopy fileImageCopy = mock(FileImageCopy.class);
+        TestingUtil.setFieldValue(fileSourceFinder, "imageCopy", fileImageCopy);
         String sourcePath = fileSourceFinder.getSourcePath("bucket", "test", "http://images.trvl-media.com/hotels/1000000/10000/200/123/5d003ca8_e.jpg",
                 123, "");
         assertEquals("", sourcePath);
