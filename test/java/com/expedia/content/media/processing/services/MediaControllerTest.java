@@ -546,11 +546,12 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
         setFieldValue(mediaController, "reporting", reporting);
 
+        // Inactive images should be considered. 2016-10-10 is more recent than the others
         MediaDao mockMediaDao = mock(MediaDao.class);
         when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg")))
-                .thenReturn(Lists.newArrayList(createByFileNameMedia("old-guid", "1238", "true", DATE_FORMAT.parse("2016-02-17 12:00:00"), "456"),
-                        createByFileNameMedia("old-but-inactive", "1238", "false", DATE_FORMAT.parse("2016-10-10 12:00:00"), "456"),
-                        createByFileNameMedia("too-old", "1238", "true", DATE_FORMAT.parse("2016-02-17 11:59:59"), "456")));
+                .thenReturn(Lists.newArrayList(createByFileNameMedia("old-guid", "1238", "false", DATE_FORMAT.parse("2016-02-17 12:00:00"), "4561"),
+                        createByFileNameMedia("recent-but-inactive", "1238", "true", DATE_FORMAT.parse("2016-10-10 12:00:00"), "456"),
+                        createByFileNameMedia("too-old", "1238", "true", DATE_FORMAT.parse("2016-02-17 11:59:59"), "4562")));
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
 
         String requestId = "test-request-id";
@@ -560,7 +561,7 @@ public class MediaControllerTest {
         ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
-        assertTrue(responseEntity.getBody().contains("\"mediaGuid\":\"old-guid\""));
+        assertTrue(responseEntity.getBody().contains("\"mediaGuid\":\"recent-but-inactive\""));
         assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
 
         ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
@@ -572,7 +573,7 @@ public class MediaControllerTest {
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + MEDIA_CLOUD_ROUTER_CLIENT_ID));
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
-        assertTrue(publishedMessageValue.getPayload().contains("\"mediaGuid\":\"" + "old-guid"));
+        assertTrue(publishedMessageValue.getPayload().contains("\"mediaGuid\":\"" + "recent-but-inactive"));
         assertTrue(publishedMessageValue.getPayload().contains("\"lcmMediaId\":\"" + "456"));
         verify(mockMediaDao, times(1)).getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"));
     }
@@ -626,7 +627,7 @@ public class MediaControllerTest {
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + MEDIA_CLOUD_ROUTER_CLIENT_ID));
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
-        assertTrue(publishedMessageValue.getPayload().contains("\"lcmMediaId\":\"" + "4567"));
+        assertTrue(publishedMessageValue.getPayload().contains("\"lcmMediaId\":\"" + "456"));
         verify(mockMediaDao, times(1)).getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"));
     }
 
