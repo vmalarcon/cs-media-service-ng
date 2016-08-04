@@ -1,6 +1,5 @@
 package com.expedia.content.media.processing.services;
 
-import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
@@ -12,9 +11,15 @@ import com.expedia.content.media.processing.services.util.RequestMessageExceptio
 import com.fasterxml.jackson.databind.ObjectMapper;
 import expedia.content.solutions.metrics.annotations.Meter;
 import expedia.content.solutions.metrics.annotations.Timer;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.ResourcePatternResolver;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -26,13 +31,13 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+import java.util.stream.Stream;
 
 /**
  * Web service controller to get Source URL by derivative file name..
@@ -41,7 +46,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @RestController
 public class SourceURLController extends CommonServiceController {
 
-    private static final FormattedLogger LOGGER = new FormattedLogger(SourceURLController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SourceURLController.class);
     @Autowired
     private MediaDao mediaDao;
     @Autowired
@@ -54,6 +59,8 @@ public class SourceURLController extends CommonServiceController {
     private String hipChatRoom;
     @Autowired
     private Poker poker;
+    @Autowired
+    private  ResourcePatternResolver resourcePatternResolver;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
@@ -70,7 +77,7 @@ public class SourceURLController extends CommonServiceController {
     @Transactional
     public ResponseEntity getSourceURL(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
         final String requestID = getRequestId(headers);
-        LOGGER.info("RECEIVED SOURCE URL REQUEST ServiceUrl={} RequestMessage={} RequestId={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message,
+        LOGGER.info("RECEIVED REQUEST - url=[{}], message=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message,
                 requestID);
         String jsonResponse = null;
         try {
@@ -96,15 +103,15 @@ public class SourceURLController extends CommonServiceController {
             response.put("contentProviderMediaName", lcmMedia.getFileName());
             response.put("mediaSourceUrl", sourcePath);
             jsonResponse = OBJECT_MAPPER.writeValueAsString(response);
-            LOGGER.info("SOURCE URL RESPONSE ServiceUrl={} ResponseMessage={} RequestId={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), jsonResponse,
+            LOGGER.info("RESPONSE - url=[{}], responseMsg=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), jsonResponse,
                     requestID);
         } catch (RequestMessageException ex) {
-            LOGGER.error(ex, "ERROR ServiceUrl={} RequestMessage={} RequestId={} ErrorMessage={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message, requestID,
-                    ex.getMessage());
+            LOGGER.error("ERROR - url=[{}], imageMessage=[{}], error=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message,
+                    ex.getMessage(), ex, requestID);
             return buildErrorResponse(ex.getMessage(), MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), BAD_REQUEST);
         } catch (Exception ex) {
-            LOGGER.error(ex, "ERROR ServiceUrl={} RequestMessage={} RequestId={} ErrorMessage={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message, requestID,
-                    ex.getMessage());
+            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], JSONMessage=[{}].", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), ex.getMessage(),
+                    requestID, message, ex);
             poker.poke("Media Services failed to process a getSourceURL request - RequestId: " + requestID, hipChatRoom,
                     message, ex);
             throw ex;
@@ -128,5 +135,46 @@ public class SourceURLController extends CommonServiceController {
         }
         return null;
     }
+
+    /**
+     * web service method to download source image as file stream.
+     * @param message JSON formatted message with property 'mediaUrl'
+     * @return image content as stream
+     * @throws Exception when the provided URL is not found.
+     */
+    @RequestMapping(value = "/media/v1/sourceimage", method = RequestMethod.POST, produces = MediaType.IMAGE_JPEG_VALUE)
+    @Meter(name = "mediaSourceImageCounter")
+    @Timer(name = "mediaSourceImageTimer")
+    public ResponseEntity<byte[]> download(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
+        final String requestID = getRequestId(headers);
+        LOGGER.info("RECEIVED Source Image REQUEST - url=[{}], message=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_SOURCEIMAGE.getUrl(), message,
+                requestID);
+        final Map messageMap = JSONUtil.buildMapFromJson(message);
+        final String fromUrl = (String) messageMap.get("mediaUrl");
+        final InputStream streamFrom;
+        try {
+            final Resource[] resources = resourcePatternResolver.getResources(fromUrl);
+            if (Stream.of(resources).count() != 1) {
+                LOGGER.error("Multiple resources matched: [{}]. Resources: [{}]", fromUrl, Stream.of(resources).count());
+                return new ResponseEntity<>(HttpStatus.CONFLICT);
+            }
+            if (Stream.of(resources).noneMatch(Resource::exists)) {
+                LOGGER.error("Resource not found: [{}]", fromUrl);
+                return new ResponseEntity<>(NOT_FOUND);
+            }
+            streamFrom = resources[0].getInputStream();
+            final HttpHeaders responseHeaders = new HttpHeaders();
+            responseHeaders.setContentType(MediaType.valueOf(MediaType.IMAGE_JPEG_VALUE));
+            return new ResponseEntity<>(IOUtils.toByteArray(streamFrom), responseHeaders, HttpStatus.OK);
+        } catch (Exception ex) {
+            LOGGER.error("ERROR - serviceUrl={}, error=[{}], requestId=[{}], JSONMessage=[{}].", MediaServiceUrl.MEDIA_SOURCEIMAGE.getUrl(),
+                    ex.getMessage(),
+                    requestID, message, ex);
+            poker.poke("Media Services failed to process a sourceImage download request - RequestId: " + requestID, hipChatRoom,
+                    message, ex);
+            throw ex;
+        }
+    }
+
 
 }

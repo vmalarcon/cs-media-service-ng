@@ -12,6 +12,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,9 +42,13 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class SourceURLControllerTest {
     private static final String TEST_CLIENT_ID = "a-user";
+    private static final Resource FILE_RESOURCE = new ClassPathResource("/log4j.xml");
 
     @Mock
     private Reporting reporting;
+
+    @Mock
+    private ResourcePatternResolver resourcePatternResolver;
 
     SourceURLController sourceURLController;
 
@@ -55,8 +62,10 @@ public class SourceURLControllerTest {
     }
 
     @Before
-    public void initialize() throws IllegalAccessException {
+    public void initialize() throws IllegalAccessException,NoSuchFieldException {
         sourceURLController = new SourceURLController();
+        setFieldValue(sourceURLController, "resourcePatternResolver", resourcePatternResolver);
+
     }
 
     @Test
@@ -152,4 +161,57 @@ public class SourceURLControllerTest {
         verify(poker).poke(eq("Media Services failed to process a getSourceURL request - RequestId: " + requestId), eq("EWE CS: Phoenix Notifications"),
                 eq(jsonMessage), eq(exception));
     }
+
+    @Test
+    public void testSuccessfulDownLoadImageRequest() throws Exception {
+        String jsonMessage = "{ \n"
+                + "  \"mediaUrl\":\"s3://images.trvl-media.com/hotels/5000000/4610000/4600500/4600417/4600417_2_y.jpg\" \n"
+                + "}";
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+        when(resourcePatternResolver.getResources(anyString()))
+                .thenReturn(new Resource[]{FILE_RESOURCE});
+        ResponseEntity<byte[]> responseEntity = sourceURLController.download(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().length > 0);
+    }
+
+    @Test
+    public void testDownLoadSouceImageNotFound() throws Exception {
+        String jsonMessage = "{ \n"
+                + "  \"mediaUrl\":\"s3://images.trvl-media.com/hotels/5000000/4610000/4600500/4600417/4600417_2_y.jpg\" \n"
+                + "}";
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+        Resource[] resources = {createMockResource(false)};
+        when(resourcePatternResolver.getResources(anyString())).thenReturn(resources);
+        ResponseEntity<byte[]> responseEntity = sourceURLController.download(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+    }
+
+    @Test
+    public void testDownLoadSouceImageMultiple() throws Exception {
+        String jsonMessage = "{ \n"
+                + "  \"mediaUrl\":\"s3://images.trvl-media.com/hotels/5000000/4610000/4600500/4600417/4600417_2_y.jpg\" \n"
+                + "}";
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+        Resource[] resources = {createMockResource(true),createMockResource(true)};
+        when(resourcePatternResolver.getResources(anyString())).thenReturn(resources);
+        ResponseEntity<byte[]> responseEntity = sourceURLController.download(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.CONFLICT, responseEntity.getStatusCode());
+    }
+
+    private Resource createMockResource(boolean exists) {
+        Resource result = mock(Resource.class);
+        when(result.exists()).thenReturn(exists);
+        return result;
+    }
+
 }
