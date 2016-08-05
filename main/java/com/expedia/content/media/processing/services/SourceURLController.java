@@ -76,7 +76,7 @@ public class SourceURLController extends CommonServiceController {
     @Transactional
     public ResponseEntity getSourceURL(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
         final String requestID = getRequestId(headers);
-        LOGGER.info("RECEIVED SOURCE URL REQUEST ServiceUrl={} RequestMessage={} RequestId={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message,                requestID);
+        LOGGER.info("RECEIVED SOURCE URL REQUEST ServiceUrl={} RequestMessage={} RequestId={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message, requestID);
         String jsonResponse = null;
         try {
             final Map messageMap = JSONUtil.buildMapFromJson(message);
@@ -101,7 +101,7 @@ public class SourceURLController extends CommonServiceController {
             response.put("contentProviderMediaName", lcmMedia.getFileName());
             response.put("mediaSourceUrl", sourcePath);
             jsonResponse = OBJECT_MAPPER.writeValueAsString(response);
-            LOGGER.info("SOURCE URL RESPONSE ServiceUrl={} ResponseMessage={} RequestId={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), jsonResponse,                    requestID);
+            LOGGER.info("SOURCE URL RESPONSE ServiceUrl={} ResponseMessage={} RequestId={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), jsonResponse, requestID);
         } catch (RequestMessageException ex) {
             LOGGER.error(ex, "ERROR ServiceUrl={} RequestMessage={} RequestId={} ErrorMessage={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message, requestID,
                     ex.getMessage());
