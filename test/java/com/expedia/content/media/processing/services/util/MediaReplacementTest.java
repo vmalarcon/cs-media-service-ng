@@ -35,7 +35,7 @@ public class MediaReplacementTest {
         media = MediaReplacement.selectBestMedia(Lists.newArrayList(
                 createByFileNameMedia("a", "456", "false", new Date(), "456")
         ), "456", "SCORE");
-        assertFalse(media.isPresent());
+        assertTrue(media.isPresent());
     }
 
     @Test
@@ -66,14 +66,14 @@ public class MediaReplacementTest {
                 createByFileNameMedia("c", "456", "false", dateFormat.parse("2016-02-17 12:00:02"), "456")
         ), "456", "SCORE");
         assertTrue(media.isPresent());
-        assertEquals("b", media.get().getMediaGuid());
+        assertEquals("c", media.get().getMediaGuid());
         media = MediaReplacement.selectBestMedia(Lists.newArrayList(
                 createByFileNameMedia("a", "456", "true", dateFormat.parse("2016-02-17 12:00:00"), "456"),
                 createByFileNameMedia("b", "456", "Yes", dateFormat.parse("2016-02-17 12:00:01"), "456"),
                 createByFileNameMedia("c", "456", "false", dateFormat.parse("2016-02-17 12:00:02"), "456")
         ), "456", "SCORE");
         assertTrue(media.isPresent());
-        assertEquals("a", media.get().getMediaGuid());
+        assertEquals("c", media.get().getMediaGuid());
     }
 
     public static Media createByFileNameMedia(String guid, String domainId, String active, Date lastUpdated, String lcmMediaId) {

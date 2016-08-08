@@ -2,30 +2,28 @@ package com.expedia.content.media.processing.services.util;
 
 import com.amazonaws.services.s3.model.S3Object;
 import com.expedia.content.media.processing.pipeline.util.FileImageCopy;
+import com.expedia.content.media.processing.pipeline.util.ImageCopy;
 import com.expedia.content.media.processing.services.testing.TestingUtil;
+import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class FileSourceFinderTest {
 
     FileSourceFinder fileSourceFinder = new FileSourceFinder();
+
+    @Before
+    public void insertMocks() throws Exception {
+        ImageCopy mockImageCopy = mock(ImageCopy.class);
+        TestingUtil.setFieldValue(fileSourceFinder, "imageCopy", mockImageCopy);
+    }
 
     @Test
     public void testGetFileNameFromURL() throws Exception {

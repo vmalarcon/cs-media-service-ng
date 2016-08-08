@@ -611,7 +611,7 @@ public class MediaController extends CommonServiceController {
                 return true;
             } else {
                 final List<LcmMedia> lcmMediaList = mediaDao.getMediaByFilenameInLCM(Integer.valueOf(imageMessage.getOuterDomainData().getDomainId()), imageMessage.getFileName());
-                final Optional<LcmMedia> existMedia = lcmMediaList.stream().filter(lcmMedia -> lcmMedia.getActive()).findFirst();
+                final Optional<LcmMedia> existMedia = lcmMediaList.stream().max((m1, m2) -> m1.getLastUpdateDate().compareTo(m2.getLastUpdateDate()));
                 if (existMedia.isPresent()) {
                     final LcmMedia lcmMedia = existMedia.get();
                     final OuterDomain.OuterDomainBuilder domainBuilder = OuterDomain.builder().from(imageMessage.getOuterDomainData());

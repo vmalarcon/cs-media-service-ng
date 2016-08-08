@@ -14,14 +14,14 @@ public class TimeZoneWrapperTest {
     private Date epochDate = new Date(0);
 
     @Test
-    public void testParseException() {
+    public void testParseException() throws Exception {
         String dateAsInput = "1980:12:12:12";
         date = TimeZoneWrapper.covertLcmTimeZone(dateAsInput);
         assertEquals(epochDate, date);
     }
 
     @Test
-    public void testConvertNormal() {
+    public void testConvertNormal() throws Exception {
         String dateAsInput = "2016-04-08 13:39:00";
         date = TimeZoneWrapper.covertLcmTimeZone(dateAsInput);
         assertNotNull(date);
@@ -29,21 +29,21 @@ public class TimeZoneWrapperTest {
     }
 
     @Test
-    public void testConvertNull() {
+    public void testConvertNull() throws Exception {
         String dateAsInput = null;
         date = TimeZoneWrapper.covertLcmTimeZone(dateAsInput);
         assertEquals(epochDate, date);
     }
 
     @Test
-    public void testConvertEmpty() {
+    public void testConvertEmpty() throws Exception {
         String dateAsInput = "";
         date = TimeZoneWrapper.covertLcmTimeZone(dateAsInput);
         assertEquals(epochDate, date);
     }
 
     @Test
-    public void testConvertBadFormat() {
+    public void testConvertBadFormat() throws Exception {
         String dateAsInput = ".2016E.02016E0";
         date = TimeZoneWrapper.covertLcmTimeZone(dateAsInput);
         assertEquals(epochDate, date);
