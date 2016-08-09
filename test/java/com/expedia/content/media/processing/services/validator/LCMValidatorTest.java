@@ -537,4 +537,40 @@ public class LCMValidatorTest {
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
         verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
     }
+    
+    @Test
+    public void testInvalidRoomsField() throws Exception {
+        final String jsonMsg =
+                "         { " +
+                        "    \"fileUrl\": \"http://well-formed-url/hello.jpg\"," +
+                        "    \"fileName\": \"Something\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
+                        "    \"domain\": \"Lodging\", " +
+                        "    \"domainId\": \"123\", " +
+                        "    \"userId\": \"user-id\", " +
+                        "    \"domainProvider\": \"EPC Internal User\", " +
+                        "    \"domainFields\": { " +
+                        "          \"subcategoryId\": \"10000\"," +
+                        "          \"propertyHero\": \"true\"," +
+                        "          \"rooms\": [ " +
+                        "               {" +
+                        "                 \"roomId\": \"222\", " +
+                        "                 \"roomHero\": \"true\" " +
+                        "               }" +
+                        "                     ]" +
+                        "                       }" +
+                        " }";
+        final ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        final List<ImageMessage> imageMessageList = new ArrayList<>();
+        imageMessageList.add(imageMessage);
+        when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
+        when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
+        when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
+        final List<Map<String, String>> errorList = lcmValidator.validateImages(imageMessageList);
+        assertTrue(errorList.size() == 1);
+        verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
+        verify(mockProviderProperties, times(1)).entrySet();
+        verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
+        verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
+    }
 }

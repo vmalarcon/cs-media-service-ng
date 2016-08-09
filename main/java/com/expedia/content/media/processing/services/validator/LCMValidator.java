@@ -68,6 +68,11 @@ public class LCMValidator implements MapMessageValidator {
         if (DomainDataUtil.duplicateRoomExists(imageMessage.getOuterDomainData())) {
             errorMsg.append("The request contains duplicate rooms.");
         }
+        
+        if (DomainDataUtil.roomsFieldIsInvalid(imageMessage.getOuterDomainData())) {
+            errorMsg.append("Some of rooms entries have not roomId key");
+        }
+
         return errorMsg;
     }
 }
