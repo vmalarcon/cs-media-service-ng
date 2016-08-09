@@ -91,7 +91,6 @@ public class MediaUpdateProcessor {
             // step 3 update room table.
             processRooms(imageMessage, mediaId, expediaId);
             LOGGER.info("LCM UPDATE DONE mediaId={}", Arrays.asList(mediaId), imageMessage);
-            //throw new RuntimeException("testdd");
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
