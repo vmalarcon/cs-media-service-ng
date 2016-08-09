@@ -60,7 +60,7 @@ public class ExpediaIdValidator extends NumericValidator {
         validationStatus.setValid(false);
         errorMsg = MessageFormat.format(errorMsg, image.getOuterDomainData().getDomain());
         validationStatus.setMessage(errorMsg);
-        LOGGER.debug("ErrorMessage=\"" + errorMsg + "\"");
+        LOGGER.debug("ErrorMessage={}", errorMsg);
         return validationStatus;
     }
 }

@@ -195,10 +195,10 @@ public class MediaController extends CommonServiceController {
             final String clientId = auth.getName();
             return processRequest(message, requestID, serviceUrl, clientId, ACCEPTED, timeReceived);
         } catch (ImageMessageException ex) {
-            LOGGER.error("ERROR ServiceUrl={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, requestID, ex.getMessage()), ex, message);
+            LOGGER.error(ex, "ERROR ServiceUrl={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, requestID, ex.getMessage()), message);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         } catch (Exception ex) {
-            LOGGER.error("ERROR ServiceUrl={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, requestID, ex.getMessage()), ex, message);
+            LOGGER.error(ex, "ERROR ServiceUrl={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, requestID, ex.getMessage()), message);
             poker.poke("Media Services failed to process a mediaAdd request - RequestId: " + requestID, hipChatRoom,
                     message, ex);
             throw ex;
@@ -242,12 +242,12 @@ public class MediaController extends CommonServiceController {
                 return mediaUpdateProcessor.processRequest(imageMessageNew, lcmMediaId, domainId, dynamoMedia);
             }
         } catch (ImageMessageException ex) {
-            LOGGER.error("ERROR ServiceUrl={} QueryId={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, queryId,
-                    requestID, ex.getMessage()), ex, message);
+            LOGGER.error(ex, "ERROR ServiceUrl={} QueryId={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, queryId,
+                    requestID, ex.getMessage()), message);
             return this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
         } catch (Exception ex) {
-            LOGGER.error("ERROR ServiceUrl={} QueryId={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, queryId,
-                    requestID, ex.getMessage()), ex, message);
+            LOGGER.error(ex, "ERROR ServiceUrl={} QueryId={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, queryId,
+                    requestID, ex.getMessage()), message);
             poker.poke("Media Services failed to process a mediaUpdate request - RequestId: " + requestID, hipChatRoom,
                     message, ex);
             throw ex;
@@ -647,7 +647,7 @@ public class MediaController extends CommonServiceController {
             LOGGER.info("Sending message to queue done", jsonMessage);
             logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED, null);
         } catch (Exception ex) {
-            LOGGER.error("Error publishing ErrorMessage={}", Arrays.asList(ex.getMessage()), ex, message);
+            LOGGER.error(ex, "Error publishing ErrorMessage={}", Arrays.asList(ex.getMessage()), message);
             throw new RuntimeException("Error publishing message=[" + jsonMessage + "]", ex);
         }
     }
