@@ -553,8 +553,7 @@ public class LCMValidatorTest {
                         "          \"subcategoryId\": \"10000\"," +
                         "          \"propertyHero\": \"true\"," +
                         "          \"rooms\": [ " +
-                        "               {" +
-                        "                 \"roomId\": \"222\", " +
+                        "               {" +                      
                         "                 \"roomHero\": \"true\" " +
                         "               }" +
                         "                     ]" +
@@ -567,10 +566,13 @@ public class LCMValidatorTest {
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
         final List<Map<String, String>> errorList = lcmValidator.validateImages(imageMessageList);
-        assertTrue(errorList.size() == 1);
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
         verify(mockProviderProperties, times(1)).entrySet();
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
-        verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
+        assertTrue(errorList.size() == 1);
+        final String errorMessage = errorList.get(0).get("error");
+        assertTrue("Some of rooms entries have not roomId key".equals(errorMessage));
+
     }
+
 }
