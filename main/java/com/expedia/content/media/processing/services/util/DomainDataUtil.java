@@ -45,9 +45,10 @@ public class DomainDataUtil {
      * @return empty if the domainProvider is invalid, domainProvider otherwise
      */
     public static String getDomainProvider(String domainProvider, Properties providerProperties) {
-        final String domainProviderText =
-                providerProperties.entrySet().stream().filter(providerProperty -> ((String) providerProperty.getValue()).equalsIgnoreCase(domainProvider))
-                        .map(providerProperty -> (String) providerProperty.getValue()).collect(Collectors.joining());
+        final String domainProviderText = providerProperties.entrySet().stream()
+                .filter(providerProperty -> ((String) providerProperty.getValue()).equalsIgnoreCase(domainProvider))
+                .map(providerProperty -> (String) providerProperty.getValue())
+                .collect(Collectors.joining());
         return domainProviderText;
     }
 
@@ -58,9 +59,9 @@ public class DomainDataUtil {
      * @return
      */
     public static List<Integer> getRoomIds(OuterDomain outerDomain) {
-        final List<Integer> roomIds =
-                outerDomain.getDomainFields() == null || outerDomain.getDomainFields().get(ROOMS) == null ? Collections.EMPTY_LIST : DomainDataUtil
-                        .getRoomIds(outerDomain.getDomainFields().get(ROOMS));
+        final List<Integer> roomIds = outerDomain.getDomainFields() == null ||
+                outerDomain.getDomainFields().get(ROOMS) == null ? Collections.EMPTY_LIST :
+                DomainDataUtil.getRoomIds(outerDomain.getDomainFields().get(ROOMS));
         return roomIds;
     }
 
