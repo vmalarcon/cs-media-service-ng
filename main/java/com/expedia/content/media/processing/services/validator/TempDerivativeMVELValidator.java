@@ -1,6 +1,6 @@
 package com.expedia.content.media.processing.services.validator;
 
-import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
 import org.mvel2.MVEL;
 
@@ -41,7 +41,7 @@ public class TempDerivativeMVELValidator {
                 validationError = MVEL.eval(rule, objectMap).toString();
 
             } catch (Exception ex) {
-                LOGGER.error(ex, "rule compare exception");
+                LOGGER.error(ex, "rule compare exception Message={}", objectMap.get("tempDerivativeMessage"));
             }
             if (!validationError.contains("valid") && !"".equals(validationError)) {
                 errorMsg.append(validationError).append("\r\n");

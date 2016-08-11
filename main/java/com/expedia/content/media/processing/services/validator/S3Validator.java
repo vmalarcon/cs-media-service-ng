@@ -6,7 +6,7 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
-import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 
 /**
  * Verifies if a file exists in the S3 repo.
@@ -36,7 +36,7 @@ public class S3Validator {
                 validationStatus = checkFileIsGreaterThanZero(object);
             }
         } catch (AmazonServiceException e) {
-            LOGGER.error(e, "s3 key query exception");
+            LOGGER.error(e, "s3 key query exception FileUrl={}", fileUrl);
         }
         return validationStatus;
     }

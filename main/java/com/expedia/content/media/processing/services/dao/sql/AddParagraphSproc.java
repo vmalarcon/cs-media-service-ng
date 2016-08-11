@@ -1,7 +1,7 @@
 package com.expedia.content.media.processing.services.dao.sql;
 
 
-import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.SqlParameter;
@@ -57,7 +57,7 @@ public class AddParagraphSproc extends StoredProcedure {
             String lastUpdatedBy,
             String lastUpdateLocation,
             Integer contentSourceTypeID) {
-        LOGGER.info("Calling {} " +
+        LOGGER.info("Calling Sproc={} " +
                         "CatalogItemId={} " +
                         "SectionTypeId={} " +
                         "ParagraphNbr={} "+

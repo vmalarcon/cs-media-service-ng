@@ -93,7 +93,7 @@ public class LcmDynamoCatalogAndParagraphDao implements CatalogItemMediaDao {
                 StringUtils.isNullOrEmpty(imageMessage.getUserId()) ? imageMessage.getClientId() : imageMessage.getUserId(),
                 false,
                 true,
-                ROOM_UPDATED_BY);
+                ROOM_UPDATED_BY, imageMessage);
     }
 
     public List<LcmMediaRoom> getLcmRoomsByMediaId(final int mediaId) {
