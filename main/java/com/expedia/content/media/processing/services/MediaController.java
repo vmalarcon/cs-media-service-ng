@@ -40,7 +40,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,6 +57,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -74,6 +78,7 @@ import static org.springframework.http.HttpStatus.OK;
  * Web service controller for media resources.
  */
 @RestController
+@EnableScheduling
 public class MediaController extends CommonServiceController {
 
     private static final String RESPONSE_FIELD_MEDIA_GUID = "mediaGuid";
@@ -99,6 +104,7 @@ public class MediaController extends CommonServiceController {
     private static final String DUPLICATED_STATUS = "DUPLICATE";
     private static final Integer LIVE_COUNT = 1;
     private static final String DEFAULT_VALIDATION_RULES = "DEFAULT";
+    private static final long ONE_HOUR = 3600 * 1000;
     private static final Map<String, HttpStatus> STATUS_MAP = new HashMap<>();
 
     static {
@@ -120,6 +126,8 @@ public class MediaController extends CommonServiceController {
     private QueueMessagingTemplate messagingTemplate;
     @Value("${media.aws.collector.queue.name}")
     private String publishQueue;
+    @Value("${media.aws.processlog.queue.name}")
+    private String mediaProcessLogQueue;
     @Autowired
     private ThumbnailProcessor thumbnailProcessor;
     @Autowired
@@ -328,8 +336,7 @@ public class MediaController extends CommonServiceController {
                 serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
         final ResponseEntity<String> validationResponse = validateMediaByDomainIdRequest(domainName, domainId, activeFilter);
         if (validationResponse != null) {
-            LOGGER.warn("INVALID GET BY DOMAIN ID REQUEST " +
-                            "ServiceUrl={} RequestId={} DomainName={} DomainId={} PageSize={} PageIndex={} ActiveFilter={} DerivativeTypeFilter={}",
+            LOGGER.warn("INVALID GET BY DOMAIN ID REQUEST " + "ServiceUrl={} RequestId={} DomainName={} DomainId={} PageSize={} PageIndex={} ActiveFilter={} DerivativeTypeFilter={}",
                     serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
             return validationResponse;
         }
@@ -339,7 +346,7 @@ public class MediaController extends CommonServiceController {
                     derivativeCategoryFilter, pageSize, pageIndex);
         } catch (Exception ex) {
             LOGGER.warn(ex, "INVALID GET BY DOMAIN ID REQUEST " +
-                    "ServiceUrl={} RequestId={} DomainName={} DomainId={} PageSize={} PageIndex={} ActiveFilter={} DerivativeTypeFilter={}",
+                            "ServiceUrl={} RequestId={} DomainName={} DomainId={} PageSize={} PageIndex={} ActiveFilter={} DerivativeTypeFilter={}",
                     serviceUrl, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
             poker.poke("Media Services failed to process a getMediaByDomainId request - RequestId: " + requestID, hipChatRoom,
                     domainId, ex);
@@ -727,4 +734,20 @@ public class MediaController extends CommonServiceController {
         }
         return null;
     }
+
+    /**
+     * run every hours to reprocess media log entry in queue.
+     * @throws IOException
+     */
+    @Scheduled(fixedRate = ONE_HOUR)
+    public void reprocessMediaLog() throws IOException {
+        final Message<?> message = messagingTemplate.receive(mediaProcessLogQueue);
+        if (message != null) {
+            final String json = (String) message.getPayload();
+            LOGGER.info("reprocess media process log from queue {}", json);
+            final LogEntry logEntry = LogEntry.getLogFromMessage(json);
+            logActivityProcess.log(logEntry, reporting);
+        }
+    }
+
 }
