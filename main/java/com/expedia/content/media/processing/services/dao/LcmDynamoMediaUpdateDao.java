@@ -2,7 +2,7 @@ package com.expedia.content.media.processing.services.dao;
 
 import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.sql.MediaChgSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;

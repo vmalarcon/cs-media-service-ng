@@ -3,7 +3,7 @@ package com.expedia.content.media.processing.services;
 import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDao;

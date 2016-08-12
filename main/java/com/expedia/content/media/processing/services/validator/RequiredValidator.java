@@ -2,7 +2,7 @@ package com.expedia.content.media.processing.services.validator;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 
-import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import org.apache.commons.lang.StringUtils;
 
 /**

@@ -6,7 +6,7 @@ import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
 import com.expedia.content.media.processing.pipeline.reporting.Activity;
 import com.expedia.content.media.processing.pipeline.reporting.App;
-import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;

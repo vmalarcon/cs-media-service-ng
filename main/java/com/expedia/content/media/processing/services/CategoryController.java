@@ -1,6 +1,6 @@
 package com.expedia.content.media.processing.services;
 
-import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.DomainNotFoundException;
 import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;

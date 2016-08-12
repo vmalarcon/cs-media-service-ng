@@ -7,7 +7,7 @@ import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.MessageConstants;
 import com.expedia.content.media.processing.pipeline.domain.Metadata;
-import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.MediaDBException;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaDerivative;

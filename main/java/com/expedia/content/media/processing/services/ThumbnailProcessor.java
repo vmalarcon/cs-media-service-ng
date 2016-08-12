@@ -7,7 +7,7 @@ import com.expedia.content.media.processing.pipeline.domain.DerivativeType;
 import com.expedia.content.media.processing.pipeline.domain.Image;
 import com.expedia.content.media.processing.pipeline.domain.ResizeCrop;
 import com.expedia.content.media.processing.pipeline.domain.ResizeMethod;
-import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.TemporaryWorkFolder;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
