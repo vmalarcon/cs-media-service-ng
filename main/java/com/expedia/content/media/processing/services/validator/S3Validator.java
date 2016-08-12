@@ -36,7 +36,7 @@ public class S3Validator {
                 validationStatus = checkFileIsGreaterThanZero(object);
             }
         } catch (AmazonServiceException e) {
-            LOGGER.error(e, "s3 key query exception");
+            LOGGER.error(e, "s3 key query exception FileUrl={}", fileUrl);
         }
         return validationStatus;
     }

@@ -53,7 +53,7 @@ public class CatalogItemMediaChgSproc extends StoredProcedure {
      * Update the category for a catalog item media record.
      */
     public void updateCategory(int catalogItemId, int mediaId, int categoryId, String lastUpdateBy, String lastUpdateLocation) {
-        LOGGER.info("Calling {} CatalogItemId={} MediaId={} CategoryId={} LastUpdateBy={} LastUpdateLocation={}",
+        LOGGER.info("Calling Sproc={} CatalogItemId={} MediaId={} CategoryId={} LastUpdateBy={} LastUpdateLocation={}",
                 PROC_NAME, catalogItemId, mediaId, categoryId, lastUpdateBy, lastUpdateLocation);
         try {
             execute(catalogItemId, mediaId, categoryId, null, null, lastUpdateBy, null,  null, lastUpdateLocation);

@@ -37,7 +37,7 @@ public class CatalogItemMediaDelSproc extends StoredProcedure {
      * Update the category for a catalog item media record.
      */
     public void deleteCategory(int cataLogItemId, int mediaId) {
-        LOGGER.info("Calling {} MediaId={} CatalogItemId={}",
+        LOGGER.info("Calling Sproc={} MediaId={} CatalogItemId={}",
                 PROC_NAME, mediaId, cataLogItemId);
         try {
             execute(cataLogItemId, mediaId);

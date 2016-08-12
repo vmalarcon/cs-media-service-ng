@@ -64,7 +64,7 @@ public class MediaChgSproc extends StoredProcedure {
 
     public void updateMedia(int mediaId, String mediaCommentTxt,
             String statusCode, String lastUpdateBy, String lastUpdateLocation) {
-        LOGGER.info("Calling {} MediaId={} MediaCommentTxt={} "
+        LOGGER.info("Calling Sproc={} MediaId={} MediaCommentTxt={} "
                         + "StatusCode={} LastUpdateBy={} LastUpdateLocation={}",
                 PROC_NAME, mediaId, mediaCommentTxt, statusCode,
                 lastUpdateBy, lastUpdateLocation);

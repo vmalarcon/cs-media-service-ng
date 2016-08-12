@@ -101,7 +101,7 @@ public class ThumbnailProcessor {
     private Thumbnail createGenericThumbnail(final String fileUrl, final int width, final int height, final Integer rotation, final String guid,
                                              final String domain, final String domainId) {
 
-        LOGGER.debug("CREATE THUMBNAIL FileUrl={} MediaGuid=[{}]", fileUrl, guid);
+        LOGGER.debug("CREATE THUMBNAIL FileUrl={} MediaGuid={}", fileUrl, guid);
         String thumbnailUrl;
         Path thumbnailPath;
         Path sourcePath;
@@ -124,7 +124,7 @@ public class ThumbnailProcessor {
             LOGGER.error(e, "Unable to generate thumbnail FileUrl={}", fileUrl);
             throw new RuntimeException("Unable to generate thumbnail with url: " + fileUrl + " and GUID: " + guid, e);
         }
-        LOGGER.debug("CREATED THUMBNAIL FileUrl={} MediaGuid=[{}]", fileUrl, guid);
+        LOGGER.debug("CREATED THUMBNAIL FileUrl={} MediaGuid={}", fileUrl, guid);
         return thumbnail;
     }
 

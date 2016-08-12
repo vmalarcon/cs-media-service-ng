@@ -54,7 +54,7 @@ public class SetParagraphSproc extends StoredProcedure {
                              String lastUpdatedBy,
                              String lastUpdateLocation,
                              Integer updateParagraphNbr) {
-        LOGGER.info("Calling {} " +
+        LOGGER.info("Calling Sproc={} " +
                 "CatalogItemId={} " +
                 "SectionTypeId={} " +
                 "ParagraphNbr={} " +

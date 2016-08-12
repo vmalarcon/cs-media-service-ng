@@ -1,5 +1,7 @@
 package com.expedia.content.media.processing.services.dao.sql;
 
+
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.MediaDBException;
 import org.springframework.jdbc.core.SqlParameter;
@@ -7,6 +9,7 @@ import org.springframework.jdbc.object.StoredProcedure;
 
 import javax.sql.DataSource;
 import java.sql.Types;
+import java.util.Arrays;
 
 /**
  * Base for both stored procedures:
@@ -30,8 +33,7 @@ public abstract class AddCatalogItemBaseSproc extends StoredProcedure {
 
     /**
      * Execute the CatalogItemMediaAdd#02 Stored procedure in order to populate the CatalogItemMedia table.
-     *
-     * @param catalogItemID
+     *  @param catalogItemID
      * @param mediaId
      * @param mediaUseRank
      * @param galleryDisplay
@@ -40,6 +42,7 @@ public abstract class AddCatalogItemBaseSproc extends StoredProcedure {
      * @param pictureShowDisplay
      * @param paragraphDisplay
      * @param lastUpdateLocation
+     * @param imageMessage
      */
     public void addCatalogItemMedia(int catalogItemID,
                                     int mediaId, int mediaUseRank,
@@ -48,9 +51,9 @@ public abstract class AddCatalogItemBaseSproc extends StoredProcedure {
                                     String lastUpdatedBy,
                                     boolean pictureShowDisplay,
                                     boolean paragraphDisplay,
-                                    String lastUpdateLocation) {
+                                    String lastUpdateLocation, ImageMessage imageMessage) {
 
-        getLogger().info("Calling {} " +
+        getLogger().info("Calling Sproc={} " +
                         "CatalogItemID={} " +
                         "MediaId={} " +
                         "MediauseRank={} " +
@@ -59,7 +62,9 @@ public abstract class AddCatalogItemBaseSproc extends StoredProcedure {
                         "LastUpdatedBy={} " +
                         "PictureShowDisplayBool={} " +
                         "ParagraphDisplayBool={} " +
-                        "LastUpdateLocation={}",
+                        "LastUpdateLocation={} " +
+                        "RequestId={} " +
+                        "MediaGuid={}",
                 getProcName(),
                 catalogItemID,
                 mediaId,
@@ -69,7 +74,9 @@ public abstract class AddCatalogItemBaseSproc extends StoredProcedure {
                 lastUpdatedBy,
                 pictureShowDisplay,
                 paragraphDisplay,
-                lastUpdateLocation);
+                lastUpdateLocation,
+                imageMessage.getRequestId(),
+                imageMessage.getMediaGuid());
 
         try {
             execute(catalogItemID,
@@ -82,7 +89,7 @@ public abstract class AddCatalogItemBaseSproc extends StoredProcedure {
                     paragraphDisplay,
                     lastUpdateLocation);
         } catch (Exception e) {
-            getLogger().error(e, "Error invoking Sproc={}", getProcName());
+            getLogger().error(e, "Error invoking Sproc={}", Arrays.<String>asList(getProcName()), imageMessage);
             throw new MediaDBException("Error executing: " + getProcName(), e);
         }
     }

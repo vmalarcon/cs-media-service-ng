@@ -75,7 +75,7 @@ public class MVELValidator implements MapMessageValidator {
                     validationError = MVEL.eval(rule, objectMap).toString();
                 }
             } catch (Exception ex) {
-                LOGGER.error(ex, "Rule compare exception");
+                LOGGER.error(ex, "Rule compare exception", (ImageMessage) objectMap.get("imageMessage"));
             }
             if (!validationError.contains("valid") && !"".equals(validationError)) {
                 errorMsg.append(validationError).append("\r\n");
@@ -92,7 +92,7 @@ public class MVELValidator implements MapMessageValidator {
 
                 }
             } catch (Exception ex) {
-                LOGGER.warn(ex, "Rule compare exception");
+                LOGGER.warn(ex, "Rule compare exception", (ImageMessage) objectMap.get("imageMessage"));
                 //TODO: not very good solution here, later we need to define a validation Object for domain field Map
                 //now domainFields like domainData.domainDataFields.categoryId is not required any more
                 // String exceptionMsg = ex.getMessage();

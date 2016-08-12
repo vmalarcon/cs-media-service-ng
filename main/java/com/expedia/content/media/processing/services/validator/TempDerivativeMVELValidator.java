@@ -41,7 +41,7 @@ public class TempDerivativeMVELValidator {
                 validationError = MVEL.eval(rule, objectMap).toString();
 
             } catch (Exception ex) {
-                LOGGER.error(ex, "rule compare exception");
+                LOGGER.error(ex, "rule compare exception Message={}", objectMap.get("tempDerivativeMessage"));
             }
             if (!validationError.contains("valid") && !"".equals(validationError)) {
                 errorMsg.append(validationError).append("\r\n");

@@ -1,8 +1,10 @@
 package com.expedia.content.media.processing.services.validator;
 
-import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import java.lang.reflect.Field;
+import java.util.Arrays;
 
 /**
  * use java reflection to get field value.
@@ -30,7 +32,7 @@ public final class ReflectionUtil {
                 objectValue = field.get(obj);
             }
         } catch (NoSuchFieldException e) {
-            LOGGER.error(e, "getFieldValue failed ErrorMessage={}", e.getMessage());
+            LOGGER.error(e, "getFieldValue failed ErrorMessage={}", Arrays.asList(e.getMessage()), (ImageMessage) obj);
             throw e;
         }
         LOGGER.debug("getFiledValue Field={} ReturnedValue={}", fieldName, objectValue);

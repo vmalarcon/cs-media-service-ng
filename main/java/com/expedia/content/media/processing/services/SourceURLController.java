@@ -103,9 +103,11 @@ public class SourceURLController extends CommonServiceController {
             jsonResponse = OBJECT_MAPPER.writeValueAsString(response);
             LOGGER.info("SOURCE URL RESPONSE ServiceUrl={} ResponseMessage={} RequestId={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), jsonResponse, requestID);
         } catch (RequestMessageException ex) {
-            LOGGER.error(ex, "ERROR ServiceUrl={} RequestMessage={} RequestId={} ErrorMessage={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message, requestID,
+            final ResponseEntity<String> responseEntity = buildErrorResponse(ex.getMessage(), MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), BAD_REQUEST);
+            LOGGER.error(ex, "ERROR ResponseStatus={} ResponseBody={} ServiceUrl={} RequestMessage={} RequestId={} ErrorMessage={}",
+                    responseEntity.getStatusCode().toString(), responseEntity.getBody(), MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message, requestID,
                     ex.getMessage());
-            return buildErrorResponse(ex.getMessage(), MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), BAD_REQUEST);
+            return responseEntity;
         } catch (Exception ex) {
             LOGGER.error(ex, "ERROR ServiceUrl={} RequestMessage={} RequestId={} ErrorMessage={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message, requestID,
                     ex.getMessage());
@@ -144,20 +146,23 @@ public class SourceURLController extends CommonServiceController {
     @Timer(name = "mediaSourceImageTimer")
     public ResponseEntity<byte[]> download(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
         final String requestID = getRequestId(headers);
-        LOGGER.info("RECEIVED Source Image REQUEST - url=[{}], message=[{}], requestId=[{}]", MediaServiceUrl.MEDIA_SOURCEIMAGE.getUrl(), message,
-                requestID);
+        LOGGER.info("RECEIVED SOURCE IMAGE REQUEST ServiceUrl={} ResponseMessage={} RequestId={}",
+                MediaServiceUrl.MEDIA_SOURCEIMAGE.getUrl(), message, requestID);
         final Map messageMap = JSONUtil.buildMapFromJson(message);
         final String fromUrl = (String) messageMap.get("mediaUrl");
         final InputStream streamFrom;
         try {
             final Resource[] resources = resourcePatternResolver.getResources(fromUrl);
             if (Stream.of(resources).count() != 1) {
-                LOGGER.error("Multiple resources matched: [{}]. Resources: [{}]", fromUrl, Stream.of(resources).count());
-                return new ResponseEntity<>(HttpStatus.CONFLICT);
+                final ResponseEntity<byte[]> responseEntity = new ResponseEntity<>(HttpStatus.CONFLICT);
+                LOGGER.error("Multiple resources matched FileUrl={} MatchedResourcesCount={} ResponseStatus={}",
+                        fromUrl, Stream.of(resources).count(), responseEntity.getStatusCode().toString());
+                return responseEntity;
             }
             if (Stream.of(resources).noneMatch(Resource::exists)) {
-                LOGGER.error("Resource not found: [{}]", fromUrl);
-                return new ResponseEntity<>(NOT_FOUND);
+                final ResponseEntity<byte[]> responseEntity = new ResponseEntity<>(NOT_FOUND);
+                LOGGER.error("Resource not found FileUrl={} ResponseStatus={}", fromUrl, responseEntity.getStatusCode().toString());
+                return responseEntity;
             }
             streamFrom = resources[0].getInputStream();
             final HttpHeaders responseHeaders = new HttpHeaders();

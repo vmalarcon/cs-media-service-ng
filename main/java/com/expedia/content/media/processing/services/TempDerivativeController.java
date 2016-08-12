@@ -75,6 +75,8 @@ public class TempDerivativeController extends CommonServiceController {
             @SuppressWarnings("CPD-START")
             final ValidationStatus fileValidation = verifyUrl(tempDerivativeMessage.getFileUrl());
             if (!fileValidation.isValid()) {
+                final ResponseEntity<String> responseEntity = this.buildErrorResponse(fileValidation.getMessage(), serviceUrl, STATUS_MAP.get(fileValidation.getStatus()) == null ?
+                        BAD_REQUEST : STATUS_MAP.get(fileValidation.getStatus()));
                 switch (fileValidation.getStatus()) {
                     case ValidationStatus.NOT_FOUND:
                         LOGGER.info("NOT FOUND Reason=\"Provided 'fileUrl does not exist'\" ServiceUrl={} RequestId={}", Arrays.asList(serviceUrl, requestID), message);
@@ -86,7 +88,7 @@ public class TempDerivativeController extends CommonServiceController {
                         LOGGER.info("BAD REQUEST ServiceUrl={} RequestId={}", Arrays.asList(serviceUrl, requestID), message);
                         break;
                 }
-                return this.buildErrorResponse(fileValidation.getMessage(), serviceUrl, STATUS_MAP.get(fileValidation.getStatus()) == null ? BAD_REQUEST : STATUS_MAP.get(fileValidation.getStatus()));
+                return responseEntity;
             }
             @SuppressWarnings("CPD-END")
             final Map<String, String> response = new HashMap<>();
