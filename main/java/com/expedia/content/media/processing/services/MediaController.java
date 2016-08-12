@@ -761,7 +761,7 @@ public class MediaController extends CommonServiceController {
         final Message<?> message = messagingTemplate.receive(mediaProcessLogQueue);
         if (message != null) {
             final String json = (String) message.getPayload();
-            LOGGER.info("reprocess media process log from queue {}", json);
+            LOGGER.info("reprocess media log from queue JsonMessage={}", json);
             final LogEntry logEntry = LogEntry.getLogFromMessage(json);
             logActivityProcess.log(logEntry, reporting);
         }
