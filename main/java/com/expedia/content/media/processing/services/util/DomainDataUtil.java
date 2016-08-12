@@ -85,7 +85,10 @@ public class DomainDataUtil {
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static Boolean roomsFieldIsInvalid(OuterDomain outerDomain) {
-        final Object rooms = outerDomain.getDomainFields() == null ? Collections.EMPTY_MAP : outerDomain.getDomainFields().get(ROOMS);
+        final Object rooms = outerDomain.getDomainFields() == null ? null : outerDomain.getDomainFields().get(ROOMS);
+        if(rooms == null){
+            return false;
+        }
         final List roomsList = (List) rooms;
         final List<Boolean> status = (List<Boolean>) roomsList.stream().map(r -> {
             final Map room = (Map) r;
