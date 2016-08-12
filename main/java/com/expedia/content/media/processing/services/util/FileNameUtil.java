@@ -103,7 +103,8 @@ public class FileNameUtil {
         PRODUCT_API_TEST("productapi-test", guidProviderNameToFileNameFunction),
         ORBITZ("orbitz", guidProviderNameToFileNameFunction),
         REPLACEPROVIDER("replaceprovider", guidProviderNameToFileNameFunction),
-        TOURICO("Tourico", guidProviderNameToFileNameFunction);
+        TOURICO("Tourico", guidProviderNameToFileNameFunction),
+        WOORI("Woori", guidProviderNameToFileNameFunction);
 
         private final String name;
         private final Function<ImageMessage, String> function;

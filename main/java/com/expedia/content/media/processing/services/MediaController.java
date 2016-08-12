@@ -149,8 +149,8 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "acquireMessageCounter")
     @Timer(name = "acquireMessageTimer")
     @SuppressWarnings({"PMD.SignatureDeclareThrowsException", "rawtypes"})
-    @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST) @Deprecated public ResponseEntity<String> acquireMedia(
-            @RequestBody final String message, @RequestHeader MultiValueMap<String,String> headers) throws Exception {
+    @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST)
+    @Deprecated public ResponseEntity<String> acquireMedia(@RequestBody final String message, @RequestHeader MultiValueMap<String,String> headers) throws Exception {
         final Date timeReceived = new Date();
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.ACQUIRE_MEDIA.getUrl();
@@ -186,8 +186,8 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "addMessageCounter")
     @Timer(name = "addMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST) public ResponseEntity<String> mediaAdd(@RequestBody final String message,
-            @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
+    @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST)
+    public ResponseEntity<String> mediaAdd(@RequestBody final String message, @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
         final Date timeReceived = new Date();
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
@@ -221,8 +221,8 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "updateMessageCounter")
     @Timer(name = "updateMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/images/{queryId}", method = RequestMethod.PUT) public ResponseEntity<String> mediaUpdate(
-            @PathVariable("queryId") final String queryId, @RequestBody final String message, @RequestHeader final MultiValueMap<String,String> headers)
+    @RequestMapping(value = "/media/v1/images/{queryId}", method = RequestMethod.PUT)
+    public ResponseEntity<String> mediaUpdate(@PathVariable("queryId") final String queryId, @RequestBody final String message, @RequestHeader final MultiValueMap<String,String> headers)
             throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl() + "/" + queryId;
@@ -271,8 +271,9 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "getMediaByGUIDMessageCounter")
     @Timer(name = "getMediaByGUIDMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/images/{mediaGUID}", method = RequestMethod.GET) @Transactional public ResponseEntity<String> getMedia(
-            @PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
+    @RequestMapping(value = "/media/v1/images/{mediaGUID}", method = RequestMethod.GET)
+    @Transactional
+    public ResponseEntity<String> getMedia(@PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl() + "/" + mediaGUID;
         MediaGetResponse mediaResponse = null;
@@ -323,7 +324,8 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "getMediaByDomainIdMessageCounter")
     @Timer(name = "getMediaByDomainIdMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/imagesbydomain/{domainName}/domainId/{domainId}", method = RequestMethod.GET) @Transactional
+    @RequestMapping(value = "/media/v1/imagesbydomain/{domainName}/domainId/{domainId}", method = RequestMethod.GET)
+    @Transactional
     public ResponseEntity<String> getMediaByDomainId(@PathVariable("domainName") final String domainName, @PathVariable("domainId") final String domainId,
             @RequestParam(value = "pageSize", required = false) final Integer pageSize,
             @RequestParam(value = "pageIndex", required = false) final Integer pageIndex,
