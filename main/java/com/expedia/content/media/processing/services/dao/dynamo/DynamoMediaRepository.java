@@ -5,9 +5,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.MessageConstants;
 import com.expedia.content.media.processing.pipeline.domain.Metadata;
-import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.MediaDBException;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaDerivative;
@@ -102,7 +101,7 @@ public class DynamoMediaRepository {
         try {
             dynamoMapper.save(media);
         } catch (Exception e) {
-            LOGGER.error(e, "ERROR when trying to save in dynamodb ErrorMessage={}.", e.getMessage());
+            LOGGER.error(e, "ERROR when trying to save in dynamodb MediaGuid={} ClientID={} ErrorMessage={}.", media.getMediaGuid(), media.getClientId(), e.getMessage());
             throw new MediaDBException(e.getMessage(), e);
         }
     }
@@ -166,7 +165,8 @@ public class DynamoMediaRepository {
                     .filter(item -> environment.equals(item.getEnvironment()))
                     .collect(Collectors.toList());
         } catch (Exception e) {
-            LOGGER.error(e, "ERROR ErrorMessage={}", e.getMessage());
+            LOGGER.error(e, "ERROR Loading Media Index={} Domain={} DomainId={} ErrorMessage={}",
+                    "cs-mediadb-index-Media-DomainID-Domain", domain, domainId, e.getMessage());
             throw new MediaDBException(e.getMessage(), e);
         }
     }
@@ -180,14 +180,14 @@ public class DynamoMediaRepository {
     public void storeMediaAddMessage(ImageMessage imageMessage, Thumbnail thumbnail) {
         try {
             dynamoMapper.save(buildMedia(imageMessage, thumbnail));
-            LOGGER.info("Media successfully added in dynamodb", imageMessage, MessageConstants.FILE_URL);
+            LOGGER.info("Media successfully added in dynamodb", imageMessage);
             if (imageMessage.isGenerateThumbnail()) {
                 dynamoMapper.save(buildDerivative(imageMessage, thumbnail));
                 LOGGER.info("Thumbnail derivative successfully added in dynamodb ThumbnailDerivative={}",
                         Arrays.asList(String.valueOf(thumbnail)), imageMessage);
             }
         } catch (Exception e) {
-            LOGGER.error(e, "ERROR when trying to save in dynamodb ErrorMessage={}", e.getMessage());
+            LOGGER.error(e, "ERROR when trying to save in dynamodb ErrorMessage={}", Arrays.<String>asList(e.getMessage()), imageMessage);
             throw new MediaDBException(e.getMessage(), e);
         }
     }

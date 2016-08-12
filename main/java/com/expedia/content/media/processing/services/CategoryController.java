@@ -1,6 +1,6 @@
 package com.expedia.content.media.processing.services;
 
-import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.DomainNotFoundException;
 import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
@@ -57,7 +57,7 @@ public class CategoryController extends CommonServiceController {
     public ResponseEntity<String> domainCategories(final @RequestHeader MultiValueMap<String,String> headers,
             final @PathVariable("domainName") String domainName, final @RequestParam(value = "localeId", required = false) String localeId) {
         final String localePath = (localeId == null) ? "" : "?localeId=" + localeId;
-        LOGGER.info("RECEIVED REQUEST Url={} RequestId={}", MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + "/" + domainName + localePath,
+        LOGGER.info("RECEIVED DOMAIN CATEGORIES REQUEST Url={} RequestId={}", MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + "/" + domainName + localePath,
                 getRequestId(headers));
         String response = null;
         try {

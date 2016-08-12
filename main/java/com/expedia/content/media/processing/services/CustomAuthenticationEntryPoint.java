@@ -1,6 +1,6 @@
 package com.expedia.content.media.processing.services;
 
-import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import expedia.content.solutions.metrics.annotations.Counter;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;

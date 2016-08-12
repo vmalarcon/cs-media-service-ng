@@ -2,9 +2,10 @@ package com.expedia.content.media.processing.services.validator;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 
 import java.text.MessageFormat;
+import java.util.Arrays;
 
 /**
  * ExpediaIdValidator will check whether expediaId is a number or is missing.
@@ -60,7 +61,7 @@ public class ExpediaIdValidator extends NumericValidator {
         validationStatus.setValid(false);
         errorMsg = MessageFormat.format(errorMsg, image.getOuterDomainData().getDomain());
         validationStatus.setMessage(errorMsg);
-        LOGGER.debug("ErrorMessage={}", errorMsg);
+        LOGGER.debug("ErrorMessage={}", Arrays.<String>asList(errorMsg), image);
         return validationStatus;
     }
 }

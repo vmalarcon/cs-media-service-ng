@@ -2,6 +2,7 @@ package com.expedia.content.media.processing.services.dao;
 
 import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyObject;
@@ -47,6 +48,28 @@ public class LcmDynamoCatalogAndParagraphDaoTest {
 
     @Before
     public void setUp() throws Exception {
+        String jsonMsg = "{  \n"
+                + "   \"userId\":\"bobthegreat\",\n"
+                + "   \"active\":\"true\",\n"
+                + "    \"domain\":\"Lodging\",\n"
+                + "   \"domainFields\":{  \n"
+                + "      \"subcategoryId\":\"22003\",\n"
+                + "      \"propertyHero\":\"true\",\n"
+                + "      \"rooms\":[  \n"
+                + "         {  \n"
+                + "            \"roomId\":\"934779\",\n"
+                + "            \"roomHero\":\"false\"\n"
+                + "         },\n"
+                + "         {\n"
+                + "             \"roomId\":\"928675\",\n"
+                + "            \"roomHero\":\"true\" \n"
+                + "         }\n"
+                + "      ]\n"
+                + "   },\n"
+                + "   \"comment\":\"note33\"\n"
+                + "}";
+
+        imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
         roomGetSproc = mock(SQLRoomGetByMediaIdSproc.class);
         Map<String, Object> roomResult = new HashMap<>();
         LcmMediaRoom lcmMediaRoom = LcmMediaRoom.builder().roomId(123).roomHero(true).build();
@@ -59,7 +82,7 @@ public class LcmDynamoCatalogAndParagraphDaoTest {
 
         addCatalogItemMediaForRoom = mock(AddCatalogItemMediaForRoomsAndRatePlansSproc.class);
         Mockito.doNothing().when(addCatalogItemMediaForRoom).addCatalogItemMedia(anyInt(), anyInt(), anyInt(), anyBoolean(), anyInt(), anyString(),
-                anyBoolean(), anyBoolean(), anyString());
+                anyBoolean(), anyBoolean(), anyString(), any(ImageMessage.class));
 
         catalogItemMediaDelSproc = mock(CatalogItemMediaDelSproc.class);
         Mockito.doNothing().when(catalogItemMediaDelSproc).deleteCategory(anyInt(), anyInt());
@@ -87,28 +110,6 @@ public class LcmDynamoCatalogAndParagraphDaoTest {
         when(lcmMediaItemSproc.execute(anyInt(), anyInt())).thenReturn(mediaResult);
 
         lcmDynamoCatalogAndParagraphDao = makeMockMediaDao();
-        String jsonMsg = "{  \n"
-                + "   \"userId\":\"bobthegreat\",\n"
-                + "   \"active\":\"true\",\n"
-                + "    \"domain\":\"Lodging\",\n"
-                + "   \"domainFields\":{  \n"
-                + "      \"subcategoryId\":\"22003\",\n"
-                + "      \"propertyHero\":\"true\",\n"
-                + "      \"rooms\":[  \n"
-                + "         {  \n"
-                + "            \"roomId\":\"934779\",\n"
-                + "            \"roomHero\":\"false\"\n"
-                + "         },\n"
-                + "         {\n"
-                + "             \"roomId\":\"928675\",\n"
-                + "            \"roomHero\":\"true\" \n"
-                + "         }\n"
-                + "      ]\n"
-                + "   },\n"
-                + "   \"comment\":\"note33\"\n"
-                + "}";
-
-        imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
     }
 
     private LcmDynamoCatalogAndParagraphDao makeMockMediaDao() throws NoSuchFieldException, IllegalAccessException {

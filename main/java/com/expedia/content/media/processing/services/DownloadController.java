@@ -1,7 +1,7 @@
 package com.expedia.content.media.processing.services;
 
 import com.amazonaws.util.IOUtils;
-import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import expedia.content.solutions.metrics.annotations.Counter;
 import expedia.content.solutions.metrics.annotations.Timer;
 import org.springframework.beans.factory.annotation.Autowired;

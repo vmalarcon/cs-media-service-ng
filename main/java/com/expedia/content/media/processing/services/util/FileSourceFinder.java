@@ -2,7 +2,7 @@ package com.expedia.content.media.processing.services.util;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.S3Object;
-import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.ImageCopy;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +48,7 @@ public class FileSourceFinder {
                     return S3_PREFIX + bucketName + "/" + objectName;
                 }
             } catch (AmazonServiceException e) {
-                LOGGER.error(e, "s3 query exception");
+                LOGGER.error(e, "s3 query exception MediaGuid={} BucketName={}", guid, bucketName);
             }
         }
         return "";

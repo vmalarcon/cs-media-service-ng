@@ -5,7 +5,7 @@ import java.nio.file.Path;
 
 import javax.imageio.ImageIO;
 
-import com.expedia.content.media.processing.pipeline.reporting.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 
 import com.expedia.content.media.processing.pipeline.domain.Metadata;
 
