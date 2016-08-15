@@ -359,7 +359,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     public void deleteMediaByGUID(String mediaGUID) {
         final Media media = mediaRepo.getMedia(mediaGUID);
         if (media.getLcmMediaId() != null) {
-            final int lcmMediaId = Integer.parseInt(media.getLcmMediaId());
+            final Integer lcmMediaId = Integer.valueOf(media.getLcmMediaId());
             lcmMediaDeleteSproc.deleteMedia(lcmMediaId);
         }
         mediaRepo.deleteMedia(media);
