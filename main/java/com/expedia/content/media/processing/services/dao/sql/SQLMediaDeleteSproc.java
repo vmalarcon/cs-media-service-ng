@@ -30,10 +30,11 @@ public class SQLMediaDeleteSproc extends StoredProcedure {
      * delete the media.
      */
     public void deleteMedia(int mediaId) {
-        LOGGER.info("Calling {} MediaId={}", PROC_NAME, mediaId);
+        LOGGER.info("Calling Sproc={} MediaId={}", PROC_NAME, mediaId);
         try {
             execute(mediaId);
         } catch (Exception e) {
+            LOGGER.error(e, "Error invoking Sproc={}", PROC_NAME);
             throw new MediaDBException("Error invoking: " + PROC_NAME, e);
         }
     }
