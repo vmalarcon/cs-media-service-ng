@@ -29,6 +29,7 @@ import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -357,14 +358,19 @@ public class LcmDynamoMediaDao implements MediaDao {
 
     @Override
     public void deleteMediaByGUID(String mediaGUID) {
-        final Media media = mediaRepo.getMedia(mediaGUID);
-        if (media != null) {
-            String lcmMediaIdString = media.getLcmMediaId();
-            if (lcmMediaIdString != null && !lcmMediaIdString.isEmpty()) {
-                final Integer lcmMediaId = Integer.valueOf(lcmMediaIdString);
-                lcmMediaDeleteSproc.deleteMedia(lcmMediaId);
+        if (NumberUtils.isNumber(mediaGUID)) {
+            final Integer lcmMediaId = Integer.valueOf(mediaGUID);
+            lcmMediaDeleteSproc.deleteMedia(lcmMediaId);
+        } else {
+            final Media media = mediaRepo.getMedia(mediaGUID);
+            if (media != null) {
+                String lcmMediaIdString = media.getLcmMediaId();
+                if (lcmMediaIdString != null && !lcmMediaIdString.isEmpty()) {
+                    final Integer lcmMediaId = Integer.valueOf(lcmMediaIdString);
+                    lcmMediaDeleteSproc.deleteMedia(lcmMediaId);
+                }
+                mediaRepo.deleteMedia(media);
             }
-            mediaRepo.deleteMedia(media);
         }
     }
 
