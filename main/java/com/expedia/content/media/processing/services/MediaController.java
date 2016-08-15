@@ -331,13 +331,7 @@ public class MediaController extends CommonServiceController {
                 LOGGER.info("INVALID GET REQUEST ErrorMessage=\"Media GUID exists please use GUID in request\" MediaID={} MediaGuid={} RequestId={}", mediaGUID, dynamoGuid, requestID);
                 return this.buildErrorResponse("Media GUID " + dynamoGuid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
             }
-            final MediaGetResponse mediaResponse = mediaDao.getMediaByGUID(mediaGUID);
-            if (mediaResponse == null) {
-                LOGGER.info("INVALID GET REQUEST ErrorMessage=\"Response not found. Provided media GUID does not exist\" MediaGUID={} RequestId={}", mediaGUID, requestID);
-                return this.buildErrorResponse("Provided media GUID does not exist.", serviceUrl, NOT_FOUND);
-            } else {
-                mediaDao.deleteMediaByGUID(mediaGUID);
-            }
+            mediaDao.deleteMediaByGUID(mediaGUID);
         } catch (Exception ex) {
             LOGGER.error(ex, "ERROR ServiceUrl={} RequestId={} MediaGuid={} ErrorMessage={}", serviceUrl, requestID, mediaGUID, ex.getMessage());
             poker.poke("Media Services failed to process a deleteMedia request - RequestId: " + requestID, hipChatRoom, mediaGUID, ex);

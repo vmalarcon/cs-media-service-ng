@@ -358,13 +358,15 @@ public class LcmDynamoMediaDao implements MediaDao {
     @Override
     public void deleteMediaByGUID(String mediaGUID) {
         final Media media = mediaRepo.getMedia(mediaGUID);
-        if (media.getLcmMediaId() != null) {
-            final Integer lcmMediaId = Integer.valueOf(media.getLcmMediaId());
-            lcmMediaDeleteSproc.deleteMedia(lcmMediaId);
+        if (media != null) {
+            String lcmMediaIdString = media.getLcmMediaId();
+            if (lcmMediaIdString != null && !lcmMediaIdString.isEmpty()) {
+                final Integer lcmMediaId = Integer.valueOf(lcmMediaIdString);
+                lcmMediaDeleteSproc.deleteMedia(lcmMediaId);
+            }
+            mediaRepo.deleteMedia(media);
         }
-        mediaRepo.deleteMedia(media);
     }
-
 
     /**
      * Pulls the latest processing status of media files. When a file doesn't have any process logs the file is
