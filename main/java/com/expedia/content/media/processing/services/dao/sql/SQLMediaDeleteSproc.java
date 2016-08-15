@@ -18,7 +18,6 @@ public class SQLMediaDeleteSproc extends StoredProcedure {
 
     private static final FormattedLogger LOGGER = new FormattedLogger(SQLMediaDeleteSproc.class);
     private static final String PROC_NAME = "MediaDel";
-    public static final String MEDIA_SET = "media";
 
     @Autowired
     public SQLMediaDeleteSproc(final DataSource dataSource) {
