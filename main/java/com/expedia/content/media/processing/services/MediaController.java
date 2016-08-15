@@ -307,6 +307,47 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
+     * Web services interface to delete media information by its GUID.
+     *
+     * @param mediaGUID The GUID of the media to delete.
+     * @param headers Headers of the request.
+     * @throws Exception Thrown if processing the message fails.
+     */
+    @Meter(name = "deleteMediaByGUIDMessageCounter")
+    @Timer(name = "deleteMediaByGUIDMessageTimer")
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
+    @RequestMapping(value = "/media/v1/images/{mediaGUID}", method = RequestMethod.DELETE) public ResponseEntity<String> deleteMedia(
+            @PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
+        final String requestID = this.getRequestId(headers);
+        final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
+        try {
+            LOGGER.info("RECEIVED DELETE REQUEST ServiceUrl={} RequestId={} MediaGUID={}", serviceUrl, requestID, mediaGUID);
+            if (!mediaGUID.matches(REG_EX_GUID) && !mediaGUID.matches(REG_EX_NUMERIC)) {
+                LOGGER.warn("INVALID DELETE REQUEST ServiceUrl={} RequestId={} MediaGUID={}", serviceUrl, requestID, mediaGUID);
+                return this.buildErrorResponse("Invalid media GUID provided.", serviceUrl, BAD_REQUEST);
+            }
+            final String dynamoGuid = getGuidByMediaId(mediaGUID);
+            if (dynamoGuid != null) {
+                LOGGER.info("INVALID GET REQUEST ErrorMessage=\"Media GUID exists please use GUID in request\" MediaID={} MediaGuid={} RequestId={}", mediaGUID, dynamoGuid, requestID);
+                return this.buildErrorResponse("Media GUID " + dynamoGuid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
+            }
+            final MediaGetResponse mediaResponse = mediaDao.getMediaByGUID(mediaGUID);
+            if (mediaResponse == null) {
+                LOGGER.info("INVALID GET REQUEST ErrorMessage=\"Response not found. Provided media GUID does not exist\" MediaGUID={} RequestId={}", mediaGUID, requestID);
+                return this.buildErrorResponse("Provided media GUID does not exist.", serviceUrl, NOT_FOUND);
+            } else {
+                mediaDao.deleteMediaByGUID(mediaGUID);
+            }
+        } catch (Exception ex) {
+            LOGGER.error(ex, "ERROR ServiceUrl={} RequestId={} MediaGuid={} ErrorMessage={}", serviceUrl, requestID, mediaGUID, ex.getMessage());
+            poker.poke("Media Services failed to process a deleteMedia request - RequestId: " + requestID, hipChatRoom, mediaGUID, ex);
+            throw ex;
+        }
+        return new ResponseEntity<>("Media GUID " + mediaGUID + " has been deleted successfully.", OK);
+    }
+
+
+    /**
      * Web services interface to retrieve media information by domain name and id.
      *
      * @param domainName Name of the domain the domain id belongs to.

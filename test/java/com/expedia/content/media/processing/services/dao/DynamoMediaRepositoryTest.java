@@ -2,7 +2,11 @@ package com.expedia.content.media.processing.services.dao;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
@@ -40,11 +44,12 @@ public class DynamoMediaRepositoryTest {
         mediaList = defaultMediaList();
         dynamoMediaRepository = new DynamoMediaRepository(dynamoMapper, environment);
         when(paginatedQueryList.stream()).thenReturn(mediaList.stream()).thenReturn(mediaList.stream());
-        when(dynamoMapper.query(eq(Media.class), Matchers.anyObject())).thenReturn(paginatedQueryList);
+        when(dynamoMapper.query(eq(Media.class), anyObject())).thenReturn(paginatedQueryList);
         when(dynamoMapper.load(eq(Media.class),eq("g01"))).thenReturn(mediaList.get(0));
         when(dynamoMapper.load(eq(Media.class),eq("g02"))).thenReturn(mediaList.get(1));
         when(dynamoMapper.load(eq(Media.class),eq("g03"))).thenReturn(mediaList.get(2));
         when(dynamoMapper.load(eq(Media.class),eq("g04"))).thenReturn(null);
+        doNothing().when(dynamoMapper).delete(anyObject());
     }
 
     @Test
@@ -67,6 +72,12 @@ public class DynamoMediaRepositoryTest {
         assertTrue(dynamoMediaRepository.getMedia("g02") != null);
         assertTrue(dynamoMediaRepository.getMedia("g03") == null);
         assertTrue(dynamoMediaRepository.getMedia("g04") == null);
+    }
+
+    @Test
+    public void testDeleteMedia() {
+        dynamoMediaRepository.deleteMedia(new Media());
+        verify(dynamoMapper, times(1)).delete(anyObject());
     }
 
     private List<Media> defaultMediaList() {

@@ -11,6 +11,7 @@ import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaContentProviderNameGetSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaDeleteSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaItemGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaListSproc;
@@ -89,6 +90,8 @@ public class LcmDynamoMediaDao implements MediaDao {
     private SQLMediaItemGetSproc lcmMediaItemSproc;
     @Autowired
     private SQLMediaGetSproc lcmMediaSproc;
+    @Autowired
+    private SQLMediaDeleteSproc lcmMediaDeleteSproc;
     @Autowired
     private GetMediaIDSproc getMediaIDSproc;
     @Autowired
@@ -350,6 +353,16 @@ public class LcmDynamoMediaDao implements MediaDao {
             }
         }
         return transformSingleMediaForResponse(guidMedia);
+    }
+
+    @Override
+    public void deleteMediaByGUID(String mediaGUID) {
+        final Media media = mediaRepo.getMedia(mediaGUID);
+        if (media.getLcmMediaId() != null) {
+            final int lcmMediaId = Integer.parseInt(media.getLcmMediaId());
+            lcmMediaDeleteSproc.deleteMedia(lcmMediaId);
+        }
+        mediaRepo.deleteMedia(media);
     }
 
 

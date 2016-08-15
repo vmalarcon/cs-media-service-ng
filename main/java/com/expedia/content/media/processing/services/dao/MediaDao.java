@@ -51,6 +51,13 @@ public interface MediaDao {
     MediaGetResponse getMediaByGUID(String mediaGUID);
 
     /**
+     * Deletes a media by its GUID.
+     *
+     * @param mediaGUID GUID of the media to delete.
+     */
+    void deleteMediaByGUID(String mediaGUID);
+
+    /**
      * get the domainId and ContentProviderMediaName from DB by derivative file name.
      *
      * @param fileName

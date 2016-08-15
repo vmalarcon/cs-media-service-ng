@@ -74,6 +74,15 @@ public class DynamoMediaRepository {
     }
 
     /**
+     * Deletes a media.
+     *
+     * @param media the Media to be deleted.
+     */
+    public void deleteMedia(Media media) {
+        dynamoMapper.delete(media);
+    }
+
+    /**
      * get the Media information from dynamo Media table.
      * @param mediaId media Id from JSON
      * @return list of Media
