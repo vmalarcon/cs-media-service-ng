@@ -8,8 +8,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -26,6 +28,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaDeleteSproc;
 import com.expedia.content.media.processing.services.util.FileNameUtil;
 import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -377,6 +380,47 @@ public class LcmDynamoMediaDaoTest {
         DomainIdMedia testMedia3 = testMediaResponse.getImages().get(1);
         assertEquals(dynamoMedia3.getMediaGuid(), testMedia3.getMediaGuid());
         assertNull(testMedia3.getDerivatives());
+    }
+
+    @Test
+    public void testMediaDeleteNotFoundGUID() throws NoSuchFieldException, IllegalAccessException {
+        DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
+        doNothing().when(mockMediaDBRepo).deleteMedia(anyObject());
+        when(mockMediaDBRepo.getMedia(anyString())).thenReturn(null);
+        MediaDao mediaDao = makeMockMediaDao(null, null, mockMediaDBRepo, null, null, makeMockProcessLogDao());
+        mediaDao.deleteMediaByGUID("d2d4d480-9627-47f9-86c6-1874c18d34t6");
+        verify(mockMediaDBRepo, times(0)).deleteMedia(anyObject());
+    }
+
+    @Test
+    public void testMediaDeleteFoundGUID() throws NoSuchFieldException, IllegalAccessException {
+        DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
+        doNothing().when(mockMediaDBRepo).deleteMedia(anyObject());
+        when(mockMediaDBRepo.getMedia(anyString())).thenReturn(new Media());
+        MediaDao mediaDao = makeMockMediaDao(null, null, mockMediaDBRepo, null, null, makeMockProcessLogDao());
+        mediaDao.deleteMediaByGUID("d2d4d480-9627-47f9-86c6-1874c18d34t6");
+        verify(mockMediaDBRepo, times(1)).deleteMedia(anyObject());
+    }
+
+    @Test
+    public void testMediaDeleteByGUIDWithLcmMediaId() throws NoSuchFieldException, IllegalAccessException {
+
+        final String lcmMediaId = "6545";
+
+        SQLMediaDeleteSproc mockSqlMediaDeleteSproc = mock(SQLMediaDeleteSproc.class);
+        doNothing().when(mockSqlMediaDeleteSproc).deleteMedia(anyInt());
+
+        DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
+        doNothing().when(mockMediaDBRepo).deleteMedia(anyObject());
+        Media media = new Media();
+        media.setLcmMediaId(lcmMediaId);
+        when(mockMediaDBRepo.getMedia(anyString())).thenReturn(media);
+
+        MediaDao mediaDao = makeMockMediaDao(null, null, mockMediaDBRepo, null, null, makeMockProcessLogDao());
+        setFieldValue(mediaDao, "lcmMediaDeleteSproc", mockSqlMediaDeleteSproc);
+
+        mediaDao.deleteMediaByGUID(lcmMediaId);
+        verify(mockSqlMediaDeleteSproc, times(1)).deleteMedia(Integer.valueOf(lcmMediaId));
     }
     
     @Test

@@ -965,6 +965,23 @@ public class MediaControllerTest {
     }
 
     @Test
+    public void testDeleteMediaByGUIDWithLcmIdGUIDFound() throws Exception {
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+        MediaDao mockMediaDao = mock(MediaDao.class);
+        List<Media> medias = new ArrayList<>();
+        Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
+                .lcmMediaId("123456").lastUpdated(new Date()).lcmMediaId("123456").mediaGuid("d2d4d480-9627-47f9-86c6-1874c18d37f4").build();
+        medias.add(resultMedia);
+        when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(medias);
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        ResponseEntity<String> responseEntity = mediaController.deleteMedia("12312", mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
     public void testMediaUpdateByGuidHeroWithUnPublishMedia() throws Exception {
 
         String jsonMsg = "{  \n"
