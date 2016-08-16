@@ -196,7 +196,7 @@ public class DynamoMediaRepository {
                         Arrays.asList(String.valueOf(thumbnail)), imageMessage);
             }
         } catch (Exception e) {
-            LOGGER.error(e, "ERROR when trying to save in dynamodb ErrorMessage={}", Arrays.<String>asList(e.getMessage()), imageMessage);
+            LOGGER.error(e, "ERROR when trying to save in dynamodb ErrorMessage={}", Arrays.asList(e.getMessage()), imageMessage);
             throw new MediaDBException(e.getMessage(), e);
         }
     }

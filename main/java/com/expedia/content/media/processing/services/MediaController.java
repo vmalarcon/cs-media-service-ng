@@ -207,7 +207,7 @@ public class MediaController extends CommonServiceController {
         } catch (ImageMessageException ex) {
             final ResponseEntity<String> responseEntity = this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
             LOGGER.error(ex, "ERROR ResponseStatus={} ResponseBody={} ServiceUrl={} RequestId={} ErrorMessage={}",
-                    Arrays.<String>asList(responseEntity.getStatusCode().toString(), responseEntity.getBody(), serviceUrl, requestID, ex.getMessage()), message);
+                    Arrays.asList(responseEntity.getStatusCode().toString(), responseEntity.getBody(), serviceUrl, requestID, ex.getMessage()), message);
             return responseEntity;
         } catch (Exception ex) {
             LOGGER.error(ex, "ERROR ServiceUrl={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, requestID, ex.getMessage()), message);
@@ -544,15 +544,15 @@ public class MediaController extends CommonServiceController {
             switch (fileValidation.getStatus()) {
                 case ValidationStatus.NOT_FOUND:
                     LOGGER.info("NOT FOUND Reason=\"Provided 'fileUrl does not exist'\" ServiceUrl={} ClientId={} RequestId={}",
-                            Arrays.<String>asList(serviceUrl, clientId, requestID), message);
+                            Arrays.asList(serviceUrl, clientId, requestID), message);
                     break;
                 case ValidationStatus.ZERO_BYTES:
                     LOGGER.info("BAD REQUEST Reason=\"Provided 'file is 0 Bytes'\" ServiceUrl={} ClientId={} RequestId={}",
-                            Arrays.<String>asList(serviceUrl, clientId, requestID), message);
+                            Arrays.asList(serviceUrl, clientId, requestID), message);
                     break;
                 default:
                     LOGGER.info("BAD REQUEST ServiceUrl={} ClientId={} RequestId={}",
-                            Arrays.<String>asList(serviceUrl, clientId, requestID), message);
+                            Arrays.asList(serviceUrl, clientId, requestID), message);
                     break;
             }
             return this.buildErrorResponse(fileValidation.getMessage(), serviceUrl, STATUS_MAP.get(fileValidation.getStatus()) == null ? BAD_REQUEST : STATUS_MAP.get(fileValidation.getStatus()));
@@ -584,7 +584,7 @@ public class MediaController extends CommonServiceController {
         publishMsg(imageMessageNew);
         final ResponseEntity<String> responseEntity = new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
         LOGGER.info("SUCCESS ResponseStatus={} ResponseBody={} ServiceUrl={}",
-                Arrays.<String>asList(responseEntity.getStatusCode().toString(), responseEntity.getBody(), serviceUrl), imageMessageNew);
+                Arrays.asList(responseEntity.getStatusCode().toString(), responseEntity.getBody(), serviceUrl), imageMessageNew);
         return responseEntity;
     }
 
@@ -678,7 +678,7 @@ public class MediaController extends CommonServiceController {
                     final OuterDomain.OuterDomainBuilder domainBuilder = OuterDomain.builder().from(imageMessage.getOuterDomainData());
                     domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, lcmMedia.getMediaId().toString());
                     imageMessageBuilder.outerDomainData(domainBuilder.build());
-                    LOGGER.info("REPLACEMENT MEDIA LCM INFORMATION LcmMediaId={}", Arrays.<String>asList(String.valueOf(lcmMedia.getMediaId())), imageMessage);
+                    LOGGER.info("REPLACEMENT MEDIA LCM INFORMATION LcmMediaId={}", Arrays.asList(String.valueOf(lcmMedia.getMediaId())), imageMessage);
                     return true;
 
                 }
@@ -730,7 +730,7 @@ public class MediaController extends CommonServiceController {
         final List<MapMessageValidator> defaultValidatorList = mapValidatorList.get(DEFAULT_VALIDATION_RULES);
         final List<MapMessageValidator> validatorList = mapValidatorList.getOrDefault(clientId, defaultValidatorList);
         if (validatorList == defaultValidatorList) {
-            LOGGER.warn("NO VALIDATION FOR CLIENT Action=\"Using default validations\" ClientId={}", Arrays.<String>asList(clientId), message);
+            LOGGER.warn("NO VALIDATION FOR CLIENT Action=\"Using default validations\" ClientId={}", Arrays.asList(clientId), message);
         }
         if (validatorList == null && defaultValidatorList == null) {
             return UNAUTHORIZED_USER_MESSAGE;

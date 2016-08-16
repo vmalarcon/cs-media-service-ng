@@ -89,7 +89,7 @@ public abstract class AddCatalogItemBaseSproc extends StoredProcedure {
                     paragraphDisplay,
                     lastUpdateLocation);
         } catch (Exception e) {
-            getLogger().error(e, "Error invoking Sproc={}", Arrays.<String>asList(getProcName()), imageMessage);
+            getLogger().error(e, "Error invoking Sproc={}", Arrays.asList(getProcName()), imageMessage);
             throw new MediaDBException("Error executing: " + getProcName(), e);
         }
     }
