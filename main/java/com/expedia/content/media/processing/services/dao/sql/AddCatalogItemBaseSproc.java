@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services.dao.sql;
 
+
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.MediaDBException;

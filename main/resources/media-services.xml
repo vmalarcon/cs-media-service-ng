@@ -137,8 +137,9 @@
         </property>
     </bean>
 
-    <bean id="threadedLogger" class="com.expedia.content.media.processing.pipeline.reporting.ThreadLogActivityProcess">
+    <bean id="threadedLogger" class="com.expedia.content.media.processing.pipeline.reporting.LogActivityProcessQueue">
         <constructor-arg name="logThreadPoolSize" value="10" />
+        <constructor-arg name="deadLetterQueue" value="${media.aws.processlog.queue.name}" />
     </bean>
 
     <bean id="compositeReporter" class="com.expedia.content.media.processing.pipeline.reporting.CompositeReporting" primary="true">

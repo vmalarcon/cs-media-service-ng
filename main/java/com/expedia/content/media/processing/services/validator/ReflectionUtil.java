@@ -1,8 +1,8 @@
 package com.expedia.content.media.processing.services.validator;
 
+
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
-
 import java.lang.reflect.Field;
 import java.util.Arrays;
 
