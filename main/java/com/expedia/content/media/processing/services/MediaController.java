@@ -753,7 +753,7 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * run every hours to reprocess media log entry in queue.
+     * runs every hour to reprocess media log entry in queue.
      * @throws IOException
      */
     @Scheduled(fixedRate = ONE_HOUR)
