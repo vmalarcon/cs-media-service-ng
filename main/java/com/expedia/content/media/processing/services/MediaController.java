@@ -692,7 +692,7 @@ public class MediaController extends CommonServiceController {
         if (validatorList == null && defaultValidatorList == null) {
             return UNAUTHORIZED_USER_MESSAGE;
         }
-        List<Map<String, String>> validationErrorList = null;
+        List<String> validationErrorList = null;
         for (final MapMessageValidator mapMessageValidator : validatorList) {
             validationErrorList = mapMessageValidator.validateImages(imageMessageList);
             if (!validationErrorList.isEmpty()) {

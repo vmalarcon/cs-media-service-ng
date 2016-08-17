@@ -13,8 +13,8 @@ import java.util.HashSet;
 
 public class RoomValidator implements MapMessageValidator {
 
-    public List<Map<String, String>> validateImages(List<ImageMessage> messageList) {
-        final List<Map<String, String>> list = new ArrayList<>();
+    public List<String> validateImages(List<ImageMessage> messageList) {
+        final List<String> list = new ArrayList<>();
         final Map messageMap = new HashMap();
         for (final ImageMessage imageMessage : messageList) {
             final StringBuffer errorMsg = new StringBuffer();

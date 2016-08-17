@@ -25,23 +25,20 @@ public class RoomTypeDao {
 
 
     /**
-     *
-     * verifies the rooms withtin a property
-     * @param outerDomain@return true if the room belongs to the property
+     * Retrieves invalid roomIds provided in the request.
+     * @param outerDomain
+     * @return the invalid roomIds list.
      */
-    @SuppressWarnings("unchecked")
-    public Boolean roomTypeCatalogItemIdExists(OuterDomain outerDomain) {
+    public List<Integer> getInvalidRoomIds(OuterDomain outerDomain){
         final List<Integer> roomIds = DomainDataUtil.getRoomIds(outerDomain);
-        Boolean roomExists = Boolean.TRUE;
         if (outerDomain.getDomain().equals(Domain.LODGING) && !CollectionUtils.isNullOrEmpty(roomIds)) {
             final Map<String, Object> results = sproc.execute(Integer.parseInt(outerDomain.getDomainId()));
             final List<RoomType> roomTypes = (List<RoomType>) results.get(PropertyRoomTypeGetIDSproc.ROOM_TYPE_RESULT_SET);
-
             final List<Integer> roomTypeCatalogItemIds = roomTypes.stream()
                     .map(r -> r.getRoomTypeCatalogItemID())
-                    .collect(Collectors.toList());
-            roomExists = roomTypeCatalogItemIds.containsAll(roomIds);
+                    .collect(Collectors.toList());   
+            roomIds.removeAll(roomTypeCatalogItemIds);
         }
-        return roomExists;
+        return roomIds;
     }
 }

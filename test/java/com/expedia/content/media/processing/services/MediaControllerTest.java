@@ -318,7 +318,7 @@ public class MediaControllerTest {
         Map<String, List<MapMessageValidator>> validators = new HashMap<>();
         List<MapMessageValidator> messageValidator = new ArrayList<>();
         MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
-        List<Map<String, String>> validationErrorList = new ArrayList<>();
+        List<String> validationErrorList = new ArrayList<>();
         when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
         messageValidator.add(mockMessageValidator);
         validators.put("b-user", messageValidator);
@@ -1843,7 +1843,7 @@ public class MediaControllerTest {
         Map<String, List<MapMessageValidator>> validators = new HashMap<>();
         List<MapMessageValidator> messageValidator = new ArrayList<>();
         MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
-        List<Map<String, String>> validationErrorList = new ArrayList<>();
+        List<String> validationErrorList = new ArrayList<>();
         when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
         messageValidator.add(mockMessageValidator);
         validators.put(TEST_CLIENT_ID, messageValidator);
@@ -1857,7 +1857,7 @@ public class MediaControllerTest {
         Map<String, List<MapMessageValidator>> validators = new HashMap<>();
         List<MapMessageValidator> messageValidator = new ArrayList<>();
         MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
-        List<Map<String, String>> validationErrorList = new ArrayList<>();
+        List<String> validationErrorList = new ArrayList<>();
         when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
         messageValidator.add(mockMessageValidator);
         validators.put("EPCUpdate", messageValidator);
@@ -1869,10 +1869,8 @@ public class MediaControllerTest {
         Map<String, List<MapMessageValidator>> validators = new HashMap<>();
         List<MapMessageValidator> messageValidator = new ArrayList<>();
         MapMessageValidator mockMessageValidator = mock(MapMessageValidator.class);
-        List<Map<String, String>> validationErrorList = new ArrayList<>();
-        Map<String, String> errorMap = new HashMap<>();
-        errorMap.put("test", "test");
-        validationErrorList.add(errorMap);
+        List<String> validationErrorList = new ArrayList<>();
+        validationErrorList.add("test");
         when(mockMessageValidator.validateImages(anyList())).thenReturn(validationErrorList);
         messageValidator.add(mockMessageValidator);
         validators.put("EPCUpdate", messageValidator);

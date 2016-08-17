@@ -72,7 +72,7 @@ public final class JSONUtil {
      * @param messageList map message with attribute fileName and error
      * @return JSON string contains fileName and error description
      */
-    public static String convertValidationErrors(List<Map<String, String>> messageList) {
+    public static String convertValidationErrors(List<String> messageList) {
         try {
             return OBJECT_MAPPER.writeValueAsString(messageList);
         } catch (IOException ex) {

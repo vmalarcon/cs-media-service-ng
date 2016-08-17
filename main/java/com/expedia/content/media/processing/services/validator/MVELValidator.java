@@ -43,8 +43,8 @@ public class MVELValidator implements MapMessageValidator {
      * @return JSON string contains fileName and error description
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public List<Map<String, String>> validateImages(List<ImageMessage> messageList) {
-        final List<Map<String, String>> list = new ArrayList<>();
+    public List<String> validateImages(List<ImageMessage> messageList) {
+        final List<String> list = new ArrayList<>();
         final List<String> ruleList = ruleMaps.get(clientRule);
         final Map messageMap = new HashMap();
         final Map domainMap = new HashMap();

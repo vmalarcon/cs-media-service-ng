@@ -44,8 +44,8 @@ public class MVELValidatorTest {
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
-        String errorMsg = errorList.get(0).get("error");
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
+        String errorMsg = errorList.get(0);
         assertTrue(errorMsg.contains("fileUrl is required"));
     }
 
@@ -56,8 +56,8 @@ public class MVELValidatorTest {
         assertEquals("this is a malformed Url", imageMessage.getFileUrl());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
-        String errorMsg = errorList.get(0).get("error");
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
+        String errorMsg = errorList.get(0);
         assertTrue(errorMsg.contains("fileUrl is malformed"));
     }
 
@@ -67,8 +67,8 @@ public class MVELValidatorTest {
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
-        String errorMsg = errorList.get(0).get("error");
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
+        String errorMsg = errorList.get(0);
         assertTrue(errorMsg.contains("fileName is required"));
     }
 
@@ -83,8 +83,8 @@ public class MVELValidatorTest {
         assertEquals("Something", imageMessage.getFileName());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
-        String errorMsg = errorList.get(0).get("error");
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
+        String errorMsg = errorList.get(0);
         assertTrue(errorMsg.contains("fileUrl extension is malformed"));
         assertTrue(errorMsg.contains("mediaGuid is required"));
     }
@@ -103,8 +103,8 @@ public class MVELValidatorTest {
         assertEquals("media-uuid", imageMessage.getMediaGuid());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
-        String errorMsg = errorList.get(0).get("error");
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
+        String errorMsg = errorList.get(0);
         assertTrue(errorMsg.contains("domain is required"));
     }
 
@@ -121,8 +121,8 @@ public class MVELValidatorTest {
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
-        String errorMsg = errorList.get(0).get("error");
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
+        String errorMsg = errorList.get(0);
         assertTrue(errorMsg.contains("domain must be 'Lodging' or 'Cars'"));
     }
 
@@ -139,8 +139,8 @@ public class MVELValidatorTest {
         assertEquals(Domain.LODGING, imageMessage.getOuterDomainData().getDomain());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
-        String errorMsg = errorList.get(0).get("error");
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
+        String errorMsg = errorList.get(0);
         assertTrue(errorMsg, errorMsg.contains("domainId is required."));
     }
 
@@ -159,8 +159,8 @@ public class MVELValidatorTest {
         assertEquals("user-id", imageMessage.getUserId());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
-        String errorMsg = errorList.get(0).get("error");
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
+        String errorMsg = errorList.get(0);
         assertTrue(errorMsg, errorMsg.contains("domainId is not numeric."));
     }
 
@@ -178,8 +178,8 @@ public class MVELValidatorTest {
         assertEquals("123", imageMessage.getOuterDomainData().getDomainId());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
-        String errorMsg = errorList.get(0).get("error");
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
+        String errorMsg = errorList.get(0);
         assertTrue(errorMsg, errorMsg.contains("userId is required."));
     }
 
@@ -198,8 +198,8 @@ public class MVELValidatorTest {
         assertEquals("user-id", imageMessage.getUserId());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
-        String errorMsg = errorList.get(0).get("error");
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
+        String errorMsg = errorList.get(0);
         assertTrue(errorMsg, errorMsg.contains("domainProvider is required."));
     }
 
@@ -221,7 +221,7 @@ public class MVELValidatorTest {
         assertEquals("media-uuid", imageMessage.getMediaGuid());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
         assertEquals(0, errorList.size());
     }
 
@@ -244,8 +244,8 @@ public class MVELValidatorTest {
         assertEquals("123a", imageMessage.getOuterDomainData().getDomainFieldValue("category"));
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
-        String errorMsg = errorList.get(0).get("error");
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
+        String errorMsg = errorList.get(0);
         assertTrue(errorMsg, errorMsg.contains("category is not numeric."));
     }
 
@@ -269,8 +269,8 @@ public class MVELValidatorTest {
         assertEquals("hello", imageMessage.getOuterDomainData().getDomainFieldValue("roomHero"));
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
-        String errorMsg = errorList.get(0).get("error");
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
+        String errorMsg = errorList.get(0);
         assertTrue(errorMsg, errorMsg.contains("roomHero is not boolean."));
     }
 
@@ -295,8 +295,8 @@ public class MVELValidatorTest {
         assertEquals(0, ((List) imageMessage.getOuterDomainData().getDomainFieldValue("rooms")).size());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
-        String errorMsg = errorList.get(0).get("error");
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
+        String errorMsg = errorList.get(0);
         assertTrue(errorMsg, errorMsg.contains("rooms list is empty"));
     }
 
@@ -322,7 +322,7 @@ public class MVELValidatorTest {
         assertEquals(1, ((List) imageMessage.getOuterDomainData().getDomainFieldValue("rooms")).size());
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
         assertTrue(errorList.isEmpty());
     }
 
@@ -344,8 +344,8 @@ public class MVELValidatorTest {
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
-        assertTrue(errorList.get(0).get("error").contains("rotation accepted values are 0, 90, 180, and 270."));
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
+        assertTrue(errorList.get(0).contains("rotation accepted values are 0, 90, 180, and 270."));
     }
 
     @Test
@@ -369,9 +369,8 @@ public class MVELValidatorTest {
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<Map<String, String>> errorList = mvelValidator.validateImages(imageMessageList);
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
         assertEquals(1, errorList.size());
-        assertEquals("rotation accepted values are 0, 90, 180, and 270.\r\n", errorList.get(0).get("error"));
-        assertEquals("Something", errorList.get(0).get("fileName"));
+        assertEquals("rotation accepted values are 0, 90, 180, and 270.\r\n", errorList.get(0));
     }
 }

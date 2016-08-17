@@ -144,17 +144,10 @@ public class JSONUtilTest {
     @Test
     public void testListToJsonString() throws Exception {
         final String expectedJson =
-                "[{\"fileName\":\"test1.jpg\",\"error\":\"soureceid is missed\"},{\"fileName2\":\"test2.jpg\",\"error\":\"expediaId is missed\"}]";
-        final List<Map<String, String>> messageList = new ArrayList<>();
-        final Map<String, String> map1 = new LinkedHashMap<>();
-        map1.put("fileName", "test1.jpg");
-        map1.put("error", "soureceid is missed");
-        final Map<String, String> map2 = new LinkedHashMap<>();
-        map2.put("fileName2", "test2.jpg");
-        map2.put("error", "expediaId is missed");
-        
-        messageList.add(map1);
-        messageList.add(map2);
+                "[\"soureceid is missed\",\"expediaId is missed\"]";
+        final List<String> messageList = new ArrayList<>();        
+        messageList.add("soureceid is missed");
+        messageList.add("expediaId is missed");
         assertTrue(expectedJson.equals(JSONUtil.convertValidationErrors(messageList)));
     }
     

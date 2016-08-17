@@ -37,8 +37,8 @@ public class RoomValidatorTest {
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
-        List<Map<String, String>> errorList = roomValidator.validateImages(imageMessageList);
-        String errorMsg = errorList.get(0).get("error");
+        List<String> errorList = roomValidator.validateImages(imageMessageList);
+        String errorMsg = errorList.get(0);
         assertTrue(errorMsg, errorMsg.contains("There are duplicate room"));
     }
 }
