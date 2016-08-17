@@ -7,6 +7,7 @@ import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -39,6 +40,6 @@ public class RoomTypeDao {
                     .collect(Collectors.toList());   
             roomIds.removeAll(roomTypeCatalogItemIds);
         }
-        return roomIds;
+        return roomIds == null? new ArrayList<Integer>(): roomIds;
     }
 }
