@@ -61,7 +61,7 @@ public class MVELValidator implements MapMessageValidator {
                 compareRulesWithDomainMap(errorMsg, ruleList, messageMap);
             }
             if (errorMsg.length() > 0) {
-                ValidatorUtil.putErrorMapToList(list, errorMsg, imageMessage);
+                ValidatorUtil.putErrorMapToList(list, errorMsg);
             }
         }
         return list;

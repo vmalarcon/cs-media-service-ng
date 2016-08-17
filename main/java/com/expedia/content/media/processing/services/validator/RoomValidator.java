@@ -25,7 +25,7 @@ public class RoomValidator implements MapMessageValidator {
                 errorMsg.append("There are duplicate room ids exist in request.");
             }
             if (errorMsg.length() > 0) {
-                ValidatorUtil.putErrorMapToList(list, errorMsg, imageMessage);
+                ValidatorUtil.putErrorMapToList(list, errorMsg);
             }
         }
         return list;

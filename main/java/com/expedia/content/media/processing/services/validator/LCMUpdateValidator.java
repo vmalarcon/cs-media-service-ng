@@ -32,7 +32,7 @@ public class LCMUpdateValidator implements MapMessageValidator {
                 errorMsg.append("The provided category does not exist.");
             }
             if (errorMsg.length() > 0) {
-                ValidatorUtil.putErrorMapToList(list, errorMsg, imageMessage);
+                ValidatorUtil.putErrorMapToList(list, errorMsg);
             }
         }
         return list;
