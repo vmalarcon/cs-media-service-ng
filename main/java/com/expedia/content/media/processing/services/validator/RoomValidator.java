@@ -13,8 +13,8 @@ import java.util.HashSet;
 
 public class RoomValidator implements MapMessageValidator {
 
-    public List<Map<String, String>> validateImages(List<ImageMessage> messageList) {
-        final List<Map<String, String>> list = new ArrayList<>();
+    public List<String> validateImages(List<ImageMessage> messageList) {
+        final List<String> list = new ArrayList<>();
         final Map messageMap = new HashMap();
         for (final ImageMessage imageMessage : messageList) {
             final StringBuffer errorMsg = new StringBuffer();
@@ -25,7 +25,7 @@ public class RoomValidator implements MapMessageValidator {
                 errorMsg.append("There are duplicate room ids exist in request.");
             }
             if (errorMsg.length() > 0) {
-                ValidatorUtil.putErrorMapToList(list, errorMsg, imageMessage);
+                ValidatorUtil.putErrorMapToList(list, errorMsg);
             }
         }
         return list;

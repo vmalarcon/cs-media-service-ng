@@ -61,8 +61,8 @@ public class RoomTypeDaoTest {
         rooms.put("roomHero", "true");
         domainField.put("rooms", Arrays.asList(rooms));
         when(sproc.execute(anyInt())).thenReturn(mockRoomResults);
-        Boolean roomTypeExists = roomTypeDao.roomTypeCatalogItemIdExists(new OuterDomain(Domain.LODGING, "123", "", "EPC Internal User", domainField));
-        assertTrue(roomTypeExists);
+        final List<Integer> invalidRoomIds = roomTypeDao.getInvalidRoomIds(new OuterDomain(Domain.LODGING, "123", "", "EPC Internal User", domainField));       
+        assertTrue(invalidRoomIds.isEmpty());
         verify(sproc, times(1)).execute(anyInt());
     }
 
@@ -74,8 +74,8 @@ public class RoomTypeDaoTest {
         rooms.put("roomHero", "true");
         domainField.put("rooms", Arrays.asList(rooms));
         when(sproc.execute(anyInt())).thenReturn(mockRoomResults);
-        Boolean roomTypeExists = roomTypeDao.roomTypeCatalogItemIdExists(new OuterDomain(Domain.LODGING, "123", "", "EPC Internal User", domainField));
-        assertFalse(roomTypeExists);
+        final List<Integer> invalidRoomIds = roomTypeDao.getInvalidRoomIds(new OuterDomain(Domain.LODGING, "123", "", "EPC Internal User", domainField));
+        assertFalse(invalidRoomIds.isEmpty());
         verify(sproc, times(1)).execute(anyInt());
     }
 }

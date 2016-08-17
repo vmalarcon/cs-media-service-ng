@@ -34,14 +34,14 @@ public class LCMValidator implements MapMessageValidator {
 
     private final static String DEFAULT_LANG_ID = "1033";
 
-    public List<Map<String, String>> validateImages(List<ImageMessage> messageList) {
-        final List<Map<String, String>> list = new ArrayList<>();
+    public List<String> validateImages(List<ImageMessage> messageList) {
+        final List<String> list = new ArrayList<>();
         final Map messageMap = new HashMap();
         for (final ImageMessage imageMessage : messageList) {
             final StringBuffer errorMsg = validateRequest(imageMessage);
             messageMap.put("imageMessage", imageMessage);
             if (errorMsg.length() > 0) {
-                ValidatorUtil.putErrorMapToList(list, errorMsg, imageMessage);
+                ValidatorUtil.putErrorMapToList(list, errorMsg);
             }
         }
         return list;
@@ -50,20 +50,22 @@ public class LCMValidator implements MapMessageValidator {
     private StringBuffer validateRequest (ImageMessage imageMessage) {
         final StringBuffer errorMsg = new StringBuffer();
         if (!skuGroupCatalogItemDao.skuGroupExists(Integer.parseInt(imageMessage.getOuterDomainData().getDomainId()))) {
-            errorMsg.append("The domainId does not exist in LCM.");
+            errorMsg.append("The provided domainId does not exist.");
         }
 
         if (StringUtils.isEmpty(DomainDataUtil.getDomainProvider(imageMessage.getOuterDomainData().getProvider(), providerProperties))) {
-            errorMsg.append("The mediaProvider does not exist in LCM.");
+            errorMsg.append("The provided mediaProvider does not exist.");
         }
 
         if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING) && !mediaDomainCategoriesDao.subCategoryIdExists(imageMessage.getOuterDomainData(), DEFAULT_LANG_ID)) {
-            errorMsg.append("The category does not exist in LCM.");
+            errorMsg.append("The provided category does not exist.");
+        }
+        
+        final List<Integer> invalidRoomIds = roomTypeDao.getInvalidRoomIds(imageMessage.getOuterDomainData());
+        if (!invalidRoomIds.isEmpty()) {
+            errorMsg.append("rooms " + invalidRoomIds + " are not belong to the property.");
         }
 
-        if (!roomTypeDao.roomTypeCatalogItemIdExists(imageMessage.getOuterDomainData())) {
-            errorMsg.append("The room does not belong to the property in LCM.");
-        }
 
         if (DomainDataUtil.duplicateRoomExists(imageMessage.getOuterDomainData())) {
             errorMsg.append("The request contains duplicate rooms.");
