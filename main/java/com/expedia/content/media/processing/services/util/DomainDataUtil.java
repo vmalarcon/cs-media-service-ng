@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 public class DomainDataUtil {
 
     private final static String ROOMID = "roomId";
+    private final static String ROOMHERO = "roomHero";
     private final static String ROOMS = "rooms";
 
     /**
@@ -80,7 +81,7 @@ public class DomainDataUtil {
     /**
      * Verify if the rooms field provided in the message is valid.
      * 
-     * @param rooms rooms field provided.
+     * @param outerDomain domain fields.
      * @return true if the field is valid and false otherwise.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -93,10 +94,10 @@ public class DomainDataUtil {
         final List<Boolean> status = (List<Boolean>) roomsList.stream().map(r -> {
             final Map room = (Map) r;
             if (room != null && !room.isEmpty()) {
-                return room.containsKey(ROOMID);
+                return !room.containsKey(ROOMID) && room.containsKey(ROOMHERO);
             }
             return false;
         }).collect(Collectors.toList());
-        return roomsList.isEmpty() || status.stream().anyMatch(s -> Boolean.FALSE.equals(s));
+        return !(roomsList.isEmpty() || status.stream().anyMatch(s -> Boolean.FALSE.equals(s)));
     }
 }
