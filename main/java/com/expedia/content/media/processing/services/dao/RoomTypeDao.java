@@ -40,6 +40,6 @@ public class RoomTypeDao {
                     .collect(Collectors.toList());   
             roomIds.removeAll(roomTypeCatalogItemIds);
         }
-        return roomIds == null? new ArrayList<Integer>(): roomIds;
+        return roomIds == null ? new ArrayList<Integer>() : roomIds;
     }
 }
