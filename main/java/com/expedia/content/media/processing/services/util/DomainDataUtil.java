@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 public class DomainDataUtil {
 
     private final static String ROOMID = "roomId";
-    private final static String ROOMHERO = "roomHero";
     private final static String ROOMS = "rooms";
 
     /**
