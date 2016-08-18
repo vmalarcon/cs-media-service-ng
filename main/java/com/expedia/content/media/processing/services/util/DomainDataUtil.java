@@ -94,7 +94,7 @@ public class DomainDataUtil {
         final List<Boolean> status = (List<Boolean>) roomsList.stream().map(r -> {
             final Map room = (Map) r;
             if (room != null && !room.isEmpty()) {
-                return !room.containsKey(ROOMID) && room.containsKey(ROOMHERO);
+                return (!room.containsKey(ROOMID)) && room.containsKey(ROOMHERO);
             }
             return false;
         }).collect(Collectors.toList());
