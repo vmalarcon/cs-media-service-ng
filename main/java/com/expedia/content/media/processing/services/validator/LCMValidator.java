@@ -63,7 +63,7 @@ public class LCMValidator implements MapMessageValidator {
         
         final List<Integer> invalidRoomIds = roomTypeDao.getInvalidRoomIds(imageMessage.getOuterDomainData());
         if (!invalidRoomIds.isEmpty()) {
-            errorMsg.append("rooms " + invalidRoomIds + " are not belong to the property.");
+            errorMsg.append("The following roomIds " + invalidRoomIds + " do not belong to the property.");
         }
 
 
@@ -72,7 +72,7 @@ public class LCMValidator implements MapMessageValidator {
         }
         
         if (DomainDataUtil.roomsFieldIsInvalid(imageMessage.getOuterDomainData())) {
-            errorMsg.append("Some of rooms entries have not roomId key");
+            errorMsg.append("Some room-entries have no roomId key.");
         }
 
         return errorMsg;

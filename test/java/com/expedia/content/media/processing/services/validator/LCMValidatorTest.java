@@ -345,7 +345,7 @@ public class LCMValidatorTest {
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
         final List<String> errorList = lcmValidator.validateImages(imageMessageList);
         assertTrue(errorList.size() == 1);
-        assertTrue(errorList.get(0).equals("rooms [5678] are not belong to the property."));
+        assertTrue(errorList.get(0).equals("The following roomIds [5678] do not belong to the property."));
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
         verify(mockProviderProperties, times(1)).entrySet();
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
@@ -565,7 +565,7 @@ public class LCMValidatorTest {
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
         assertTrue(errorList.size() == 1);
         final String errorMessage = errorList.get(0);
-        assertTrue("Some of rooms entries have not roomId key".equals(errorMessage));
+        assertTrue("Some room-entries have no roomId key.".equals(errorMessage));
 
     }
 
