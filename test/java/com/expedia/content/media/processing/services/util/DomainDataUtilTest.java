@@ -24,7 +24,7 @@ public class DomainDataUtilTest {
 
     @Test
     public void testEmptyObjectInRoomsList() {
-        List<Map<String, String>> roomsMapList = new ArrayList<>();
+        final List<Map<String, String>> roomsMapList = new ArrayList<>();
         roomsMapList.add(new HashMap<>());
         final OuterDomain outerDomain = new OuterDomain.OuterDomainBuilder()
                 .addField("rooms", roomsMapList)
@@ -34,8 +34,8 @@ public class DomainDataUtilTest {
 
     @Test
     public void testOnlyRoomId() {
-        List<Map<String, String>> roomsMapList = new ArrayList<>();
-        Map<String, String> roomMap = new HashMap<>();
+        final List<Map<String, String>> roomsMapList = new ArrayList<>();
+        final Map<String, String> roomMap = new HashMap<>();
         roomMap.put("roomId", "102138123");
         roomsMapList.add(roomMap);
         final OuterDomain outerDomain = new OuterDomain.OuterDomainBuilder()
@@ -46,13 +46,21 @@ public class DomainDataUtilTest {
 
     @Test
     public void testOnlyRoomHero() {
-        List<Map<String, String>> roomsMapList = new ArrayList<>();
-        Map<String, String> roomMap = new HashMap<>();
+        final List<Map<String, String>> roomsMapList = new ArrayList<>();
+        final Map<String, String> roomMap = new HashMap<>();
         roomMap.put("roomHero", "false");
         roomsMapList.add(roomMap);
         final OuterDomain outerDomain = new OuterDomain.OuterDomainBuilder()
                 .addField("rooms", roomsMapList)
                 .build();
         assertTrue(DomainDataUtil.roomsFieldIsInvalid(outerDomain));
+    }
+
+    @Test
+    public void testRoomsWithNoList() {
+        final OuterDomain outerDomain = new OuterDomain.OuterDomainBuilder()
+                .addField("rooms", 1)
+                .build();
+        assertFalse(DomainDataUtil.roomsFieldIsInvalid(outerDomain));
     }
 }

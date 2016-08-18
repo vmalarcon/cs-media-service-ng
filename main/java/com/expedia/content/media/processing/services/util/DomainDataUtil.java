@@ -90,14 +90,18 @@ public class DomainDataUtil {
         if(rooms == null){
             return false;
         }
-        final List roomsList = (List) rooms;
-        final List<Boolean> status = (List<Boolean>) roomsList.stream().map(r -> {
-            final Map room = (Map) r;
-            if (room != null && !room.isEmpty()) {
-                return (!room.containsKey(ROOMID)) && room.containsKey(ROOMHERO);
-            }
+        try {
+            final List roomsList = (List) rooms;
+            final List status = (List) roomsList.stream().map(r -> {
+                final Map room = (Map) r;
+                if (room != null) {
+                    return room.isEmpty() || room.containsKey(ROOMID);
+                }
+                return false;
+            }).collect(Collectors.toList());
+            return status.stream().anyMatch(s -> Boolean.FALSE.equals(s));
+        } catch (ClassCastException e) {
             return false;
-        }).collect(Collectors.toList());
-        return !(roomsList.isEmpty() || status.stream().anyMatch(s -> Boolean.FALSE.equals(s)));
+        }
     }
 }
