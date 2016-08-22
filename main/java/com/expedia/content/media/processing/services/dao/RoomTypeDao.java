@@ -30,7 +30,7 @@ public class RoomTypeDao {
      * @param outerDomain
      * @return the invalid roomIds list.
      */
-    public List<Integer> getInvalidRoomIds(OuterDomain outerDomain){
+    public List<Integer> getInvalidRoomIds(OuterDomain outerDomain) throws ClassCastException {
         final List<Integer> roomIds = DomainDataUtil.getRoomIds(outerDomain);
         if (outerDomain.getDomain().equals(Domain.LODGING) && !CollectionUtils.isNullOrEmpty(roomIds)) {
             final Map<String, Object> results = sproc.execute(Integer.parseInt(outerDomain.getDomainId()));

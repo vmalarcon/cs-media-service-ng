@@ -569,4 +569,34 @@ public class LCMValidatorTest {
 
     }
 
+    @Test
+    public void testRoomsNotAList()
+    {
+        final String jsonMsg =
+                "         { " +
+                        "    \"fileUrl\": \"http://well-formed-url/hello.jpg\"," +
+                        "    \"fileName\": \"Something\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
+                        "    \"domain\": \"Lodging\", " +
+                        "    \"domainId\": \"123\", " +
+                        "    \"userId\": \"user-id\", " +
+                        "    \"domainProvider\": \"EPC Internal User\", " +
+                        "    \"domainFields\": " +
+                        "     {" +
+                        "          \"subcategoryId\": \"10000\"," +
+                        "          \"propertyHero\": \"true\"," +
+                        "          \"rooms\": 1" +
+                        "     }" +
+                        " }";
+        final ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        final List<ImageMessage> imageMessageList = new ArrayList<>();
+        imageMessageList.add(imageMessage);
+        when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
+        when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
+        final List<String> errorList = lcmValidator.validateImages(imageMessageList);
+        assertTrue(errorList.size() == 1);
+        final String errorMessage = errorList.get(0);
+        assertTrue("The rooms field must be a list.".equals(errorMessage));
+    }
+
 }

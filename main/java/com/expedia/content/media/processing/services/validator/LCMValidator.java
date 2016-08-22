@@ -60,19 +60,21 @@ public class LCMValidator implements MapMessageValidator {
         if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING) && !mediaDomainCategoriesDao.subCategoryIdExists(imageMessage.getOuterDomainData(), DEFAULT_LANG_ID)) {
             errorMsg.append("The provided category does not exist.");
         }
-        
-        final List<Integer> invalidRoomIds = roomTypeDao.getInvalidRoomIds(imageMessage.getOuterDomainData());
-        if (!invalidRoomIds.isEmpty()) {
-            errorMsg.append("The following roomIds " + invalidRoomIds + " do not belong to the property.");
-        }
+        try {
+            final List<Integer> invalidRoomIds = roomTypeDao.getInvalidRoomIds(imageMessage.getOuterDomainData());
+            if (!invalidRoomIds.isEmpty()) {
+                errorMsg.append("The following roomIds " + invalidRoomIds + " do not belong to the property.");
+            }
 
+            if (DomainDataUtil.duplicateRoomExists(imageMessage.getOuterDomainData())) {
+                errorMsg.append("The request contains duplicate rooms.");
+            }
 
-        if (DomainDataUtil.duplicateRoomExists(imageMessage.getOuterDomainData())) {
-            errorMsg.append("The request contains duplicate rooms.");
-        }
-        
-        if (DomainDataUtil.roomsFieldIsInvalid(imageMessage.getOuterDomainData())) {
-            errorMsg.append("Some room-entries have no roomId key.");
+            if (DomainDataUtil.roomsFieldIsInvalid(imageMessage.getOuterDomainData())) {
+                errorMsg.append("Some room-entries have no roomId key.");
+            }
+        } catch (ClassCastException e) {
+            errorMsg.append("The rooms field must be a list.");
         }
 
         return errorMsg;
