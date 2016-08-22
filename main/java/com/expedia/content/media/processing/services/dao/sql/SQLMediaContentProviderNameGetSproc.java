@@ -35,11 +35,9 @@ public class SQLMediaContentProviderNameGetSproc extends StoredProcedure {
     private class MediaIdRowMapper implements RowMapper<LcmMedia> {
         @Override
         public LcmMedia mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
-            final String activeFlag = resultSet.getString("StatusCode");
             return LcmMedia.builder()
                     .fileName(resultSet.getString("ContentProviderMediaName"))
                     .domainId(resultSet.getInt("SKUGroupCatalogItemID"))
-                    .filProcessedBool(activeFlag != null && "A".equals(activeFlag) ? true : false)
                     .mediaId(resultSet.getInt("MediaID"))
                     .build();
         }
