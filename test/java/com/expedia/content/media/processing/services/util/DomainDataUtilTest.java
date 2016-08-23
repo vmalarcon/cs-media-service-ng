@@ -11,6 +11,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class DomainDataUtilTest {
 
@@ -58,9 +59,14 @@ public class DomainDataUtilTest {
 
     @Test
     public void testRoomsWithNoList() {
-        final OuterDomain outerDomain = new OuterDomain.OuterDomainBuilder()
-                .addField("rooms", 1)
-                .build();
-        assertFalse(DomainDataUtil.roomsFieldIsInvalid(outerDomain));
+        try {
+            final OuterDomain outerDomain = new OuterDomain.OuterDomainBuilder()
+                    .addField("rooms", 1)
+                    .build();
+            assertFalse(DomainDataUtil.roomsFieldIsInvalid(outerDomain));
+            fail("This should throw a ClassCastException");
+        } catch (Exception e) {
+            assertTrue(e instanceof ClassCastException);
+        }       
     }
 }
