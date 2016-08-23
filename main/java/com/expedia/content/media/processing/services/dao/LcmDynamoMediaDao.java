@@ -722,7 +722,7 @@ public class LcmDynamoMediaDao implements MediaDao {
         final Map<String, Object> fileResult = mediaContentProviderNameGetSproc.execute(dcpFileName);
         final List<LcmMedia> lcmMediaList = (List<LcmMedia>) fileResult.get(SQLMediaContentProviderNameGetSproc.MEDIA_ATTRS);
         if (!lcmMediaList.isEmpty()) {
-            final Optional<LcmMedia> lcmMediaOptional = lcmMediaList.stream().filter(media -> media.getFilProcessedBool()).findFirst();
+            final Optional<LcmMedia> lcmMediaOptional = lcmMediaList.stream().findFirst();
             if (lcmMediaOptional.isPresent()) {
                 return lcmMediaOptional.get();
             }

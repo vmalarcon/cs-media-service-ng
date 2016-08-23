@@ -211,6 +211,22 @@ public class LcmDynamoMediaDaoTest {
     }
 
     @Test
+    public void testGetContentProviderNameWithInActive() throws Exception {
+        SQLMediaContentProviderNameGetSproc mockMediaContentProviderNameGetSproc =mock(SQLMediaContentProviderNameGetSproc.class);
+        LcmMedia lcmMedia = LcmMedia.builder().fileName("4600417_IMG0010.jpg").domainId(4600417).filProcessedBool(false).build();
+        List<LcmMedia> lcmMedias = new ArrayList<>();
+        lcmMedias.add(lcmMedia);
+        Map<String, Object> mediaResult = new HashMap<>();
+        mediaResult.put(SQLMediaContentProviderNameGetSproc.MEDIA_ATTRS,lcmMedias);
+        when(mockMediaContentProviderNameGetSproc.execute(anyString())).thenReturn(mediaResult);
+        MediaDao mediaDao = new LcmDynamoMediaDao();
+        setFieldValue(mediaDao, "mediaContentProviderNameGetSproc", mockMediaContentProviderNameGetSproc);
+        LcmMedia lcmMediaResult = mediaDao.getContentProviderName("test.jpg");
+        assertEquals("4600417_IMG0010.jpg", lcmMediaResult.getFileName());
+        assertTrue(4600417 ==lcmMediaResult.getDomainId());
+    }
+
+    @Test
     public void testFilterActive() throws Exception {
         SQLMediaListSproc mediaListSproc = mock(SQLMediaListSproc.class);
         List<LcmMediaAndDerivative> mediaList = make2Media2DerivativeMediaResult(true, false, true, true, true, true, null);
