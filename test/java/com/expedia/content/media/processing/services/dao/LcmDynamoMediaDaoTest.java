@@ -30,6 +30,7 @@ import java.util.stream.IntStream;
 
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaDeleteSproc;
 import com.expedia.content.media.processing.services.util.FileNameUtil;
+import com.google.common.collect.Maps;
 import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -498,10 +499,17 @@ public class LcmDynamoMediaDaoTest {
 
         Integer lcmMediaId = 54321;
         Integer domainId = 12345;
+
+        Map<String, Object> domainFields = Maps.newHashMap();
+        domainFields.put("originalField", "Original Value");
+        domainFields.put("rooms", "Try to override LCM rooms");
+        domainFields.put("propertyHero", "Try to override propertyHero");
+        domainFields.put("subcategoryId", "Try to override subcategory Id");
         
         String guid = "d2d4d480-9627-47f9-86c6-1874c18d34t6";
         Media guidMedia = Media.builder().active("true").mediaGuid(guid).domain(Domain.LODGING.getDomain()).domainId(domainId.toString())
-                .lcmMediaId(lcmMediaId.toString()).fileName("super_potato.jpg").build();
+                .lcmMediaId(lcmMediaId.toString()).fileName("super_potato.jpg")
+                .domainData(domainFields).build();
         DynamoMediaRepository mediaDynamo = mock(DynamoMediaRepository.class);
         when(mediaDynamo.getMedia(guid)).thenReturn(guidMedia);
 
@@ -520,6 +528,12 @@ public class LcmDynamoMediaDaoTest {
         MediaDao mediaDao = makeMockMediaDao(null, mockMediaItemSproc, mediaDynamo, mockProperties, null, makeMockProcessLogDao());
         MediaGetResponse resultMedia = mediaDao.getMediaByGUID(guid);
         assertEquals(lcmMediaId.toString(), resultMedia.getDomainFields().get("lcmMediaId"));
+
+        // copy domain fields from dynamo when they don't conflict with LCM domain fields
+        assertEquals(resultMedia.getDomainFields().get("originalField"), "Original Value");
+        assertTrue(resultMedia.getDomainFields().get("rooms") instanceof List);
+        assertNull(resultMedia.getDomainFields().get("propertyHero"));
+        assertEquals(resultMedia.getDomainFields().get("subcategoryId"), "45");
     }
 
     @Test
