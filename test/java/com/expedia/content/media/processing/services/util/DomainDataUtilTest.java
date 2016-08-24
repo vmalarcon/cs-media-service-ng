@@ -55,12 +55,4 @@ public class DomainDataUtilTest {
                 .build();
         assertTrue(DomainDataUtil.roomsFieldIsInvalid(outerDomain));
     }
-
-    @Test
-    public void testRoomsWithNoList() {
-        final OuterDomain outerDomain = new OuterDomain.OuterDomainBuilder()
-                .addField("rooms", 1)
-                .build();
-        assertFalse(DomainDataUtil.roomsFieldIsInvalid(outerDomain));
-    }
 }
