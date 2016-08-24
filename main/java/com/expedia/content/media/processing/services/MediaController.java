@@ -6,11 +6,11 @@ import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
 import com.expedia.content.media.processing.pipeline.reporting.Activity;
 import com.expedia.content.media.processing.pipeline.reporting.App;
-import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
@@ -239,7 +239,9 @@ public class MediaController extends CommonServiceController {
             final Map<String, Object> objectMap = new HashMap<>();
             validateAndInitMap(objectMap, queryId, serviceUrl, message, requestID);
             if (objectMap.get(MEDIA_VALIDATION_ERROR) != null) {
-                return (ResponseEntity<String>) objectMap.get(MEDIA_VALIDATION_ERROR);
+                final ResponseEntity<String> validationResponse = (ResponseEntity<String>) objectMap.get(MEDIA_VALIDATION_ERROR);
+                LOGGER.warn("UPDATE VALIDATION ValidationError={} ServiceUrl={} QueryId={} RequestId={} JSONMessage={}", validationResponse, serviceUrl, queryId, requestID, message);
+                return validationResponse;
             }
             final String lcmMediaId = (String) objectMap.get(RESPONSE_FIELD_LCM_MEDIA_ID);
             final String domainId = (String) objectMap.get(DOMAIN_ID);
@@ -265,6 +267,8 @@ public class MediaController extends CommonServiceController {
             poker.poke("Media Services failed to process a mediaUpdate request - RequestId: " + requestID, hipChatRoom,
                     message, ex);
             throw ex;
+        } finally {
+            LOGGER.info("END UPDATE REQUEST ServiceUrl={} QueryId={} RequestId={} JSONMessage={}", serviceUrl, queryId, requestID, message);
         }
     }
 
