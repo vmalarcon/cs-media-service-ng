@@ -1,17 +1,17 @@
 package com.expedia.content.media.processing.services.util;
 
 
-import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
-import org.junit.Test;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+
+import org.junit.Test;
 
 public class DomainDataUtilTest {
 
@@ -57,16 +57,4 @@ public class DomainDataUtilTest {
         assertTrue(DomainDataUtil.roomsFieldIsInvalid(outerDomain));
     }
 
-    @Test
-    public void testRoomsWithNoList() {
-        try {
-            final OuterDomain outerDomain = new OuterDomain.OuterDomainBuilder()
-                    .addField("rooms", 1)
-                    .build();
-            assertFalse(DomainDataUtil.roomsFieldIsInvalid(outerDomain));
-            fail("This should throw a ClassCastException");
-        } catch (Exception e) {
-            assertTrue(e instanceof ClassCastException);
-        }       
-    }
 }
