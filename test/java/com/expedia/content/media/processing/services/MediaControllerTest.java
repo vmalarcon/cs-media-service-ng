@@ -1023,7 +1023,7 @@ public class MediaControllerTest {
                 + "   }";
         Media dynamoMedia =
                 Media.builder().fileName("file").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
-                        .build();
+                        .lcmMediaId("1234").build();
         when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
         final Map<String, String> status = new HashMap<>();
         status.put("file", "PUBLISHED");
@@ -1473,6 +1473,28 @@ public class MediaControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    public void testMediaUpdateWithCorrectGuidButMissingLCMMediaId() throws Exception {
+        String jsonMsg = "{  \n"
+                + "   \"userId\":\"bobthegreat\",\n"
+                + "   \"active\": \"false\",\n"
+                + "   \"comment\":\"note33\"\n"
+                + "}";
+
+        Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdateWithError();
+        Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
+                .lcmMediaId("null").lastUpdated(new Date()).mediaGuid("12345678-abcd-efab-cdef-123456789012").build();
+        MediaDao mockMediaDao = mock(MediaDao.class);
+        when(mockMediaDao.getMediaByGuid(eq("12345678-abcd-efab-cdef-123456789012"))).thenReturn(resultMedia);
+        setFieldValue(mediaController, "mapValidatorList", validators);
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        ResponseEntity<String> responseEntity = mediaController.mediaUpdate("12345678-abcd-efab-cdef-123456789012", jsonMsg, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("exists, but it does not have a LCM id assigned."));
+    }
+
 
     @Test
     public void testGetMediaWhichHasAGuidByLcmMediaId() throws Exception {
@@ -1653,7 +1675,7 @@ public class MediaControllerTest {
                 + "   }";
         Media dynamoMedia =
                 Media.builder().fileName("file").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
-                        .build();
+                        .lcmMediaId("1234").build();
         when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
         final Map<String, String> status = new HashMap<>();
         status.put("file", "REJECTED");
