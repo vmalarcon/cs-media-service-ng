@@ -25,7 +25,7 @@ public class FileSourceFinder {
     public static final String SOURCE_DIR = "\\\\CHE-FILIDXIMG01\\GSO_media\\lodging";
     public static final String SOURCE_DIR_NEW = "\\\\CHE-FILIDXIMG01\\GSO_MediaNew\\lodging";
 
-    public static final List<String> IMAGEFORMATS = Arrays.asList(".jpg", ".JPG", ".gif", ".GIF", ".png", ".PNG", ".bmp", ".BMP", "tiff", ".TIFF");
+    public static final List<String> IMAGEFORMATS = Arrays.asList(".jpg", ".JPG",".jpeg", ".JPEG", ".gif", ".GIF", ".png", ".PNG", ".bmp", ".BMP", "tiff", ".TIFF");
 
     @Value("${media.source.query.s3only}")
     private boolean queryS3BucketOnly;

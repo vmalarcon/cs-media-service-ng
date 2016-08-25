@@ -51,6 +51,22 @@ public class MediaReplacementTest {
     }
 
     @Test
+    public void testWithGuidNameMediaWithDifferentProvider() {
+        Optional<Media> media = MediaReplacement.selectBestMedia(Lists.newArrayList(
+                createByGuidFileNameMedia("a", "456", "true", new Date(), "456", "918492_EPCInternalUser_22dcf000-f34c-4eee-81f0-f971d48cd8e8.jpeg")
+        ), "456", "VFML");
+        assertTrue(media.isPresent());
+    }
+
+    @Test
+    public void testWithNameMediaWithDifferentProvider() {
+        Optional<Media> media = MediaReplacement.selectBestMedia(Lists.newArrayList(
+                createByGuidFileNameMedia("a", "456", "true", new Date(), "456", "918492_epc_testdfd.jpeg")
+        ), "456", "VFML");
+        assertFalse(media.isPresent());
+    }
+
+    @Test
     public void testMultipleMedia() throws Exception {
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Optional<Media> media = MediaReplacement.selectBestMedia(Lists.newArrayList(
@@ -84,6 +100,19 @@ public class MediaReplacementTest {
         result.setLastUpdated(lastUpdated);
         result.setDomainId(domainId);
         result.setProvider("SCORE");
+        result.setFileName("123_test.jpg");
+        return result;
+    }
+
+    public static Media createByGuidFileNameMedia(String guid, String domainId, String active, Date lastUpdated, String lcmMediaId, String fileName) {
+        Media result = new Media();
+        result.setMediaGuid(guid);
+        result.setLcmMediaId(lcmMediaId);
+        result.setActive(active);
+        result.setLastUpdated(lastUpdated);
+        result.setDomainId(domainId);
+        result.setProvider("SCORE");
+        result.setFileName(fileName);
         return result;
     }
 
