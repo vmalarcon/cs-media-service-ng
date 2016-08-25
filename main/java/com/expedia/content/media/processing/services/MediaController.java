@@ -808,7 +808,7 @@ public class MediaController extends CommonServiceController {
      * Retrieve the file name from the url and update the fileName field if not provided in the message.
      * 
      * @param imageMessage incoming message.
-     * @return the update message if the file name is not provide or the old one otherwise.
+     * @return the update message if the file name is not provided or the old one otherwise.
      */
     private ImageMessage updateFileName(ImageMessage imageMessage){
         ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
