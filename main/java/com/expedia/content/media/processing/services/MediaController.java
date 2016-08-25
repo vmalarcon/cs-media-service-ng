@@ -810,9 +810,9 @@ public class MediaController extends CommonServiceController {
      * @param imageMessage incoming message.
      * @return the update message if the file name is not provided or the old one otherwise.
      */
-    private ImageMessage updateFileName(ImageMessage imageMessage){
-        ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
+    private ImageMessage updateFileName(ImageMessage imageMessage){       
         if(StringUtils.isNullOrEmpty(imageMessage.getFileName())){
+            ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
             final String fileName = FileNameUtil.getFileNameFromUrl(imageMessage.getFileUrl());      
             imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
             imageMessageBuilder.fileName(fileName);
