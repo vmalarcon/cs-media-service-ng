@@ -26,7 +26,7 @@ public class LCMUpdateValidator implements MapMessageValidator {
             messageMap.put("imageMessage", imageMessage);
             final List<Integer> invalidRoomIds = roomTypeDao.getInvalidRoomIds(imageMessage.getOuterDomainData());
             if (!invalidRoomIds.isEmpty()) {
-                errorMsg.append("rooms " + invalidRoomIds + " are not belong to the property.");
+                errorMsg.append("rooms " + invalidRoomIds + " do not belong to the property.");
             }
             if (!mediaDomainCategoriesDao.subCategoryIdExists(imageMessage.getOuterDomainData(), DEFAULT_LANG_ID)) {
                 errorMsg.append("The provided category does not exist.");
