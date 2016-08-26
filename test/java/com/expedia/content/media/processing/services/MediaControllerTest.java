@@ -1,7 +1,45 @@
 package com.expedia.content.media.processing.services;
 
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
+import static com.expedia.content.media.processing.services.util.MediaReplacementTest.createByFileNameMedia;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.pipeline.reporting.Activity;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
@@ -29,6 +67,7 @@ import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.google.common.collect.Lists;
+
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.codehaus.plexus.util.ReflectionUtils;
 import org.joda.time.format.DateTimeFormat;
@@ -50,40 +89,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.MultiValueMap;
-
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-import static com.expedia.content.media.processing.services.util.MediaReplacementTest.createByFileNameMedia;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
 @RunWith(MockitoJUnitRunner.class)
@@ -1875,6 +1880,51 @@ public class MediaControllerTest {
         mediaController.getMediaByDomainId("lodging", "123", 100, 8, "true", "", "", mockHeader);
         verify(poker).poke(eq("Media Services failed to process a getMedia request - RequestId: " + requestId), eq("EWE CS: Phoenix Notifications"),
                 eq(jsonMessage), eq(exception));
+    }
+
+    @Test
+    public void testExtractFileNameFromUrl() throws Exception {
+        final Map<String, Object> domainDataFields = new LinkedHashMap<>();
+        domainDataFields.put("lcmMediaId", "1200");
+        domainDataFields.put("key", "value");
+        OuterDomain domainData = new OuterDomain(Domain.LODGING, "123", "Comics", null, domainDataFields);
+        
+        final ImageMessage imageMessage =
+                new ImageMessage.ImageMessageBuilder()
+                        .fileUrl("http://i.imgur.com/3PRGFii.jpg")
+                        .outputFolder("output").sourceUrl("archive")
+                        .rejectedFolder("rejected")
+                        .outerDomainData(domainData)
+                        .mediaGuid("my-guid")
+                        .active(true)
+                        .clientId("Media Cloud Router")
+                        .failedReason("my-failed-reason")
+                        .generateThumbnail(true)
+                        .build();
+
+        String jsonMessage = imageMessage.toJSONMessage();
+        
+         Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+        LcmDynamoMediaDao mockLcmDynamoMediaDao = mock(LcmDynamoMediaDao.class);
+        setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
+        DynamoMediaRepository mockDynamoMediaRepository = mock(DynamoMediaRepository.class);
+        setFieldValue(mediaController, "dynamoMediaRepository", mockDynamoMediaRepository);      
+         String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        setFieldValue(mediaController, "hipChatRoom", "EWE CS: Phoenix Notifications");
+        Poker poker = mock(Poker.class);
+        setFieldValue(mediaController, "poker", poker);
+        mockHeader.add("request-id", requestId);
+        try {
+            mediaController.mediaAdd(jsonMessage, mockHeader);
+        } catch (Exception e) {
+            fail("This should throw an exception");
+        }        
     }
 
     @SuppressWarnings({"unchecked"})

@@ -1,5 +1,6 @@
 package com.expedia.content.media.processing.services;
 
+import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
@@ -34,7 +35,6 @@ import expedia.content.solutions.metrics.annotations.Counter;
 import expedia.content.solutions.metrics.annotations.Gauge;
 import expedia.content.solutions.metrics.annotations.Meter;
 import expedia.content.solutions.metrics.annotations.Timer;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
@@ -438,7 +438,7 @@ public class MediaController extends CommonServiceController {
             objectMap.put(RESPONSE_FIELD_LCM_MEDIA_ID, dynamoMedia.getLcmMediaId());
             objectMap.put(DOMAIN_ID, dynamoMedia.getDomainId());
             objectMap.put(DYNAMO_MEDIA_FIELD, dynamoMedia);
-        } else if (StringUtils.isNumeric(queryId)) {
+        } else if (org.apache.commons.lang.StringUtils.isNumeric(queryId)) {
             final List<Media> mediaList = mediaDao.getMediaByMediaId(queryId);
             if (!mediaList.isEmpty()) {
                 final String guid = mediaList.get(0).getMediaGuid();
@@ -548,7 +548,7 @@ public class MediaController extends CommonServiceController {
             return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
         }
         @SuppressWarnings("CPD-START")
-        final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
+        final ImageMessage imageMessage = updateFileName(ImageMessage.parseJsonMessage(message));
         final ValidationStatus fileValidation = verifyUrl(imageMessage.getFileUrl());
         if (!fileValidation.isValid()) {
             switch (fileValidation.getStatus()) {
@@ -790,7 +790,7 @@ public class MediaController extends CommonServiceController {
      * @return The GUID or null if no media found in dynamo.
      */
     private String getGuidByMediaId(String mediaId) {
-        if (StringUtils.isNumeric(mediaId)) {
+        if (org.apache.commons.lang.StringUtils.isNumeric(mediaId)) {
             final List<Media> mediaList = mediaDao.getMediaByMediaId(mediaId);
             if (!mediaList.isEmpty()) {
                 return mediaList.stream().findFirst().get().getMediaGuid();
@@ -814,4 +814,20 @@ public class MediaController extends CommonServiceController {
         }
     }
 
+    /**
+     * Retrieve the file name from the url and update the fileName field if not provided in the message.
+     * 
+     * @param imageMessage incoming message.
+     * @return the update message if the file name is not provided or the old one otherwise.
+     */
+    private ImageMessage updateFileName(ImageMessage imageMessage){       
+        if(StringUtils.isNullOrEmpty(imageMessage.getFileName())){
+            ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
+            final String fileName = FileNameUtil.getFileNameFromUrl(imageMessage.getFileUrl());      
+            imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
+            imageMessageBuilder.fileName(fileName);
+            return imageMessageBuilder.build();
+        }
+        return imageMessage;
+    }
 }
