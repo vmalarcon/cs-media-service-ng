@@ -430,7 +430,7 @@ public class MediaController extends CommonServiceController {
                 return;
             }
             final String lcmMediaId = dynamoMedia.getLcmMediaId();
-            if (!StringUtils.isNumeric(lcmMediaId)) {
+            if (!org.apache.commons.lang.StringUtils.isNumeric(lcmMediaId)) {
                 objectMap.put(MEDIA_VALIDATION_ERROR,
                         this.buildErrorResponse("Media GUID " + dynamoMedia.getMediaGuid() + " exists, but it does not have a LCM id assigned.", serviceUrl, BAD_REQUEST));
                 return;
