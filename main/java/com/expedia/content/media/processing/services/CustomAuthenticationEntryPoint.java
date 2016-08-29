@@ -1,15 +1,19 @@
 package com.expedia.content.media.processing.services;
 
-import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
-import expedia.content.solutions.metrics.annotations.Counter;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.AuthenticationEntryPoint;
-import org.springframework.stereotype.Component;
+import java.io.IOException;
+import java.security.Principal;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
+
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
+
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.stereotype.Component;
+
+import expedia.content.solutions.metrics.annotations.Counter;
 
 /**
  * Customer Authentication class to handle authentication exception.
@@ -31,8 +35,8 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException autheticationException)
             throws IOException, ServletException {
         response.sendError(HttpServletResponse.SC_UNAUTHORIZED, autheticationException.getMessage());
-        final String userName =
-                autheticationException.getAuthentication() == null ? "not provided" : autheticationException.getAuthentication().getPrincipal().toString();
+        final Principal principal = request.getUserPrincipal();      
+        final String userName = principal == null ? "not provided" : principal.getName();
         LOGGER.info("Unauthorized User Username={}", userName);
     }
 }
