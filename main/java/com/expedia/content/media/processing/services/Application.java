@@ -3,14 +3,10 @@ package com.expedia.content.media.processing.services;
 import com.expedia.content.media.processing.pipeline.util.OSDetector;
 
 import org.im4java.process.ProcessStarter;
-import org.springframework.boot.ResourceBanner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.boot.context.web.SpringBootServletInitializer;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.ImportResource;
-import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import expedia.content.solutions.metrics.spring.EnableMetrics;
@@ -27,9 +23,9 @@ import expedia.content.solutions.poke.spring.support.EnablePoke;
 @EnablePoke
 @EnableTransactionManagement
 @SuppressWarnings({"PMD.UseUtilityClass"})
-public class Application extends SpringBootServletInitializer {
+public class Application {
 
-    public static void main(String[] args) throws Exception {
+    /*public static void main(String[] args) throws Exception {
         if (OSDetector.detectOS() == OSDetector.OS.WINDOWS) {
             final String path = System.getenv("PATH").replace('\\', '/');
             ProcessStarter.setGlobalSearchPath(path);
@@ -39,5 +35,14 @@ public class Application extends SpringBootServletInitializer {
                 .child(Application.class)
                 .build();
         application.run(args);
+    } */
+    
+    public static void main(String[] args) {
+        if (OSDetector.detectOS() == OSDetector.OS.WINDOWS) {
+            final String path = System.getenv("PATH").replace('\\', '/');
+            ProcessStarter.setGlobalSearchPath(path);
+        }
+        SpringApplication.run(Application.class, args);
     }
+
 }
