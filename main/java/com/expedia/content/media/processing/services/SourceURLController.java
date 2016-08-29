@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
+
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -125,11 +127,15 @@ public class SourceURLController extends CommonServiceController {
         return true;
     }
 
+    @SuppressWarnings("PMD")
     private String getGuidByMediaId(String mediaId) {
         if (org.apache.commons.lang.StringUtils.isNumeric(mediaId)) {
             final List<Media> mediaList = mediaDao.getMediaByMediaId(mediaId);
             if (!mediaList.isEmpty()) {
-                return mediaList.stream().findFirst().get().getMediaGuid();
+                final Optional<Media> existMedia = mediaList.stream().max((m1, m2) -> m1.getLastUpdated().compareTo(m2.getLastUpdated()));
+                if (existMedia.isPresent()) {
+                    return existMedia.get().getMediaGuid();
+                }
             }
         }
         return null;

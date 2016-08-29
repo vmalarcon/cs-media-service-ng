@@ -12,6 +12,7 @@ import java.util.Optional;
  * <p>This class also provides utility methods to deal with the selection of media when multiple are found for replacement</p>
  */
 public class MediaReplacement {
+    private static final String  GUID_PATTERN ="(.*)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(.*)";
 
     private MediaReplacement() {}
     
@@ -26,7 +27,8 @@ public class MediaReplacement {
         return mediaList.stream()
                 .filter(m -> m.getDomainId().equalsIgnoreCase(domainId))
                 //avoid NPE when legacy data record in dynamo does not have "provider".
-                .filter(m -> provider.equalsIgnoreCase(m.getProvider()))
+                //if it is GUID filename, do not need to check provider.
+                .filter(m -> provider.equalsIgnoreCase(m.getProvider()) || m.getFileName().matches(GUID_PATTERN))
                 .max((m1, m2) -> m1.getLastUpdated().compareTo(m2.getLastUpdated()));
     }
 
