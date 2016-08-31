@@ -667,6 +667,7 @@ public class LcmDynamoMediaDao implements MediaDao {
             }
         }
         final Map<String, Object> lcmDomainData = new HashMap<String, Object>();
+        extractDynamoDomainFields(dynamoMedia, lcmDomainData);
         extractLcmDomainFields(lcmMedia, dynamoMedia, lcmDomainData);
         extractLcmRooms(lcmMedia, lcmDomainData, lcmRoomMediaMap);
         return lcmDomainData.isEmpty() ? domainData : lcmDomainData;
@@ -713,6 +714,23 @@ public class LcmDynamoMediaDao implements MediaDao {
                 return roomData;
             }).collect(Collectors.toList());
             lcmDomainData.put(FIELD_ROOMS, roomList);
+        }
+    }
+
+    /**
+     * Extract additional fields stored in Dynamo. This method will stay away from any fields coming from LCM.
+     *
+     * @param dynamoMedia Dynamo media information @see Media
+     * @param lcmDomainData Aggregator of domain fields to include in the response
+     */
+    private void extractDynamoDomainFields(final Media dynamoMedia, final Map<String, Object> lcmDomainData) {
+        if (dynamoMedia != null) {
+            dynamoMedia.getDomainData().entrySet().stream()
+                    .filter(e -> !e.getKey().equals(FIELD_ROOMS))
+                    .filter(e -> !e.getKey().equals(FIELD_SUBCATEGORY_ID))
+                    .filter(e -> !e.getKey().equals(FIELD_PROPERTY_HERO))
+                    .filter(e -> !e.getKey().equals(RESPONSE_FIELD_LCM_MEDIA_ID))
+                    .forEach(e -> lcmDomainData.put(e.getKey(), e.getValue()));
         }
     }
 
