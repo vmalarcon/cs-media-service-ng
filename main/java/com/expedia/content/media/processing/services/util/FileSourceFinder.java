@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -45,9 +46,11 @@ public class FileSourceFinder {
             try {
                 object = imageCopy.getImage(bucketName, objectName);
                 if (object != null) {
+                    //bug fix CSPB-533800, if close the object, there is no connection timeout error.
+                    object.close();
                     return S3_PREFIX + bucketName + "/" + objectName;
                 }
-            } catch (AmazonServiceException e) {
+            } catch (AmazonServiceException | IOException e) {
                 LOGGER.error(e, "s3 query exception MediaGuid={} BucketName={}", guid, bucketName);
             }
         }
