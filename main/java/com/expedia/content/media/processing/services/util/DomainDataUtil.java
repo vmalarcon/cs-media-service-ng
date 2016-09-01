@@ -1,8 +1,5 @@
 package com.expedia.content.media.processing.services.util;
 
-import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
-import org.apache.commons.collections.CollectionUtils;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -12,11 +9,19 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.map.HashedMap;
+
 @SuppressWarnings("PMD.UseUtilityClass")
 public class DomainDataUtil {
 
     private final static String ROOMID = "roomId";
     private final static String ROOMS = "rooms";
+    private final static ObjectMapper MAPPER = new ObjectMapper();
+    private final static String LCM_MEDIA_ID_FIELD = "lcmMediaId";
 
     /**
      * utility method used to extracts roomIds from the domainFields.rooms.
@@ -98,5 +103,16 @@ public class DomainDataUtil {
             return false;
         }).collect(Collectors.toList());
         return status.stream().anyMatch(s -> Boolean.FALSE.equals(s));
+    }
+    
+    /**
+     * Extract the lcm mediaId from the generic domain fields.
+     * 
+     * @param domainFields provided domain fields.
+     * @return the mediaId if exist and null otherwise.
+     */
+    public static String getMediaIdFromDomainFields(String domainFields) throws Exception{
+        final Map<String, Object> domainMap = domainFields == null ? new HashedMap<>() : MAPPER.readValue(domainFields, Map.class);
+        return domainMap.isEmpty() ? null : (String) domainMap.get(LCM_MEDIA_ID_FIELD);
     }
 }
