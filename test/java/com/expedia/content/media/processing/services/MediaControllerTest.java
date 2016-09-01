@@ -1687,7 +1687,7 @@ public class MediaControllerTest {
                 + "   }";
         Media dynamoMedia =
                 Media.builder().fileName("file").domainId("41098").mediaGuid("ab4b02a5-8a2e-4653-bb6a-7b249370bdd6").domainFields(dynamoField)
-                        .lcmMediaId("1234").build();
+                        .build();
         when(mockMediaDao.getMediaByGuid(anyString())).thenReturn(dynamoMedia);
         final Map<String, String> status = new HashMap<>();
         status.put("file", "REJECTED");
