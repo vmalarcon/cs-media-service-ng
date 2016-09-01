@@ -51,7 +51,7 @@ public class FileSourceFinder {
                     return S3_PREFIX + bucketName + "/" + objectName;
                 }
             } catch (AmazonServiceException | IOException e) {
-                LOGGER.error(e, "s3 query exception MediaGuid={} BucketName={}", guid, bucketName);
+                LOGGER.warn(e, "s3 query exception MediaGuid={} BucketName={} ObjectName={}", guid, bucketName, objectName);
             }
         }
         return "";
