@@ -1480,24 +1480,31 @@ public class MediaControllerTest {
 
     @Test
     public void testMediaUpdateWithCorrectGuidButMissingLCMMediaId() throws Exception {
-        String jsonMsg = "{  \n"
+        final String jsonMsg = "{  \n"
                 + "   \"userId\":\"bobthegreat\",\n"
                 + "   \"active\": \"false\",\n"
                 + "   \"comment\":\"note33\"\n"
                 + "}";
 
-        Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdateWithError();
-        Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
-                .lcmMediaId("null").lastUpdated(new Date()).mediaGuid("12345678-abcd-efab-cdef-123456789012").build();
+        final String domainFields ="{\"category\":\"21001\",\"lcmMediaId\":\"16343312\"}";
+        final Map<String, List<MapMessageValidator>> validators = getMockValidatorsForUpdate();
+        final Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
+                .lcmMediaId("null").lastUpdated(new Date()).mediaGuid("12345678-abcd-efab-cdef-123456789012").domainFields(domainFields).build();
         MediaDao mockMediaDao = mock(MediaDao.class);
         when(mockMediaDao.getMediaByGuid(eq("12345678-abcd-efab-cdef-123456789012"))).thenReturn(resultMedia);
+        final Map<String, String> status = new HashMap<>();
+        status.put("47474_freetotbook_5h5h5h5h5h5h.jpg", "PUBLISHED");
+        when(mockMediaDao.getLatestStatus(anyObject())).thenReturn(status);
+        CatalogHeroProcessor catalogHeroProcessor = getCatalogMock();
+        MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);
+        setFieldValue(mediaController, "mediaUpdateProcessor", mockUpdateProcess);
+
         setFieldValue(mediaController, "mapValidatorList", validators);
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         MultiValueMap<String, String> headers = new HttpHeaders();
         ResponseEntity<String> responseEntity = mediaController.mediaUpdate("12345678-abcd-efab-cdef-123456789012", jsonMsg, headers);
         assertNotNull(responseEntity);
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-        assertTrue(responseEntity.getBody().contains("exists, but it does not have a LCM id assigned."));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());        
     }
 
 
