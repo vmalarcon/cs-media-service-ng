@@ -180,6 +180,7 @@ public class MediaUpdateProcessor {
      * @param dynamoMedia
      * @throws Exception
      */
+    @SuppressWarnings("PMD.NPathComplexity")
     private void setDynamoMedia(ImageMessage imageMessage, Media dynamoMedia) throws Exception {
         if (imageMessage.getComment() != null) {
             final List<String> commentList = new ArrayList<>();
@@ -191,8 +192,8 @@ public class MediaUpdateProcessor {
         }
 
         FieldUtils.writeField(dynamoMedia, "userId", StringUtils.isNullOrEmpty(imageMessage.getUserId()) ? imageMessage.getClientId() : imageMessage.getUserId(), true);
-
-        final Map<String, Object> domainFieldsDynamo = JSONUtil.buildMapFromJson(dynamoMedia.getDomainFields());
+        final String domainFields = dynamoMedia.getDomainFields();
+        final Map<String, Object> domainFieldsDynamo = domainFields == null ? new HashMap<>() : JSONUtil.buildMapFromJson(domainFields);
         final Map<String, Object> domainFieldsNew = imageMessage.getOuterDomainData().getDomainFields();
         final Map<String, Object> domainFieldsCombine = combineDomainFields(domainFieldsDynamo, domainFieldsNew);
         FieldUtils.writeField(dynamoMedia, "domainFields", new ObjectMapper().writeValueAsString(domainFieldsCombine), true);
