@@ -836,6 +836,6 @@ public class MediaController extends CommonServiceController {
             return mediaId;
         }
         final String domainFields = dynamoMedia.getDomainFields();
-        return StringUtils.isNullOrEmpty(domainFields) ? null : DomainDataUtil.getMediaIdFromDomainFields(dynamoMedia.getDomainFields());
+        return StringUtils.isNullOrEmpty(domainFields) ? null : DomainDataUtil.getMediaIdFromDomainFields(domainFields);
     }
 }
