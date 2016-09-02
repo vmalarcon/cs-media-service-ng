@@ -429,7 +429,7 @@ public class MediaController extends CommonServiceController {
                 objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input GUID does not exist in DB", serviceUrl, NOT_FOUND));
                 return;
             }
-            objectMap.put(RESPONSE_FIELD_LCM_MEDIA_ID, getLcmMediaId(dynamoMedia));
+            objectMap.put(RESPONSE_FIELD_LCM_MEDIA_ID, DomainDataUtil.getMediaIdFromDynamo(dynamoMedia));
             objectMap.put(DOMAIN_ID, dynamoMedia.getDomainId());
             objectMap.put(DYNAMO_MEDIA_FIELD, dynamoMedia);
         } else if (org.apache.commons.lang.StringUtils.isNumeric(queryId)) {
@@ -825,17 +825,4 @@ public class MediaController extends CommonServiceController {
         return imageMessage;
     }
     
-    /**
-     * Extract the lcm media Id from the dynamo media object.
-     * @param dynamoMedia provided media
-     * @return the mediaId if exist and null otherwise.
-     */
-    private String getLcmMediaId(Media dynamoMedia) throws Exception{
-        final String mediaId = dynamoMedia.getLcmMediaId();
-        if(org.apache.commons.lang.StringUtils.isNumeric(mediaId)){
-            return mediaId;
-        }
-        final String domainFields = dynamoMedia.getDomainFields();
-        return StringUtils.isNullOrEmpty(domainFields) ? null : DomainDataUtil.getMediaIdFromDomainFields(domainFields);
-    }
 }

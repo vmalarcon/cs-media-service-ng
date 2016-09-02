@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -106,13 +107,18 @@ public class DomainDataUtil {
     }
     
     /**
-     * Extract the lcm mediaId from the generic domain fields.
+     * Extract the lcm mediaId from a dynamo media object.
      * 
-     * @param domainFields provided domain fields.
+     * @param dynamoMedia provided dynamo media object.
      * @return the mediaId if exist and null otherwise.
      */
-    public static String getMediaIdFromDomainFields(String domainFields) throws Exception{
-        final Map<String, Object> domainMap = domainFields == null ? new HashedMap<>() : MAPPER.readValue(domainFields, Map.class);
-        return domainMap.isEmpty() ? null : (String) domainMap.get(LCM_MEDIA_ID_FIELD);
+    public static String getMediaIdFromDynamo(Media dynamoMedia) throws Exception{        
+        final String mediaId = dynamoMedia.getLcmMediaId();
+        if(org.apache.commons.lang.StringUtils.isNumeric(mediaId)){
+            return mediaId;
+        }
+        final String domainFields = dynamoMedia.getDomainFields();
+        final Map<String, Object> domainMap = domainFields == null ? null : MAPPER.readValue(domainFields, Map.class);
+        return domainMap instanceof Map ? (String) domainMap.get(LCM_MEDIA_ID_FIELD) : null;
     }
 }
