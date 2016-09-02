@@ -1536,7 +1536,7 @@ public class MediaControllerTest {
     }
 
     @Test
-    public void testMediaUpdateWithUncorrectDomainFiledsType() throws Exception {
+    public void testMediaUpdateWithUncorrectDomainFieldsType() throws Exception {
         final String jsonMsg = "{  \n"
                 + "   \"userId\":\"bobthegreat\",\n"
                 + "   \"active\": \"false\",\n"
