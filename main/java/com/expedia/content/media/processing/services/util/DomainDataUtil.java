@@ -14,7 +14,6 @@ import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections4.map.HashedMap;
 
 @SuppressWarnings("PMD.UseUtilityClass")
 public class DomainDataUtil {
