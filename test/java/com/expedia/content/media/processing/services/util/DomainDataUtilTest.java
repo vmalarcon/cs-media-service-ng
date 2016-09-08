@@ -1,17 +1,19 @@
 package com.expedia.content.media.processing.services.util;
 
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
-
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class DomainDataUtilTest {
 
@@ -55,6 +57,62 @@ public class DomainDataUtilTest {
                 .addField("rooms", roomsMapList)
                 .build();
         assertTrue(DomainDataUtil.roomsFieldIsInvalid(outerDomain));
+    }
+
+    @Test
+    public void testIntegerLCMId() throws Exception {
+        Media dynamoMedia = new Media();
+        dynamoMedia.setDomainFields("{\"category\":\"21001\",\"lcmMediaId\":16343312}");
+        assertEquals("16343312", DomainDataUtil.getMediaIdFromDynamo(dynamoMedia));
+    }
+
+    @Test
+    public void testStringLCMId() throws Exception {
+        Media dynamoMedia = new Media();
+        dynamoMedia.setDomainFields("{\"category\":\"21001\",\"lcmMediaId\":\"16343312\"}");
+        assertEquals("16343312", DomainDataUtil.getMediaIdFromDynamo(dynamoMedia));
+    }
+
+    @Test
+    public void testNullDomainFieldLCMId() throws Exception {
+        Media dynamoMedia = new Media();
+        dynamoMedia.setDomainFields(null);
+        assertNull(DomainDataUtil.getMediaIdFromDynamo(dynamoMedia));
+    }
+
+    @Test
+    public void testNullStringDomainFieldLCMId() throws Exception {
+        Media dynamoMedia = new Media();
+        dynamoMedia.setDomainFields("null");
+        assertNull(DomainDataUtil.getMediaIdFromDynamo(dynamoMedia));
+    }
+
+    @Test
+    public void testEmptyStringDomainFieldLCMId() throws Exception {
+        Media dynamoMedia = new Media();
+        dynamoMedia.setDomainFields("");
+        assertNull(DomainDataUtil.getMediaIdFromDynamo(dynamoMedia));
+    }
+
+    @Test
+    public void testNullLCMId() throws Exception {
+        Media dynamoMedia = new Media();
+        dynamoMedia.setDomainFields("{\"category\":\"21001\",\"lcmMediaId\":null}");
+        assertNull(DomainDataUtil.getMediaIdFromDynamo(dynamoMedia));
+    }
+
+    @Test
+    public void testNullStringLCMId() throws Exception {
+        Media dynamoMedia = new Media();
+        dynamoMedia.setDomainFields("{\"category\":\"21001\",\"lcmMediaId\":\"null\"}");
+        assertNull(DomainDataUtil.getMediaIdFromDynamo(dynamoMedia));
+    }
+
+    @Test
+    public void testEmptyStringLCMId() throws Exception {
+        Media dynamoMedia = new Media();
+        dynamoMedia.setDomainFields("{\"category\":\"21001\",\"lcmMediaId\":\"\"}");
+        assertNull(DomainDataUtil.getMediaIdFromDynamo(dynamoMedia));
     }
 
 }

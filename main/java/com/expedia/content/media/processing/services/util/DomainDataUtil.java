@@ -1,5 +1,13 @@
 package com.expedia.content.media.processing.services.util;
 
+import com.amazonaws.util.StringUtils;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
+import org.springframework.util.ObjectUtils;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -8,12 +16,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
-import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.apache.commons.collections.CollectionUtils;
 
 @SuppressWarnings("PMD.UseUtilityClass")
 public class DomainDataUtil {
@@ -104,20 +106,24 @@ public class DomainDataUtil {
         }).collect(Collectors.toList());
         return status.stream().anyMatch(s -> Boolean.FALSE.equals(s));
     }
-    
+
     /**
      * Extract the lcm mediaId from a dynamo media object.
-     * 
+     *
      * @param dynamoMedia provided dynamo media object.
      * @return the mediaId if exist and null otherwise.
      */
-    public static String getMediaIdFromDynamo(Media dynamoMedia) throws Exception{        
+    public static String getMediaIdFromDynamo(Media dynamoMedia) throws Exception {
         final String mediaId = dynamoMedia.getLcmMediaId();
-        if(org.apache.commons.lang.StringUtils.isNumeric(mediaId)){
+        if (org.apache.commons.lang.StringUtils.isNumeric(mediaId)) {
             return mediaId;
         }
         final String domainFields = dynamoMedia.getDomainFields();
-        final Map<String, Object> domainMap = domainFields == null ? null : MAPPER.readValue(domainFields, Map.class);
-        return domainMap instanceof Map ? (String) domainMap.get(LCM_MEDIA_ID_FIELD) : null;
+        final Map<String,Object> domainMap = StringUtils.isNullOrEmpty(domainFields) ? null : MAPPER.readValue(domainFields, Map.class);
+        if (MapUtils.isEmpty(domainMap) || ObjectUtils.isEmpty(domainMap.get(LCM_MEDIA_ID_FIELD)) || !org.apache.commons.lang.StringUtils
+                .isNumeric(domainMap.get(LCM_MEDIA_ID_FIELD).toString())) {
+            return null;
+        }
+        return domainMap.get(LCM_MEDIA_ID_FIELD).toString();
     }
 }
