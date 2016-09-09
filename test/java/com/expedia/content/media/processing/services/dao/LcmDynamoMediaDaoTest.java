@@ -1,5 +1,48 @@
 package com.expedia.content.media.processing.services.dao;
 
+import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaAndDerivative;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
+import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaContentProviderNameGetSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaDeleteSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaItemGetSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaListSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetByCatalogItemIdSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetByMediaIdSproc;
+import com.expedia.content.media.processing.services.reqres.Comment;
+import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
+import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
+import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
+import com.expedia.content.media.processing.services.util.ActivityMapping;
+import com.expedia.content.media.processing.services.util.FileNameUtil;
+import com.google.common.collect.Maps;
+import org.joda.time.LocalDateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.util.ReflectionUtils;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
@@ -17,45 +60,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import com.expedia.content.media.processing.services.dao.sql.SQLMediaDeleteSproc;
-import com.expedia.content.media.processing.services.util.FileNameUtil;
-import com.google.common.collect.Maps;
-import org.joda.time.LocalDateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.expedia.content.media.processing.pipeline.domain.Domain;
-import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
-import com.expedia.content.media.processing.services.dao.domain.LcmMediaAndDerivative;
-import com.expedia.content.media.processing.services.dao.domain.LcmMediaDerivative;
-import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
-import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
-import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
-import com.expedia.content.media.processing.services.dao.sql.SQLMediaContentProviderNameGetSproc;
-import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
-import com.expedia.content.media.processing.services.dao.sql.SQLMediaItemGetSproc;
-import com.expedia.content.media.processing.services.dao.sql.SQLMediaListSproc;
-import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetByCatalogItemIdSproc;
-import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetByMediaIdSproc;
-import com.expedia.content.media.processing.services.reqres.Comment;
-import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
-import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
-import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
-import com.expedia.content.media.processing.services.util.ActivityMapping;
 
 public class LcmDynamoMediaDaoTest {
 
@@ -833,6 +837,70 @@ public class LcmDynamoMediaDaoTest {
         assertEquals(1, testMediaRespomse.getImages().size());
         testMediaRespomse.getImages().stream().filter(media -> media.getDomainFields() != null && media.getDomainFields().get("lcmMediaId") != null).forEach(media -> assertEquals(2, media.getDerivatives().size()));
         assertFalse(testMediaRespomse.getImages().stream().filter(media -> !("VirtualTour").equals(media.getDomainDerivativeCategory())).findAny().isPresent());
+    }
+
+    @Test
+    public void testValidatePaginationPageIndexOutOfBounds() throws InvocationTargetException, IllegalAccessException {
+
+        LcmDynamoMediaDao lcmDynamoMediaDao = new LcmDynamoMediaDao();
+        Method method = ReflectionUtils.findMethod(LcmDynamoMediaDao.class, "validatePagination", Integer.class, Integer.class, Integer.class);
+        method.setAccessible(true);
+        String validation = (String) method.invoke(lcmDynamoMediaDao, 20, 3, 21);
+        assertEquals("pageIndex is out of bounds", validation);
+    }
+
+    @Test
+    public void testValidatePaginationPageSizeGreaterThanTotalMediaCount() throws InvocationTargetException, IllegalAccessException {
+
+        LcmDynamoMediaDao lcmDynamoMediaDao = new LcmDynamoMediaDao();
+        Method method = ReflectionUtils.findMethod(LcmDynamoMediaDao.class, "validatePagination", Integer.class, Integer.class, Integer.class);
+        method.setAccessible(true);
+        String validation = (String) method.invoke(lcmDynamoMediaDao, 20, 6, 4);
+        assertNull(validation);
+    }
+
+    @Test
+    public void testPaginateItemsPageSizeGreaterThanRemainingMedia() throws InvocationTargetException, IllegalAccessException {
+
+        LcmDynamoMediaDao lcmDynamoMediaDao = new LcmDynamoMediaDao();
+        Method method = ReflectionUtils.findMethod(LcmDynamoMediaDao.class, "paginateItems", Stream.class, Integer.class, Integer.class, Integer.class);
+        method.setAccessible(true);
+        Stream items = Arrays.asList(new Integer[12]).stream();
+        Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 5, 3, 12);
+        assertEquals(2, stream.count());
+    }
+
+    @Test
+    public void testPaginateItemsPageSizeGreaterThanTotalMedia() throws InvocationTargetException, IllegalAccessException {
+
+        LcmDynamoMediaDao lcmDynamoMediaDao = new LcmDynamoMediaDao();
+        Method method = ReflectionUtils.findMethod(LcmDynamoMediaDao.class, "paginateItems", Stream.class, Integer.class, Integer.class, Integer.class);
+        method.setAccessible(true);
+        Stream items = Arrays.asList(new Integer[12]).stream();
+        Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 13, 1, 12);
+        assertEquals(12, stream.count());
+    }
+
+    @Test
+    public void testPaginateItemsPageSizeLessThanTotalMedia() throws InvocationTargetException, IllegalAccessException {
+
+        LcmDynamoMediaDao lcmDynamoMediaDao = new LcmDynamoMediaDao();
+        Method method = ReflectionUtils.findMethod(LcmDynamoMediaDao.class, "paginateItems", Stream.class, Integer.class, Integer.class, Integer.class);
+        method.setAccessible(true);
+        Stream items = Arrays.asList(new Integer[12]).stream();
+        Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 5, 1, 12);
+        assertEquals(5, stream.count());
+    }
+
+    @Test
+    public void testPaginateItemsPageSizeLessThanRemainingMedia() throws InvocationTargetException, IllegalAccessException {
+
+        LcmDynamoMediaDao lcmDynamoMediaDao = new LcmDynamoMediaDao();
+        Method method = ReflectionUtils.findMethod(LcmDynamoMediaDao.class, "paginateItems", Stream.class, Integer.class, Integer.class, Integer.class);
+        method.setAccessible(true);
+        Stream items = Arrays.asList(new Integer[12]).stream();
+        Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 5, 2, 12);
+        assertEquals(5, stream.count());
     }
 
     
