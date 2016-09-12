@@ -38,7 +38,10 @@ public class DomainDataUtil {
         for (int i = 0; i < roomsList.size(); i++) {
             final Map room = (Map) roomsList.get(i);
             if (room != null && !room.isEmpty() && room.containsKey(ROOMID)) {
-                roomIds.add(Integer.valueOf(room.get(ROOMID).toString()));
+                final String roomId = room.get(ROOMID).toString();
+                if (!roomId.isEmpty() && org.apache.commons.lang.StringUtils.isNumeric(roomId)) {
+                    roomIds.add(Integer.valueOf(roomId));
+                }
             }
         }
         return roomIds;

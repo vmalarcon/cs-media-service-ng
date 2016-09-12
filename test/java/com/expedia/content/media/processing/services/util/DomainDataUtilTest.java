@@ -14,6 +14,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class DomainDataUtilTest {
 
@@ -46,6 +47,23 @@ public class DomainDataUtilTest {
                 .build();
         assertFalse(DomainDataUtil.roomsFieldIsInvalid(outerDomain));
     }
+    
+    @Test
+    public void testEmptyRoomId() {
+        final List<Map<String, String>> roomsMapList = new ArrayList<>();
+        final Map<String, String> roomMap = new HashMap<>();
+        roomMap.put("roomId", "");
+        roomsMapList.add(roomMap);
+        final OuterDomain outerDomain = new OuterDomain.OuterDomainBuilder()
+                .addField("rooms", roomsMapList)
+                .build();
+        try {
+            assertTrue(DomainDataUtil.getRoomIds(outerDomain).isEmpty());
+        } catch (Exception e) {
+           fail("This should not throw an exception");
+        }        
+    }
+
 
     @Test
     public void testOnlyRoomHero() {
