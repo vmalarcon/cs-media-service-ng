@@ -282,7 +282,7 @@ public class LcmDynamoMediaDao implements MediaDao {
         if (pageSize < 1 || pageIndex < 1) {
             return "pageSize and pageIndex can only be positive integer values";
         }
-        if (pageIndex > totalMediaCount) {
+        if (pageIndex > Math.ceil((double) totalMediaCount/(double) pageSize)) {
             return "pageIndex is out of bounds";
         }
         return null;
@@ -301,7 +301,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     @SuppressWarnings("rawtypes")
     private Stream paginateItems(Stream items, Integer pageSize, Integer pageIndex, Integer totalMediaCount) {
         final int indexStart = pageSize * (pageIndex - 1);
-        final int indexEnd = pageSize > totalMediaCount - indexStart ? totalMediaCount - indexStart : pageSize ;
+        final int indexEnd = pageSize;
         return items.skip(indexStart)
                     .limit(indexEnd);
     }
