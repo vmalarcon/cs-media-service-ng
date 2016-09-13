@@ -39,7 +39,7 @@ public class DomainDataUtil {
             final Map room = (Map) roomsList.get(i);
             if (room != null && !room.isEmpty() && room.containsKey(ROOMID)) {
                 final String roomId = room.get(ROOMID).toString();
-                if (!roomId.isEmpty() && org.apache.commons.lang.StringUtils.isNumeric(roomId)) {
+                if (org.apache.commons.lang3.StringUtils.isNumeric(roomId)) {
                     roomIds.add(Integer.valueOf(roomId));
                 }
             }
@@ -118,7 +118,7 @@ public class DomainDataUtil {
      */
     public static String getMediaIdFromDynamo(Media dynamoMedia) throws Exception {
         final String mediaId = dynamoMedia.getLcmMediaId();
-        if (org.apache.commons.lang.StringUtils.isNumeric(mediaId)) {
+        if (org.apache.commons.lang3.StringUtils.isNumeric(mediaId)) {
             return mediaId;
         }
         final String domainFields = dynamoMedia.getDomainFields();

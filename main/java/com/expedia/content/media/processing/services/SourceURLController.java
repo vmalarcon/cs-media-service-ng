@@ -129,7 +129,7 @@ public class SourceURLController extends CommonServiceController {
 
     @SuppressWarnings("PMD")
     private String getGuidByMediaId(String mediaId) {
-        if (org.apache.commons.lang.StringUtils.isNumeric(mediaId)) {
+        if (StringUtils.isNumeric(mediaId)) {
             final List<Media> mediaList = mediaDao.getMediaByMediaId(mediaId);
             if (!mediaList.isEmpty()) {
                 final Optional<Media> existMedia = mediaList.stream().max((m1, m2) -> m1.getLastUpdated().compareTo(m2.getLastUpdated()));
