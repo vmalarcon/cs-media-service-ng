@@ -282,7 +282,7 @@ public class LcmDynamoMediaDao implements MediaDao {
         if (pageSize < 1 || pageIndex < 1) {
             return "pageSize and pageIndex can only be positive integer values";
         }
-        if (pageSize * pageIndex > totalMediaCount) {
+        if (pageIndex > Math.ceil((double) totalMediaCount/(double) pageSize)) {
             return "pageIndex is out of bounds";
         }
         return null;
