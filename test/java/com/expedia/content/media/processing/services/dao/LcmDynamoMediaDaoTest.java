@@ -863,10 +863,10 @@ public class LcmDynamoMediaDaoTest {
     public void testPaginateItemsPageSizeGreaterThanRemainingMedia() throws InvocationTargetException, IllegalAccessException {
 
         LcmDynamoMediaDao lcmDynamoMediaDao = new LcmDynamoMediaDao();
-        Method method = ReflectionUtils.findMethod(LcmDynamoMediaDao.class, "paginateItems", Stream.class, Integer.class, Integer.class, Integer.class);
+        Method method = ReflectionUtils.findMethod(LcmDynamoMediaDao.class, "paginateItems", Stream.class, Integer.class, Integer.class);
         method.setAccessible(true);
         Stream items = Arrays.asList(new Integer[12]).stream();
-        Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 5, 3, 12);
+        Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 5, 3);
         assertEquals(2, stream.count());
     }
 
@@ -874,10 +874,10 @@ public class LcmDynamoMediaDaoTest {
     public void testPaginateItemsPageSizeGreaterThanTotalMedia() throws InvocationTargetException, IllegalAccessException {
 
         LcmDynamoMediaDao lcmDynamoMediaDao = new LcmDynamoMediaDao();
-        Method method = ReflectionUtils.findMethod(LcmDynamoMediaDao.class, "paginateItems", Stream.class, Integer.class, Integer.class, Integer.class);
+        Method method = ReflectionUtils.findMethod(LcmDynamoMediaDao.class, "paginateItems", Stream.class, Integer.class, Integer.class);
         method.setAccessible(true);
         Stream items = Arrays.asList(new Integer[12]).stream();
-        Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 13, 1, 12);
+        Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 13, 1);
         assertEquals(12, stream.count());
     }
 
@@ -885,10 +885,10 @@ public class LcmDynamoMediaDaoTest {
     public void testPaginateItemsPageSizeLessThanTotalMedia() throws InvocationTargetException, IllegalAccessException {
 
         LcmDynamoMediaDao lcmDynamoMediaDao = new LcmDynamoMediaDao();
-        Method method = ReflectionUtils.findMethod(LcmDynamoMediaDao.class, "paginateItems", Stream.class, Integer.class, Integer.class, Integer.class);
+        Method method = ReflectionUtils.findMethod(LcmDynamoMediaDao.class, "paginateItems", Stream.class, Integer.class, Integer.class);
         method.setAccessible(true);
         Stream items = Arrays.asList(new Integer[12]).stream();
-        Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 5, 1, 12);
+        Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 5, 1);
         assertEquals(5, stream.count());
     }
 
@@ -896,10 +896,10 @@ public class LcmDynamoMediaDaoTest {
     public void testPaginateItemsPageSizeLessThanRemainingMedia() throws InvocationTargetException, IllegalAccessException {
 
         LcmDynamoMediaDao lcmDynamoMediaDao = new LcmDynamoMediaDao();
-        Method method = ReflectionUtils.findMethod(LcmDynamoMediaDao.class, "paginateItems", Stream.class, Integer.class, Integer.class, Integer.class);
+        Method method = ReflectionUtils.findMethod(LcmDynamoMediaDao.class, "paginateItems", Stream.class, Integer.class, Integer.class);
         method.setAccessible(true);
         Stream items = Arrays.asList(new Integer[12]).stream();
-        Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 5, 2, 12);
+        Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 5, 2);
         assertEquals(5, stream.count());
     }
 

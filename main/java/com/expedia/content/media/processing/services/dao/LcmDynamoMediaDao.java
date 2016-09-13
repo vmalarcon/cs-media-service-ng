@@ -175,8 +175,8 @@ public class LcmDynamoMediaDao implements MediaDao {
         if (pageSize != null || pageIndex != null) {
             final String errorResponse = validatePagination(totalMediaCount, pageSize, pageIndex);
             if (errorResponse == null) {
-                fileNames = (List<String>) paginateItems(fileNames.stream(), pageSize, pageIndex, totalMediaCount).collect(Collectors.toList());
-                domainIdMedia = (List<Media>) paginateItems(domainIdMedia.stream(), pageSize, pageIndex, totalMediaCount).collect(Collectors.toList());
+                fileNames = (List<String>) paginateItems(fileNames.stream(), pageSize, pageIndex).collect(Collectors.toList());
+                domainIdMedia = (List<Media>) paginateItems(domainIdMedia.stream(), pageSize, pageIndex).collect(Collectors.toList());
             } else {
                 throw new Exception(errorResponse);
             }
@@ -295,11 +295,10 @@ public class LcmDynamoMediaDao implements MediaDao {
      * @param items Item stream.
      * @param pageSize Size of the page.
      * @param pageIndex Which page to fetch items for.
-     * @param totalMediaCount Total number of media belongng to the EID
      * @return A stream of items belonging to the desired page.
      */
     @SuppressWarnings("rawtypes")
-    private Stream paginateItems(Stream items, Integer pageSize, Integer pageIndex, Integer totalMediaCount) {
+    private Stream paginateItems(Stream items, Integer pageSize, Integer pageIndex) {
         final int indexStart = pageSize * (pageIndex - 1);
         final int indexEnd = pageSize;
         return items.skip(indexStart)
