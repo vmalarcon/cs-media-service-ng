@@ -59,7 +59,7 @@ public class MediaUpdateProcessor {
     @Transactional
     public ResponseEntity<String> processRequest(final ImageMessage imageMessage, final String mediaId, String domainId,
                                                  Media dynamoMedia) throws Exception {
-        if (mediaId != null && org.apache.commons.lang.StringUtils.isNumeric(mediaId)) {
+        if (mediaId != null && org.apache.commons.lang3.StringUtils.isNumeric(mediaId)) {
             final Integer expediaId = Integer.valueOf(domainId);
             // step1. update media table, if comment or active fields are not null
             if (imageMessage.getComment() != null || imageMessage.isActive() != null) {
