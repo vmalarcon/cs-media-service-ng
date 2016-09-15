@@ -19,6 +19,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import lombok.Getter;
 
+/**
+ * Provided the validation logic for MediaAdd
+ *
+ */
 @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.ModifiedCyclomaticComplexity", "PMD.StdCyclomaticComplexity", "PMD.UnusedPrivateField", "PMD.NPathComplexity"})
 public class LCMValidator implements MapMessageValidator {
 
