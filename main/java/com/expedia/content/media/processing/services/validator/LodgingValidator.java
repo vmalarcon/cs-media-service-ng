@@ -24,19 +24,19 @@ import lombok.Getter;
  *
  */
 @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.ModifiedCyclomaticComplexity", "PMD.StdCyclomaticComplexity", "PMD.UnusedPrivateField", "PMD.NPathComplexity"})
-public class LCMValidator implements MapMessageValidator {
+public class LodgingValidator implements MapMessageValidator {
 
     @Autowired
-    @Getter private SKUGroupCatalogItemDao skuGroupCatalogItemDao;
+    @Getter protected SKUGroupCatalogItemDao skuGroupCatalogItemDao;
 
     @Autowired
-    @Getter private MediaDomainCategoriesDao mediaDomainCategoriesDao;
+    @Getter protected MediaDomainCategoriesDao mediaDomainCategoriesDao;
 
     @Autowired
-    @Getter private RoomTypeDao roomTypeDao;
+    @Getter protected RoomTypeDao roomTypeDao;
 
     @Resource(name = "providerProperties")
-    @Getter private Properties providerProperties;
+    @Getter protected Properties providerProperties;
 
     private final static String DEFAULT_LANG_ID = "1033";
     

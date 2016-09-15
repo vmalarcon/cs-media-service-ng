@@ -8,7 +8,7 @@ import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.ValidatorUtil;
 import org.apache.commons.lang3.StringUtils;
 
-public class LCMAddValidator extends LCMValidator{
+public class LodgingAddValidator extends LodgingValidator {
 
     public List<String> validateImages(List<ImageMessage> messageList) {
         final List<String> errorList = super.validateImages(messageList);
@@ -19,24 +19,24 @@ public class LCMAddValidator extends LCMValidator{
             }
         }
         return errorList;
- 
-    }  
-    
+
+    }
+
     @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.ModifiedCyclomaticComplexity", "PMD.StdCyclomaticComplexity", "PMD.NPathComplexity"})
-    private StringBuffer validateRequest (ImageMessage imageMessage) {
+    private StringBuffer validateRequest(ImageMessage imageMessage) {
         final StringBuffer errorMsg = new StringBuffer();
         if (!getSkuGroupCatalogItemDao().skuGroupExists(Integer.parseInt(imageMessage.getOuterDomainData().getDomainId()))) {
             errorMsg.append("The provided domainId does not exist.");
         }
-        
+
         if (StringUtils.isEmpty(DomainDataUtil.getDomainProvider(imageMessage.getOuterDomainData().getProvider(), getProviderProperties()))) {
             errorMsg.append("The provided mediaProvider does not exist.");
         }
-        
+
         if (!imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING)) {
             errorMsg.append("The provided domain does not exist.");
         }
-       return errorMsg;
+        return errorMsg;
     }
 
 }
