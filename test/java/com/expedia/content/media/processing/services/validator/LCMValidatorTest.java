@@ -54,7 +54,7 @@ public class LCMValidatorTest {
     @Mock
     Properties mockProviderProperties;
 
-    LCMValidator lcmValidator;
+    LCMAddValidator lcmValidator;
     Map<String, Object> mediaProviderMockResults;
     Map<String, Object> catMockResults;
     final String LOCALID = "1033";
@@ -75,7 +75,7 @@ public class LCMValidatorTest {
     @Before
     public void initialize() throws NoSuchFieldException, IllegalAccessException {
 
-        lcmValidator = new LCMValidator();
+        lcmValidator = new LCMAddValidator();
         mediaProviderMockResults = new HashMap<>();
         catMockResults = new HashMap<>();
         mockMediaCategories = new ArrayList<>();

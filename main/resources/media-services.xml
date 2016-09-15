@@ -330,7 +330,7 @@
         </constructor-arg>
     </bean>
 
-    <bean id="lcmValidator" class="com.expedia.content.media.processing.services.validator.LCMValidator" />
+    <bean id="lcmValidator" class="com.expedia.content.media.processing.services.validator.LCMAddValidator" />
 
     <bean id="lcmUpdateValidator" class="com.expedia.content.media.processing.services.validator.LCMUpdateValidator" />
 
