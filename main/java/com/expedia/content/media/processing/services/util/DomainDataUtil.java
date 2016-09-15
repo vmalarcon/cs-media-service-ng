@@ -137,7 +137,7 @@ public class DomainDataUtil {
      * 
      * @return true if the provided domainFields is a Map and false otherwise.
      */
-    public static Boolean domainFieldIsAMap(Object domainFields) {        
+    public static Boolean domainFieldIsValid(Object domainFields) {        
         return domainFields == null || domainFields instanceof Map;
     }
 }

@@ -165,7 +165,7 @@ public class DomainDataUtilTest {
     
     Map<String, Object> mapMessage = mapper.readValue(jsonMessage, Map.class);
     Object domainFields = mapMessage.get("domainFields");
-    assertTrue(DomainDataUtil.domainFieldIsAMap(domainFields));
+    assertTrue(DomainDataUtil.domainFieldIsValid(domainFields));
     
     final String stringDomainFieldmessage ="{"
             +"\"userId\":\"PSG1Abakoglou\","
@@ -175,7 +175,7 @@ public class DomainDataUtilTest {
     
     mapMessage = mapper.readValue(stringDomainFieldmessage, Map.class);
     domainFields = mapMessage.get("domainFields");
-    assertFalse(DomainDataUtil.domainFieldIsAMap(domainFields));
+    assertFalse(DomainDataUtil.domainFieldIsValid(domainFields));
 
     final String nullDomainFieldmessage ="{"
             +"\"userId\":\"PSG1Abakoglou\","
@@ -184,7 +184,7 @@ public class DomainDataUtilTest {
             +"\"hidden\":null}";
     mapMessage = mapper.readValue(nullDomainFieldmessage, Map.class);
     domainFields = mapMessage.get("domainFields");
-    assertTrue(DomainDataUtil.domainFieldIsAMap(domainFields));
+    assertTrue(DomainDataUtil.domainFieldIsValid(domainFields));
 
     final String emptyMapDomainFieldmessage ="{"
             +"\"userId\":\"PSG1Abakoglou\","
@@ -193,6 +193,6 @@ public class DomainDataUtilTest {
             +"\"hidden\":null}";
     mapMessage = mapper.readValue(emptyMapDomainFieldmessage, Map.class);
     domainFields = mapMessage.get("domainFields");
-    assertTrue(DomainDataUtil.domainFieldIsAMap(domainFields));
+    assertTrue(DomainDataUtil.domainFieldIsValid(domainFields));
    }  
 }
