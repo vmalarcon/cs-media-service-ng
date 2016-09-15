@@ -133,7 +133,7 @@ public class DomainDataUtil {
     /**
      * Verify if the provided domainFields is a Map.
      * 
-     * @param outerDomain provided outerDomain;
+     * @param domainFields provided domainFields;
      * 
      * @return true if the provided domainFields is a Map and false otherwise.
      */
