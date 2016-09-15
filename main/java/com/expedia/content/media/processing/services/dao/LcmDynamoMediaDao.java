@@ -169,7 +169,7 @@ public class LcmDynamoMediaDao implements MediaDao {
         }
         domainIdMedia = mediaStream.sorted((media1, media2) -> compareMedia(media1, media2, domain)).collect(Collectors.toList());
 
-        List<String> fileNames = domainIdMedia.stream().filter(media -> media.getFileName() != null).map(media -> media.getFileName()).distinct()
+        List<String> fileNames = domainIdMedia.stream().filter(media -> media.getFileName() != null).map(media -> media.getFileName())
                 .collect(Collectors.toList());
         final Integer totalMediaCount = fileNames.size();
         if (pageSize != null || pageIndex != null) {

@@ -349,6 +349,37 @@ public class LcmDynamoMediaDaoTest {
         assertEquals(2, testMediaList1.getImages().size());
     }
 
+    @Test
+    public void testGetImageByDomainIdSameFileName() throws Exception {
+        SQLMediaListSproc mediaListSproc = mock(SQLMediaListSproc.class);
+        List<LcmMediaAndDerivative> mediaList =  new ArrayList<>();
+        Map<String, Object> mediaResult = new HashMap<>();
+        mediaResult.put(SQLMediaListSproc.MEDIA_SET, mediaList);
+        when(mediaListSproc.execute(anyInt())).thenReturn(mediaResult);
+
+        SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
+
+        DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
+        List<Media> dynamoMediaList = new ArrayList<>();
+        String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
+        Media dynamoMedia1 = Media.builder().mediaGuid(guid1).fileName("file1.jpg").domain("Lodging").domainId("1234").lastUpdated(new Date())
+                .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": true}").build();
+        String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).fileName("file1.jpg").domain("Lodging").domainId("1234")
+                .lastUpdated(LocalDateTime.now().minusMinutes(5).toDate()).build();
+        dynamoMediaList.add(dynamoMedia1);
+        dynamoMediaList.add(dynamoMedia3);
+        when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
+
+        final Properties properties = new Properties();
+        properties.put("1", "EPC Internal User");
+
+        MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDao());
+        MediaByDomainIdResponse testMediaList1 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null, null);
+
+        assertEquals(2, testMediaList1.getImages().size());
+    }
+
     @SuppressWarnings("rawtypes")
     @Test
     public void testGetMediaByDomainIdFileProcessFalse() throws Exception {
@@ -576,7 +607,9 @@ public class LcmDynamoMediaDaoTest {
 
         assertTrue(testMediaResponse.getTotalMediaCount() == 50);
         assertNotEquals(testMediaResponse.getImages().get(1).getMediaGuid(), "0aaaaaaa-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww");
-        IntStream.range(0, 20).forEach( i -> { assertEquals(testMediaResponse.getImages().get(i).getMediaGuid(),  (i+19) + "aaaaaa-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww"); });
+        IntStream.range(0, 20).forEach(i -> {
+            assertEquals(testMediaResponse.getImages().get(i).getMediaGuid(), (i + 19) + "aaaaaa-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww");
+        });
     }
 
     @Test
@@ -798,7 +831,9 @@ public class LcmDynamoMediaDaoTest {
         MediaByDomainIdResponse testMediaRespomse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, "Default", null, null);
 
         assertEquals(2, testMediaRespomse.getImages().size());
-        testMediaRespomse.getImages().stream().filter(media -> media.getDomainFields() != null && media.getDomainFields().get("lcmMediaId") != null).forEach(media -> assertEquals(2, media.getDerivatives().size()));
+        testMediaRespomse.getImages().stream().filter(
+                media -> media.getDomainFields() != null && media.getDomainFields().get("lcmMediaId") != null).forEach(
+                media -> assertEquals(2, media.getDerivatives().size()));
         assertFalse(testMediaRespomse.getImages().stream().filter(media -> ("VirtualTour").equals(media.getDomainDerivativeCategory())).findAny().isPresent());
     }
 
@@ -835,7 +870,9 @@ public class LcmDynamoMediaDaoTest {
         MediaByDomainIdResponse testMediaRespomse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, "VirtualTours", null, null);
 
         assertEquals(1, testMediaRespomse.getImages().size());
-        testMediaRespomse.getImages().stream().filter(media -> media.getDomainFields() != null && media.getDomainFields().get("lcmMediaId") != null).forEach(media -> assertEquals(2, media.getDerivatives().size()));
+        testMediaRespomse.getImages().stream().filter(
+                media -> media.getDomainFields() != null && media.getDomainFields().get("lcmMediaId") != null).forEach(
+                media -> assertEquals(2, media.getDerivatives().size()));
         assertFalse(testMediaRespomse.getImages().stream().filter(media -> !("VirtualTour").equals(media.getDomainDerivativeCategory())).findAny().isPresent());
     }
 
