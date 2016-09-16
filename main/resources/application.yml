@@ -55,5 +55,4 @@ cs:
       address: phoenix@expedia.com
     report-on-server: false
 
-aws:
-  endPoint: "https://dynamodb.${AWS_REGION}.amazonaws.com"
+
