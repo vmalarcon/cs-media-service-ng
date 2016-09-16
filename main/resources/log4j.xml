@@ -11,13 +11,13 @@
     </appender>
 
     <appender name="fileAppender" class="org.apache.log4j.RollingFileAppender">
-        <param name="file" value="${application.home}/logs/${project.name}.txt"/>
+        <param name="file" value="${application.home}/logs/${application.name}.txt"/>
         <param name="append" value="false"/>
         <param name="MaxFileSize" value="1000KB"/>
         <param name="MaxBackupIndex" value="100"/>
         <layout class="org.apache.log4j.EnhancedPatternLayout">
             <param name="ConversionPattern"
-                   value="Application=${project.name} Type=%p Message=%m%n DateTime=%d{ISO8601}{GMT} Logger=[%c] Thread=[%.30t] "/>
+                   value="Application=${application.name} Type=%p Message=%m%n DateTime=%d{ISO8601}{GMT} Logger=[%c] Thread=[%.30t] "/>
         </layout>
     </appender>
 

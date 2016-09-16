@@ -1,7 +1,7 @@
 swagger:
     service:
         version: "1.0"
-        title: ${project.name}
+        title: ${application.name}
         description: "Media Service API"
         termsPath: ""
         email: "phoenix@expedia.com"
@@ -21,7 +21,7 @@ server:
 
 monitoringAgent:
   application:
-    name: ${project.name}
+    name: ${application.name}
     append:
       process:
         id: false
@@ -35,7 +35,7 @@ monitoringAgent:
 
 cs:
   metrics:
-    application-name: ${project.name}.${application.environment}
+    application-name: ${application.name}.${application.environment}
     publisher:
       enabled: true
       delay: 30
@@ -45,8 +45,8 @@ cs:
 # Poke configuration
   poke:
     enabled: false
-    group: ${project.name}
-    instance: ${project.name}.${application.environment}
+    group: ${application.name}
+    instance: ${application.name}.${application.environment}
     hip-chat:
       enabled: true
       room: "EWE CS: Phoenix Notifications"
