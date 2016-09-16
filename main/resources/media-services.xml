@@ -36,13 +36,13 @@
         <entry key="DEFAULT">
             <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
                 <ref bean="mediaAddValidator"/>
-                <ref bean="lodgingValidator"/>
+                <ref bean="lodgingAddValidator"/>
                 <ref bean="roomValidator"/>
             </list>
         </entry>
         <entry key="Media Cloud Router">
             <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
-                <ref bean="lodgingValidator"/>
+                <ref bean="lodgingAddValidator"/>
                 <ref bean="mediaAddValidator"/>
             </list>
         </entry>
@@ -61,7 +61,7 @@
         <entry key="csMediaTools">
             <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
                 <ref bean="mediaAddValidator"/>
-                <ref bean="lodgingValidator"/>
+                <ref bean="lodgingAddValidator"/>
             </list>
         </entry>
     </util:map>
@@ -330,9 +330,9 @@
         </constructor-arg>
     </bean>
 
-    <bean id="lodgingValidator" class="com.expedia.content.media.processing.services.validator.LodgingAddValidator" />
+    <bean id="lodgingAddValidator" class="com.expedia.content.media.processing.services.validator.LodgingAddValidator" />
 
-    <bean id="lodgingUpdateValidator" class="com.expedia.content.media.processing.services.validator.LodgingUpdateValidator" />
+    <bean id="lodgingUpdateValidator" class="com.expedia.content.media.processing.services.validator.LodgingValidator" />
 
     <bean id="roomValidator" class="com.expedia.content.media.processing.services.validator.RoomValidator" />
 </beans>
