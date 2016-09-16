@@ -19,6 +19,7 @@ import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
+import com.expedia.content.media.processing.services.exception.PaginationValidationException;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import com.expedia.content.media.processing.services.util.DomainDataUtil;
@@ -397,6 +398,8 @@ public class MediaController extends CommonServiceController {
         try {
             response = mediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter,
                     derivativeCategoryFilter, pageSize, pageIndex);
+        } catch (PaginationValidationException p) {
+            return this.buildErrorResponse(p.getMessage(), serviceUrl, BAD_REQUEST);
         } catch (Exception ex) {
             LOGGER.warn(ex, "INVALID GET BY DOMAIN ID REQUEST " +
                             "ServiceUrl={} RequestId={} DomainName={} DomainId={} PageSize={} PageIndex={} ActiveFilter={} DerivativeTypeFilter={}",

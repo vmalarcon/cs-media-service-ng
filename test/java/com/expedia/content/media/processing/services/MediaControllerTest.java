@@ -1,6 +1,7 @@
 package com.expedia.content.media.processing.services;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
+import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.reporting.Activity;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
@@ -14,6 +15,7 @@ import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
 import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
 import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaAndDerivative;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
@@ -21,6 +23,9 @@ import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepos
 import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaChgSproc;
 import com.expedia.content.media.processing.services.dao.sql.CatalogItemMediaGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.MediaLstWithCatalogItemMediaAndMediaFileNameSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaListSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetByCatalogItemIdSproc;
+import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetSproc;
 import com.expedia.content.media.processing.services.reqres.Comment;
 import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
@@ -1938,6 +1943,36 @@ public class MediaControllerTest {
         mediaController.getMediaByDomainId("lodging", "123", 100, 8, "true", "", "", mockHeader);
         verify(poker).poke(eq("Media Services failed to process a getMedia request - RequestId: " + requestId), eq("EWE CS: Phoenix Notifications"),
                 eq(jsonMessage), eq(exception));
+    }
+
+    @Test
+    public void testInvalidPagination() throws Exception {
+        mediaController = new MediaController();
+        MultiValueMap<String, String> headers = new HttpHeaders();
+        SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
+        when(skuGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(true);
+        LcmDynamoMediaDao lcmDynamoMediaDao = new LcmDynamoMediaDao();
+        setFieldValue(mediaController, "mediaDao", lcmDynamoMediaDao);
+        DynamoMediaRepository mockMediaRepo = mock(DynamoMediaRepository.class);
+        setFieldValue(lcmDynamoMediaDao, "mediaRepo", mockMediaRepo);
+        when(mockMediaRepo.loadMedia(Domain.LODGING, "1234")).thenReturn(new ArrayList<Media>());
+        SQLMediaListSproc mockLcmMediaListSproc = mock(SQLMediaListSproc.class);
+        setFieldValue(lcmDynamoMediaDao, "lcmMediaListSproc", mockLcmMediaListSproc);
+        Map<String, Object> mockMap = mock(Map.class);
+        when(mockLcmMediaListSproc.execute(1234)).thenReturn(mockMap);
+        when(mockMap.get(SQLMediaListSproc.MEDIA_SET)).thenReturn(new ArrayList<LcmMediaAndDerivative>());
+        SQLRoomGetByCatalogItemIdSproc mockRoomGetByCatalogItemIdSproc = mock(SQLRoomGetByCatalogItemIdSproc.class);
+        when(mockRoomGetByCatalogItemIdSproc.execute(1234)).thenReturn(mockMap);
+        when(mockMap.get(SQLRoomGetSproc.ROOM_SET)).thenReturn(new ArrayList<LcmMediaRoom>());
+        setFieldValue(lcmDynamoMediaDao, "roomGetByCatalogItemIdSproc", mockRoomGetByCatalogItemIdSproc);
+
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+        setFieldValue(mediaController, "skuGroupCatalogItemDao", skuGroupCatalogItemDao);
+        ResponseEntity<String> responseEntity = mediaController.getMediaByDomainId("Lodging", "1234", 10, 500, "true", null, null, headers);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("pageIndex is out of bounds"));
     }
 
     @SuppressWarnings({"unchecked"})
