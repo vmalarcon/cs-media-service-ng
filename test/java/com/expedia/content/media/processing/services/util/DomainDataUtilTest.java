@@ -1,20 +1,22 @@
 package com.expedia.content.media.processing.services.util;
 
 
-import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
-import com.expedia.content.media.processing.services.dao.domain.Media;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.junit.Test;
 
 public class DomainDataUtilTest {
 
@@ -132,5 +134,65 @@ public class DomainDataUtilTest {
         dynamoMedia.setDomainFields("{\"category\":\"21001\",\"lcmMediaId\":\"\"}");
         assertNull(DomainDataUtil.getMediaIdFromDynamo(dynamoMedia));
     }
+    
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testValidateDomainFields() throws Exception{
+        final ObjectMapper mapper = new ObjectMapper();
+        String jsonMessage = "{  \n" +
+                "   \"mediaGuid\":\"aaaaaaa-1010-bbbb-292929229\",\n" +
+                "   \"mediaProviderId\":\"1001\",\n" +
+                "   \"fileUrl\":\"http://images.com/dir1/img1.jpg\",\n" +
+                "   \"stagingKey\":{  \n" +
+                "      \"externalId\":\"222\",\n" +
+                "      \"providerId\":\"300\",\n" +
+                "      \"sourceId\":\"99\"\n" +
+                "   },\n" +
+                "   \"callback\":\"http:\\/\\/multi.source.callback\\/callback\",\n" +
+                "   \"comment\":\"test comment!\",\n" +
+                "   \"hidden\":\"true\",\n" +
+                "   \"caption\":\"caption\",\n" +
+                "   \"domain\": \"Lodging\",\n" +
+                "   \"domainId\": \"1234\",\n" +
+                "   \"domainFields\": {\n" +
+                "      \"expediaId\":2001002,\n" +
+                "      \"categoryIds\":[\"801\",\"304\"],\n" +
+                "      \"moreFields\": {\n" +
+                "         \"moreexpediaId\":11111\n" +
+                "        }\n" +
+                "     }\n" +
+                "}";
+    
+    Map<String, Object> mapMessage = mapper.readValue(jsonMessage, Map.class);
+    Object domainFields = mapMessage.get("domainFields");
+    assertTrue(DomainDataUtil.domainFieldIsValid(domainFields));
+    
+    final String stringDomainFieldmessage ="{"
+            +"\"userId\":\"PSG1Abakoglou\","
+            +"\"active\":\"false\","
+            +"\"domainFields\":\"null\","
+            +"\"hidden\":null}";
+    
+    mapMessage = mapper.readValue(stringDomainFieldmessage, Map.class);
+    domainFields = mapMessage.get("domainFields");
+    assertFalse(DomainDataUtil.domainFieldIsValid(domainFields));
 
+    final String nullDomainFieldmessage ="{"
+            +"\"userId\":\"PSG1Abakoglou\","
+            +"\"active\":\"false\","
+            +"\"domainFields\":null,"
+            +"\"hidden\":null}";
+    mapMessage = mapper.readValue(nullDomainFieldmessage, Map.class);
+    domainFields = mapMessage.get("domainFields");
+    assertTrue(DomainDataUtil.domainFieldIsValid(domainFields));
+
+    final String emptyMapDomainFieldmessage ="{"
+            +"\"userId\":\"PSG1Abakoglou\","
+            +"\"active\":\"false\","
+            +"\"domainFields\":{},"
+            +"\"hidden\":null}";
+    mapMessage = mapper.readValue(emptyMapDomainFieldmessage, Map.class);
+    domainFields = mapMessage.get("domainFields");
+    assertTrue(DomainDataUtil.domainFieldIsValid(domainFields));
+   }  
 }

@@ -129,4 +129,15 @@ public class DomainDataUtil {
         }
         return domainMap.get(LCM_MEDIA_ID_FIELD).toString();
     }
+    
+    /**
+     * Verify if the provided domainFields is a Map.
+     * 
+     * @param domainFields provided domainFields;
+     * 
+     * @return true if the provided domainFields is a Map and false otherwise.
+     */
+    public static Boolean domainFieldIsValid(Object domainFields) {        
+        return domainFields == null || domainFields instanceof Map;
+    }
 }
