@@ -10,6 +10,7 @@ import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
+import com.expedia.content.media.processing.services.dao.sql.GetMediaIDSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaContentProviderNameGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaDeleteSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
@@ -18,7 +19,7 @@ import com.expedia.content.media.processing.services.dao.sql.SQLMediaListSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetByCatalogItemIdSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetByMediaIdSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLRoomGetSproc;
-import com.expedia.content.media.processing.services.dao.sql.GetMediaIDSproc;
+import com.expedia.content.media.processing.services.exception.PaginationValidationException;
 import com.expedia.content.media.processing.services.reqres.Comment;
 import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
@@ -155,7 +156,8 @@ public class LcmDynamoMediaDao implements MediaDao {
     @Override
     @SuppressWarnings("unchecked")
     public MediaByDomainIdResponse getMediaByDomainId(final Domain domain, final String domainId, final String activeFilter, final String derivativeFilter,
-                                                      final String derivativeCategoryFilter, final Integer pageSize, final Integer pageIndex) throws Exception {
+                                                      final String derivativeCategoryFilter, final Integer pageSize, final Integer pageIndex) throws
+            PaginationValidationException {
         List<Media> domainIdMedia = mediaRepo.loadMedia(domain, domainId).stream().map(media -> completeMedia(media, derivativeFilter)).collect(Collectors.toList());
         if (Domain.LODGING.equals(domain)) {
             extractLcmData(domainId, derivativeFilter, domainIdMedia);
@@ -178,7 +180,7 @@ public class LcmDynamoMediaDao implements MediaDao {
                 fileNames = (List<String>) paginateItems(fileNames.stream(), pageSize, pageIndex).collect(Collectors.toList());
                 domainIdMedia = (List<Media>) paginateItems(domainIdMedia.stream(), pageSize, pageIndex).collect(Collectors.toList());
             } else {
-                throw new Exception(errorResponse);
+                throw new PaginationValidationException(errorResponse);
             }
         }
         final Map<String, String> fileStatus = getStatusByLoop(paramLimit, fileNames);
