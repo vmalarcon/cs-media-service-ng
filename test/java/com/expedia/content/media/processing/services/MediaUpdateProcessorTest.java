@@ -1,7 +1,7 @@
 package com.expedia.content.media.processing.services;
 
 import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
@@ -15,19 +15,19 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.test.context.ContextConfiguration;
-
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
 import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.test.context.ContextConfiguration;
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
 @RunWith(MockitoJUnitRunner.class)
@@ -181,5 +181,39 @@ public class MediaUpdateProcessorTest {
                 new HashMap<>(), new ArrayList<>(), "", "", false, false, null);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(catalogItemMediaDao).getLcmRoomsByMediaId(123);
+    }
+    
+    @Test
+    public void testUpdateActiveFieldInDynamo() throws Exception {
+        String jsonMsg = "{  \n"
+                + "   \"userId\":\"bobthegreat\",\n"
+                + "   \"active\":\"true\",\n"
+                + "    \"domain\":\"Lodging\",\n"
+                + "   \"comment\":\"I'm a comment\"\n"
+                + "}";
+
+        ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        Media dynamoMedia = Media.builder().active("false").clientId("userId").domain("Lodging").domainId("123").mediaGuid("12345678-aaaa-bbbb-cccc-123456789112").build();
+        mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
+        verify(mediaUpdateDao).updateMedia(imageMessage, 123);
+        assertTrue(Boolean.TRUE.toString().equals(dynamoMedia.getActive()));
+        
+        String anotherJsonMsg = "{  \n"
+                + "   \"userId\":\"bobthegreat\",\n"
+                + "    \"domain\":\"Lodging\",\n"
+                + "   \"comment\":\"I'm a comment\"\n"
+                + "}";
+        dynamoMedia = Media.builder().active("false").clientId("userId").domain("Lodging").domainId("123").mediaGuid("12345678-aaaa-bbbb-cccc-123456789112").build();
+        final ImageMessage updateMessage = setActiveToNull(ImageMessage.parseJsonMessage(anotherJsonMsg));
+        mediaUpdateProcessor.processRequest(updateMessage, "123", "12345", dynamoMedia);
+        verify(mediaUpdateDao).updateMedia(updateMessage, 123);
+        assertTrue(Boolean.FALSE.toString().equals(dynamoMedia.getActive()));
+    }
+    
+    private ImageMessage setActiveToNull(final ImageMessage imageMessage) {
+        ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
+        imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
+        imageMessageBuilder.active(null);
+        return imageMessageBuilder.build();
     }
 }

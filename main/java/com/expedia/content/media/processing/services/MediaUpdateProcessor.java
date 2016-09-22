@@ -69,6 +69,10 @@ public class MediaUpdateProcessor {
         }
         // step 4. save media to dynamo
         if (dynamoMedia != null) {
+            final Boolean active = imageMessage.isActive();
+            if (active != null){
+                dynamoMedia.setActive(active.toString());
+            }
             setDynamoMedia(imageMessage, dynamoMedia);
             dynamoMedia.setLastUpdated(new Date());
             dynamoMedia.setHidden(imageMessage.getHidden());
