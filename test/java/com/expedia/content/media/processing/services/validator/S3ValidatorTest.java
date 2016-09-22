@@ -6,7 +6,7 @@ import org.mockito.Matchers;
 
 import java.lang.reflect.Constructor;
 
-import static com.expedia.content.media.processing.services.util.ReflectionUtil.setFinalStatic;
+import static com.expedia.content.media.processing.pipeline.util.TestingUtil.setFinalStatic;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;
