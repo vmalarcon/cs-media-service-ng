@@ -30,16 +30,21 @@ public class RoomTypeDao {
      * @param outerDomain
      * @return the invalid roomIds list.
      */
-    public List<Integer> getInvalidRoomIds(OuterDomain outerDomain) throws ClassCastException {
-        final List<Integer> roomIds = DomainDataUtil.getRoomIds(outerDomain);
+    public List<Object> getInvalidRoomIds(OuterDomain outerDomain) throws ClassCastException {
+        final List<Object> invalidRoomIds = DomainDataUtil.getInvalidRoomIds(outerDomain);
+        if(!invalidRoomIds.isEmpty()) {
+            return invalidRoomIds;
+        }
+        final List<Object> roomIds = DomainDataUtil.getRoomIds(outerDomain);
+        
         if (outerDomain.getDomain().equals(Domain.LODGING) && !CollectionUtils.isNullOrEmpty(roomIds)) {
             final Map<String, Object> results = sproc.execute(Integer.parseInt(outerDomain.getDomainId()));
             final List<RoomType> roomTypes = (List<RoomType>) results.get(PropertyRoomTypeGetIDSproc.ROOM_TYPE_RESULT_SET);
-            final List<Integer> roomTypeCatalogItemIds = roomTypes.stream()
+            final List<Object> roomTypeCatalogItemIds = roomTypes.stream()
                     .map(r -> r.getRoomTypeCatalogItemID())
                     .collect(Collectors.toList());   
             roomIds.removeAll(roomTypeCatalogItemIds);
         }
-        return roomIds == null ? new ArrayList<Integer>() : roomIds;
+        return roomIds == null ? new ArrayList<>() : roomIds;
     }
 }
