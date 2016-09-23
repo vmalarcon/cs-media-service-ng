@@ -35,16 +35,16 @@ public class RoomTypeDao {
         if(!invalidRoomIds.isEmpty()) {
             return invalidRoomIds;
         }
-        final List<Object> roomIds = DomainDataUtil.collectRoomIds(outerDomain);
+        final List<Integer> roomIds = DomainDataUtil.collectValidFormatRoomIds(outerDomain);
         
         if (outerDomain.getDomain().equals(Domain.LODGING) && !CollectionUtils.isNullOrEmpty(roomIds)) {
             final Map<String, Object> results = sproc.execute(Integer.parseInt(outerDomain.getDomainId()));
             final List<RoomType> roomTypes = (List<RoomType>) results.get(PropertyRoomTypeGetIDSproc.ROOM_TYPE_RESULT_SET);
-            final List<Object> roomTypeCatalogItemIds = roomTypes.stream()
+            final List<Integer> roomTypeCatalogItemIds = roomTypes.stream()
                     .map(r -> r.getRoomTypeCatalogItemID())
                     .collect(Collectors.toList());   
             roomIds.removeAll(roomTypeCatalogItemIds);
-        }
-        return roomIds == null ? new ArrayList<>() : roomIds;
+        }       
+        return roomIds == null ? new ArrayList<>() : roomIds.stream().map(r->(Object) r).collect(Collectors.toList());
     }
 }

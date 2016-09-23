@@ -113,8 +113,11 @@ public class DomainDataUtil {
      * @param rooms provided domain fields.
      * @return
      */
-    public static List<Object> collectValidFormatRoomIds(OuterDomain outerDomain) {
-        return collectRoomIds(outerDomain).stream().filter(room->isNumeric(room.toString())).collect(Collectors.toList());
+    public static List<Integer> collectValidFormatRoomIds(OuterDomain outerDomain) {
+        return collectRoomIds(outerDomain).stream().filter(room->isNumeric(room.toString()))
+                .map(room->{
+                    return Integer.parseInt(room.toString());
+                }).collect(Collectors.toList());
     }
         
     /**
@@ -128,14 +131,15 @@ public class DomainDataUtil {
     }
     
     /**
-     * extracts roomIds from OuterDomain
+     * Collect roomIds from OuterDomain
+     * excludes rooms with empty roomIds.
      * 
      * @param outerDomain
      * @return
      */
     public static List<Object> collectRoomIds(OuterDomain outerDomain) {
         final List<Map<String, Object>> rooms = getRoomList(outerDomain);
-        return rooms.stream().map(room->getRoomId(room)).collect(Collectors.toList());
+        return rooms.stream().map(room->getRoomId(room)).filter(r->!r.isEmpty()).collect(Collectors.toList());
     }
     
     /**
@@ -153,6 +157,6 @@ public class DomainDataUtil {
     
     private static String getRoomId(Map<String, Object> room) {
         final Object roomId = room.get(ROOMID);
-        return roomId == null ? null : roomId.toString();
+        return roomId == null ? "" :roomId.toString();
     }
 }
