@@ -7,6 +7,7 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.S3Object;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * Verifies if a file exists in the S3 repo.
@@ -27,16 +28,18 @@ public class S3Validator {
      */
     public static ValidationStatus checkFileExists(String fileUrl) {
         ValidationStatus validationStatus = new ValidationStatus(false, "Provided fileUrl does not exist.", ValidationStatus.NOT_FOUND);
+        String bucketName = StringUtils.EMPTY;
+        String objectName = StringUtils.EMPTY;
         try {
-            final String bucketName = getBucketName(fileUrl);
-            final String objectName = getObjectName(fileUrl);
+            bucketName = getBucketName(fileUrl);
+            objectName = getObjectName(fileUrl);
             final AmazonS3 s3Client = new AmazonS3Client();
             final S3Object object = s3Client.getObject(new GetObjectRequest(bucketName, objectName));
             if (object != null) {
                 validationStatus = checkFileIsGreaterThanZero(object);
             }
         } catch (AmazonServiceException e) {
-            LOGGER.error(e, "s3 key query exception FileUrl={}", fileUrl);
+            LOGGER.error(e, "s3 key query exception fileUrl = {} bucketName = {} objectName = {}", fileUrl, bucketName, objectName);
         }
         return validationStatus;
     }
