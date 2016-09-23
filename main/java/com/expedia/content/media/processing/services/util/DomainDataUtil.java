@@ -49,7 +49,7 @@ public class DomainDataUtil {
      * @return
      */
     public static Boolean duplicateRoomExists(OuterDomain outerDomain) {
-        final List<Object> roomIds = getRoomIds(outerDomain);
+        final List<Object> roomIds = collectRoomIds(outerDomain);
         final Set<Object> uniqueRoomIds = new HashSet<>(roomIds);
         return CollectionUtils.isNotEmpty(roomIds) && (uniqueRoomIds.size() != roomIds.size());
     }
@@ -113,8 +113,8 @@ public class DomainDataUtil {
      * @param rooms provided domain fields.
      * @return
      */
-    public static List<Object> getValidRoomIds(OuterDomain outerDomain) {
-        return getRoomIds(outerDomain).stream().filter(room->isNumeric(room.toString())).collect(Collectors.toList());
+    public static List<Object> collectValidFormatRoomIds(OuterDomain outerDomain) {
+        return collectRoomIds(outerDomain).stream().filter(room->isNumeric(room.toString())).collect(Collectors.toList());
     }
         
     /**
@@ -123,8 +123,8 @@ public class DomainDataUtil {
      * @param rooms provided domain fields.
      * @return
      */
-    public static List<Object> getInvalidRoomIds(OuterDomain outerDomain) {
-        return getRoomIds(outerDomain).stream().filter(room->!isNumeric(room.toString())).collect(Collectors.toList()); 
+    public static List<Object> collectMalFormatRoomIds(OuterDomain outerDomain) {
+        return collectRoomIds(outerDomain).stream().filter(room->!isNumeric(room.toString())).collect(Collectors.toList()); 
     }
     
     /**
@@ -133,7 +133,7 @@ public class DomainDataUtil {
      * @param outerDomain
      * @return
      */
-    public static List<Object> getRoomIds(OuterDomain outerDomain) {
+    public static List<Object> collectRoomIds(OuterDomain outerDomain) {
         final List<Map<String, Object>> rooms = getRoomList(outerDomain);
         return rooms.stream().map(room->getRoomId(room)).collect(Collectors.toList());
     }

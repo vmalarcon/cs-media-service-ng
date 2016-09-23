@@ -60,7 +60,7 @@ public class DomainDataUtilTest {
                 .addField("rooms", roomsMapList)
                 .build();
         try {
-            assertTrue(DomainDataUtil.getRoomIds(outerDomain).isEmpty());
+            assertTrue(DomainDataUtil.collectRoomIds(outerDomain).isEmpty());
         } catch (Exception e) {
            fail("This should not throw an exception");
         }        

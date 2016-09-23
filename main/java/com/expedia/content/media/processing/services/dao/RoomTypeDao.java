@@ -31,11 +31,11 @@ public class RoomTypeDao {
      * @return the invalid roomIds list.
      */
     public List<Object> getInvalidRoomIds(OuterDomain outerDomain) throws ClassCastException {
-        final List<Object> invalidRoomIds = DomainDataUtil.getInvalidRoomIds(outerDomain);
+        final List<Object> invalidRoomIds = DomainDataUtil.collectMalFormatRoomIds(outerDomain);
         if(!invalidRoomIds.isEmpty()) {
             return invalidRoomIds;
         }
-        final List<Object> roomIds = DomainDataUtil.getRoomIds(outerDomain);
+        final List<Object> roomIds = DomainDataUtil.collectRoomIds(outerDomain);
         
         if (outerDomain.getDomain().equals(Domain.LODGING) && !CollectionUtils.isNullOrEmpty(roomIds)) {
             final Map<String, Object> results = sproc.execute(Integer.parseInt(outerDomain.getDomainId()));
