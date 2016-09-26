@@ -108,7 +108,7 @@ public class DomainDataUtil {
     }
         
     /**
-     * Collect  valid roomIds provided in the message.
+     * Collect  roomIds which are integer  provided in the message.
      * 
      * @param rooms provided domain fields.
      * @return
@@ -121,7 +121,7 @@ public class DomainDataUtil {
     }
         
     /**
-     * Collect  invalid roomIds provided in the message.
+     * Collect  roomIds which are not integer provided in the message.
      * 
      * @param rooms provided domain fields.
      * @return
@@ -155,6 +155,12 @@ public class DomainDataUtil {
         return roomList;
     }
     
+    /**
+     * Extract the roomId value.
+     * 
+     * @param room
+     * @return
+     */
     private static String getRoomId(Map<String, Object> room) {
         final Object roomId = room.get(ROOMID);
         return roomId == null ? "" :roomId.toString();

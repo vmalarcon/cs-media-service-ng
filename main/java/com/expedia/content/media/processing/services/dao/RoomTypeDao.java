@@ -27,24 +27,23 @@ public class RoomTypeDao {
 
     /**
      * Retrieves invalid roomIds provided in the request.
-     * @param outerDomain
+     * 
+     * @param outerDomain provided domainFields.
      * @return the invalid roomIds list.
      */
     public List<Object> getInvalidRoomIds(OuterDomain outerDomain) throws ClassCastException {
-        final List<Object> invalidRoomIds = DomainDataUtil.collectMalFormatRoomIds(outerDomain);
-        if(!invalidRoomIds.isEmpty()) {
-            return invalidRoomIds;
-        }
-        final List<Integer> roomIds = DomainDataUtil.collectValidFormatRoomIds(outerDomain);
+        final List<Object> malFormatRoomIds = DomainDataUtil.collectMalFormatRoomIds(outerDomain);
+        final List<Integer> validFormatRoomIds = DomainDataUtil.collectValidFormatRoomIds(outerDomain);
         
-        if (outerDomain.getDomain().equals(Domain.LODGING) && !CollectionUtils.isNullOrEmpty(roomIds)) {
+        if (outerDomain.getDomain().equals(Domain.LODGING) && !CollectionUtils.isNullOrEmpty(validFormatRoomIds)) {
             final Map<String, Object> results = sproc.execute(Integer.parseInt(outerDomain.getDomainId()));
             final List<RoomType> roomTypes = (List<RoomType>) results.get(PropertyRoomTypeGetIDSproc.ROOM_TYPE_RESULT_SET);
             final List<Integer> roomTypeCatalogItemIds = roomTypes.stream()
                     .map(r -> r.getRoomTypeCatalogItemID())
                     .collect(Collectors.toList());   
-            roomIds.removeAll(roomTypeCatalogItemIds);
-        }       
-        return roomIds == null ? new ArrayList<>() : roomIds.stream().map(r->(Object) r).collect(Collectors.toList());
+            validFormatRoomIds.removeAll(roomTypeCatalogItemIds);
+        } 
+        malFormatRoomIds.addAll(validFormatRoomIds);
+        return malFormatRoomIds == null ? new ArrayList<>() : malFormatRoomIds;
     }
 }
