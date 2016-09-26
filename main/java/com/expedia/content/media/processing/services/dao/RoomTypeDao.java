@@ -44,6 +44,6 @@ public class RoomTypeDao {
             validFormatRoomIds.removeAll(roomTypeCatalogItemIds);
         } 
         malFormatRoomIds.addAll(validFormatRoomIds);
-        return malFormatRoomIds == null ? new ArrayList<>() : malFormatRoomIds;
+        return malFormatRoomIds;
     }
 }
