@@ -163,6 +163,6 @@ public class DomainDataUtil {
      */
     private static String getRoomId(Map<String, Object> room) {
         final Object roomId = room.get(ROOMID);
-        return roomId == null ? "" :roomId.toString();
+        return roomId == null ? "" : roomId.toString();
     }
 }

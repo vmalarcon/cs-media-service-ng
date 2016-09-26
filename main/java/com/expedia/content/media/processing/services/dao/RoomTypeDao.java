@@ -1,16 +1,16 @@
 package com.expedia.content.media.processing.services.dao;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import com.amazonaws.util.CollectionUtils;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.services.util.DomainDataUtil;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * RoomType DAO.
