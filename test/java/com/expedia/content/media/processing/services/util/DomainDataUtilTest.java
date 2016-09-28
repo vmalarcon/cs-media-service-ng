@@ -60,7 +60,7 @@ public class DomainDataUtilTest {
                 .addField("rooms", roomsMapList)
                 .build();
         try {
-            assertTrue(DomainDataUtil.getRoomIds(outerDomain).isEmpty());
+            assertTrue(DomainDataUtil.collectRoomIds(outerDomain).isEmpty());
         } catch (Exception e) {
            fail("This should not throw an exception");
         }        
@@ -195,4 +195,79 @@ public class DomainDataUtilTest {
     domainFields = mapMessage.get("domainFields");
     assertTrue(DomainDataUtil.domainFieldIsValid(domainFields));
    }  
+    
+    @Test
+    public void testCollectRoomIds() {
+        Map<String, Object> room = new HashMap<>();
+        List<Map<String, Object>> rooms = new ArrayList<>();
+        room.put("roomId", "1673824");
+        room.put("roomHero", Boolean.TRUE.toString());
+        rooms.add(room);
+
+        room = new HashMap<>();
+        room.put("roomId", "not an integer");
+        room.put("roomHero", Boolean.TRUE.toString());
+        rooms.add(room);
+
+        room = new HashMap<>();
+        room.put("roomId", "");
+        room.put("roomHero", Boolean.TRUE.toString());
+        rooms.add(room);
+        final OuterDomain outerDomain = new OuterDomain.OuterDomainBuilder()
+                .addField("rooms", rooms)
+                .build();
+        List<Object> roomIds = DomainDataUtil.collectRoomIds(outerDomain);
+        assertTrue(roomIds.size() == 2);
+    }
+    
+    @Test
+    public void testCollectMalFormatRoomIds() {
+        Map<String, Object> room = new HashMap<>();
+        List<Map<String, Object>> rooms = new ArrayList<>();
+        room.put("roomId", "1673824");
+        room.put("roomHero", Boolean.TRUE.toString());
+        rooms.add(room);
+
+        room = new HashMap<>();
+        room.put("roomId", "not an integer");
+        room.put("roomHero", Boolean.TRUE.toString());
+        rooms.add(room);
+
+        room = new HashMap<>();
+        room.put("roomId", "");
+        room.put("roomHero", Boolean.TRUE.toString());
+        rooms.add(room);
+        final OuterDomain outerDomain = new OuterDomain.OuterDomainBuilder()
+                .addField("rooms", rooms)
+                .build();
+        List<Object> roomIds = DomainDataUtil.collectMalFormatRoomIds(outerDomain);
+        assertTrue(roomIds.size() == 1);
+        assertTrue(roomIds.get(0).toString().equals("not an integer"));
+    }
+    
+    @Test
+    public void testCollecValidFormatRoomIds() {
+        Map<String, Object> room = new HashMap<>();
+        List<Map<String, Object>> rooms = new ArrayList<>();
+        room.put("roomId", "1673824");
+        room.put("roomHero", Boolean.TRUE.toString());
+        rooms.add(room);
+
+        room = new HashMap<>();
+        room.put("roomId", "not an integer");
+        room.put("roomHero", Boolean.TRUE.toString());
+        rooms.add(room);
+
+        room = new HashMap<>();
+        room.put("roomId", "");
+        room.put("roomHero", Boolean.TRUE.toString());
+        rooms.add(room);
+        final OuterDomain outerDomain = new OuterDomain.OuterDomainBuilder()
+                .addField("rooms", rooms)
+                .build();
+        List<Integer> roomIds = DomainDataUtil.collectValidFormatRoomIds(outerDomain);
+        assertTrue(roomIds.size() == 1);
+        assertTrue(roomIds.get(0).equals(1673824));
+    }
+
 }
