@@ -10,7 +10,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
+import static org.mockito.Mockito.anyObject;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -154,6 +154,8 @@ public class MediaUpdateProcessorTest {
                 new HashMap<>(), new ArrayList<>(), "", "", false, false, null);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(mediaUpdateDao).updateMedia(imageMessage, 123);
+        verify(catalogHeroProcessor).updateTimeStamp(anyObject(), anyObject());
+
     }
 
     @Test
@@ -175,12 +177,16 @@ public class MediaUpdateProcessorTest {
                 + "    }\n"
                 + "}";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        //no active in imageMessage
+        setFieldValue(imageMessage, "active", null);
         Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345",
                 "{\"rooms\":[{\"roomId\":\"934779\",\"roomHero\":\"false\"},{\"roomId\":\"928675\",\"roomHero\":\"true\"}]}",
                 new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
                 new HashMap<>(), new ArrayList<>(), "", "", false, false, null);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(catalogItemMediaDao).getLcmRoomsByMediaId(123);
+        verify(mediaUpdateDao).updateMediaTimestamp(anyObject(), anyObject());
+
     }
     
     @Test

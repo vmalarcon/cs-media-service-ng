@@ -13,6 +13,13 @@ public interface MediaUpdateDao {
     void updateMedia(ImageMessage imageMessage, int mediaId);
 
     /**
+     *  update the update time and lastUpdated by in Media table
+     * @param lcmMedia
+     * @param imageMessage
+     */
+    void updateMediaTimestamp(LcmMedia lcmMedia, ImageMessage imageMessage);
+
+    /**
      * get LCM media information by mediaID.
      * @param mediaId
      * @return

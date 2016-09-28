@@ -9,6 +9,7 @@ import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
 import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.util.JSONUtil;
@@ -66,6 +67,8 @@ public class MediaUpdateProcessor {
                 mediaUpdateDao.updateMedia(imageMessage, Integer.valueOf(mediaId));
             }
             processCategory(imageMessage, mediaId, dynamoMedia, expediaId);
+            updateCatelogItemTimestamp(imageMessage, mediaId, domainId);
+
         }
         // step 4. save media to dynamo
         if (dynamoMedia != null) {
@@ -82,6 +85,17 @@ public class MediaUpdateProcessor {
         response.put("status", Integer.valueOf(200));
         final String jsonResponse = new ObjectMapper().writeValueAsString(response);
         return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
+    }
+
+    private void updateCatelogItemTimestamp(final ImageMessage imageMessage, final String mediaId, final String domainId) {
+        if ((imageMessage.isActive() != null || imageMessage.getComment() != null) && imageMessage.getOuterDomainData().getDomainFields() == null) {
+            final LcmCatalogItemMedia lcmCatalogItemMedia = catalogHeroProcessor.getCatalogItemMeida(Integer.valueOf(domainId), Integer.valueOf(mediaId));
+            catalogHeroProcessor.updateTimeStamp(imageMessage.getUserId(), lcmCatalogItemMedia);
+        }
+        if (imageMessage.isActive() == null && imageMessage.getComment() == null && imageMessage.getOuterDomainData().getDomainFields() != null) {
+            final LcmMedia lcmMedia = mediaUpdateDao.getMediaByMediaId(Integer.valueOf(mediaId));
+            mediaUpdateDao.updateMediaTimestamp(lcmMedia, imageMessage);
+        }
     }
 
     @RetryableMethod

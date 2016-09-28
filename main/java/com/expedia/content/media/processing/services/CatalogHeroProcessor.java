@@ -75,6 +75,17 @@ public class CatalogHeroProcessor {
     }
 
     /**
+     *  update lastUpdateBy and timestamp to catalogitemMedia table
+     * @param user
+     * @param lcmCatalogItemMedia
+     */
+    public void updateTimeStamp(String user, LcmCatalogItemMedia lcmCatalogItemMedia) {
+            catalogItemMediaChgSproc.updateCategory(lcmCatalogItemMedia.getCatalogItemId(), lcmCatalogItemMedia.getMediaId(),
+                    lcmCatalogItemMedia.getMediaUseRank(), user, ROOM_UPDATED_BY);
+
+    }
+
+    /**
      * get the CatalogItemMedia from LCM DB.
      *
      * @param catalogItemId here the catalogItemId is domainID
