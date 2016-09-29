@@ -1,10 +1,19 @@
 package com.expedia.content.media.processing.services;
 
+import java.util.*;
+
+import org.apache.commons.lang.reflect.FieldUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
@@ -14,19 +23,6 @@ import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaRoomUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang.reflect.FieldUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 
 @Component
 public class MediaUpdateProcessor {
@@ -59,7 +55,8 @@ public class MediaUpdateProcessor {
     @Transactional
     public ResponseEntity<String> processRequest(final ImageMessage imageMessage, final String mediaId, String domainId,
                                                  Media dynamoMedia) throws Exception {
-        if (mediaId != null && org.apache.commons.lang3.StringUtils.isNumeric(mediaId)) {
+        // Only proceed to the following if the domain is Lodging
+        if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING) && mediaId != null && org.apache.commons.lang3.StringUtils.isNumeric(mediaId)) {
             final Integer expediaId = Integer.valueOf(domainId);
             // step1. update media table, if comment or active fields are not null
             if (imageMessage.getComment() != null || imageMessage.isActive() != null) {

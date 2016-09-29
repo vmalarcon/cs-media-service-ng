@@ -1,8 +1,8 @@
 package com.expedia.content.media.processing.services.validator;
 
-import com.expedia.content.media.processing.pipeline.domain.Domain;
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -10,13 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
+import com.google.common.base.Joiner;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 // For faster tests, uncomment the following line
@@ -123,7 +122,7 @@ public class MVELValidatorTest {
         imageMessageList.add(imageMessage);
         List<String> errorList = mvelValidator.validateImages(imageMessageList);
         String errorMsg = errorList.get(0);
-        assertTrue(errorMsg.contains("domain must be 'Lodging' or 'Cars'"));
+        assertTrue(errorMsg.contains("domain must be either 'Lodging', 'Cars' or 'ContentRepo'"));
     }
 
     @Test
@@ -145,7 +144,7 @@ public class MVELValidatorTest {
     }
 
     @Test
-    public void testMessageDomainIdNotNumeric() throws Exception {
+    public void testMessageLodgingDomainIdNotNumeric() throws Exception {
         String jsonMsg =
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello\"," +
@@ -162,6 +161,28 @@ public class MVELValidatorTest {
         List<String> errorList = mvelValidator.validateImages(imageMessageList);
         String errorMsg = errorList.get(0);
         assertTrue(errorMsg, errorMsg.contains("domainId is not numeric."));
+    }
+
+    @Test
+    public void testMessageNonLodgingDomainIdNotNumeric() throws Exception {
+        String jsonMsg =
+                "         { " +
+                        "    \"fileUrl\": \"http://well-formed-url/hello.jpg\"," +
+                        "    \"fileName\": \"Something\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
+                        "    \"domain\": \"ContentRepo\", " +
+                        "    \"domainId\": \"123a\", " +
+                        "    \"userId\": \"user-id\"," +
+                        "    \"domainProvider\": \"test\" " +
+                        " }";
+
+
+        ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        assertEquals("user-id", imageMessage.getUserId());
+        List<ImageMessage> imageMessageList = new ArrayList<>();
+        imageMessageList.add(imageMessage);
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
+        assertEquals("Got errors: " + Joiner.on(",").join(errorList), 0, errorList.size());
     }
 
     @Test
@@ -222,7 +243,7 @@ public class MVELValidatorTest {
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         List<String> errorList = mvelValidator.validateImages(imageMessageList);
-        assertEquals(0, errorList.size());
+        assertEquals("Got errors: " + Joiner.on(",").join(errorList), 0, errorList.size());
     }
 
     @Test
@@ -301,7 +322,7 @@ public class MVELValidatorTest {
     }
 
     @Test
-    public void testMessageIsValid() throws Exception {
+    public void testMessageIsValidLodgingDomain() throws Exception {
         String jsonMsg =
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello.JpEg\"," +
@@ -323,8 +344,49 @@ public class MVELValidatorTest {
         List<ImageMessage> imageMessageList = new ArrayList<>();
         imageMessageList.add(imageMessage);
         List<String> errorList = mvelValidator.validateImages(imageMessageList);
-        assertTrue(errorList.isEmpty());
+        assertEquals("Got errors " + Joiner.on(",").join(errorList), 0, errorList.size());
     }
+
+    @Test
+    public void testMessageValidCarsDomain() throws Exception {
+        String jsonMsg =
+                "         { " +
+                        "    \"fileUrl\": \"http://well-formed-url/hello.jpg\"," +
+                        "    \"fileName\": \"Something\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
+                        "    \"domain\": \"Cars\", " +
+                        "    \"domainId\": \"123\", " +
+                        "    \"userId\": \"user-id\", " +
+                        "    \"domainProvider\": \"test\" " +
+                        " }";
+        // Parsing will fail here while converting Domain
+        ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        List<ImageMessage> imageMessageList = new ArrayList<>();
+        imageMessageList.add(imageMessage);
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
+        assertEquals("Got errors " + Joiner.on(",").join(errorList), 0, errorList.size());
+    }
+
+    @Test
+    public void testMessageValidContentRepoDomain() throws Exception {
+        String jsonMsg =
+                "         { " +
+                        "    \"fileUrl\": \"http://well-formed-url/hello.jpg\"," +
+                        "    \"fileName\": \"Something\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
+                        "    \"domain\": \"ContentRepo\", " +
+                        "    \"domainId\": \"123a\", " +
+                        "    \"userId\": \"user-id\"," +
+                        "    \"domainProvider\": \"test\" " +
+                        " }";
+
+        ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        List<ImageMessage> imageMessageList = new ArrayList<>();
+        imageMessageList.add(imageMessage);
+        List<String> errorList = mvelValidator.validateImages(imageMessageList);
+        assertEquals("Got errors " + Joiner.on(",").join(errorList), 0, errorList.size());
+    }
+
 
     @Test
     public void testRotationIsInvalid() throws Exception {
