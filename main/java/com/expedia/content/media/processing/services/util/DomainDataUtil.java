@@ -131,7 +131,7 @@ public class DomainDataUtil {
      */
     public static List<Object> collectRoomIds(OuterDomain outerDomain) {
         final List<Map<String, Object>> rooms = getRoomList(outerDomain);
-        return rooms.stream().map(room->getRoomId(room)).collect(Collectors.toList());
+        return rooms.stream().map(room->room.get(ROOMID)).collect(Collectors.toList());
     }
     
     /**
@@ -159,15 +159,4 @@ public class DomainDataUtil {
         }).collect(Collectors.toList());
     }
 
-    
-    /**
-     * Extract the roomId value.
-     * 
-     * @param room
-     * @return
-     */
-    private static String getRoomId(Map<String, Object> room) {
-        final Object roomId = room.get(ROOMID);
-        return roomId == null ? null : roomId.toString();
-    }
 }
