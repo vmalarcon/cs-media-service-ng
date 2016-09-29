@@ -46,7 +46,7 @@ public class LodgingValidator implements MapMessageValidator {
         final StringBuffer errorMsg = new StringBuffer();
         for (final ImageMessage imageMessage : messageList) {            
             try {
-                final List<Integer> invalidRoomIds = roomTypeDao.getInvalidRoomIds(imageMessage.getOuterDomainData());
+                final List<Object> invalidRoomIds = roomTypeDao.getInvalidRoomIds(imageMessage.getOuterDomainData());
                 if (!invalidRoomIds.isEmpty()) {
                     errorMsg.append("The following roomIds " + invalidRoomIds + " do not belong to the property.");
                 }                
