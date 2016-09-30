@@ -62,19 +62,9 @@ public class DomainDataUtil {
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static Boolean roomsFieldIsInvalid(OuterDomain outerDomain) {
-        final Object rooms = outerDomain.getDomainFields() == null ? null : outerDomain.getDomainFields().get(ROOMS);
-        if(rooms == null){
-            return false;
-        }
-        final List roomsList = (List) rooms;
-        final List status = (List) roomsList.stream().map(r -> {
-            final Map room = (Map) r;
-            if (room != null) {
-                return room.isEmpty() || room.containsKey(ROOMID);
-            }
-            return false;
-        }).collect(Collectors.toList());
-        return status.stream().anyMatch(s -> Boolean.FALSE.equals(s));
+        return !getInvalidRoomList(outerDomain).stream().filter(r->{
+            return !r.containsKey(ROOMID);
+        }).collect(Collectors.toList()).isEmpty();
     }
 
     /**
@@ -114,7 +104,8 @@ public class DomainDataUtil {
      * @return
      */
     public static List<Integer> collectValidFormatRoomIds(OuterDomain outerDomain) {
-        return collectRoomIds(outerDomain).stream().filter(room->isNumeric(room.toString()))
+        return collectRoomIds(outerDomain).stream()
+                .filter(room-> room == null ? false : isNumeric(room.toString()))
                 .map(room->{
                     return Integer.parseInt(room.toString());
                 }).collect(Collectors.toList());
@@ -127,19 +118,20 @@ public class DomainDataUtil {
      * @return
      */
     public static List<Object> collectMalFormatRoomIds(OuterDomain outerDomain) {
-        return collectRoomIds(outerDomain).stream().filter(room->!isNumeric(room.toString())).collect(Collectors.toList()); 
+        return collectRoomIds(outerDomain).stream()
+                .filter(room->room == null ? false : !isNumeric(room.toString()))
+                .collect(Collectors.toList()); 
     }
     
     /**
      * Collect roomIds from OuterDomain
-     * excludes rooms with empty roomIds.
      * 
      * @param outerDomain
      * @return
      */
     public static List<Object> collectRoomIds(OuterDomain outerDomain) {
         final List<Map<String, Object>> rooms = getRoomList(outerDomain);
-        return rooms.stream().map(room->getRoomId(room)).filter(r->!r.isEmpty()).collect(Collectors.toList());
+        return rooms.stream().map(room->room.get(ROOMID)).collect(Collectors.toList());
     }
     
     /**
@@ -150,19 +142,21 @@ public class DomainDataUtil {
      */
     private static List<Map<String, Object>> getRoomList(OuterDomain outerDomain) {
         final Object rooms = outerDomain == null ? null : outerDomain.getDomainFieldValue(ROOMS);        
-        final List<Map<String, Object>> roomList = rooms == null ? Collections.EMPTY_LIST : 
-            rooms instanceof List ? (List<Map<String, Object>>) rooms : Collections.EMPTY_LIST;
-        return roomList;
+        return  rooms == null ? Collections.EMPTY_LIST : (List<Map<String, Object>>) rooms;
     }
     
     /**
-     * Extract the roomId value.
+     * Retrieve the invalid room list from the domain fileds.
+     * A room entry is invalid when it is not a Map or it is not empty and not contains no roomId key.
      * 
-     * @param room
+     * @param outerDomain provided domain
      * @return
      */
-    private static String getRoomId(Map<String, Object> room) {
-        final Object roomId = room.get(ROOMID);
-        return roomId == null ? "" : roomId.toString();
+    private static List<Map<String, Object>> getInvalidRoomList(OuterDomain outerDomain) {
+        final List<Map<String, Object>> allRooms = getRoomList(outerDomain);
+        return allRooms.stream().filter(r->{
+            return !(r instanceof Map) || (!r.isEmpty() && !r.containsKey(ROOMID));
+        }).collect(Collectors.toList());
     }
+
 }
