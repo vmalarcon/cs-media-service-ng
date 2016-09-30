@@ -2,6 +2,7 @@
 <beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:util="http://www.springframework.org/schema/util"
        xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
        xmlns:tx="http://www.springframework.org/schema/tx"
        xmlns:aws-context="http://www.springframework.org/schema/cloud/aws/context"
        xmlns:aws-messaging="http://www.springframework.org/schema/cloud/aws/messaging"
@@ -13,7 +14,8 @@
                            http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.1.xsd
                            http://www.springframework.org/schema/cloud/aws/context http://www.springframework.org/schema/cloud/aws/context/spring-cloud-aws-context-1.0.xsd
                            http://www.springframework.org/schema/cloud/aws/messaging http://www.springframework.org/schema/cloud/aws/messaging/spring-cloud-aws-messaging-1.0.xsd
-                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
     <context:property-placeholder location="classpath:${EXPEDIA_ENVIRONMENT}.${AWS_REGION}.properties"/>
     <aop:config proxy-target-class="true" />
@@ -23,6 +25,16 @@
 
     <aws-context:context-region region="${AWS_REGION}" />
     <aws-context:context-resource-loader region="${AWS_REGION}" />
+
+    <aws-messaging:notification-messaging-template id="notificationMessagingTemplate" />
+
+    <mvc:annotation-driven>
+        <mvc:argument-resolvers>
+            <ref bean="notificationResolver" />
+        </mvc:argument-resolvers>
+    </mvc:annotation-driven>
+
+    <aws-messaging:notification-argument-resolver id="notificationResolver" />
 
     <bean id="filenamesRabbitTemplate" class="org.springframework.amqp.rabbit.core.RabbitTemplate">
         <property name="connectionFactory" ref="rabbitConnectionFactory"/>
@@ -77,7 +89,7 @@
                         <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
                         <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
                         <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
-                        <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
+                        <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars|ContentRepo")) ? "domain must be either 'Lodging', 'Cars' or 'ContentRepo'" : "valid"</value>
                         <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
                         <value>(domainData.domain.domain.endsWith('Lodging') &amp;&amp; domainData.domainId != null &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
                         <value>imageMessage.userId != null ? "valid" : "userId is required."</value>

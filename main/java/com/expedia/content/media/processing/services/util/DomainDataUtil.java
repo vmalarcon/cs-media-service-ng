@@ -1,14 +1,7 @@
 package com.expedia.content.media.processing.services.util;
 
-import com.amazonaws.util.StringUtils;
-import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
-import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
-import org.springframework.util.ObjectUtils;
+import static org.apache.commons.lang3.StringUtils.isNumeric;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -17,6 +10,15 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.amazonaws.util.StringUtils;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
+import org.springframework.util.ObjectUtils;
+
 @SuppressWarnings("PMD.UseUtilityClass")
 public class DomainDataUtil {
 
@@ -24,28 +26,6 @@ public class DomainDataUtil {
     private final static String ROOMS = "rooms";
     private final static ObjectMapper MAPPER = new ObjectMapper();
     private final static String LCM_MEDIA_ID_FIELD = "lcmMediaId";
-
-    /**
-     * utility method used to extracts roomIds from the domainFields.rooms.
-     * 
-     * @param rooms
-     * @return list of roomIds
-     */
-    public static List<Integer> getRoomIds(Object rooms) {
-        final List<Integer> roomIds = new ArrayList<>();
-        final List roomsList = (List) rooms;
-
-        for (int i = 0; i < roomsList.size(); i++) {
-            final Map room = (Map) roomsList.get(i);
-            if (room != null && !room.isEmpty() && room.containsKey(ROOMID)) {
-                final String roomId = room.get(ROOMID).toString();
-                if (org.apache.commons.lang3.StringUtils.isNumeric(roomId)) {
-                    roomIds.add(Integer.valueOf(roomId));
-                }
-            }
-        }
-        return roomIds;
-    }
 
     /**
      * utility method used to validate the domainProvider regardless of case-sensitivity
@@ -63,27 +43,14 @@ public class DomainDataUtil {
     }
 
     /**
-     * extracts roomIds from OuterDomain
-     * 
-     * @param outerDomain
-     * @return
-     */
-    public static List<Integer> getRoomIds(OuterDomain outerDomain) {
-        final List<Integer> roomIds = outerDomain.getDomainFields() == null ||
-                outerDomain.getDomainFields().get(ROOMS) == null ? Collections.EMPTY_LIST :
-                DomainDataUtil.getRoomIds(outerDomain.getDomainFields().get(ROOMS));
-        return roomIds;
-    }
-
-    /**
      * returns true if there is duplicate rooms in OuterDomain
      * 
      * @param outerDomain
      * @return
      */
     public static Boolean duplicateRoomExists(OuterDomain outerDomain) {
-        final List<Integer> roomIds = getRoomIds(outerDomain);
-        final Set<Integer> uniqueRoomIds = new HashSet<>(roomIds);
+        final List<Object> roomIds = collectRoomIds(outerDomain);
+        final Set<Object> uniqueRoomIds = new HashSet<>(roomIds);
         return CollectionUtils.isNotEmpty(roomIds) && (uniqueRoomIds.size() != roomIds.size());
     }
 
@@ -95,19 +62,9 @@ public class DomainDataUtil {
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static Boolean roomsFieldIsInvalid(OuterDomain outerDomain) {
-        final Object rooms = outerDomain.getDomainFields() == null ? null : outerDomain.getDomainFields().get(ROOMS);
-        if(rooms == null){
-            return false;
-        }
-        final List roomsList = (List) rooms;
-        final List status = (List) roomsList.stream().map(r -> {
-            final Map room = (Map) r;
-            if (room != null) {
-                return room.isEmpty() || room.containsKey(ROOMID);
-            }
-            return false;
-        }).collect(Collectors.toList());
-        return status.stream().anyMatch(s -> Boolean.FALSE.equals(s));
+        return !getInvalidRoomList(outerDomain).stream().filter(r->{
+            return !r.containsKey(ROOMID);
+        }).collect(Collectors.toList()).isEmpty();
     }
 
     /**
@@ -118,13 +75,12 @@ public class DomainDataUtil {
      */
     public static String getMediaIdFromDynamo(Media dynamoMedia) throws Exception {
         final String mediaId = dynamoMedia.getLcmMediaId();
-        if (org.apache.commons.lang3.StringUtils.isNumeric(mediaId)) {
+        if (isNumeric(mediaId)) {
             return mediaId;
         }
         final String domainFields = dynamoMedia.getDomainFields();
         final Map<String,Object> domainMap = StringUtils.isNullOrEmpty(domainFields) ? null : MAPPER.readValue(domainFields, Map.class);
-        if (MapUtils.isEmpty(domainMap) || ObjectUtils.isEmpty(domainMap.get(LCM_MEDIA_ID_FIELD)) || !org.apache.commons.lang.StringUtils
-                .isNumeric(domainMap.get(LCM_MEDIA_ID_FIELD).toString())) {
+        if (MapUtils.isEmpty(domainMap) || ObjectUtils.isEmpty(domainMap.get(LCM_MEDIA_ID_FIELD)) || !isNumeric(domainMap.get(LCM_MEDIA_ID_FIELD).toString())) {
             return null;
         }
         return domainMap.get(LCM_MEDIA_ID_FIELD).toString();
@@ -140,4 +96,67 @@ public class DomainDataUtil {
     public static Boolean domainFieldIsValid(Object domainFields) {        
         return domainFields == null || domainFields instanceof Map;
     }
+        
+    /**
+     * Collect  roomIds which are integer  provided in the message.
+     * 
+     * @param rooms provided domain fields.
+     * @return
+     */
+    public static List<Integer> collectValidFormatRoomIds(OuterDomain outerDomain) {
+        return collectRoomIds(outerDomain).stream()
+                .filter(room-> room == null ? false : isNumeric(room.toString()))
+                .map(room->{
+                    return Integer.parseInt(room.toString());
+                }).collect(Collectors.toList());
+    }
+        
+    /**
+     * Collect  roomIds which are not integer provided in the message.
+     * 
+     * @param rooms provided domain fields.
+     * @return
+     */
+    public static List<Object> collectMalFormatRoomIds(OuterDomain outerDomain) {
+        return collectRoomIds(outerDomain).stream()
+                .filter(room->room == null ? false : !isNumeric(room.toString()))
+                .collect(Collectors.toList()); 
+    }
+    
+    /**
+     * Collect roomIds from OuterDomain
+     * 
+     * @param outerDomain
+     * @return
+     */
+    public static List<Object> collectRoomIds(OuterDomain outerDomain) {
+        final List<Map<String, Object>> rooms = getRoomList(outerDomain);
+        return rooms.stream().map(room->room.get(ROOMID)).collect(Collectors.toList());
+    }
+    
+    /**
+     * Retrieve the room list from the domain fileds.
+     * 
+     * @param outerDomain provided domain
+     * @return
+     */
+    private static List<Map<String, Object>> getRoomList(OuterDomain outerDomain) {
+        final Object rooms = outerDomain == null ? null : outerDomain.getDomainFieldValue(ROOMS);        
+        return  rooms == null ? Collections.EMPTY_LIST : (List<Map<String, Object>>) rooms;
+    }
+    
+    /**
+     * Retrieve the invalid room list from the domain fileds.
+     * A room entry is invalid when it is not a Map or it is not empty and not contains no roomId key.
+     * 
+     * @param outerDomain provided domain
+     * @return
+     */
+    private static List<Map<String, Object>> getInvalidRoomList(OuterDomain outerDomain) {
+        final List<Map<String, Object>> allRooms = getRoomList(outerDomain);
+        return allRooms.stream().filter(r->{
+            return !(r instanceof Map) || (!r.isEmpty() && !r.containsKey(ROOMID));
+        }).collect(Collectors.toList());
+    }
+
 }

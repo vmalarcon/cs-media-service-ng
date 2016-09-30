@@ -11,16 +11,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.anyObject;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
-import com.expedia.content.media.processing.services.dao.MediaDao;
-import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
-import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
-import com.expedia.content.media.processing.services.dao.domain.Media;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -28,6 +22,17 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.test.context.ContextConfiguration;
+
+import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
+import com.expedia.content.media.processing.services.dao.MediaDao;
+import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
+import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import static org.mockito.Matchers.anyInt;
+
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
 @RunWith(MockitoJUnitRunner.class)
@@ -214,6 +219,24 @@ public class MediaUpdateProcessorTest {
         mediaUpdateProcessor.processRequest(updateMessage, "123", "12345", dynamoMedia);
         verify(mediaUpdateDao).updateMedia(updateMessage, 123);
         assertTrue(Boolean.FALSE.toString().equals(dynamoMedia.getActive()));
+    }
+
+        @Test
+    public void testNonLodgingDomain() throws Exception {
+        ImageMessage imageMessage = ImageMessage.builder().outerDomainData(
+                OuterDomain.builder().domain(Domain.CONTENT_REPO).build()
+        ).build();
+
+        Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "ContentRepo", "12345",
+                "{}",
+                new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
+                new HashMap<>(), new ArrayList<>(), "", "", false, false, null);
+
+        mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
+
+
+        verify(mediaUpdateDao, never()).updateMedia(any(ImageMessage.class), anyInt());
+        verify(mediaDao).saveMedia(dynamoMedia);
     }
     
     private ImageMessage setActiveToNull(final ImageMessage imageMessage) {

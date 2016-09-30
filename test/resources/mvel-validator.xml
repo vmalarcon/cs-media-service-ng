@@ -23,7 +23,7 @@
                       <value>imageMessage.fileName != null ? "valid" : "fileName is required."</value>
                       <value>imageMessage.mediaGuid != null ? "valid": "mediaGuid is required."</value>
                       <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
-                      <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
+                      <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars|ContentRepo")) ? "domain must be eigher 'Lodging', 'Cars' or 'ContentRepo'" : "valid"</value>
                       <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
                       <value>(domainData.domain.domain.endsWith('Lodging') &amp;&amp; domainData.domainId != null &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
                       <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
