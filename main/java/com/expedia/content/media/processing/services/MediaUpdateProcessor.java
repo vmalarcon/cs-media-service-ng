@@ -87,10 +87,18 @@ public class MediaUpdateProcessor {
         return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
     }
 
+    /**
+     * this method will make the table column 'lastUpdatedBy' and 'updateTime'
+     * consistent in Media and catalogitemMedia table
+     * even the update request only update one of them.
+     * @param imageMessage
+     * @param mediaId
+     * @param domainId
+     */
     private void updateCatelogItemTimestamp(final ImageMessage imageMessage, final String mediaId, final String domainId) {
         if ((imageMessage.isActive() != null || imageMessage.getComment() != null) && imageMessage.getOuterDomainData().getDomainFields() == null) {
             final LcmCatalogItemMedia lcmCatalogItemMedia = catalogHeroProcessor.getCatalogItemMeida(Integer.valueOf(domainId), Integer.valueOf(mediaId));
-            catalogHeroProcessor.updateTimeStamp(imageMessage.getUserId(), lcmCatalogItemMedia);
+            catalogHeroProcessor.updateTimestamp(imageMessage.getUserId(), lcmCatalogItemMedia);
         }
         if (imageMessage.isActive() == null && imageMessage.getComment() == null && imageMessage.getOuterDomainData().getDomainFields() != null) {
             final LcmMedia lcmMedia = mediaUpdateDao.getMediaByMediaId(Integer.valueOf(mediaId));

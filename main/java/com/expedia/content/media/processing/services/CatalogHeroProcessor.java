@@ -79,7 +79,7 @@ public class CatalogHeroProcessor {
      * @param user
      * @param lcmCatalogItemMedia
      */
-    public void updateTimeStamp(String user, LcmCatalogItemMedia lcmCatalogItemMedia) {
+    public void updateTimestamp(String user, LcmCatalogItemMedia lcmCatalogItemMedia) {
             catalogItemMediaChgSproc.updateCategory(lcmCatalogItemMedia.getCatalogItemId(), lcmCatalogItemMedia.getMediaId(),
                     lcmCatalogItemMedia.getMediaUseRank(), user, ROOM_UPDATED_BY);
 

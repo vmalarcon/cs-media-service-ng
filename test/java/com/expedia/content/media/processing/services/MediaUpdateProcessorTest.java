@@ -154,7 +154,7 @@ public class MediaUpdateProcessorTest {
                 new HashMap<>(), new ArrayList<>(), "", "", false, false, null);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(mediaUpdateDao).updateMedia(imageMessage, 123);
-        verify(catalogHeroProcessor).updateTimeStamp(anyObject(), anyObject());
+        verify(catalogHeroProcessor).updateTimestamp(anyObject(), anyObject());
 
     }
 
