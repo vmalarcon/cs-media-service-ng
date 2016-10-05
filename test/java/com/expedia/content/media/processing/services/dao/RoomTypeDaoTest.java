@@ -61,7 +61,7 @@ public class RoomTypeDaoTest {
         rooms.put("roomHero", "true");
         domainField.put("rooms", Arrays.asList(rooms));
         when(sproc.execute(anyInt())).thenReturn(mockRoomResults);
-        final List<Object> invalidRoomIds = roomTypeDao.getInvalidRoomIds(new OuterDomain(Domain.LODGING, "123", "", "EPC Internal User", domainField));       
+        final List<Object> invalidRoomIds = roomTypeDao.getInvalidRoomIds(new OuterDomain(Domain.LODGING, "123", "", "EPC Internal User", domainField));
         assertTrue(invalidRoomIds.isEmpty());
         verify(sproc, times(1)).execute(anyInt());
     }

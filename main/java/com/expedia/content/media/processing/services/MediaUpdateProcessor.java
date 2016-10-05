@@ -1,19 +1,12 @@
 package com.expedia.content.media.processing.services;
 
-import com.amazonaws.util.StringUtils;
-import com.expedia.content.media.processing.pipeline.domain.Domain;
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
-import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
-import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
-import com.expedia.content.media.processing.services.dao.MediaDao;
-import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
-import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
-import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
-import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.expedia.content.media.processing.services.util.JSONUtil;
-import com.expedia.content.media.processing.services.util.MediaRoomUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.lang.reflect.FieldUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,12 +14,21 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
+import com.amazonaws.util.StringUtils;
+import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
+import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
+import com.expedia.content.media.processing.services.dao.MediaDao;
+import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
+import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.expedia.content.media.processing.services.util.MediaRoomUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
 public class MediaUpdateProcessor {
@@ -59,13 +61,16 @@ public class MediaUpdateProcessor {
     @Transactional
     public ResponseEntity<String> processRequest(final ImageMessage imageMessage, final String mediaId, String domainId,
                                                  Media dynamoMedia) throws Exception {
-        if (mediaId != null && org.apache.commons.lang3.StringUtils.isNumeric(mediaId)) {
+        // Only proceed to the following if the domain is Lodging
+        if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING) && mediaId != null && org.apache.commons.lang3.StringUtils.isNumeric(mediaId)) {
             final Integer expediaId = Integer.valueOf(domainId);
             // step1. update media table, if comment or active fields are not null
             if (imageMessage.getComment() != null || imageMessage.isActive() != null) {
                 mediaUpdateDao.updateMedia(imageMessage, Integer.valueOf(mediaId));
             }
             processCategory(imageMessage, mediaId, dynamoMedia, expediaId);
+            updateCatelogItemTimestamp(imageMessage, mediaId, domainId);
+
         }
         // step 4. save media to dynamo
         if (dynamoMedia != null) {
@@ -82,6 +87,25 @@ public class MediaUpdateProcessor {
         response.put("status", Integer.valueOf(200));
         final String jsonResponse = new ObjectMapper().writeValueAsString(response);
         return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
+    }
+
+    /**
+     * this method will make the table column 'lastUpdatedBy' and 'updateTime'
+     * consistent in Media and catalogitemMedia table
+     * even the update request only update one of them.
+     * @param imageMessage
+     * @param mediaId
+     * @param domainId
+     */
+    private void updateCatelogItemTimestamp(final ImageMessage imageMessage, final String mediaId, final String domainId) {
+        if ((imageMessage.isActive() != null || imageMessage.getComment() != null) && imageMessage.getOuterDomainData().getDomainFields() == null) {
+            final LcmCatalogItemMedia lcmCatalogItemMedia = catalogHeroProcessor.getCatalogItemMeida(Integer.valueOf(domainId), Integer.valueOf(mediaId));
+            catalogHeroProcessor.updateTimestamp(imageMessage.getUserId(), lcmCatalogItemMedia);
+        }
+        if (imageMessage.isActive() == null && imageMessage.getComment() == null && imageMessage.getOuterDomainData().getDomainFields() != null) {
+            final LcmMedia lcmMedia = mediaUpdateDao.getMediaByMediaId(Integer.valueOf(mediaId));
+            mediaUpdateDao.updateMediaTimestamp(lcmMedia, imageMessage);
+        }
     }
 
     @RetryableMethod

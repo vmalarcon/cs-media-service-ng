@@ -285,7 +285,8 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "getMediaByGUIDMessageCounter")
     @Timer(name = "getMediaByGUIDMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/images/{mediaGUID}", method = RequestMethod.GET)
+    @RequestMapping(value = "/media/v1/images/{mediaGUID}", produces = {
+            "application/json;charset=UTF-8"},method = RequestMethod.GET)
     @Transactional
     public ResponseEntity<String> getMedia(@PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
@@ -373,7 +374,8 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "getMediaByDomainIdMessageCounter")
     @Timer(name = "getMediaByDomainIdMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/imagesbydomain/{domainName}/domainId/{domainId}", method = RequestMethod.GET)
+    @RequestMapping(value = "/media/v1/imagesbydomain/{domainName}/domainId/{domainId}",produces = {
+            "application/json;charset=UTF-8"}, method = RequestMethod.GET)
     @Transactional
     public ResponseEntity<String> getMediaByDomainId(@PathVariable("domainName") final String domainName, @PathVariable("domainId") final String domainId,
             @RequestParam(value = "pageSize", required = false) final Integer pageSize,

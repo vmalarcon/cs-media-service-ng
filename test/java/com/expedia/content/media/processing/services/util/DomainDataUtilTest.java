@@ -60,7 +60,7 @@ public class DomainDataUtilTest {
                 .addField("rooms", roomsMapList)
                 .build();
         try {
-            assertTrue(DomainDataUtil.collectRoomIds(outerDomain).isEmpty());
+            assertFalse(DomainDataUtil.collectRoomIds(outerDomain).isEmpty());
         } catch (Exception e) {
            fail("This should not throw an exception");
         }        
@@ -217,7 +217,7 @@ public class DomainDataUtilTest {
                 .addField("rooms", rooms)
                 .build();
         List<Object> roomIds = DomainDataUtil.collectRoomIds(outerDomain);
-        assertTrue(roomIds.size() == 2);
+        assertEquals(3, roomIds.size());
     }
     
     @Test
@@ -241,7 +241,7 @@ public class DomainDataUtilTest {
                 .addField("rooms", rooms)
                 .build();
         List<Object> roomIds = DomainDataUtil.collectMalFormatRoomIds(outerDomain);
-        assertTrue(roomIds.size() == 1);
+        assertEquals(2, roomIds.size());
         assertTrue(roomIds.get(0).toString().equals("not an integer"));
     }
     
@@ -266,8 +266,7 @@ public class DomainDataUtilTest {
                 .addField("rooms", rooms)
                 .build();
         List<Integer> roomIds = DomainDataUtil.collectValidFormatRoomIds(outerDomain);
-        assertTrue(roomIds.size() == 1);
-        assertTrue(roomIds.get(0).equals(1673824));
-    }
-
+        assertEquals(1, roomIds.size());
+        assertEquals(1673824, roomIds.get(0).intValue());
+    }    
 }
