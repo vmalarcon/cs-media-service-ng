@@ -61,7 +61,7 @@ public class TempDerivativeController extends CommonServiceController {
      * @return url of the generated temporary derivative.
      * @throws Exception
      */
-    @RequestMapping(value = "/media/v1/tempderivative", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/media/v1/tempderivative", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<String> getTempDerivative(@RequestBody final String message, @RequestHeader MultiValueMap<String,String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_TEMP_DERIVATIVE.getUrl();

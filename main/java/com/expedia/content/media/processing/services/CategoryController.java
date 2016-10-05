@@ -53,7 +53,7 @@ public class CategoryController extends CommonServiceController {
      * @param localeId Id of the locale to filter in.
      * @return Returns a JSON response for the domain categories request.
      */
-    @RequestMapping(value = "/media/v1/domaincategories/{domainName}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET)
+    @RequestMapping(value = "/media/v1/domaincategories/{domainName}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.GET)
     @Transactional
     public ResponseEntity<String> domainCategories(final @RequestHeader MultiValueMap<String,String> headers,
             final @PathVariable("domainName") String domainName, final @RequestParam(value = "localeId", required = false) String localeId) {
