@@ -539,7 +539,7 @@ public class MediaController extends CommonServiceController {
      * @return The response for the service call.
      * @throws Exception Thrown if the message can't be validated or the response can't be serialized.
      */
-    @SuppressWarnings({"PMD.PrematureDeclaration"})
+    @SuppressWarnings({"PMD.PrematureDeclaration", "PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
     private ResponseEntity<String> processRequest(final String message, final String requestID,
             final String serviceUrl, final String clientId, HttpStatus successStatus, Date timeReceived) throws Exception {
         final String json = validateImageMessage(message, clientId);
