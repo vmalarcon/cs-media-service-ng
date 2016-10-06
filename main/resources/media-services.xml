@@ -61,6 +61,7 @@
         <entry key="Multisource">
             <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
                 <ref bean="multisourceValidator"/>
+                <ref bean="lodgingAddValidator"/>
             </list>
         </entry>
         <entry key="EPCUpdate">
