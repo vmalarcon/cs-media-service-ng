@@ -107,7 +107,8 @@ public class MediaController extends CommonServiceController {
     private static final String DEFAULT_VALIDATION_RULES = "DEFAULT";
     private static final long ONE_HOUR = 3600 * 1000;
     private static final Map<String, HttpStatus> STATUS_MAP = new HashMap<>();
-    
+    private static final String STORE_MEDIA_ADD_MESSAGE_FIELD = "storeMediaAddMessage";
+
     static {
         STATUS_MAP.put(ValidationStatus.NOT_FOUND, NOT_FOUND);
         STATUS_MAP.put(ValidationStatus.ZERO_BYTES, BAD_REQUEST);
@@ -538,7 +539,7 @@ public class MediaController extends CommonServiceController {
      * @return The response for the service call.
      * @throws Exception Thrown if the message can't be validated or the response can't be serialized.
      */
-    @SuppressWarnings({"PMD.PrematureDeclaration"})
+    @SuppressWarnings({"PMD.PrematureDeclaration", "PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
     private ResponseEntity<String> processRequest(final String message, final String requestID,
             final String serviceUrl, final String clientId, HttpStatus successStatus, Date timeReceived) throws Exception {
         final String json = validateImageMessage(message, clientId);
@@ -572,7 +573,7 @@ public class MediaController extends CommonServiceController {
         imageMessageNew.addLogEntry(new LogEntry(App.MEDIA_SERVICE, Activity.RECEPTION, timeReceived));
         logActivity(imageMessageNew, Activity.RECEPTION, timeReceived);
         final Boolean isReprocessing = (Boolean) messageState.get(REPROCESSING_STATE_FIELD);
-
+        final Boolean storeMediaAddMessage = (Boolean) messageState.get(STORE_MEDIA_ADD_MESSAGE_FIELD);
         final Map<String, String> response = new HashMap<>();
         response.put(RESPONSE_FIELD_MEDIA_GUID, imageMessageNew.getMediaGuid());
         response.put(RESPONSE_FIELD_STATUS, "RECEIVED");
@@ -587,7 +588,7 @@ public class MediaController extends CommonServiceController {
             }
             response.put(RESPONSE_FIELD_THUMBNAIL_URL, thumbnail.getLocation());
         }
-        if (!isReprocessing) {
+        if (!isReprocessing || storeMediaAddMessage) {
             dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);
         }
         publishMsg(imageMessageNew);
@@ -608,25 +609,26 @@ public class MediaController extends CommonServiceController {
      * and if the file is checked for reprocessing .
      */
     private Map<String, Object> updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId) {
+        final Map<String, Object> messageState = new HashMap<>();
         ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
         imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
         imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
         final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
         imageMessageBuilder.outerDomainData(outerDomain);
-        Boolean isReprocessing = false;
         if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
-            isReprocessing = processReplacement(imageMessage, imageMessageBuilder, clientId);
+            final Map<String, Boolean>  reprocessMap = processReplacement(imageMessage, imageMessageBuilder, clientId); 
+            messageState.put(REPROCESSING_STATE_FIELD, reprocessMap.get(REPROCESSING_STATE_FIELD));
+            messageState.put(STORE_MEDIA_ADD_MESSAGE_FIELD, reprocessMap.get(STORE_MEDIA_ADD_MESSAGE_FIELD));
         } else {
             if (imageMessage.getProvidedName() == null) {
                 imageMessageBuilder.providedName(resolveProvidedName(imageMessage));
             }
             imageMessageBuilder.fileName(FileNameUtil.resolveFileNameByProvider(imageMessageBuilder.build()));
+            messageState.put(REPROCESSING_STATE_FIELD, false);
+            messageState.put(STORE_MEDIA_ADD_MESSAGE_FIELD, true);
         }
         final ImageMessage imageMessageNew = imageMessageBuilder.clientId(clientId).requestId(String.valueOf(requestID)).build();
-        final Map<String, Object> messageState = new HashMap<>();
         messageState.put(IMAGE_MESSAGE_FIELD, imageMessageNew);
-        messageState.put(REPROCESSING_STATE_FIELD, isReprocessing);
-
         return messageState;
     }
 
@@ -660,10 +662,11 @@ public class MediaController extends CommonServiceController {
      * @param imageMessage Original message received.
      * @param imageMessageBuilder Builder for the new/mutated ImageMessage.
      * @param clientId Existing in the message header, represents the client (EPC, Media Cloud Router, Multisource, GSO Media Tools)
-     * @return returns true if reprocessing and false if not.
+     * @return returns a Map contains the reprocessing status and the mediaAdd storage status.
      */
 
-    private boolean processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder, String clientId) {
+    private  Map<String, Boolean> processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder, String clientId) {
+        final Map<String, Boolean> reprocessMap = new HashMap<>();
         if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
             final List<Media> mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
             final Optional<Media> bestMedia = MediaReplacement
@@ -678,7 +681,9 @@ public class MediaController extends CommonServiceController {
                 imageMessageBuilder.providedName(media.getProvidedName());
 
                 LOGGER.info("REPLACEMENT MEDIA MediaGuid={} lcmMediaId={}", Arrays.asList(media.getMediaGuid(), media.getDomainId()), imageMessage);
-                return true;
+                reprocessMap.put(STORE_MEDIA_ADD_MESSAGE_FIELD, false);
+                reprocessMap.put(REPROCESSING_STATE_FIELD, true);
+                return reprocessMap;
             } else {
                 final List<LcmMedia> lcmMediaList = mediaDao.getMediaByFilenameInLCM(Integer.valueOf(imageMessage.getOuterDomainData().getDomainId()), imageMessage.getFileName());
                 final Optional<LcmMedia> existMedia = lcmMediaList.stream().max((m1, m2) -> m1.getLastUpdateDate().compareTo(m2.getLastUpdateDate()));
@@ -688,14 +693,17 @@ public class MediaController extends CommonServiceController {
                     domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, lcmMedia.getMediaId().toString());
                     imageMessageBuilder.outerDomainData(domainBuilder.build());
                     LOGGER.info("REPLACEMENT MEDIA LCM INFORMATION LcmMediaId={}", Arrays.asList(String.valueOf(lcmMedia.getMediaId())), imageMessage);
-                    return true;
-
+                    reprocessMap.put(STORE_MEDIA_ADD_MESSAGE_FIELD, true);
+                    reprocessMap.put(REPROCESSING_STATE_FIELD, true);
+                    return reprocessMap;
                 }
                 LOGGER.info("CREATING NEW GUID Reason=\"could not find the best media\" MediaList={}",
                         Arrays.asList(String.valueOf(Joiner.on("; ").join(mediaList))), imageMessage);
             }
         }
-        return false;
+        reprocessMap.put(STORE_MEDIA_ADD_MESSAGE_FIELD, true);
+        reprocessMap.put(REPROCESSING_STATE_FIELD, false);
+        return reprocessMap;
     }
 
     /**
