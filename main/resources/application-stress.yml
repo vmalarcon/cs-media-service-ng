@@ -4,4 +4,4 @@ server:
 cs:
    poke:
       server: http://poke-service.us-west-2.test.expedia.com:80/api/poke
-      enabled: true
+      enabled: false
