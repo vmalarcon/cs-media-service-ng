@@ -27,6 +27,7 @@ import com.expedia.content.media.processing.services.util.FileNameUtil;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaReplacement;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
+import com.expedia.content.media.processing.services.util.ValidatorUtil;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -162,7 +163,11 @@ public class MediaController extends CommonServiceController {
     @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST)
     @Deprecated public ResponseEntity<String> acquireMedia(@RequestBody final String message, @RequestHeader MultiValueMap<String,String> headers) throws Exception {
         final Date timeReceived = new Date();
-        final String requestID = this.getRequestId(headers);
+        String requestID = getRequestId(headers);
+        if (!ValidatorUtil.isValidUUID(requestID)) {
+            requestID = UUID.randomUUID().toString();
+            LOGGER.info("Creating RequestId={}", requestID);
+        }
         final String serviceUrl = MediaServiceUrl.ACQUIRE_MEDIA.getUrl();
         LOGGER.info("RECEIVED ACQUIRE REQUEST ServiceUrl={} RequestId={} JsonMessage={}", serviceUrl, requestID, message);
         try {
@@ -199,7 +204,11 @@ public class MediaController extends CommonServiceController {
     @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST)
     public ResponseEntity<String> mediaAdd(@RequestBody final String message, @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
         final Date timeReceived = new Date();
-        final String requestID = this.getRequestId(headers);
+        String requestID = this.getRequestId(headers);
+        if (!ValidatorUtil.isValidUUID(requestID)) {
+            requestID = UUID.randomUUID().toString();
+            LOGGER.warn("Creating RequestId={}", requestID);
+        }
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
         LOGGER.info("RECEIVED ADD REQUEST ServiceUrl={} RequestId={} JSONMessage={}", serviceUrl, requestID, message);
         try {
