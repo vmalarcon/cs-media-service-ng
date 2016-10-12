@@ -74,7 +74,7 @@ public class SourceURLController extends CommonServiceController {
     @SuppressWarnings({"rawtypes", "unchecked", "PMD.SignatureDeclareThrowsException"})
     @Meter(name = "mediaSourceURLCounter")
     @Timer(name = "mediaSourceURLTimer")
-    @RequestMapping(value = "/media/v1/sourceurl", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/media/v1/sourceurl", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @Transactional
     public ResponseEntity getSourceURL(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
         final String requestID = getRequestId(headers);
