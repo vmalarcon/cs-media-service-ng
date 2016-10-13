@@ -161,7 +161,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
         setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
-        String requestId = "test-request-id";
+        String requestId = "test-request-id"; // invalid UUID provided
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
 
@@ -182,7 +182,8 @@ public class MediaControllerTest {
         assertTrue(publishedMessageValue.getPayload().contains("\"providedName\":\"NASA_ISS-4.jpg\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
-        assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
+        assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\""));
+        assertFalse(publishedMessageValue.getPayload().contains("test-request-id"));
         assertTrue(publishedMessageValue.getPayload().contains("\"logEntries\":[{\"activity\":\"" + Activity.RECEPTION.getName() + "\""
                 + ",\"appName\":\"cs-media-service\",\"activityTime\":" ));
         assertTrue(publishedMessageValue.getPayload().contains("\"activity\":\"" + Activity.MEDIA_MESSAGE_RECEIVED.getName() + "\""
@@ -207,7 +208,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
         setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
-        String requestId = "test-request-id";
+        String requestId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
 
@@ -561,7 +562,7 @@ public class MediaControllerTest {
                         createByFileNameMedia("too-old", "1238", "true", DATE_FORMAT.parse("2016-02-17 11:59:59"), "4562")));
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
 
-        String requestId = "test-request-id";
+        String requestId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
 
@@ -616,7 +617,7 @@ public class MediaControllerTest {
                 .thenReturn(Lists.newArrayList(lcmMedia));
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
 
-        String requestId = "test-request-id";
+        String requestId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
 
@@ -664,7 +665,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
-        String requestId = "test-request-id";
+        String requestId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
 
@@ -706,7 +707,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
         setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
-        String requestId = "test-request-id";
+        String requestId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
 
@@ -823,7 +824,7 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
         setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
 
-        String requestId = "test-request-id";
+        String requestId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
 
@@ -2007,7 +2008,7 @@ public class MediaControllerTest {
 
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         setFieldValue(mediaController, "dynamoMediaRepository", dynamoMediaRepository);
-        String requestId = "test-request-id";
+        String requestId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
 

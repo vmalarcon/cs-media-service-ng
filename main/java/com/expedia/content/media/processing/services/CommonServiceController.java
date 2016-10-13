@@ -43,7 +43,7 @@ public abstract class CommonServiceController {
      * @param headers Header value map.
      * @return The request id
      */
-    protected String getRequestId(MultiValueMap<String,String> headers) {
+    protected static String getRequestId(MultiValueMap<String,String> headers) {
         return headers.getFirst(REQUEST_ID);
     }
 
