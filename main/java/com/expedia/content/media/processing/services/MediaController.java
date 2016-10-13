@@ -163,11 +163,7 @@ public class MediaController extends CommonServiceController {
     @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST)
     @Deprecated public ResponseEntity<String> acquireMedia(@RequestBody final String message, @RequestHeader MultiValueMap<String,String> headers) throws Exception {
         final Date timeReceived = new Date();
-        String requestID = getRequestId(headers);
-        if (!ValidatorUtil.isValidUUID(requestID)) {
-            requestID = UUID.randomUUID().toString();
-            LOGGER.info("Creating RequestId={}", requestID);
-        }
+        final String requestID = verifyRequestId(headers, false);
         final String serviceUrl = MediaServiceUrl.ACQUIRE_MEDIA.getUrl();
         LOGGER.info("RECEIVED ACQUIRE REQUEST ServiceUrl={} RequestId={} JsonMessage={}", serviceUrl, requestID, message);
         try {
@@ -204,11 +200,7 @@ public class MediaController extends CommonServiceController {
     @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST)
     public ResponseEntity<String> mediaAdd(@RequestBody final String message, @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
         final Date timeReceived = new Date();
-        String requestID = this.getRequestId(headers);
-        if (!ValidatorUtil.isValidUUID(requestID)) {
-            requestID = UUID.randomUUID().toString();
-            LOGGER.warn("Creating RequestId={}", requestID);
-        }
+        final String requestID = verifyRequestId(headers, true);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
         LOGGER.info("RECEIVED ADD REQUEST ServiceUrl={} RequestId={} JSONMessage={}", serviceUrl, requestID, message);
         try {
@@ -813,6 +805,26 @@ public class MediaController extends CommonServiceController {
             }
         }
         return null;
+    }
+
+    /**
+     * Retrieves the RequestId from the http request headers. It creates one if none is provided.
+     *
+     * @param headers HTTP request headers
+     * @param warnIfMissing raises a WARN level log if the requestId is missing, otherwise just INFO.
+     * @return RequestId from the headers or a new RequestId if none could be found in the headers.
+     */
+    private static String verifyRequestId(MultiValueMap<String,String> headers, boolean warnIfMissing) {
+        String requestID = getRequestId(headers);
+        if (!ValidatorUtil.isValidUUID(requestID)) {
+            requestID = UUID.randomUUID().toString();
+            if (warnIfMissing) {
+                LOGGER.warn("Creating RequestId={}", requestID);
+            } else {
+                LOGGER.warn("Creating RequestId={}", requestID);
+            }
+        }
+        return requestID;
     }
 
     /**
