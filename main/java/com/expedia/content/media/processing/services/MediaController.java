@@ -610,8 +610,7 @@ public class MediaController extends CommonServiceController {
      */
     private Map<String, Object> updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId) {
         final Map<String, Object> messageState = new HashMap<>();
-        ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
-        imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
+        ImageMessage.ImageMessageBuilder imageMessageBuilder = imageMessage.createBuilderFromMessage();
         imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
         final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
         imageMessageBuilder.outerDomainData(outerDomain);

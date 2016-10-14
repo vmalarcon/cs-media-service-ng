@@ -26,7 +26,7 @@ public class GetMediaIDSproc extends StoredProcedure {
 
     @Autowired
     public GetMediaIDSproc(final DataSource dataSource) {
-        super(dataSource, "MediaSrchWithCatalogItemMediaAndMediaFileName#02");
+        super(dataSource, "MediaSrchWithCatalogItemMediaAndMediaFileName#03");
         declareParameter(new SqlParameter("@pCatalogItemID", Types.INTEGER));
         declareParameter(new SqlParameter("@pLangID", Types.INTEGER));
         declareParameter(new SqlParameter("@pContentProviderID", Types.INTEGER));
@@ -46,10 +46,6 @@ public class GetMediaIDSproc extends StoredProcedure {
                     .mediaId(resultSet.getInt("MediaID"))
                     .lastUpdateDate(TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("UpdateDate")))
                     .lastUpdatedBy(resultSet.getString("LastUpdatedBy"))
-                    .width(resultSet.getInt("MediaWidth"))
-                    .height(resultSet.getInt("MediaHeight"))
-                    .fileSize(resultSet.getInt("FileSizeKb"))
-                    .fileName(resultSet.getString("ContentProviderMediaName"))
                     .active(activeFlag != null && "A".equals(activeFlag))
                     .build();
         }
