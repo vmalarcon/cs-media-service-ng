@@ -1,5 +1,25 @@
 package com.expedia.content.media.processing.services;
 
+import static com.expedia.content.media.processing.pipeline.util.SQSUtil.sendMessageToQueue;
+import static org.springframework.http.HttpStatus.ACCEPTED;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.OK;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.UUID;
+
+import javax.annotation.Resource;
+
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
@@ -12,7 +32,6 @@ import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.Poker;
-import static com.expedia.content.media.processing.pipeline.util.SQSUtil.sendMessageToQueue;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
 import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
@@ -33,10 +52,7 @@ import com.expedia.content.media.processing.services.validator.MapMessageValidat
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
-import expedia.content.solutions.metrics.annotations.Counter;
-import expedia.content.solutions.metrics.annotations.Gauge;
-import expedia.content.solutions.metrics.annotations.Meter;
-import expedia.content.solutions.metrics.annotations.Timer;
+
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,7 +61,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.Message;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
@@ -60,23 +75,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Resource;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.UUID;
-
-import static org.springframework.http.HttpStatus.ACCEPTED;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.OK;
+import expedia.content.solutions.metrics.annotations.Counter;
+import expedia.content.solutions.metrics.annotations.Gauge;
+import expedia.content.solutions.metrics.annotations.Meter;
+import expedia.content.solutions.metrics.annotations.Timer;
 
 /**
  * Web service controller for media resources.
@@ -719,8 +721,14 @@ public class MediaController extends CommonServiceController {
     @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     @RetryableMethod
     private void publishMsg(final ImageMessage message) {
-        message.addLogEntry(new LogEntry(App.MEDIA_SERVICE, Activity.MEDIA_MESSAGE_RECEIVED, new Date()));
-        sendMessageToQueue(messagingTemplate, publishQueue, message);
+        message.addLogEntry(new LogEntry(App.MEDIA_SERVICE, Activity.MEDIA_MESSAGE_RECEIVED, new Date()));        
+        try {
+            sendMessageToQueue(messagingTemplate, publishQueue, message);
+            logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED, null);
+        } catch (Exception ex) {
+            LOGGER.error(ex, "Error publishing ErrorMessage={}", Arrays.asList(ex.getMessage()), message);
+            throw new RuntimeException("Error publishing message=[" + message.toJSONMessage() + "]", ex);
+        }
     }
 
     /**
