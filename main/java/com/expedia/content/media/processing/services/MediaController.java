@@ -12,6 +12,7 @@ import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.Poker;
+import static com.expedia.content.media.processing.pipeline.util.SQSUtil.sendMessageToQueue;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
 import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
@@ -719,15 +720,7 @@ public class MediaController extends CommonServiceController {
     @RetryableMethod
     private void publishMsg(final ImageMessage message) {
         message.addLogEntry(new LogEntry(App.MEDIA_SERVICE, Activity.MEDIA_MESSAGE_RECEIVED, new Date()));
-        final String jsonMessage = message.toJSONMessage();
-        try {
-            messagingTemplate.send(publishQueue, MessageBuilder.withPayload(jsonMessage).build());
-            LOGGER.info("Sending message to queue done", jsonMessage);
-            logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED, null);
-        } catch (Exception ex) {
-            LOGGER.error(ex, "Error publishing ErrorMessage={}", Arrays.asList(ex.getMessage()), message);
-            throw new RuntimeException("Error publishing message=[" + jsonMessage + "]", ex);
-        }
+        sendMessageToQueue(messagingTemplate, publishQueue, message);
     }
 
     /**
