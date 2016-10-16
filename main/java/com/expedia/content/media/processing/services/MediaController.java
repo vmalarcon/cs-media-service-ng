@@ -146,6 +146,8 @@ public class MediaController extends CommonServiceController {
     private String hipChatRoom;
     @Autowired
     private Poker poker;
+    @Autowired
+    private KafkaPublisher kafkaPublisher;
 
     /**
      * web service interface to consume media message.
@@ -592,6 +594,7 @@ public class MediaController extends CommonServiceController {
             dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);
         }
         publishMsg(imageMessageNew);
+        kafkaPublisher.publishToTopicByString(imageMessageNew);
         final ResponseEntity<String> responseEntity = new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
         LOGGER.info("SUCCESS ResponseStatus={} ResponseBody={} ServiceUrl={}",
                 Arrays.asList(responseEntity.getStatusCode().toString(), responseEntity.getBody(), serviceUrl), imageMessageNew);
