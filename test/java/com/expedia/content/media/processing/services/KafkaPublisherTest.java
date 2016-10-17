@@ -16,4 +16,14 @@ public class KafkaPublisherTest {
         ImageMessage imageMessage  = ImageMessage.parseJsonMessage(jsonMessage);
         kafkaPublisher.publishToTopicByString(imageMessage);
     }
+
+    @Test
+    public void testPublishAvroMsg(){
+        KafkaPublisher kafkaPublisher = new KafkaPublisher();
+        String jsonMessage =
+                "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"NASA_ISS-4.jpg\", " + "\"userId\": \"bobthegreat\", "
+                        + "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"EPC Internal User\" " + "}";
+        ImageMessage imageMessage  = ImageMessage.parseJsonMessage(jsonMessage);
+        kafkaPublisher.publishToTopic(imageMessage);
+    }
 }

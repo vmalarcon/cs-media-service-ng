@@ -594,7 +594,7 @@ public class MediaController extends CommonServiceController {
             dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);
         }
         publishMsg(imageMessageNew);
-        kafkaPublisher.publishToTopicByString(imageMessageNew);
+        kafkaPublisher.publishToTopic(imageMessageNew);
         final ResponseEntity<String> responseEntity = new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
         LOGGER.info("SUCCESS ResponseStatus={} ResponseBody={} ServiceUrl={}",
                 Arrays.asList(responseEntity.getStatusCode().toString(), responseEntity.getBody(), serviceUrl), imageMessageNew);

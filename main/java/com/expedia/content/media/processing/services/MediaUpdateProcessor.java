@@ -46,6 +46,8 @@ public class MediaUpdateProcessor {
     private MediaDao mediaDao;
     @Autowired
     private CatalogHeroProcessor catalogHeroProcessor;
+    @Autowired
+    private KafkaPublisher kafkaPublisher;
 
     /**
      * process media update, involve media table, catalogItemMedia table, and paragraph table in lcm.
@@ -85,6 +87,7 @@ public class MediaUpdateProcessor {
         }
         final Map<String, Object> response = new HashMap<>();
         response.put("status", Integer.valueOf(200));
+        kafkaPublisher.publishToTopic(imageMessage);
         final String jsonResponse = new ObjectMapper().writeValueAsString(response);
         return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
     }

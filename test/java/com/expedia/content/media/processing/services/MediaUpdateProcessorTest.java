@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
@@ -48,6 +49,9 @@ public class MediaUpdateProcessorTest {
 
     private MediaUpdateProcessor mediaUpdateProcessor;
 
+    @Mock
+    private KafkaPublisher kafkaPublisher;
+
     @Before
     public void testSetUp() throws Exception {
         mediaUpdateProcessor = new MediaUpdateProcessor();
@@ -55,6 +59,7 @@ public class MediaUpdateProcessorTest {
         setFieldValue(mediaUpdateProcessor, "catalogItemMediaDao", catalogItemMediaDao);
         setFieldValue(mediaUpdateProcessor, "mediaDao", mediaDao);
         setFieldValue(mediaUpdateProcessor, "catalogHeroProcessor", catalogHeroProcessor);
+        setFieldValue(mediaUpdateProcessor, "kafkaPublisher", kafkaPublisher);
     }
 
     @Test
