@@ -5,6 +5,7 @@ import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.util.ImageMessageAvroUtil;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -56,19 +57,20 @@ public class KafkaPublisher {
 
     private Producer<String, ImageMessageAvro> getProducer() {
         final Properties props = new Properties();
-        props.put("bootstrap.servers", kafkaServer);
-        props.put("key.serializer", "io.confluent.kafka.serializers.KafkaAvroSerializer");
-        props.put("value.serializer", "io.confluent.kafka.serializers.KafkaAvroSerializer");
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaServer);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroSerializer");
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroSerializer");
         props.put("schema.registry.url", kafkaSchemaServer);
+        //props.put("compression.codec", "snappy");
         return new KafkaProducer<String, ImageMessageAvro>(props);
     }
 
     private Producer<String, String> getStringProducer() {
         final Properties props = new Properties();
-        props.put("bootstrap.servers", kafkaServer);
-        props.put("key.serializer",
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaServer);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
                 "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.serializer",
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
                 "org.apache.kafka.common.serialization.StringSerializer");
         return new KafkaProducer<String, String>(props);
     }
