@@ -1,5 +1,25 @@
 package com.expedia.content.media.processing.services;
 
+import static com.expedia.content.media.processing.pipeline.util.SQSUtil.sendMessageToQueue;
+import static org.springframework.http.HttpStatus.ACCEPTED;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.OK;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.UUID;
+
+import javax.annotation.Resource;
+
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
@@ -27,22 +47,20 @@ import com.expedia.content.media.processing.services.util.FileNameUtil;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaReplacement;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
+import com.expedia.content.media.processing.services.util.ValidatorUtil;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
-import expedia.content.solutions.metrics.annotations.Counter;
-import expedia.content.solutions.metrics.annotations.Gauge;
-import expedia.content.solutions.metrics.annotations.Meter;
-import expedia.content.solutions.metrics.annotations.Timer;
+
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.Message;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
@@ -57,23 +75,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Resource;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.UUID;
-
-import static org.springframework.http.HttpStatus.ACCEPTED;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.OK;
+import expedia.content.solutions.metrics.annotations.Counter;
+import expedia.content.solutions.metrics.annotations.Gauge;
+import expedia.content.solutions.metrics.annotations.Meter;
+import expedia.content.solutions.metrics.annotations.Timer;
 
 /**
  * Web service controller for media resources.
@@ -164,7 +169,7 @@ public class MediaController extends CommonServiceController {
     @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST)
     @Deprecated public ResponseEntity<String> acquireMedia(@RequestBody final String message, @RequestHeader MultiValueMap<String,String> headers) throws Exception {
         final Date timeReceived = new Date();
-        final String requestID = this.getRequestId(headers);
+        final String requestID = verifyRequestId(headers, false);
         final String serviceUrl = MediaServiceUrl.ACQUIRE_MEDIA.getUrl();
         LOGGER.info("RECEIVED ACQUIRE REQUEST ServiceUrl={} RequestId={} JsonMessage={}", serviceUrl, requestID, message);
         try {
@@ -198,10 +203,10 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "addMessageCounter")
     @Timer(name = "addMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/images", method = RequestMethod.POST)
+    @RequestMapping(value = "/media/v1/images", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.POST)
     public ResponseEntity<String> mediaAdd(@RequestBody final String message, @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
         final Date timeReceived = new Date();
-        final String requestID = this.getRequestId(headers);
+        final String requestID = verifyRequestId(headers, true);
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
         LOGGER.info("RECEIVED ADD REQUEST ServiceUrl={} RequestId={} JSONMessage={}", serviceUrl, requestID, message);
         try {
@@ -233,7 +238,7 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "updateMessageCounter")
     @Timer(name = "updateMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/images/{queryId}", method = RequestMethod.PUT)
+    @RequestMapping(value = "/media/v1/images/{queryId}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.PUT)
     public ResponseEntity<String> mediaUpdate(@PathVariable("queryId") final String queryId, @RequestBody final String message, @RequestHeader final MultiValueMap<String,String> headers)
             throws Exception {
         final String requestID = this.getRequestId(headers);
@@ -287,8 +292,7 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "getMediaByGUIDMessageCounter")
     @Timer(name = "getMediaByGUIDMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/images/{mediaGUID}", produces = {
-            "application/json;charset=UTF-8"},method = RequestMethod.GET)
+    @RequestMapping(value = "/media/v1/images/{mediaGUID}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.GET)
     @Transactional
     public ResponseEntity<String> getMedia(@PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
         final String requestID = this.getRequestId(headers);
@@ -376,8 +380,7 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "getMediaByDomainIdMessageCounter")
     @Timer(name = "getMediaByDomainIdMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/imagesbydomain/{domainName}/domainId/{domainId}",produces = {
-            "application/json;charset=UTF-8"}, method = RequestMethod.GET)
+    @RequestMapping(value = "/media/v1/imagesbydomain/{domainName}/domainId/{domainId}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.GET)
     @Transactional
     public ResponseEntity<String> getMediaByDomainId(@PathVariable("domainName") final String domainName, @PathVariable("domainId") final String domainId,
             @RequestParam(value = "pageSize", required = false) final Integer pageSize,
@@ -721,15 +724,13 @@ public class MediaController extends CommonServiceController {
     @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     @RetryableMethod
     private void publishMsg(final ImageMessage message) {
-        message.addLogEntry(new LogEntry(App.MEDIA_SERVICE, Activity.MEDIA_MESSAGE_RECEIVED, new Date()));
-        final String jsonMessage = message.toJSONMessage();
+        message.addLogEntry(new LogEntry(App.MEDIA_SERVICE, Activity.MEDIA_MESSAGE_RECEIVED, new Date()));        
         try {
-            messagingTemplate.send(publishQueue, MessageBuilder.withPayload(jsonMessage).build());
-            LOGGER.info("Sending message to queue done", jsonMessage);
+            sendMessageToQueue(messagingTemplate, publishQueue, message);
             logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED, null);
         } catch (Exception ex) {
             LOGGER.error(ex, "Error publishing ErrorMessage={}", Arrays.asList(ex.getMessage()), message);
-            throw new RuntimeException("Error publishing message=[" + jsonMessage + "]", ex);
+            throw new RuntimeException("Error publishing message=[" + message.toJSONMessage() + "]", ex);
         }
     }
 
@@ -807,6 +808,26 @@ public class MediaController extends CommonServiceController {
             }
         }
         return null;
+    }
+
+    /**
+     * Retrieves the RequestId from the http request headers. It creates one if none is provided.
+     *
+     * @param headers HTTP request headers
+     * @param warnIfMissing raises a WARN level log if the requestId is missing, otherwise just INFO.
+     * @return RequestId from the headers or a new RequestId if none could be found in the headers.
+     */
+    private static String verifyRequestId(MultiValueMap<String,String> headers, boolean warnIfMissing) {
+        String requestID = getRequestId(headers);
+        if (!ValidatorUtil.isValidUUID(requestID)) {
+            requestID = UUID.randomUUID().toString();
+            if (warnIfMissing) {
+                LOGGER.warn("Creating RequestId={}", requestID);
+            } else {
+                LOGGER.warn("Creating RequestId={}", requestID);
+            }
+        }
+        return requestID;
     }
 
     /**

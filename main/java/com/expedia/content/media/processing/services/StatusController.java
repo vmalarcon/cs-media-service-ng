@@ -63,7 +63,7 @@ public class StatusController extends CommonServiceController {
     @SuppressWarnings({"rawtypes", "unchecked", "PMD.SignatureDeclareThrowsException"})
     @Meter(name = "mediaLatestStatusCounter")
     @Timer(name = "mediaLatestStatusTimer")
-    @RequestMapping(value = "/media/v1/lateststatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/media/v1/lateststatus", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @Transactional
     public ResponseEntity getMediaLatestStatus(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
         final String requestID = getRequestId(headers);
