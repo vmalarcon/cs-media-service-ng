@@ -6,11 +6,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.anyObject;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -19,6 +14,7 @@ import java.util.HashMap;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +29,12 @@ import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
 import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.anyObject;
+import static org.mockito.Mockito.times;
 
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
@@ -102,7 +104,8 @@ public class MediaUpdateProcessorTest {
         verify(catalogHeroProcessor).setMediaToHero(eq("bobthegreat"), eq(lcmCatalogItemMedia), anyBoolean(), anyString());
         verify(catalogHeroProcessor)
                 .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
-
+        ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(kafkaPublisher, times(1)).publishToTopic(imageMessage2.capture());
     }
 
     @Test
@@ -123,7 +126,8 @@ public class MediaUpdateProcessorTest {
         verify(catalogHeroProcessor).getCatalogItemMeida(12345, 123);
         verify(catalogHeroProcessor, never())
                 .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
-
+        ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(kafkaPublisher, times(1)).publishToTopic(imageMessage2.capture());
     }
 
     @Test
@@ -147,6 +151,8 @@ public class MediaUpdateProcessorTest {
         verify(catalogHeroProcessor).setMediaToHero(eq("bobthegreat"), eq(lcmCatalogItemMedia), anyBoolean(), anyString());
         verify(catalogHeroProcessor)
                 .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
+        ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(kafkaPublisher, times(1)).publishToTopic(imageMessage2.capture());
     }
 
     @Test
@@ -165,7 +171,8 @@ public class MediaUpdateProcessorTest {
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(mediaUpdateDao).updateMedia(imageMessage, 123);
         verify(catalogHeroProcessor).updateTimestamp(anyObject(), anyObject());
-
+        ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(kafkaPublisher, times(1)).publishToTopic(imageMessage2.capture());
     }
 
     @Test
@@ -196,7 +203,8 @@ public class MediaUpdateProcessorTest {
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(catalogItemMediaDao).getLcmRoomsByMediaId(123);
         verify(mediaUpdateDao).updateMediaTimestamp(anyObject(), anyObject());
-
+        ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(kafkaPublisher, times(1)).publishToTopic(imageMessage2.capture());
     }
     
     @Test
@@ -224,6 +232,8 @@ public class MediaUpdateProcessorTest {
         mediaUpdateProcessor.processRequest(updateMessage, "123", "12345", dynamoMedia);
         verify(mediaUpdateDao).updateMedia(updateMessage, 123);
         assertTrue(Boolean.FALSE.toString().equals(dynamoMedia.getActive()));
+        ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(kafkaPublisher, times(2)).publishToTopic(imageMessage2.capture());
     }
 
         @Test
@@ -237,9 +247,7 @@ public class MediaUpdateProcessorTest {
                 new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
                 new HashMap<>(), new ArrayList<>(), "", "", false, false, null);
 
-        mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
-
-
+            mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(mediaUpdateDao, never()).updateMedia(any(ImageMessage.class), anyInt());
         verify(mediaDao).saveMedia(dynamoMedia);
     }
