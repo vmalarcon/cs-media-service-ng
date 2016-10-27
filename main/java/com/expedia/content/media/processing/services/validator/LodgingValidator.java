@@ -1,12 +1,6 @@
 package com.expedia.content.media.processing.services.validator;
 
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-
-import javax.annotation.Resource;
-
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
@@ -14,10 +8,13 @@ import com.expedia.content.media.processing.services.dao.RoomTypeDao;
 import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
 import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.ValidatorUtil;
-
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import lombok.Getter;
+import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 
 /**
  * Provided the validation logic for MediaAdd
@@ -38,8 +35,8 @@ public class LodgingValidator implements MapMessageValidator {
     @Resource(name = "providerProperties")
     @Getter protected Properties providerProperties;
 
-    private final static String DEFAULT_LANG_ID = "1033";
-    
+    public final static String DEFAULT_LANG_ID = "1033";
+
     @Override
     public List<String> validateImages(List<ImageMessage> messageList) {
         final List<String> list = new ArrayList<>();
@@ -59,12 +56,13 @@ public class LodgingValidator implements MapMessageValidator {
             } catch (ClassCastException e) {
                 errorMsg.append("The rooms field must be a list.");
             }
+
             if (!mediaDomainCategoriesDao.subCategoryIdExists(imageMessage.getOuterDomainData(), DEFAULT_LANG_ID)) {
                 errorMsg.append("The provided category does not exist.");
             }             
             domainFieldsValidation(errorMsg, imageMessage);            
              if (errorMsg.length() > 0) {
-                ValidatorUtil.putErrorMapToList(list, errorMsg);
+                 ValidatorUtil.putErrorMapToList(list, errorMsg);
             }          
         }
         return list;

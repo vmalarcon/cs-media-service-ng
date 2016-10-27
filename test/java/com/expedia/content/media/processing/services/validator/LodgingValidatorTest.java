@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
@@ -524,8 +525,7 @@ public class LodgingValidatorTest {
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
         final List<String> errorList = lodgingAddValidator.validateImages(imageMessageList);
-        assertTrue(errorList.size() == 1);
-        assertTrue(errorList.get(0).equals("The provided category does not exist."));
+        assertEquals(errorList.size(), 0);
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
         verify(mockProviderProperties, times(1)).entrySet();
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
