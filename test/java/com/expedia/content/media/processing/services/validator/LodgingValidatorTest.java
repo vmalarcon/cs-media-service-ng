@@ -56,6 +56,7 @@ public class LodgingValidatorTest {
     Properties mockProviderProperties;
 
     LodgingAddValidator lodgingAddValidator;
+    LodgingValidator lodgingValidator;
     Map<String, Object> mediaProviderMockResults;
     Map<String, Object> catMockResults;
     final String LOCALID = "1033";
@@ -77,6 +78,7 @@ public class LodgingValidatorTest {
     public void initialize() throws NoSuchFieldException, IllegalAccessException {
 
         lodgingAddValidator = new LodgingAddValidator();
+        lodgingValidator = new LodgingValidator();
         mediaProviderMockResults = new HashMap<>();
         catMockResults = new HashMap<>();
         mockMediaCategories = new ArrayList<>();
@@ -100,7 +102,9 @@ public class LodgingValidatorTest {
         ReflectionUtils.setVariableValueInObject(lodgingAddValidator, "providerProperties", mockProviderProperties);
         ReflectionUtils.setVariableValueInObject(lodgingAddValidator, "skuGroupCatalogItemDao", mockSKUGroupCatalogItemDao);
         ReflectionUtils.setVariableValueInObject(lodgingAddValidator, "mediaDomainCategoriesDao", mockMediaDomainCategoriesDao);
+        ReflectionUtils.setVariableValueInObject(lodgingValidator, "mediaDomainCategoriesDao", mockMediaDomainCategoriesDao);
         ReflectionUtils.setVariableValueInObject(lodgingAddValidator, "roomTypeDao", roomTypeDao);
+        ReflectionUtils.setVariableValueInObject(lodgingValidator, "roomTypeDao", roomTypeDao);
         providerMapping = new HashSet<>();
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("1", "EPC Internal User"));
         providerMapping.add(new org.apache.commons.collections4.keyvalue.DefaultMapEntry("6", "SCORE"));
@@ -497,7 +501,7 @@ public class LodgingValidatorTest {
     }
 
     @Test
-    public void testSubCategory3() throws Exception {
+    public void testSubCategory3MediaAdd() throws Exception {
         final String jsonMsg =
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello.jpg\"," +
@@ -525,9 +529,44 @@ public class LodgingValidatorTest {
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
         final List<String> errorList = lodgingAddValidator.validateImages(imageMessageList);
-        assertEquals(errorList.size(), 0);
+        assertTrue(errorList.size() == 1);
+        assertTrue(errorList.get(0).equals("The provided category does not exist."));
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
         verify(mockProviderProperties, times(1)).entrySet();
+        verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
+        verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
+    }
+
+    @Test
+    public void testSubCategory3AcquireMedia() throws Exception {
+        final String jsonMsg =
+                "         { " +
+                        "    \"fileUrl\": \"http://well-formed-url/hello.jpg\"," +
+                        "    \"fileName\": \"Something\", " +
+                        "    \"mediaGuid\": \"media-uuid\", " +
+                        "    \"domain\": \"Lodging\", " +
+                        "    \"domainId\": \"123\", " +
+                        "    \"userId\": \"user-id\", " +
+                        "    \"domainProvider\": \"EPC Internal User\", " +
+                        "    \"domainFields\": { " +
+                        "          \"subcategoryId\": \"3\"," +
+                        "          \"propertyHero\": \"true\"," +
+                        "          \"rooms\": [ " +
+                        "               {" +
+                        "                 \"roomId\": \"222\", " +
+                        "                 \"roomHero\": \"true\" " +
+                        "               }" +
+                        "                     ]" +
+                        "                       }" +
+                        " }";
+        final ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        final List<ImageMessage> imageMessageList = new ArrayList<>();
+        imageMessageList.add(imageMessage);
+        when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
+        when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
+        when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
+        final List<String> errorList = lodgingValidator.validateImages(imageMessageList);
+        assertEquals(errorList.size(), 0);
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
         verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
     }

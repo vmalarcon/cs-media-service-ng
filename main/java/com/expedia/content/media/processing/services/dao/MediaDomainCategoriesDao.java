@@ -46,7 +46,7 @@ public class MediaDomainCategoriesDao {
     @SuppressWarnings("unchecked")
     public List<Category> getMediaCategoriesWithSubCategories(String domain, String localeId) throws DomainNotFoundException {
         if ("lodging".equals(domain.toLowerCase(Locale.US))) {
-            return getLodgingMediaCategoriesWithSubCategories(localeId);
+            return getLodgingMediaCategoriesWithSubCategories(domain, localeId);
         } else {
             throw new DomainNotFoundException("Domain Not Found");
         }
@@ -57,24 +57,15 @@ public class MediaDomainCategoriesDao {
      * populates each Category with Localized Names and SubCategories
      *
      * @param localeId The Localization Id to query by
+     * @param domain The domain to query by
      * @return List of Category Objects
      * @see Category, LocalizedName, Subcategory, SQLMediaDomainCategoriesSproc
      */
     @SuppressWarnings("unchecked")
-    private List<Category> getLodgingMediaCategoriesWithSubCategories(String localeId) {
-        final Map<String, Object> results = sproc.execute(localeId);
-        final List<MediaCategory> mediaCategories = (List<MediaCategory>) results.get(SQLMediaDomainCategoriesSproc.MEDIA_CATEGORY_RESULT_SET);
-        final List<MediaSubCategory> mediaSubCategories = (List<MediaSubCategory>) results.get(SQLMediaDomainCategoriesSproc.MEDIA_SUB_CATEGORY_RESULT_SET);
-
-        final Map<Integer, List<MediaCategory>> categoryMap = mediaCategories.stream()
-                .filter(category -> Integer.parseInt(category.getMediaCategoryID()) != SKIP_FEATURE_CATEGORIES)
-                .collect(Collectors.groupingBy(category -> Integer.parseInt(category.getMediaCategoryID())));
-        final Map<Integer, List<MediaSubCategory>> subCategoryMap = mediaSubCategories.stream()
-                .collect(Collectors.groupingBy(subCategory -> Integer.parseInt(subCategory.getMediaCategoryID())));
-        final List<Category> categoriesList = categoryMap.keySet().stream()
-                .map(categoryId -> new Category(String.valueOf(categoryId), categoryMap.get(categoryId).stream()
-                        .map(item -> new LocalizedName(item.getMediaCategoryName(), item.getLangID()))
-                        .collect(Collectors.toList()), getSubCategoryList(categoryId, subCategoryMap)))
+    private List<Category> getLodgingMediaCategoriesWithSubCategories(String domain, String localeId) {
+        final List<Category> allCategories = getAllLodgingMediaCategoriesWithSubCategories(domain, localeId);
+        final List<Category> categoriesList = allCategories.stream()
+                .filter(category -> Integer.parseInt(category.getCategoryId()) != SKIP_FEATURE_CATEGORIES)
                 .collect(Collectors.toList());
         return categoriesList;
     }
