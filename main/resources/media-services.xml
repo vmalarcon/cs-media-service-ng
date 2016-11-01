@@ -61,7 +61,7 @@
         <entry key="Multisource">
             <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
                 <ref bean="multisourceValidator"/>
-                <ref bean="lodgingAddValidator"/>
+                <ref bean="lodgingValidator"/>
             </list>
         </entry>
         <entry key="EPCUpdate">
@@ -342,6 +342,8 @@
             <bean class="com.expedia.content.media.processing.services.dao.PropertyRoomTypeGetIDSproc" />
         </constructor-arg>
     </bean>
+
+    <bean id="lodgingValidator" class="com.expedia.content.media.processing.services.validator.LodgingValidator" />
 
     <bean id="lodgingAddValidator" class="com.expedia.content.media.processing.services.validator.LodgingAddValidator" />
 
