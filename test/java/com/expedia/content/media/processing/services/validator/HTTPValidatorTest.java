@@ -1,12 +1,13 @@
 package com.expedia.content.media.processing.services.validator;
 
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.junit.Test;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.junit.Ignore;
+import org.junit.Test;
 
 public class HTTPValidatorTest {
 
@@ -28,6 +29,7 @@ public class HTTPValidatorTest {
         assertEquals(ValidationStatus.NOT_FOUND, status.getStatus());
     }
 
+    @Ignore
     @Test
     public void testRedAwningUrl() {
         ValidationStatus status = HTTPValidator.checkFileExists("https://www.redawning.com/sites/default/files/rental_property/681/coh0861-amay.jpg");
@@ -35,6 +37,7 @@ public class HTTPValidatorTest {
         assertEquals(ValidationStatus.VALID, status.getStatus());
     }
 
+    @Ignore
     @Test
     public void testSquareBracketUrl() {
         ValidationStatus status = HTTPValidator.checkFileExists("https://assets01.redawning.com/sites/default/files/rental_property/65905/CropperCapture[6].jpg");
