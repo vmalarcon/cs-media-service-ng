@@ -53,6 +53,7 @@ import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -183,7 +184,7 @@ public class MediaController extends CommonServiceController {
             final ResponseEntity<String> responseEntity = this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
             LOGGER.error(ex, "ERROR ServiceUrl={} ResponseStatus={} ResponseBody={} RequestId={} ErrorMessage={} JSONMessage={}",
                     responseEntity.getStatusCode().toString(), responseEntity.getBody(), serviceUrl, requestID, ex.getMessage(), message);
-            return responseEntity;
+            return new ResponseEntity<>(StringEscapeUtils.escapeHtml(responseEntity.getBody()), responseEntity.getStatusCode());
         } catch (Exception ex) {
             LOGGER.error(ex, "ERROR ServiceUrl={} RequestId={} ErrorMessage={} JSONMessage={}", serviceUrl, requestID, ex.getMessage(), message);
             poker.poke("Media Services failed to process an acquireMedia request - RequestId: " + requestID, hipChatRoom,
@@ -358,7 +359,7 @@ public class MediaController extends CommonServiceController {
             poker.poke("Media Services failed to process a deleteMedia request - RequestId: " + requestID, hipChatRoom, mediaGUID, ex);
             throw ex;
         }
-        return new ResponseEntity<>("Media GUID " + mediaGUID + " has been deleted successfully.", OK);
+        return new ResponseEntity<>("Media GUID " + StringEscapeUtils.escapeHtml(mediaGUID) + " has been deleted successfully.", OK);
     }
 
 

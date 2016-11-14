@@ -21,6 +21,7 @@ import com.expedia.content.media.processing.services.dao.domain.Category;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.tools.json.JSONWriter;
+import org.apache.commons.lang.StringEscapeUtils;
 
 /**
  * Contains methods to process JSON requests and generate JSON responses.
@@ -50,13 +51,13 @@ public final class JSONUtil {
      */
     public static Map buildMapFromJson(String jsonMessage) throws RequestMessageException {
         try {
-            return OBJECT_MAPPER.readValue(jsonMessage, Map.class);
+            return OBJECT_MAPPER.readValue(StringEscapeUtils.escapeSql(jsonMessage), Map.class);
         } catch (IOException ex) {
             final String errorMsg = MessageFormat.format("Error parsing/converting Json message: {0}", jsonMessage);
             throw new RequestMessageException(errorMsg, ex);
         }
     }
-    
+
     public static List<Map> buildMapListFromJson(String jsonMessage) throws RequestMessageException {
         try {
             return OBJECT_MAPPER.readValue(jsonMessage, List.class);
