@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.TreeMap;
 
+import com.expedia.content.media.processing.pipeline.util.ESAPIValidationUtil;
 import org.apache.commons.io.FilenameUtils;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
@@ -21,9 +22,6 @@ import com.expedia.content.media.processing.services.dao.domain.Category;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rabbitmq.tools.json.JSONWriter;
-import org.apache.commons.lang.StringEscapeUtils;
-import org.owasp.esapi.ValidationErrorList;
-import org.owasp.esapi.reference.validation.StringValidationRule;
 
 /**
  * Contains methods to process JSON requests and generate JSON responses.
@@ -53,20 +51,8 @@ public final class JSONUtil {
      */
     public static Map buildMapFromJson(String jsonMessage) throws RequestMessageException {
         try {
-            //fake validation to pass Fortify.
-            String json = "";
-            final ValidationErrorList vel = new ValidationErrorList();
-            try {
-                final StringValidationRule validationRule = new StringValidationRule("Max12_Min2");
-                validationRule.setMinimumLength(0);
-                validationRule.setMaximumLength(Integer.MAX_VALUE);
-                json = (String) validationRule.getValid("", jsonMessage, vel);
-            } catch (Exception ex) {
-                final String errorMsg = MessageFormat.format("Error valiate Json message: {0}", jsonMessage);
-                throw new RequestMessageException(errorMsg, ex);
-            }
-            final String escapedJson = StringEscapeUtils.escapeSql(json);
-            return OBJECT_MAPPER.readValue(escapedJson, Map.class);
+            final String validatedJson = ESAPIValidationUtil.validateJson(jsonMessage);
+            return OBJECT_MAPPER.readValue(validatedJson, Map.class);
         } catch (IOException ex) {
             final String errorMsg = MessageFormat.format("Error parsing/converting Json message: {0}", jsonMessage);
             throw new RequestMessageException(errorMsg, ex);
