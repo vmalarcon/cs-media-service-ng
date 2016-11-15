@@ -198,7 +198,7 @@
     <bean id="dynamoMediaRepository" class="com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository">
         <constructor-arg name="dynamoMapper" ref="dynamoMapper"/>
         <!-- TODO Remove dynamoMapper2 once migrated to US-West-2 -->
-        <constructor-arg name="dynamoMapper2" ref="#{'${EXPEDIA_ENVIRONMENT}'=='test' ? 'dynamoMapper2' : 'dynamoMapperNull'}" />
+        <constructor-arg name="dynamoMapper2" ref="#{'${EXPEDIA_ENVIRONMENT}'=='prod' ? 'dynamoMapper2' : 'dynamoMapperNull'}" />
         <constructor-arg name="environment" value="${EXPEDIA_ENVIRONMENT}"/>
     </bean>
     <bean id="lcmReporter" class="com.expedia.content.media.processing.pipeline.reporting.sql.LcmReporting">
