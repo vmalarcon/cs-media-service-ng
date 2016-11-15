@@ -1,5 +1,25 @@
 package com.expedia.content.media.processing.services;
 
+import static com.expedia.content.media.processing.pipeline.util.SQSUtil.sendMessageToQueue;
+import static org.springframework.http.HttpStatus.ACCEPTED;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
+import static org.springframework.http.HttpStatus.OK;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.UUID;
+
+import javax.annotation.Resource;
+
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
@@ -32,10 +52,8 @@ import com.expedia.content.media.processing.services.validator.MapMessageValidat
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
-import expedia.content.solutions.metrics.annotations.Counter;
-import expedia.content.solutions.metrics.annotations.Gauge;
-import expedia.content.solutions.metrics.annotations.Meter;
-import expedia.content.solutions.metrics.annotations.Timer;
+
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,7 +62,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.Message;
-import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
@@ -59,23 +76,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.annotation.Resource;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.UUID;
-
-import static org.springframework.http.HttpStatus.ACCEPTED;
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.OK;
+import expedia.content.solutions.metrics.annotations.Counter;
+import expedia.content.solutions.metrics.annotations.Gauge;
+import expedia.content.solutions.metrics.annotations.Meter;
+import expedia.content.solutions.metrics.annotations.Timer;
 
 /**
  * Web service controller for media resources.
@@ -148,6 +152,8 @@ public class MediaController extends CommonServiceController {
     private String hipChatRoom;
     @Autowired
     private Poker poker;
+    @Autowired
+    private KafkaPublisher kafkaPublisher;
 
     /**
      * web service interface to consume media message.
@@ -178,7 +184,7 @@ public class MediaController extends CommonServiceController {
             final ResponseEntity<String> responseEntity = this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
             LOGGER.error(ex, "ERROR ServiceUrl={} ResponseStatus={} ResponseBody={} RequestId={} ErrorMessage={} JSONMessage={}",
                     responseEntity.getStatusCode().toString(), responseEntity.getBody(), serviceUrl, requestID, ex.getMessage(), message);
-            return responseEntity;
+            return new ResponseEntity<>(StringEscapeUtils.escapeHtml(responseEntity.getBody()), responseEntity.getStatusCode());
         } catch (Exception ex) {
             LOGGER.error(ex, "ERROR ServiceUrl={} RequestId={} ErrorMessage={} JSONMessage={}", serviceUrl, requestID, ex.getMessage(), message);
             poker.poke("Media Services failed to process an acquireMedia request - RequestId: " + requestID, hipChatRoom,
@@ -353,7 +359,7 @@ public class MediaController extends CommonServiceController {
             poker.poke("Media Services failed to process a deleteMedia request - RequestId: " + requestID, hipChatRoom, mediaGUID, ex);
             throw ex;
         }
-        return new ResponseEntity<>("Media GUID " + mediaGUID + " has been deleted successfully.", OK);
+        return new ResponseEntity<>("Media GUID " + StringEscapeUtils.escapeHtml(mediaGUID) + " has been deleted successfully.", OK);
     }
 
 
@@ -592,6 +598,7 @@ public class MediaController extends CommonServiceController {
             dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);
         }
         publishMsg(imageMessageNew);
+        kafkaPublisher.publishToTopic(imageMessageNew);
         final ResponseEntity<String> responseEntity = new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
         LOGGER.info("SUCCESS ResponseStatus={} ResponseBody={} ServiceUrl={}",
                 Arrays.asList(responseEntity.getStatusCode().toString(), responseEntity.getBody(), serviceUrl), imageMessageNew);
@@ -610,7 +617,7 @@ public class MediaController extends CommonServiceController {
      */
     private Map<String, Object> updateImageMessage(final ImageMessage imageMessage, final String requestID, final String clientId) {
         final Map<String, Object> messageState = new HashMap<>();
-        ImageMessage.ImageMessageBuilder imageMessageBuilder = imageMessage.createBuilderFromMessage();
+        final ImageMessage.ImageMessageBuilder imageMessageBuilder = imageMessage.createBuilderFromMessage();
         imageMessageBuilder.mediaGuid(UUID.randomUUID().toString());
         final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
         imageMessageBuilder.outerDomainData(outerDomain);
@@ -717,15 +724,13 @@ public class MediaController extends CommonServiceController {
     @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     @RetryableMethod
     private void publishMsg(final ImageMessage message) {
-        message.addLogEntry(new LogEntry(App.MEDIA_SERVICE, Activity.MEDIA_MESSAGE_RECEIVED, new Date()));
-        final String jsonMessage = message.toJSONMessage();
+        message.addLogEntry(new LogEntry(App.MEDIA_SERVICE, Activity.MEDIA_MESSAGE_RECEIVED, new Date()));        
         try {
-            messagingTemplate.send(publishQueue, MessageBuilder.withPayload(jsonMessage).build());
-            LOGGER.info("Sending message to queue done", jsonMessage);
+            sendMessageToQueue(messagingTemplate, publishQueue, message);
             logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED, null);
         } catch (Exception ex) {
             LOGGER.error(ex, "Error publishing ErrorMessage={}", Arrays.asList(ex.getMessage()), message);
-            throw new RuntimeException("Error publishing message=[" + jsonMessage + "]", ex);
+            throw new RuntimeException("Error publishing message=[" + message.toJSONMessage() + "]", ex);
         }
     }
 

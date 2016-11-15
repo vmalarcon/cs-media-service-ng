@@ -942,11 +942,6 @@ public class LcmDynamoMediaDaoTest {
         Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 5, 2);
         assertEquals(5, stream.count());
     }
-
-    @Test
-    public void testGetMediaByFilenameInLCM() {
-        when()
-    }
     
     private MediaDao makeMockMediaDao(SQLMediaListSproc mediaIdSproc, SQLMediaItemGetSproc mediaItemSproc, DynamoMediaRepository mockMediaDBRepo,
                                       final Properties properties, SQLMediaGetSproc mediaGetSproc, LcmProcessLogDao processLogDao) throws NoSuchFieldException, IllegalAccessException {

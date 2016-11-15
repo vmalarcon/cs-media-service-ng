@@ -110,6 +110,8 @@ public class MediaControllerTest {
     private DynamoMediaRepository dynamoMediaRepository;
     @Mock
     Properties mockProviderProperties;
+    @Mock
+    private KafkaPublisher kafkaPublisher;
 
     private Set<Map.Entry<Object, Object>> providerMapping;
     private MediaController mediaController;
@@ -141,6 +143,8 @@ public class MediaControllerTest {
         DynamoMediaRepository dynamoMediaRepository = mock(DynamoMediaRepository.class);
         Mockito.doNothing().when(dynamoMediaRepository).storeMediaAddMessage(anyObject(), anyObject());
         FieldUtils.writeField(mediaController, "dynamoMediaRepository", dynamoMediaRepository, true);
+        FieldUtils.writeField(mediaController, "kafkaPublisher", kafkaPublisher, true);
+        Mockito.doNothing().when(kafkaPublisher).publishToTopic(anyObject());
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -189,6 +193,8 @@ public class MediaControllerTest {
         assertTrue(publishedMessageValue.getPayload().contains("\"activity\":\"" + Activity.MEDIA_MESSAGE_RECEIVED.getName() + "\""
                 + ",\"appName\":\"cs-media-service\",\"activityTime\":" ));
         verifyZeroInteractions(mockLcmDynamoMediaDao);
+        ArgumentCaptor<ImageMessage> imageMessage = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(kafkaPublisher, times(1)).publishToTopic(imageMessage.capture());
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -1501,7 +1507,6 @@ public class MediaControllerTest {
         CatalogHeroProcessor catalogHeroProcessor = getCatalogMock();
         MediaUpdateProcessor mockUpdateProcess = getMediaUpdateProcesser(catalogHeroProcessor);
         setFieldValue(mediaController, "mediaUpdateProcessor", mockUpdateProcess);
-
         setFieldValue(mediaController, "mapValidatorList", validators);
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         MultiValueMap<String, String> headers = new HttpHeaders();
@@ -2099,6 +2104,7 @@ public class MediaControllerTest {
         Mockito.doNothing().when(catalogItemMediaDao).addCatalogItemForRoom(anyInt(), anyInt(), anyInt(), anyObject());
         FieldUtils.writeField(mockUpdateProcess, "catalogItemMediaDao", catalogItemMediaDao, true);
         FieldUtils.writeField(mockUpdateProcess, "catalogHeroProcessor", catalogHeroProcessor, true);
+        setFieldValue(mockUpdateProcess, "kafkaPublisher", kafkaPublisher);
         return mockUpdateProcess;
     }
 

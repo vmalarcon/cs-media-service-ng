@@ -1,14 +1,16 @@
 package com.expedia.content.media.processing.services.validator;
 
-import java.util.List;
-
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.ValidatorUtil;
 import org.apache.commons.lang3.StringUtils;
 
-public class LodgingAddValidator extends LodgingValidator{
+import java.util.List;
+
+public class LodgingAddValidator extends LodgingValidator {
+
+
 
     public List<String> validateImages(List<ImageMessage> messageList) {
         final List<String> errorList = super.validateImages(messageList);
@@ -19,8 +21,7 @@ public class LodgingAddValidator extends LodgingValidator{
             }
         }
         return errorList;
- 
-    }  
+    }
     
     private StringBuffer validateRequest (ImageMessage imageMessage) {
         final StringBuffer errorMsg = new StringBuffer();
@@ -35,7 +36,11 @@ public class LodgingAddValidator extends LodgingValidator{
         if (!imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING)) {
             errorMsg.append("The provided domain does not exist.");
         }
-       return errorMsg;
+
+        if (mediaDomainCategoriesDao.isFeatureImage(imageMessage.getOuterDomainData())) {
+            errorMsg.append("The provided category does not exist.");
+        }
+        return errorMsg;
     }
 
 }

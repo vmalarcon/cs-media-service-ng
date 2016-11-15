@@ -1,5 +1,15 @@
 package com.expedia.content.media.processing.services.dao.dynamo;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Repository;
+
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
@@ -13,16 +23,6 @@ import com.expedia.content.media.processing.services.dao.domain.MediaDerivative;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Repository;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * DynamoDB implementation of the MediaConfigRepository interface.
@@ -33,11 +33,14 @@ public class DynamoMediaRepository {
     private static final FormattedLogger LOGGER = new FormattedLogger(DynamoMediaRepository.class);
     private final static ObjectWriter WRITER = new ObjectMapper().writer();
     private final DynamoDBMapper dynamoMapper;
+    //TODO Remove once migrated to US-West-2
+    private final DynamoDBMapper dynamoMapper2;
     private final String environment;
 
-    @Autowired
-    public DynamoMediaRepository(DynamoDBMapper dynamoMapper, String environment) {
+    public DynamoMediaRepository(DynamoDBMapper dynamoMapper, DynamoDBMapper dynamoMapper2, String environment) {
         this.dynamoMapper = dynamoMapper;
+        //TODO Remove once migrated to US-West-2
+        this.dynamoMapper2 = dynamoMapper2;
         this.environment = environment;
     }
 
@@ -80,6 +83,10 @@ public class DynamoMediaRepository {
      */
     public void deleteMedia(Media media) {
         dynamoMapper.delete(media);
+        //TODO Remove once migrated to US-West-2
+        if (dynamoMapper2 != null) {
+            dynamoMapper2.delete(media);
+        }
     }
 
     /**
@@ -109,6 +116,10 @@ public class DynamoMediaRepository {
     public void saveMedia(Media media) {
         try {
             dynamoMapper.save(media);
+            //TODO Remove once migrated to US-West-2
+            if (dynamoMapper2 != null) {
+                dynamoMapper2.save(media);
+            }
         } catch (Exception e) {
             LOGGER.error(e, "ERROR when trying to save in dynamodb MediaGuid={} ClientID={} ErrorMessage={}.", media.getMediaGuid(), media.getClientId(), e.getMessage());
             throw new MediaDBException(e.getMessage(), e);
@@ -189,9 +200,17 @@ public class DynamoMediaRepository {
     public void storeMediaAddMessage(ImageMessage imageMessage, Thumbnail thumbnail) {
         try {
             dynamoMapper.save(buildMedia(imageMessage, thumbnail));
+            //TODO Remove once migrated to US-West-2
+            if (dynamoMapper2 != null) {
+                dynamoMapper2.save(buildMedia(imageMessage, thumbnail));
+            }
             LOGGER.info("Media successfully added in dynamodb", imageMessage);
             if (imageMessage.isGenerateThumbnail()) {
                 dynamoMapper.save(buildDerivative(imageMessage, thumbnail));
+                //TODO Remove once migrated to US-West-2
+                if (dynamoMapper2 != null) {
+                    dynamoMapper2.save(buildDerivative(imageMessage, thumbnail));
+                }
                 LOGGER.info("Thumbnail derivative successfully added in dynamodb ThumbnailDerivative={}",
                         Arrays.asList(String.valueOf(thumbnail)), imageMessage);
             }

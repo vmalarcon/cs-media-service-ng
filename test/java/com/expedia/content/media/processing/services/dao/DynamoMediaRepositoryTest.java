@@ -15,7 +15,6 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -42,7 +41,7 @@ public class DynamoMediaRepositoryTest {
     @Before
     public void setup() {
         mediaList = defaultMediaList();
-        dynamoMediaRepository = new DynamoMediaRepository(dynamoMapper, environment);
+        dynamoMediaRepository = new DynamoMediaRepository(dynamoMapper, null, environment);
         when(paginatedQueryList.stream()).thenReturn(mediaList.stream()).thenReturn(mediaList.stream());
         when(dynamoMapper.query(eq(Media.class), anyObject())).thenReturn(paginatedQueryList);
         when(dynamoMapper.load(eq(Media.class),eq("g01"))).thenReturn(mediaList.get(0));

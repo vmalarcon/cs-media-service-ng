@@ -2,24 +2,24 @@ package com.expedia.content.media.processing.services.dao;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import com.expedia.content.media.processing.services.dao.domain.Category;
+import com.expedia.content.media.processing.services.dao.domain.MediaCategory;
+import com.expedia.content.media.processing.services.dao.domain.MediaSubCategory;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaDomainCategoriesSproc;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import com.expedia.content.media.processing.services.dao.domain.Category;
-import com.expedia.content.media.processing.services.dao.domain.MediaCategory;
-import com.expedia.content.media.processing.services.dao.domain.MediaSubCategory;
-import com.expedia.content.media.processing.services.dao.sql.SQLMediaDomainCategoriesSproc;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -41,9 +41,11 @@ public class MediaDomainCategoriesDaoTest {
         String domain = "lodging";
         String localeId = "1033";
         List<MediaCategory> mockMediaCategories = new ArrayList<>();
+        mockMediaCategories.add(new MediaCategory("3", "1033", "Primary Image"));
         mockMediaCategories.add(new MediaCategory("4", "1033", "Lobby"));
         mockMediaCategories.add(new MediaCategory("5", "1033", "Guestroom"));
         List<MediaSubCategory> mockMediaSubCategories = new ArrayList<>();
+        mockMediaSubCategories.add(new MediaSubCategory("3", "3", "1033", "Featured Image"));
         mockMediaSubCategories.add(new MediaSubCategory("4", "10000", "1033", "Interior Entrance"));
         mockMediaSubCategories.add(new MediaSubCategory("4", "10001", "1033", "Lobby"));
         mockMediaSubCategories.add(new MediaSubCategory("5", "22022", "1033", "Minibar"));
@@ -53,6 +55,8 @@ public class MediaDomainCategoriesDaoTest {
         when(mockResults.get(SQLMediaDomainCategoriesSproc.MEDIA_SUB_CATEGORY_RESULT_SET)).thenReturn(mockMediaSubCategories);
         List<Category> categories = mediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
         assertNotEquals(categories, null);
+        assertEquals(2, categories.size());
+        assertEquals(0, categories.stream().filter(category -> category.getCategoryId().equals("3")).collect(Collectors.toList()).size());
     }
 
     @Test
@@ -69,6 +73,8 @@ public class MediaDomainCategoriesDaoTest {
         when(mockResults.get(SQLMediaDomainCategoriesSproc.MEDIA_SUB_CATEGORY_RESULT_SET)).thenReturn(mockMediaSubCategories);
         List<Category> categories = mediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
         assertNotEquals(categories, null);
+        assertEquals(2, categories.size());
+        assertEquals(categories.stream().filter(category -> category.getCategoryId().equals("3")).collect(Collectors.toList()).size(), 0);
     }
 
     /**
