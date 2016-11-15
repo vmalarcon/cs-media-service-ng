@@ -8,7 +8,6 @@ import com.expedia.content.media.processing.services.dao.domain.LcmMediaRoom;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
-import com.expedia.content.media.processing.services.dao.sql.GetMediaIDSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaContentProviderNameGetSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaDeleteSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaGetSproc;
@@ -28,7 +27,6 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.InvocationTargetException;
@@ -70,7 +68,6 @@ public class LcmDynamoMediaDaoTest {
 
     SQLRoomGetByMediaIdSproc roomGetByMediaIdSproc = null;
     SQLRoomGetByCatalogItemIdSproc roomGetByCatalogItemIdSproc = null;
-    final GetMediaIDSproc getMediaIDSproc = Mockito.mock(GetMediaIDSproc.class);
 
     @Before
     public void setUp() throws Exception {
@@ -959,7 +956,6 @@ public class LcmDynamoMediaDaoTest {
         setFieldValue(mediaDao, "imageRootPath", "https://media.int.expedia.com/");
         setFieldValue(mediaDao, "roomGetByMediaIdSproc", roomGetByMediaIdSproc);
         setFieldValue(mediaDao, "roomGetByCatalogItemIdSproc", roomGetByCatalogItemIdSproc);
-        setFieldValue(mediaDao, "getMediaIDSproc", getMediaIDSproc);
         return mediaDao;
     }
 
