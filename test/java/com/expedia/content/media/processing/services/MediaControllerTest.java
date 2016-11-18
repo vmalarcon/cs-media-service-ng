@@ -1,5 +1,61 @@
 package com.expedia.content.media.processing.services;
 
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
+import static com.expedia.content.media.processing.services.util.MediaReplacementTest.createByFileNameMedia;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyList;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.codehaus.plexus.util.ReflectionUtils;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.Message;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.util.MultiValueMap;
+
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
@@ -34,61 +90,6 @@ import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.google.common.collect.Lists;
-import org.apache.commons.lang3.reflect.FieldUtils;
-import org.codehaus.plexus.util.ReflectionUtils;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.Message;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.util.MultiValueMap;
-
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-import static com.expedia.content.media.processing.services.util.MediaReplacementTest.createByFileNameMedia;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
 @RunWith(MockitoJUnitRunner.class)
@@ -427,15 +428,41 @@ public class MediaControllerTest {
         commentList.add("Comment2");
         Map<String, Object> domainData = new HashMap<>();
         domainData.put("propertyHero", "true");
-        Media mediaItem1 = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file_name.jpg")
-                .mediaGuid("102d3a4b-c985-43d3-9245-b60ab1eb9a0f").lastUpdated(new Date()).domainData(domainData).lcmMediaId("4321").build();
-        Media mediaItem2 = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file2_name.jpg")
-                .mediaGuid("ea868d7d-c4ce-41a8-be43-19fff0ce5ad4").lastUpdated(new Date()).commentList(commentList).build();
+
+        Media mediaItem1 = Media.builder()
+                .active("true")
+                .domain("Lodging")
+                .domainId("1234")
+                .fileName("1234_file_name.jpg")
+                .sourceUrl("http://some-source-url-1")
+                .mediaGuid("102d3a4b-c985-43d3-9245-b60ab1eb9a0f")
+                .lastUpdated(new Date())
+                .domainData(domainData)
+                .lcmMediaId("4321")
+                .build();
+
+        Media mediaItem2 = Media.builder()
+                .active("true")
+                .domain("Lodging")
+                .domainId("1234")
+                .fileName("1234_file2_name.jpg")
+                .sourceUrl("http://some-source-url-2")
+                .mediaGuid("ea868d7d-c4ce-41a8-be43-19fff0ce5ad4")
+                .lastUpdated(new Date())
+                .commentList(commentList)
+                .build();
+
         List<Media> mediaValues = new ArrayList<>();
         mediaValues.add(mediaItem1);
         mediaValues.add(mediaItem2);
 
-        MediaByDomainIdResponse response = MediaByDomainIdResponse.builder().domain("Lodging").domainId("1234").totalMediaCount(mediaValues.size()).images(transformMediaListForResponse(mediaValues)).build();
+        MediaByDomainIdResponse response = MediaByDomainIdResponse.builder()
+                .domain("Lodging")
+                .domainId("1234")
+                .totalMediaCount(mediaValues.size())
+                .images(transformMediaListForResponse(mediaValues))
+                .build();
+
         MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
         when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(response);
         SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
@@ -466,6 +493,15 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"mediaGuid\":\"ea868d7d-c4ce-41a8-be43-19fff0ce5ad4\""));
         assertTrue(responseEntity.getBody().contains("\"lcmMediaId\":\"4321\""));
         assertTrue(responseEntity.getBody().contains("\"domainFields\":{"));
+
+
+        Map<String, Object> jsonMap = JSONUtil.buildMapFromJson(responseEntity.getBody());
+        Map map1 =(HashMap)((List) jsonMap.get("images")).get(0);
+        assertTrue(map1.get("mediaGuid").equals("102d3a4b-c985-43d3-9245-b60ab1eb9a0f"));
+        assertTrue(map1.get("sourceUrl").equals("http://some-source-url-1"));
+        Map map2 =(HashMap)((List) jsonMap.get("images")).get(1);
+        assertTrue(map2.get("mediaGuid").equals("ea868d7d-c4ce-41a8-be43-19fff0ce5ad4"));
+        assertTrue(map2.get("sourceUrl").equals("http://some-source-url-2"));
     }
 
     @Test
@@ -487,20 +523,55 @@ public class MediaControllerTest {
         domainData.put("subcategoryId", "10001");
 
 
-        Media mediaItem1 = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file_name.jpg")
-                .mediaGuid("first3a4b-c985-43d3-9245-b60ab1eb9a0f").lastUpdated(new Date(new Date().getTime()+5000)).domainData(domainData).lcmMediaId("4321").build();
-        Media mediaItem2 = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file2_name.jpg")
-                .mediaGuid("ea868d7d-c4ce-41a8-be43-19fff0ce5ad4").lastUpdated(new Date(new Date().getTime()+100000)).domainData(domainData2).commentList(
-                        commentList).build();
-        Media mediaItem3 = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("1234_file2_name.jpg")
-                .mediaGuid("last8d7d-c4ce-41a8-be43-19fff0ce5ad4").lastUpdated(new Date()).domainData(domainData3).commentList(commentList).build();
+        Media mediaItem1 = Media.builder()
+                .active("true")
+                .domain("Lodging")
+                .domainId("1234")
+                .fileName("1234_file_name.jpg")
+                .sourceUrl("http://some-source-url-1")
+                .mediaGuid("first3a4b-c985-43d3-9245-b60ab1eb9a0f")
+                .lastUpdated(new Date(new Date().getTime()+5000))
+                .domainData(domainData)
+                .lcmMediaId("4321")
+                .build();
+
+        Media mediaItem2 = Media.builder()
+                .active("true")
+                .domain("Lodging")
+                .domainId("1234")
+                .fileName("1234_file2_name.jpg")
+                .sourceUrl("http://some-source-url-2")
+                .mediaGuid("ea868d7d-c4ce-41a8-be43-19fff0ce5ad4")
+                .lastUpdated(new Date(new Date().getTime()+100000))
+                .domainData(domainData2)
+                .commentList(commentList)
+                .build();
+
+        Media mediaItem3 = Media.builder()
+                .active("true")
+                .domain("Lodging")
+                .domainId("1234")
+                .fileName("1234_file2_name.jpg")
+                .sourceUrl("http://some-source-url-3")
+                .mediaGuid("last8d7d-c4ce-41a8-be43-19fff0ce5ad4")
+                .lastUpdated(new Date())
+                .domainData(domainData3)
+                .commentList(commentList)
+                .build();
+
         List<Media> mediaValues = new ArrayList<>();
         mediaValues.add(mediaItem1);
         mediaValues.add(mediaItem2);
         mediaValues.add(mediaItem3);
 
 
-        MediaByDomainIdResponse response = MediaByDomainIdResponse.builder().domain("Lodging").domainId("1234").totalMediaCount(mediaValues.size()).images(transformMediaListForResponse(mediaValues)).build();
+        MediaByDomainIdResponse response = MediaByDomainIdResponse.builder()
+                .domain("Lodging")
+                .domainId("1234")
+                .totalMediaCount(mediaValues.size())
+                .images(transformMediaListForResponse(mediaValues))
+                .build();
+
         MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
         when(mockMediaDao.getMediaByDomainId(any(), anyString(), anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(response);
         SKUGroupCatalogItemDao skuGroupCatalogItemDao = mock(SKUGroupCatalogItemDao.class);
@@ -516,11 +587,15 @@ public class MediaControllerTest {
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         Map<String, Object> jsonMap = JSONUtil.buildMapFromJson(responseEntity.getBody());
-        Map map =(HashMap)((List) jsonMap.get("images")).get(0);
-        assertTrue(map.get("mediaGuid").equals("first3a4b-c985-43d3-9245-b60ab1eb9a0f"));
-        Map map2 =(HashMap)((List) jsonMap.get("images")).get(2);
-        assertTrue(map2.get("mediaGuid").equals("last8d7d-c4ce-41a8-be43-19fff0ce5ad4"));
-
+        Map map1 =(HashMap)((List) jsonMap.get("images")).get(0);
+        assertTrue(map1.get("mediaGuid").equals("first3a4b-c985-43d3-9245-b60ab1eb9a0f"));
+        assertTrue(map1.get("sourceUrl").equals("http://some-source-url-1"));
+        Map map2 =(HashMap)((List) jsonMap.get("images")).get(1);
+        assertTrue(map2.get("mediaGuid").equals("ea868d7d-c4ce-41a8-be43-19fff0ce5ad4"));
+        assertTrue(map2.get("sourceUrl").equals("http://some-source-url-2"));
+        Map map3 =(HashMap)((List) jsonMap.get("images")).get(2);
+        assertTrue(map3.get("mediaGuid").equals("last8d7d-c4ce-41a8-be43-19fff0ce5ad4"));
+        assertTrue(map3.get("sourceUrl").equals("http://some-source-url-3"));
     }
 
     @Test
@@ -935,8 +1010,17 @@ public class MediaControllerTest {
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
 
-        Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
-                .lcmMediaId("123456").lastUpdated(new Date()).lcmMediaId("123456").build();
+        Media resultMedia = Media.builder()
+                .active("true")
+                .domain("Lodging")
+                .domainId("1234")
+                .fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
+                .sourceUrl("http://some-source-url")
+                .lcmMediaId("123456")
+                .lastUpdated(new Date())
+                .lcmMediaId("123456")
+                .build();
+
         MediaDao mockMediaDao = mock(MediaDao.class);
         when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(transformSingleMediaForResponse(resultMedia));
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
@@ -951,6 +1035,7 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"domainFields\":{"));
         assertTrue(responseEntity.getBody().contains("\"lcmMediaId\":\"" + resultMedia.getLcmMediaId() + "\""));
         assertTrue(responseEntity.getBody().contains("\"fileName\":\"" + resultMedia.getFileName() + "\""));
+        assertTrue(responseEntity.getBody().contains("\"sourceUrl\":\"" + resultMedia.getSourceUrl() + "\""));
     }
 
     @Test
@@ -959,8 +1044,18 @@ public class MediaControllerTest {
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
 
-        Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
-                .lcmMediaId("123456").lastUpdated(new Date()).lcmMediaId("123456").mediaGuid("d2d4d480-9627-47f9-86c6-1874c18d37f4").build();
+        Media resultMedia = Media.builder()
+                .active("true")
+                .domain("Lodging")
+                .domainId("1234")
+                .fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
+                .sourceUrl("http://some-source-url")
+                .lcmMediaId("123456")
+                .lastUpdated(new Date())
+                .lcmMediaId("123456")
+                .mediaGuid("d2d4d480-9627-47f9-86c6-1874c18d37f4")
+                .build();
+
         MediaDao mockMediaDao = mock(MediaDao.class);
         when(mockMediaDao.getMediaByGUID(anyString())).thenReturn(transformSingleMediaForResponse(resultMedia));
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
@@ -976,6 +1071,7 @@ public class MediaControllerTest {
         assertTrue(responseEntity.getBody().contains("\"domainFields\":{"));
         assertTrue(responseEntity.getBody().contains("\"lcmMediaId\":\"" + resultMedia.getLcmMediaId() + "\""));
         assertTrue(responseEntity.getBody().contains("\"fileName\":\"" + resultMedia.getFileName() + "\""));
+        assertTrue(responseEntity.getBody().contains("\"sourceUrl\":\"" + resultMedia.getSourceUrl() + "\""));
     }
 
     @Test
@@ -1581,7 +1677,7 @@ public class MediaControllerTest {
         Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
                 .lcmMediaId("123456").lastUpdated(new Date()).lcmMediaId("123456").mediaGuid("d2d4d480-9627-47f9-86c6-1874c18d37f4").build();
         MediaDao mockMediaDao = mock(MediaDao.class);
-        when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(Arrays.asList(resultMedia));
+        when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(Collections.singletonList(resultMedia));
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         Map<String, List<MapMessageValidator>> validators = getMockValidators();
         setFieldValue(mediaController, "mapValidatorList", validators);
@@ -1595,7 +1691,7 @@ public class MediaControllerTest {
     /**
      * CSPB-532224 Thumbail processor must return 422 error when an unprocessable image is received
      *
-     * @throws Exception
+     * @throws Exception -
      */
     @Test
     public void testCorruptedImageFailToCreateThumbnail() throws Exception {
@@ -1963,10 +2059,10 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "mediaDao", lcmDynamoMediaDao);
         DynamoMediaRepository mockMediaRepo = mock(DynamoMediaRepository.class);
         setFieldValue(lcmDynamoMediaDao, "mediaRepo", mockMediaRepo);
-        when(mockMediaRepo.loadMedia(Domain.LODGING, "1234")).thenReturn(new ArrayList<Media>());
+        when(mockMediaRepo.loadMedia(Domain.LODGING, "1234")).thenReturn(new ArrayList<>());
         SQLMediaListSproc mockLcmMediaListSproc = mock(SQLMediaListSproc.class);
         setFieldValue(lcmDynamoMediaDao, "lcmMediaListSproc", mockLcmMediaListSproc);
-        Map<String, Object> mockMap = mock(Map.class);
+        Map mockMap = mock(Map.class);
         when(mockLcmMediaListSproc.execute(1234)).thenReturn(mockMap);
         when(mockMap.get(SQLMediaListSproc.MEDIA_SET)).thenReturn(new ArrayList<LcmMediaAndDerivative>());
         SQLRoomGetByCatalogItemIdSproc mockRoomGetByCatalogItemIdSproc = mock(SQLRoomGetByCatalogItemIdSproc.class);
@@ -2225,6 +2321,7 @@ public class MediaControllerTest {
         return MediaGetResponse.builder()
                 .mediaGuid(media.getMediaGuid())
                 .fileUrl(media.getFileUrl())
+                .sourceUrl(media.getSourceUrl())
                 .fileName(media.getFileName())
                 .active(media.getActive())
                 .width(media.getWidth())
@@ -2254,6 +2351,7 @@ public class MediaControllerTest {
             return DomainIdMedia.builder()
                     .mediaGuid(media.getMediaGuid())
                     .fileUrl(media.getFileUrl())
+                    .sourceUrl(media.getSourceUrl())
                     .fileName(media.getFileName())
                     .active(media.getActive())
                     .width(media.getWidth())

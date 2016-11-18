@@ -1,32 +1,34 @@
 package com.expedia.content.media.processing.services.reqres;
 
-import lombok.Builder;
-import lombok.Getter;
-
 import java.util.List;
 import java.util.Map;
+
+import lombok.Builder;
+import lombok.Getter;
 
 /**
  * Media response object representation.
  */
 @Builder
+@Getter
 @SuppressWarnings({"PMD.UnusedPrivateField"})
 public class DomainIdMedia {
 
-    @Getter private final String mediaGuid;
-    @Getter private final String fileUrl;
-    @Getter private final String fileName;
-    @Getter private final String active;
-    @Getter private final Integer width;
-    @Getter private final Integer height;
-    @Getter private final Long fileSize;
-    @Getter private final String status;
-    @Getter private final String lastUpdatedBy;
-    @Getter private final String lastUpdateDateTime;
-    @Getter private final String domainProvider;
-    @Getter private final String domainDerivativeCategory;
-    @Getter private final Map<String, Object> domainFields;
-    @Getter private final List<Map<String, Object>> derivatives;
-    @Getter private final List<Comment> comments;
+    private final String mediaGuid;
+    private final String fileUrl;
+    private final String sourceUrl;
+    private final String fileName;
+    private final String active;
+    private final Integer width;
+    private final Integer height;
+    private final Long fileSize;
+    private final String status;
+    private final String lastUpdatedBy;
+    private final String lastUpdateDateTime;
+    private final String domainProvider;
+    private final String domainDerivativeCategory;
+    private final Map<String, Object> domainFields;
+    private final List<Map<String, Object>> derivatives;
+    private final List<Comment> comments;
 
 }

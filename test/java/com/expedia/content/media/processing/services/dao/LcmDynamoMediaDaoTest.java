@@ -1,5 +1,44 @@
 package com.expedia.content.media.processing.services.dao;
 
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
+import static junit.framework.TestCase.assertFalse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import org.joda.time.LocalDateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.util.ReflectionUtils;
+
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaAndDerivative;
@@ -22,52 +61,14 @@ import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
 import com.expedia.content.media.processing.services.util.FileNameUtil;
 import com.google.common.collect.Maps;
-import org.joda.time.LocalDateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import org.junit.Before;
-import org.junit.Test;
-import org.springframework.util.ReflectionUtils;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-import static junit.framework.TestCase.assertFalse;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
 
 public class LcmDynamoMediaDaoTest {
 
     private static final String RESPONSE_FIELD_LCM_MEDIA_ID = "lcmMediaId";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS ZZ");
 
-    SQLRoomGetByMediaIdSproc roomGetByMediaIdSproc = null;
-    SQLRoomGetByCatalogItemIdSproc roomGetByCatalogItemIdSproc = null;
+    private SQLRoomGetByMediaIdSproc roomGetByMediaIdSproc = null;
+    private SQLRoomGetByCatalogItemIdSproc roomGetByCatalogItemIdSproc = null;
 
     @Before
     public void setUp() throws Exception {
@@ -260,7 +261,8 @@ public class LcmDynamoMediaDaoTest {
         MediaByDomainIdResponse testMediaResponse1 = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", "true", null, null, null, null);
 
         assertEquals(1, testMediaResponse1.getImages().size());
-        testMediaResponse1.getImages().stream().forEach(media -> assertEquals(2, media.getDerivatives().size()));
+        testMediaResponse1.getImages()
+                .forEach(media -> assertEquals(2, media.getDerivatives().size()));
         DomainIdMedia testMedia1 = testMediaResponse1.getImages().get(0);
         assertEquals(mediaList.get(0).getDomainId().toString(), testMediaResponse1.getDomainId());
         assertEquals(mediaList.get(0).getLastUpdatedBy(), testMedia1.getLastUpdatedBy());
@@ -506,6 +508,7 @@ public class LcmDynamoMediaDaoTest {
         MediaGetResponse guidMediaGet = transformSingleMediaForResponse(guidMedia);
         assertEquals(guidMediaGet.getMediaGuid(), resultMedia.getMediaGuid());
         assertEquals(guidMediaGet.getFileName(), resultMedia.getFileName());
+        assertEquals(guidMediaGet.getSourceUrl(), resultMedia.getSourceUrl());
         assertEquals(guidMediaGet.getActive(), resultMedia.getActive());
         assertEquals(guidMediaGet.getStatus(), resultMedia.getStatus());
     }
@@ -607,9 +610,8 @@ public class LcmDynamoMediaDaoTest {
 
         assertTrue(testMediaResponse.getTotalMediaCount() == 50);
         assertNotEquals(testMediaResponse.getImages().get(1).getMediaGuid(), "0aaaaaaa-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww");
-        IntStream.range(0, 20).forEach(i -> {
-            assertEquals(testMediaResponse.getImages().get(i).getMediaGuid(), (i + 19) + "aaaaaa-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww");
-        });
+        IntStream.range(0, 20)
+                .forEach(i -> assertEquals(testMediaResponse.getImages().get(i).getMediaGuid(), (i + 19) + "aaaaaa-bbbb-bbbb-bbbb-1234-wwwwwwwwwwww"));
     }
 
     @Test
@@ -775,6 +777,7 @@ public class LcmDynamoMediaDaoTest {
         MediaGetResponse guidMediaGet = transformSingleMediaForResponse(guidMedia);
         assertEquals(guidMediaGet.getMediaGuid(), resultMedia.getMediaGuid());
         assertEquals(guidMediaGet.getFileName(), resultMedia.getFileName());
+        assertEquals(guidMediaGet.getSourceUrl(), resultMedia.getSourceUrl());
         assertEquals(guidMediaGet.getActive(), resultMedia.getActive());
         assertEquals(guidMediaGet.getStatus(), resultMedia.getStatus());
     }
@@ -794,6 +797,7 @@ public class LcmDynamoMediaDaoTest {
         MediaGetResponse guidMediaGet = transformSingleMediaForResponse(guidMedia);
         assertEquals(guidMediaGet.getMediaGuid(), resultMedia.getMediaGuid());
         assertEquals(guidMediaGet.getFileName(), resultMedia.getFileName());
+        assertEquals(guidMediaGet.getSourceUrl(), resultMedia.getSourceUrl());
         assertEquals(guidMediaGet.getActive(), resultMedia.getActive());
         assertEquals("PUBLISHED", resultMedia.getStatus());
     }
@@ -902,7 +906,7 @@ public class LcmDynamoMediaDaoTest {
         LcmDynamoMediaDao lcmDynamoMediaDao = new LcmDynamoMediaDao();
         Method method = ReflectionUtils.findMethod(LcmDynamoMediaDao.class, "paginateItems", Stream.class, Integer.class, Integer.class);
         method.setAccessible(true);
-        Stream items = Arrays.asList(new Integer[12]).stream();
+        Stream items = Arrays.stream(new Integer[12]);
         Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 5, 3);
         assertEquals(2, stream.count());
     }
@@ -913,7 +917,7 @@ public class LcmDynamoMediaDaoTest {
         LcmDynamoMediaDao lcmDynamoMediaDao = new LcmDynamoMediaDao();
         Method method = ReflectionUtils.findMethod(LcmDynamoMediaDao.class, "paginateItems", Stream.class, Integer.class, Integer.class);
         method.setAccessible(true);
-        Stream items = Arrays.asList(new Integer[12]).stream();
+        Stream items = Arrays.stream(new Integer[12]);
         Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 13, 1);
         assertEquals(12, stream.count());
     }
@@ -924,7 +928,7 @@ public class LcmDynamoMediaDaoTest {
         LcmDynamoMediaDao lcmDynamoMediaDao = new LcmDynamoMediaDao();
         Method method = ReflectionUtils.findMethod(LcmDynamoMediaDao.class, "paginateItems", Stream.class, Integer.class, Integer.class);
         method.setAccessible(true);
-        Stream items = Arrays.asList(new Integer[12]).stream();
+        Stream items = Arrays.stream(new Integer[12]);
         Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 5, 1);
         assertEquals(5, stream.count());
     }
@@ -935,7 +939,7 @@ public class LcmDynamoMediaDaoTest {
         LcmDynamoMediaDao lcmDynamoMediaDao = new LcmDynamoMediaDao();
         Method method = ReflectionUtils.findMethod(LcmDynamoMediaDao.class, "paginateItems", Stream.class, Integer.class, Integer.class);
         method.setAccessible(true);
-        Stream items = Arrays.asList(new Integer[12]).stream();
+        Stream items = Arrays.stream(new Integer[12]);
         Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 5, 2);
         assertEquals(5, stream.count());
     }
@@ -962,7 +966,7 @@ public class LcmDynamoMediaDaoTest {
 
     private LcmProcessLogDao makeMockProcessLogPreviouslyPublishedDao() {
         LcmProcessLogDao mockProcessLogDao = mock(LcmProcessLogDao.class);
-        List<MediaProcessLog> mediaLogStatuses = new ArrayList<MediaProcessLog>();
+        List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
         MediaProcessLog mediaLogStatus1 = new MediaProcessLog("2014-07-29 10:08:11.6890000 -07:00", "image1.jpg", "Something", "Lodging");
         mediaLogStatuses.add(mediaLogStatus1);
         mediaLogStatuses.add(mediaLogStatus1);
@@ -1005,7 +1009,7 @@ public class LcmDynamoMediaDaoTest {
 
     private LcmProcessLogDao makeMockProcessLogDao() {
         LcmProcessLogDao mockProcessLogDao = mock(LcmProcessLogDao.class);
-        List<MediaProcessLog> mediaLogStatuses = new ArrayList<MediaProcessLog>();
+        List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
         MediaProcessLog mediaLogStatus1 = new MediaProcessLog("2014-07-29 10:08:11.6890000 -07:00", "image1.jpg", "Something", "Lodging");
         mediaLogStatuses.add(mediaLogStatus1);
         MediaProcessLog mediaLogStatus2 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "image1.jpg", "Publish", "Lodging");
@@ -1020,6 +1024,7 @@ public class LcmDynamoMediaDaoTest {
         return MediaGetResponse.builder()
                 .mediaGuid(media.getMediaGuid())
                 .fileUrl(media.getFileUrl())
+                .sourceUrl(media.getSourceUrl())
                 .fileName(FileNameUtil.resolveFileNameToDisplay(media))
                 .active(media.getActive())
                 .width(media.getWidth())

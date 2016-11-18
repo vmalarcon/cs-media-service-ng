@@ -1,5 +1,27 @@
 package com.expedia.content.media.processing.services.dao;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang3.math.NumberUtils;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
@@ -30,26 +52,6 @@ import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
-import org.apache.commons.lang3.math.NumberUtils;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
-import javax.annotation.Resource;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Media data access operations through LCM and the Dynamo MediaDB.
@@ -151,7 +153,7 @@ public class LcmDynamoMediaDao implements MediaDao {
      * @param pageSize Positive integer to filter the number of media displayed per page. pageSize is inclusive with pageIndex.
      * @param pageIndex Positive integer to filter the page to display. pageIndex is inclusive with pageSize.
      * @return A @MediaByDomainIdResponse
-     * @throws Exception
+     * @throws PaginationValidationException -
      */
     @Override
     @SuppressWarnings("unchecked")
@@ -171,8 +173,11 @@ public class LcmDynamoMediaDao implements MediaDao {
         }
         domainIdMedia = mediaStream.sorted((media1, media2) -> compareMedia(media1, media2, domain)).collect(Collectors.toList());
 
-        List<String> fileNames = domainIdMedia.stream().filter(media -> media.getFileName() != null).map(media -> media.getFileName())
+        List<String> fileNames = domainIdMedia.stream()
+                .filter(media -> media.getFileName() != null)
+                .map(Media::getFileName)
                 .collect(Collectors.toList());
+
         final Integer totalMediaCount = fileNames.size();
         if (pageSize != null || pageIndex != null) {
             final String errorResponse = validatePagination(totalMediaCount, pageSize, pageIndex);
@@ -184,7 +189,7 @@ public class LcmDynamoMediaDao implements MediaDao {
             }
         }
         final Map<String, String> fileStatus = getStatusByLoop(paramLimit, fileNames);
-        domainIdMedia.stream().forEach(media -> media.setStatus(fileStatus.get(media.getFileName())));
+        domainIdMedia.forEach(media -> media.setStatus(fileStatus.get(media.getFileName())));
 
         final Boolean skipCategoryFiltering = derivativeCategoryFilter == null || derivativeCategoryFilter.isEmpty();
         final List<DomainIdMedia> images = transformMediaListForResponse(domainIdMedia).stream()
@@ -202,18 +207,16 @@ public class LcmDynamoMediaDao implements MediaDao {
                 .filter(media -> media.getLcmMediaId() != null && !"null".equals(media.getLcmMediaId()))
                 .collect(Collectors.toMap(Media::getLcmMediaId, media -> media, (m1, m2) -> m1));
         final List<LcmMediaAndDerivative> mediaDerivativeItems = (List<LcmMediaAndDerivative>) lcmMediaListSproc.execute(domainIdInt).get(SQLMediaListSproc.MEDIA_SET);
-        final Map<Integer, List<LcmMediaAndDerivative>> lcmMediaMap =
-                mediaDerivativeItems.stream().collect(Collectors.groupingBy(mediaAndDerivative -> mediaAndDerivative.getMediaId()));
+        final Map<Integer, List<LcmMediaAndDerivative>> lcmMediaMap = mediaDerivativeItems.stream()
+                .collect(Collectors.groupingBy(LcmMediaAndDerivative::getMediaId));
         
         final List<LcmMediaRoom> mediaRoomItems = (List<LcmMediaRoom>) roomGetByCatalogItemIdSproc.execute(domainIdInt).get(SQLRoomGetSproc.ROOM_SET);
-        final Map<Integer, List<LcmMediaRoom>> lcmRoomMediaMap = mediaRoomItems.stream().collect(
-                Collectors.groupingBy(mediaRoom -> mediaRoom.getMediaId()));
+        final Map<Integer, List<LcmMediaRoom>> lcmRoomMediaMap = mediaRoomItems.stream()
+                .collect(Collectors.groupingBy(LcmMediaRoom::getMediaId));
         
         /* @formatter:off */
         final List<Media> lcmMediaList = lcmMediaMap.keySet().stream()
-            .map(mediaId -> {
-                    return convertLcmMediaAndDerivativeToLcmMedia(lcmMediaMap, mediaId, derivativeFilter);
-                })
+            .map(mediaId -> convertLcmMediaAndDerivativeToLcmMedia(lcmMediaMap, mediaId, derivativeFilter))
             .map(convertMedia(mediaLcmMediaIdMap, lcmRoomMediaMap))
             .collect(Collectors.toList());
         /* @formatter:on */
@@ -284,7 +287,7 @@ public class LcmDynamoMediaDao implements MediaDao {
         if (pageSize < 1 || pageIndex < 1) {
             return "pageSize and pageIndex can only be positive integer values";
         }
-        if (pageIndex > Math.ceil((double) totalMediaCount/(double) pageSize)) {
+        if (pageIndex > Math.ceil((double) totalMediaCount / (double) pageSize)) {
             return "pageIndex is out of bounds";
         }
         return null;
@@ -486,7 +489,7 @@ public class LcmDynamoMediaDao implements MediaDao {
      *
      * @param domainId Id of the domain object for which the media is required.
      * @param derivativeFilter Inclusive filter of derivatives. A null or empty string will not exclude any derivatives.
-     * @return
+     * @return -
      */
     @SuppressWarnings("unchecked")
     private Function<Integer, LcmMedia> buildLcmMedia(final String domainId, final String derivativeFilter) {
@@ -515,7 +518,7 @@ public class LcmDynamoMediaDao implements MediaDao {
         if (media != null) {
             if (media.getDomainFields() != null) {
                 try {
-                    media.setDomainData(OBJECT_MAPPER.readValue(media.getDomainFields(), new TypeReference<Map<String, Object>>() {}));
+                    media.setDomainData(OBJECT_MAPPER.readValue(media.getDomainFields(), new TypeReference<Map<String, Object>>() { }));
                     final Object lcmMediaIdObject = media.getDomainData().get("lcmMediaId");
                     if (lcmMediaIdObject != null) {
                         final Integer lcmMediaId = lcmMediaIdObject instanceof Integer ? (Integer) lcmMediaIdObject : Integer.parseInt((String) lcmMediaIdObject);
@@ -575,13 +578,13 @@ public class LcmDynamoMediaDao implements MediaDao {
                                 : providerProperties.getProperty(lcmMedia.getProvider().toString()));
             } else {
                 mediaBuilder.fileUrl(dynamoMedia.getFileUrl())
+                        .sourceUrl(dynamoMedia.getSourceUrl())
                         .clientId(dynamoMedia.getClientId())
                         .providedName(dynamoMedia.getProvidedName())
                         .domain(dynamoMedia.getDomain())
                         .domainId(dynamoMedia.getDomainId())
                         .mediaGuid(dynamoMedia.getMediaGuid())
-                        .provider(dynamoMedia.getProvider())
-                        .sourceUrl(dynamoMedia.getSourceUrl());
+                        .provider(dynamoMedia.getProvider());
             }
 
             return mediaBuilder.build();
@@ -668,7 +671,7 @@ public class LcmDynamoMediaDao implements MediaDao {
                         dynamoMedia.getMediaGuid(), dynamoMedia.getClientId(), dynamoMedia.getFileName());
             }
         }
-        final Map<String, Object> lcmDomainData = new HashMap<String, Object>();
+        final Map<String, Object> lcmDomainData = new HashMap<>();
         extractDynamoDomainFields(dynamoMedia, lcmDomainData);
         extractLcmDomainFields(lcmMedia, dynamoMedia, lcmDomainData);
         extractLcmRooms(lcmMedia, lcmDomainData, lcmRoomMediaMap);
@@ -755,12 +758,13 @@ public class LcmDynamoMediaDao implements MediaDao {
      * JSON from the media DB.
      *
      * @param lcmMedia Data object containing media data from LCM.
-     * @return
+     * @return -
      */
     private List<Map<String, Object>> extractDerivatives(final LcmMedia lcmMedia) {
         List<Map<String, Object>> derivatives = null;
         if (lcmMedia.getDerivatives() != null && !lcmMedia.getDerivatives().isEmpty()) {
-            derivatives = lcmMedia.getDerivatives().stream().filter(derivative -> derivative.getFileProcessed())
+            derivatives = lcmMedia.getDerivatives().stream()
+                    .filter(LcmMediaDerivative::getFileProcessed)
                     .map(derivative -> {
                         final Map<String, Object> derivativeData = new HashMap<>();
                         derivativeData.put(FIELD_DERIVATIVE_LOCATION, imageRootPath + derivative.getFileName());
@@ -788,6 +792,7 @@ public class LcmDynamoMediaDao implements MediaDao {
             return MediaGetResponse.builder()
                     .mediaGuid(media.getMediaGuid())
                     .fileUrl(media.getFileUrl())
+                    .sourceUrl(media.getSourceUrl())
                     .fileName(FileNameUtil.resolveFileNameToDisplay(media))
                     .active(media.getActive())
                     .width(media.getWidth())
@@ -826,6 +831,7 @@ public class LcmDynamoMediaDao implements MediaDao {
             return DomainIdMedia.builder()
                     .mediaGuid(media.getMediaGuid())
                     .fileUrl(media.getFileUrl())
+                    .sourceUrl(media.getSourceUrl())
                     .fileName(FileNameUtil.resolveFileNameToDisplay(media))
                     .active(media.getActive())
                     .width(media.getWidth())
