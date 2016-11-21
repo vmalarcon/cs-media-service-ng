@@ -1,6 +1,8 @@
 package com.expedia.content.media.processing.services.dao.sql;
 
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
+import com.expedia.content.media.processing.services.util.TimeZoneWrapper;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.SqlParameter;
@@ -24,7 +26,7 @@ public class GetMediaIDSproc extends StoredProcedure {
 
     @Autowired
     public GetMediaIDSproc(final DataSource dataSource) {
-        super(dataSource, "MediaSrchWithCatalogItemMediaAndMediaFileName#02");
+        super(dataSource, "MediaSrchWithCatalogItemMediaAndMediaFileName#03");
         declareParameter(new SqlParameter("@pCatalogItemID", Types.INTEGER));
         declareParameter(new SqlParameter("@pLangID", Types.INTEGER));
         declareParameter(new SqlParameter("@pContentProviderID", Types.INTEGER));
@@ -42,6 +44,8 @@ public class GetMediaIDSproc extends StoredProcedure {
             final String activeFlag = resultSet.getString("StatusCode");
             return LcmMedia.builder()
                     .mediaId(resultSet.getInt("MediaID"))
+                    .lastUpdateDate(TimeZoneWrapper.covertLcmTimeZone(resultSet.getString("UpdateDate")))
+                    .lastUpdatedBy(resultSet.getString("LastUpdatedBy"))
                     .active(activeFlag != null && "A".equals(activeFlag))
                     .build();
         }

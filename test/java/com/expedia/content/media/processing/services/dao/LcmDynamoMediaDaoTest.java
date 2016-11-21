@@ -943,11 +943,11 @@ public class LcmDynamoMediaDaoTest {
         Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 5, 2);
         assertEquals(5, stream.count());
     }
-
     
     private MediaDao makeMockMediaDao(SQLMediaListSproc mediaIdSproc, SQLMediaItemGetSproc mediaItemSproc, DynamoMediaRepository mockMediaDBRepo,
                                       final Properties properties, SQLMediaGetSproc mediaGetSproc, LcmProcessLogDao processLogDao) throws NoSuchFieldException, IllegalAccessException {
         MediaDao mediaDao = new LcmDynamoMediaDao();
+        
         setFieldValue(mediaDao, "lcmMediaListSproc", mediaIdSproc);
         setFieldValue(mediaDao, "lcmMediaSproc", mediaGetSproc);
         setFieldValue(mediaDao, "lcmMediaItemSproc", mediaItemSproc);
@@ -960,7 +960,6 @@ public class LcmDynamoMediaDaoTest {
         setFieldValue(mediaDao, "imageRootPath", "https://media.int.expedia.com/");
         setFieldValue(mediaDao, "roomGetByMediaIdSproc", roomGetByMediaIdSproc);
         setFieldValue(mediaDao, "roomGetByCatalogItemIdSproc", roomGetByCatalogItemIdSproc);
-        
         return mediaDao;
     }
 
