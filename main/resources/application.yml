@@ -18,6 +18,13 @@ server:
       basedir: ${application.home}
       max-threads: 1
       access-log-enabled: true
+      remote-ip-header: x-forwarded-for
+      protocol-header: x-forwarded-proto
+   port: 8443
+      ssl:
+        key-alias: "expedia-${EXPEDIA_ENVIRONMENT:test}-${AWS_REGION:us-west-2}"
+        key-store: "classpath:keystore.jks"
+        key-store-password: changeme
 
 monitoringAgent:
   application:
