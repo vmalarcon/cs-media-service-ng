@@ -24,7 +24,8 @@ server:
       ssl:
         key-alias: "expedia-${EXPEDIA_ENVIRONMENT:test}-${AWS_REGION:us-west-2}"
         key-store: "classpath:keystore.jks"
-        key-store-password: changeme
+        key-store-password: vvkukrunblhthlejlhrkrreuccfhtncdifrdibjjuvhe
+        enabled: true
 
 monitoringAgent:
   application:
