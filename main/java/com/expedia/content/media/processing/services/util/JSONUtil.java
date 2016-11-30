@@ -13,6 +13,7 @@ import java.util.Properties;
 import java.util.TreeMap;
 
 import com.expedia.content.media.processing.pipeline.util.ESAPIValidationUtil;
+import com.fasterxml.jackson.core.JsonParser;
 import org.apache.commons.io.FilenameUtils;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
@@ -40,6 +41,10 @@ public final class JSONUtil {
     private static final String ERROR_WRITING_MAP = "Error writing map to json";
     
     private JSONUtil() {
+    }
+
+    static {
+        OBJECT_MAPPER.configure(JsonParser.Feature.ALLOW_UNQUOTED_CONTROL_CHARS, true);
     }
     
     /**

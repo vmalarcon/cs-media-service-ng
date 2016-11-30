@@ -20,6 +20,14 @@ public class JSONUtilTest {
         final String value = (String) JSONUtil.buildMapFromJson(jsonString).get("mediaNames");
         assertTrue("1037678_109010ice.jpg".equals(value));
     }
+
+    @Test
+    public void testbuildMapFromJsonUnQotedChar() throws Exception {
+        final String jsonString =
+                " {\"userId\":\"PACCurso\",\"active\":\"true\",\"domainFields\":{\"subcategoryId\":\"21001\",\"rooms\":[{\"roomId\":\"17043564\",\"roomHero\":\"false\"},{\"roomId\":\"17099006\",\"roomHero\":\"false\"}]},\"comment\":\"Camera singola con 2 bagni in comune,\\nLetto alla Francese (una piazza e mezza).\\n\\nsingle room with two shared bathrooms,\\nFrench Bed (one and a half).\",\"hidden\":null}";
+        final String value = (String) JSONUtil.buildMapFromJson(jsonString).get("comment");
+        assertTrue(value.contains("Camera singola"));
+    }
     
     @Test
     public void testGenerateJsonResponse() throws Exception {
