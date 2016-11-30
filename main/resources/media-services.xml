@@ -165,8 +165,7 @@
     </bean>
 
     <bean id="dynamoReporter" class="com.expedia.content.media.processing.pipeline.reporting.dynamo.DynamoReporting">
-        <!-- TODO Rename to dynamoMapper once migrated to US-West-2 -->
-        <constructor-arg name="dynamoMapper" ref="dynamoMapper2" />
+        <constructor-arg name="dynamoMapper" ref="dynamoMapper" />
         <constructor-arg name="appName" value="${processname}" />
     </bean>
 
@@ -177,28 +176,9 @@
           class="com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper">
         <constructor-arg name="dynamoDB" ref="amazonDynamoDB" />
     </bean>
-    <!-- TODO Remove dynamoMapper2 and null mapper once migrated to US-West-2 -->
-    <bean id="amazonDynamoDB2"
-        class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient">
-        <property name="endpoint" value="${aws.endPointUSW2}" />
-    </bean>
-    <bean id="dynamoMapper2"
-        class="com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper">
-        <constructor-arg name="dynamoDB" ref="amazonDynamoDB2" />
-    </bean>
-    
-    <bean id="dynamoMapperNull"
-        class="com.expedia.content.media.processing.services.util.NullFactoryBean">
-        <constructor-arg name="objectType" >
-            <value type="java.lang.Class">com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper</value>
-        </constructor-arg>
-    </bean>
-    <!-- /TODO Remove dynamoMapper2 and null mapper-->
     
     <bean id="dynamoMediaRepository" class="com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository">
         <constructor-arg name="dynamoMapper" ref="dynamoMapper"/>
-        <!-- TODO Remove dynamoMapper2 once migrated to US-West-2 -->
-        <constructor-arg name="dynamoMapper2" ref="#{'${EXPEDIA_ENVIRONMENT}'=='prod' ? 'dynamoMapper2' : 'dynamoMapperNull'}" />
         <constructor-arg name="environment" value="${EXPEDIA_ENVIRONMENT}"/>
     </bean>
     <bean id="lcmReporter" class="com.expedia.content.media.processing.pipeline.reporting.sql.LcmReporting">

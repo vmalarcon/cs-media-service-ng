@@ -41,7 +41,7 @@ public class DynamoMediaRepositoryTest {
     @Before
     public void setup() {
         mediaList = defaultMediaList();
-        dynamoMediaRepository = new DynamoMediaRepository(dynamoMapper, null, environment);
+        dynamoMediaRepository = new DynamoMediaRepository(dynamoMapper, environment);
         when(paginatedQueryList.stream()).thenReturn(mediaList.stream()).thenReturn(mediaList.stream());
         when(dynamoMapper.query(eq(Media.class), anyObject())).thenReturn(paginatedQueryList);
         when(dynamoMapper.load(eq(Media.class),eq("g01"))).thenReturn(mediaList.get(0));

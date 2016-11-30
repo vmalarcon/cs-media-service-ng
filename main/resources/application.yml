@@ -64,6 +64,4 @@ cs:
     report-on-server: false
 
 aws:
-  endPoint: "https://dynamodb.${AWS_REGION}.amazonaws.com"
-  endPointUSW2: "https://dynamodb.us-west-2.amazonaws.com"
-
+  endPoint: "https://dynamodb.us-west-2.amazonaws.com"

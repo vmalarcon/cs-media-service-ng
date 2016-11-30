@@ -33,14 +33,11 @@ public class DynamoMediaRepository {
     private static final FormattedLogger LOGGER = new FormattedLogger(DynamoMediaRepository.class);
     private final static ObjectWriter WRITER = new ObjectMapper().writer();
     private final DynamoDBMapper dynamoMapper;
-    //TODO Remove once migrated to US-West-2
-    private final DynamoDBMapper dynamoMapper2;
+
     private final String environment;
 
-    public DynamoMediaRepository(DynamoDBMapper dynamoMapper, DynamoDBMapper dynamoMapper2, String environment) {
+    public DynamoMediaRepository(DynamoDBMapper dynamoMapper, String environment) {
         this.dynamoMapper = dynamoMapper;
-        //TODO Remove once migrated to US-West-2
-        this.dynamoMapper2 = dynamoMapper2;
         this.environment = environment;
     }
 
@@ -83,10 +80,6 @@ public class DynamoMediaRepository {
      */
     public void deleteMedia(Media media) {
         dynamoMapper.delete(media);
-        //TODO Remove once migrated to US-West-2
-        if (dynamoMapper2 != null) {
-            dynamoMapper2.delete(media);
-        }
     }
 
     /**
@@ -116,10 +109,6 @@ public class DynamoMediaRepository {
     public void saveMedia(Media media) {
         try {
             dynamoMapper.save(media);
-            //TODO Remove once migrated to US-West-2
-            if (dynamoMapper2 != null) {
-                dynamoMapper2.save(media);
-            }
         } catch (Exception e) {
             LOGGER.error(e, "ERROR when trying to save in dynamodb MediaGuid={} ClientID={} ErrorMessage={}.", media.getMediaGuid(), media.getClientId(), e.getMessage());
             throw new MediaDBException(e.getMessage(), e);
@@ -200,17 +189,9 @@ public class DynamoMediaRepository {
     public void storeMediaAddMessage(ImageMessage imageMessage, Thumbnail thumbnail) {
         try {
             dynamoMapper.save(buildMedia(imageMessage, thumbnail));
-            //TODO Remove once migrated to US-West-2
-            if (dynamoMapper2 != null) {
-                dynamoMapper2.save(buildMedia(imageMessage, thumbnail));
-            }
             LOGGER.info("Media successfully added in dynamodb", imageMessage);
             if (imageMessage.isGenerateThumbnail()) {
                 dynamoMapper.save(buildDerivative(imageMessage, thumbnail));
-                //TODO Remove once migrated to US-West-2
-                if (dynamoMapper2 != null) {
-                    dynamoMapper2.save(buildDerivative(imageMessage, thumbnail));
-                }
                 LOGGER.info("Thumbnail derivative successfully added in dynamodb ThumbnailDerivative={}",
                         Arrays.asList(String.valueOf(thumbnail)), imageMessage);
             }
