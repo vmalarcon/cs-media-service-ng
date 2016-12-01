@@ -28,6 +28,14 @@ public class JSONUtilTest {
         final String value = (String) JSONUtil.buildMapFromJson(jsonString).get("comment");
         assertTrue(value.contains("Camera singola"));
     }
+
+    @Test
+    public void testbuildMapFromJsonSpecial() throws Exception {
+        final String jsonString =
+                "{\"userId\":\"ETX-AlanEckh\",\"active\":\"true\",\"domainFields\":{},\"comment\":\"Cama Box Quenn, TV 32\\\", cofre, ar-condicionado, calefação, telefone, internet, frigobar. Não temos elevador.\",\"hidden\":null}";
+        final String value = (String) JSONUtil.buildMapFromJson(jsonString).get("comment");
+        assertTrue(value.contains("Cama Box Quenn"));
+    }
     
     @Test
     public void testGenerateJsonResponse() throws Exception {

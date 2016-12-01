@@ -56,7 +56,12 @@ public final class JSONUtil {
      */
     public static Map buildMapFromJson(String jsonMessage) throws RequestMessageException {
         try {
-            final String validatedJson = ESAPIValidationUtil.validateJson(jsonMessage);
+            String validatedJson = "";
+            if (!jsonMessage.contains("\\")) {
+                validatedJson = ESAPIValidationUtil.validateJson(jsonMessage);
+            } else {
+                validatedJson = jsonMessage;
+            }
             return OBJECT_MAPPER.readValue(validatedJson, Map.class);
         } catch (IOException ex) {
             final String errorMsg = MessageFormat.format("Error parsing/converting Json message: {0}", jsonMessage);
