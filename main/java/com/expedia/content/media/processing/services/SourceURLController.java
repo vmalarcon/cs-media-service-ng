@@ -1,6 +1,8 @@
 package com.expedia.content.media.processing.services;
 
+import com.amazonaws.services.s3.model.S3Object;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
+import com.expedia.content.media.processing.pipeline.util.ImageCopy;
 import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
@@ -16,8 +18,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -30,7 +30,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +37,6 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 import java.util.Optional;
-import java.util.stream.Stream;
 
 /**
  * Web service controller to get Source URL by derivative file name..
@@ -60,8 +58,9 @@ public class SourceURLController extends CommonServiceController {
     private String hipChatRoom;
     @Autowired
     private Poker poker;
+
     @Autowired
-    private  ResourcePatternResolver resourcePatternResolver;
+    private ImageCopy imageCopy;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
@@ -156,24 +155,17 @@ public class SourceURLController extends CommonServiceController {
                 MediaServiceUrl.MEDIA_SOURCEIMAGE.getUrl(), message, requestID);
         final Map messageMap = JSONUtil.buildMapFromJson(message);
         final String fromUrl = (String) messageMap.get("mediaUrl");
-        final InputStream streamFrom;
+        final String objectName = fromUrl.substring(("s3://"+bucketName).length()+1);
         try {
-            final Resource[] resources = resourcePatternResolver.getResources(fromUrl);
-            if (Stream.of(resources).count() != 1) {
-                final ResponseEntity<byte[]> responseEntity = new ResponseEntity<>(HttpStatus.CONFLICT);
-                LOGGER.error("Multiple resources matched FileUrl={} MatchedResourcesCount={} ResponseStatus={}",
-                        fromUrl, Stream.of(resources).count(), responseEntity.getStatusCode().toString());
-                return responseEntity;
-            }
-            if (Stream.of(resources).noneMatch(Resource::exists)) {
+            final S3Object object = imageCopy.getImage(bucketName, objectName);
+            if (object == null) {
                 final ResponseEntity<byte[]> responseEntity = new ResponseEntity<>(NOT_FOUND);
                 LOGGER.error("Resource not found FileUrl={} ResponseStatus={}", fromUrl, responseEntity.getStatusCode().toString());
                 return responseEntity;
             }
-            streamFrom = resources[0].getInputStream();
             final HttpHeaders responseHeaders = new HttpHeaders();
             responseHeaders.setContentType(MediaType.valueOf(MediaType.IMAGE_JPEG_VALUE));
-            return new ResponseEntity<>(IOUtils.toByteArray(streamFrom), responseHeaders, HttpStatus.OK);
+            return new ResponseEntity<>(IOUtils.toByteArray(object.getObjectContent()), responseHeaders, HttpStatus.OK);
         } catch (Exception ex) {
             LOGGER.error(ex, "ERROR ServiceUrl={} RequestMessage={} RequestId={} ErrorMessage={}", MediaServiceUrl.MEDIA_SOURCEIMAGE.getUrl(), message, requestID,
                     ex.getMessage());
