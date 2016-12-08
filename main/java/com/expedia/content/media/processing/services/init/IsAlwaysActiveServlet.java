@@ -12,13 +12,6 @@ import javax.servlet.http.HttpServletResponse;
 public class IsAlwaysActiveServlet extends HttpServlet {
 
     /**
-     * Initializes the servlet with default version providers.
-     */
-    public IsAlwaysActiveServlet() {
-        // empty to allow users to just use default activeVersionProvider and currentVersionProvider
-    }
-
-    /**
      * If application is active then the Active status (HTTP code 200) is returned; otherwise inactive status is returned (Http code 500).
      * @param request
      * @param response
