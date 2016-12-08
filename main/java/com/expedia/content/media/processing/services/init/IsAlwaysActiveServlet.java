@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServletResponse;
 public class IsAlwaysActiveServlet extends HttpServlet {
 
     /**
-     * If application is active then the Active status (HTTP code 200) is returned; otherwise inactive status is returned (Http code 500).
+     * Always returns the Active status (HTTP code 200) is returned.
      * @param request
      * @param response
      * @throws IOException
