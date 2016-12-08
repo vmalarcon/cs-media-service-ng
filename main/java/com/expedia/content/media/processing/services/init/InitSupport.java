@@ -16,6 +16,7 @@ import org.springframework.web.context.ServletContextAware;
 import com.expedia.www.platform.isactive.providers.ManifestBasedVersionProvider;
 import com.expedia.www.platform.isactive.providers.ManifestReader;
 import com.expedia.www.platform.isactive.servlet.BuildInfoServlet;
+import com.expedia.www.platform.isactive.servlet.IsActiveServlet;
 import com.expedia.www.platform.isactive.servlet.WebAppManifestPathProvider;
 import com.expedia.www.platform.monitoring.MonitoringAgent;
 import com.yammer.metrics.web.DefaultWebappMetricsFilter;
@@ -56,7 +57,7 @@ public class InitSupport implements ServletContextAware {
     
     @Bean
     public ServletRegistrationBean registIsActive() {
-        final ServletRegistrationBean isActiveBean = new ServletRegistrationBean(new IsAlwaysActiveServlet(), "/isActive");
+        final ServletRegistrationBean isActiveBean = new ServletRegistrationBean(new IsActiveServlet(), "/isActive");
         isActiveBean.setName("isActive");
         return isActiveBean;
     }
