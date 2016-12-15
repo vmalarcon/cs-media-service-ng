@@ -1,12 +1,13 @@
 package com.expedia.content.media.processing.services.validator;
 
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.junit.Test;
 import org.mockito.Matchers;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 
-import static com.expedia.content.media.processing.pipeline.util.TestingUtil.setFinalStatic;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;
@@ -26,11 +27,18 @@ public class S3ValidatorTest {
         constructor.setAccessible(true);
         S3Validator s3Validator = constructor.newInstance();
         FormattedLogger mockLogger = mock(FormattedLogger.class);
-        setFinalStatic(s3Validator.getClass().getDeclaredField("LOGGER"), mockLogger);
+        setFinalField(s3Validator, mockLogger);
         ValidationStatus validationStatus = s3Validator.checkFileExists("s3://ewe-cs-media-test/source/blahblahbalah.jpg");
-        verify(mockLogger, times(1)).error(Matchers.<Throwable> any(), eq("s3 key query exception fileUrl = {} bucketName = {} objectName = {}"),
+        verify(mockLogger, times(1)).error(Matchers.<Throwable>any(), eq("s3 key query exception fileUrl = {} bucketName = {} objectName = {}"),
                 eq("s3://ewe-cs-media-test/source/blahblahbalah.jpg"), eq("ewe-cs-media-test"), eq("source/blahblahbalah.jpg"));
         assertFalse(validationStatus.isValid());
+    }
+
+    //use another way to do reflection to avoid foritfy security issue.
+    private void setFinalField(S3Validator s3Validator, Object newValue) throws Exception {
+        Field field = FieldUtils.getField(s3Validator.getClass(), "LOGGER", true);
+        FieldUtils.removeFinalModifier(field);
+        field.set(null, newValue);
     }
 
     @Test
