@@ -8,6 +8,9 @@ cs:
 
 server:
   port: 8080
+# TODO remove addtional.port once all clients moved to HTTPS
+  additional:
+    port: 8181
   ssl:
     enabled: false
 

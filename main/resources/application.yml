@@ -21,6 +21,9 @@ server:
     remote-ip-header: x-forwarded-for
     protocol-header: x-forwarded-proto
   port: 8443
+# TODO remove addtional.port once all clients moved to HTTPS
+  additional:
+    port: 8080
   ssl:
     key-alias: "expedia-${EXPEDIA_ENVIRONMENT:test}-${AWS_REGION:us-west-2}"
     key-store: "classpath:keystore.jks"
