@@ -57,7 +57,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.authorizeRequests().antMatchers("/", MediaServiceUrl.ACQUIRE_MEDIA.getUrl()).permitAll();
         http.httpBasic().and().authorizeRequests().
                 antMatchers(HttpMethod.POST, MediaServiceUrl.MEDIA_STATUS.getUrl()).authenticated().
                 antMatchers(HttpMethod.PUT, MediaServiceUrl.MEDIA_IMAGES.getUrl()).authenticated().

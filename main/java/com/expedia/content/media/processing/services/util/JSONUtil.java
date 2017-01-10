@@ -9,20 +9,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Properties;
 import java.util.TreeMap;
 
 import com.expedia.content.media.processing.pipeline.util.ESAPIValidationUtil;
 import com.fasterxml.jackson.core.JsonParser;
-import org.apache.commons.io.FilenameUtils;
 
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.MessageConstants;
-import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.services.dao.domain.Category;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rabbitmq.tools.json.JSONWriter;
 
 /**
  * Contains methods to process JSON requests and generate JSON responses.
@@ -229,90 +223,5 @@ public final class JSONUtil {
                 }
             }
         }
-    }
-    
-    /**
-     * Builds the old JSON message of this image message.
-     *
-     * @return The ImageMessage as a JSON message.
-     */
-    public static String convertToCommonMessage(ImageMessage imageMessage, Map map, Properties providerProperties) {
-        final Map<String, Object> mapMessage = new LinkedHashMap<>();
-        final Map<String, Object> domainMapMessage = new LinkedHashMap<>();
-        
-        if (imageMessage.getFileUrl() != null) {
-            mapMessage.put(MessageConstants.FILE_URL, imageMessage.getFileUrl());
-        }
-        if (imageMessage.getFileName() == null) {
-            String fileName = "";
-            if (imageMessage.getFileUrl() != null) {
-                if (alreadyContainsExpediaId(imageMessage)) {
-                    fileName = FileNameUtil.getFileNameFromUrl(imageMessage.getFileUrl(), ".jpg");
-                } else {
-                    fileName = ((imageMessage.getExpediaId() == null) ? "" : imageMessage.getExpediaId() + "_")
-                            + ((imageMessage.getMediaProviderId() == null) ? "" : imageMessage.getMediaProviderId() + "_")
-                            + FileNameUtil.getFileNameFromUrl(imageMessage.getFileUrl(), ".jpg");
-                }
-                mapMessage.put(MessageConstants.PROVIDED_NAME,
-                        FileNameUtil.getFileNameFromUrl(imageMessage.getFileUrl()));
-            }
-            mapMessage.put(MessageConstants.FILE_NAME, fileName);
-
-        } else {
-            mapMessage.put(MessageConstants.FILE_NAME, imageMessage.getFileName());
-            mapMessage.put(MessageConstants.PROVIDED_NAME, imageMessage.getFileName());
-        }
-
-        if (map.get("imageType") != null) {
-            mapMessage.put("domain", map.get("imageType"));
-        }
-        if (imageMessage.getCallback() != null) {
-            mapMessage.put(MessageConstants.CALLBACK, imageMessage.getCallback().toString());
-        }
-        // set default to true if "active" is not set.
-        if (map.get("active") == null) {
-            mapMessage.put(MessageConstants.ACTIVE, "true");
-        } else {
-            mapMessage.put(MessageConstants.ACTIVE, map.get("active"));
-        }
-        if (map.get("mediaGuid") != null) {
-            mapMessage.put(MessageConstants.MEDIA_ID, map.get("mediaGuid"));
-        }
-        if (imageMessage.getStagingKey() != null) {
-            mapMessage.put(MessageConstants.STAGING_KEY, imageMessage.getStagingKey());
-        }
-        if (imageMessage.getExpediaId() != null) {
-            mapMessage.put(MessageConstants.OUTER_DOMAIN_ID, imageMessage.getExpediaId().toString());
-        }
-        if (imageMessage.getCategoryId() != null) {
-            domainMapMessage.put("subcategoryId", imageMessage.getCategoryId() );
-            mapMessage.put(MessageConstants.OUTER_DOMAIN_FIELDS, domainMapMessage);
-        }
-        if (imageMessage.getCaption() != null) {
-            domainMapMessage.put(MessageConstants.CAPTION, imageMessage.getCaption());
-            mapMessage.put(MessageConstants.OUTER_DOMAIN_FIELDS, domainMapMessage);
-        }
-        if (map.get("captionLocaleId") != null) {
-            domainMapMessage.put("captionLocaleId", map.get("captionLocaleId"));
-            mapMessage.put(MessageConstants.OUTER_DOMAIN_FIELDS, domainMapMessage);
-        }
-        if (imageMessage.getMediaProviderId() != null) {
-            mapMessage.put(MessageConstants.OUTER_DOMAIN_PROVIDER, providerProperties.getProperty(imageMessage.getMediaProviderId()));
-        }
-        mapMessage.put(MessageConstants.USER_ID, "Multisource");
-        mapMessage.put(MessageConstants.CLIENT_ID, "Multisource");
-        return new JSONWriter().write(mapMessage);
-    }
-    
-    /**
-     * Check if the provided filename contains the expediaId or not.
-     * 
-     * @param imageMessage provided imageMessage
-     * @return true if the filename already contains the ExpediaId or false if not.
-     */
-    private static boolean alreadyContainsExpediaId(ImageMessage imageMessage) {
-        final String fileName = FilenameUtils.getBaseName(imageMessage.getFileUrl());
-        final OuterDomain domain = imageMessage.getOuterDomainData();
-        return (fileName.isEmpty()) ? false : (domain == null) ? false : fileName.startsWith(domain.getDomainId());
     }
 }

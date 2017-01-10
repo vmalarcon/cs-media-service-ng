@@ -536,40 +536,6 @@ public class LodgingValidatorTest {
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
         verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
     }
-
-    @Test
-    public void testSubCategory3AcquireMedia() throws Exception {
-        final String jsonMsg =
-                "         { " +
-                        "    \"fileUrl\": \"http://well-formed-url/hello.jpg\"," +
-                        "    \"fileName\": \"Something\", " +
-                        "    \"mediaGuid\": \"media-uuid\", " +
-                        "    \"domain\": \"Lodging\", " +
-                        "    \"domainId\": \"123\", " +
-                        "    \"userId\": \"user-id\", " +
-                        "    \"domainProvider\": \"EPC Internal User\", " +
-                        "    \"domainFields\": { " +
-                        "          \"subcategoryId\": \"3\"," +
-                        "          \"propertyHero\": \"true\"," +
-                        "          \"rooms\": [ " +
-                        "               {" +
-                        "                 \"roomId\": \"222\", " +
-                        "                 \"roomHero\": \"true\" " +
-                        "               }" +
-                        "                     ]" +
-                        "                       }" +
-                        " }";
-        final ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
-        final List<ImageMessage> imageMessageList = new ArrayList<>();
-        imageMessageList.add(imageMessage);
-        when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
-        when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
-        when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
-        final List<String> errorList = lodgingValidator.validateImages(imageMessageList);
-        assertEquals(errorList.size(), 0);
-        verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
-        verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
-    }
     
     @Test
     public void testInvalidRoomsField() throws Exception {

@@ -1,14 +1,10 @@
 package com.expedia.content.media.processing.services.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
-
 import java.util.*;
-
 import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
 
 public class JSONUtilTest {
     
@@ -166,129 +162,4 @@ public class JSONUtilTest {
         messageList.add("expediaId is missed");
         assertTrue(expectedJson.equals(JSONUtil.convertValidationErrors(messageList)));
     }
-    
-    @Test
-    public void testConvertToCommonMessage() throws Exception {
-        final String message = "{ \n"
-                + "   \"mediaProviderId\":\"1\",\n"
-                + "     \"fileUrl\":\"http://localhost:38081/office.jpg\",\n"
-                + "   \"imageType\":\"Lodging\",\n"
-                + "   \"stagingKey\":{ \n"
-                + "      \"externalId\":\"222\",\n"
-                + "      \"providerId\":\"300\",\n"
-                + "      \"sourceId\":\"99\"\n"
-                + "   },\n"
-                + "   \"expediaId\":429,\n"
-                + "   \"categoryId\":\"801\",\n"
-                + "   \"callback\":\"http://multi.source.callback/callback\",\n"
-                + "   \"caption\":\"caption\",\n"
-                + "   \"captionLocaleId\":\"1033\"\n"
-                + "}";
-                
-        final String convert =
-                "{\"fileUrl\":\"http:\\/\\/localhost:38081\\/office.jpg\",\"providedName\":\"office.jpg\",\"fileName\":\"429_1_office.jpg\",\"domain\":\"Lodging\",\"callback\":\"http:\\/\\/multi.source.callback\\/callback\",\"active\":\"true\",\"stagingKey\":{\"externalId\":\"222\",\"providerId\":\"300\",\"sourceId\":\"99\"},\"domainId\":\"429\",\"domainFields\":{\"subcategoryId\":\"801\",\"caption\":\"caption\",\"captionLocaleId\":\"1033\"},\"domainProvider\":\"EPC Internal User\",\"userId\":\"Multisource\",\"clientId\":\"Multisource\"}";
-                
-        final ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
-        final Map messageMap = JSONUtil.buildMapFromJson(message);
-        final Properties properties = new Properties();
-        properties.put("1", "EPC Internal User");
-        
-        final String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, properties);
-        assertEquals(convert, mediaCommonMessage);
-    }
-    
-    @Test
-    public void testConvertToCommonMessageActiveTrue() throws Exception {
-        final String message = "{ \n"
-                + "   \"mediaProviderId\":\"1\",\n"
-                + "     \"fileUrl\":\"http://localhost:38081/office.jpg\",\n"
-                + "   \"imageType\":\"Lodging\",\n"
-                + "   \"stagingKey\":{ \n"
-                + "      \"externalId\":\"222\",\n"
-                + "      \"providerId\":\"300\",\n"
-                + "      \"sourceId\":\"99\"\n"
-                + "   },\n"
-                + "   \"active\":\"true\",\n"
-                + "   \"expediaId\":429,\n"
-                + "   \"categoryId\":\"801\",\n"
-                + "   \"callback\":\"http://multi.source.callback/callback\",\n"
-                + "   \"caption\":\"caption\",\n"
-                + "   \"captionLocaleId\":\"1033\"\n"
-                + "}";
-                
-        final String convert =
-                "{\"fileUrl\":\"http:\\/\\/localhost:38081\\/office.jpg\",\"providedName\":\"office.jpg\",\"fileName\":\"429_1_office.jpg\",\"domain\":\"Lodging\",\"callback\":\"http:\\/\\/multi.source.callback\\/callback\",\"active\":\"true\",\"stagingKey\":{\"externalId\":\"222\",\"providerId\":\"300\",\"sourceId\":\"99\"},\"domainId\":\"429\",\"domainFields\":{\"subcategoryId\":\"801\",\"caption\":\"caption\",\"captionLocaleId\":\"1033\"},\"domainProvider\":\"EPC Internal User\",\"userId\":\"Multisource\",\"clientId\":\"Multisource\"}";
-                
-        final ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
-        final Map messageMap = JSONUtil.buildMapFromJson(message);
-        final Properties properties = new Properties();
-        properties.put("1", "EPC Internal User");
-        
-        final String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, properties);
-        assertEquals(convert, mediaCommonMessage);
-    }
-    
-    @Test
-    public void testFileAlreadyConatinsExpediaId() throws Exception {
-        final String message = "{ \n"
-                + "   \"mediaProviderId\":\"1\",\n"
-                + "  \"domain\": \"Lodging\",\n"
-                + "  \"domainId\": \"4608680\",\n"
-                + "     \"fileUrl\":\"http://localhost:38081/4608680_300_office.jpg\",\n"
-                + "   \"imageType\":\"Lodging\",\n"
-                + "   \"stagingKey\":{ \n"
-                + "      \"externalId\":\"222\",\n"
-                + "      \"providerId\":\"300\",\n"
-                + "      \"sourceId\":\"99\"\n"
-                + "   },\n"
-                + "   \"expediaId\":4608680,\n"
-                + "   \"categoryId\":\"801\",\n"
-                + "   \"callback\":\"http://multi.source.callback/callback\"\n"
-                + "}";
-                
-        final String convert =
-                "{\"fileUrl\":\"http:\\/\\/localhost:38081\\/4608680_300_office.jpg\",\"providedName\":\"4608680_300_office.jpg\",\"fileName\":\"4608680_300_office.jpg\",\"domain\":\"Lodging\",\"callback\":\"http:\\/\\/multi.source.callback\\/callback\",\"active\":\"true\",\"stagingKey\":{\"externalId\":\"222\",\"providerId\":\"300\",\"sourceId\":\"99\"},\"domainId\":\"4608680\",\"domainFields\":{\"subcategoryId\":\"801\"},\"domainProvider\":\"EPC Internal User\",\"userId\":\"Multisource\",\"clientId\":\"Multisource\"}";
-        final ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
-        final Map messageMap = JSONUtil.buildMapFromJson(message);
-        final Properties properties = new Properties();
-        properties.put("1", "EPC Internal User");
-        
-        final String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, properties);
-        assertEquals(convert, mediaCommonMessage);
-    }
-    
-    
-    @Test
-    public void testMoveCaptionFromRootToDomainfields() throws Exception {
-        final String message = "{ \n"
-                + "   \"mediaProviderId\":\"1\",\n"
-                + "  \"domain\": \"Lodging\",\n"
-                + "  \"domainId\": \"4608680\",\n"
-                + "     \"fileUrl\":\"http://localhost:38081/4608680_300_office.jpg\",\n"
-                + "   \"imageType\":\"Lodging\",\n"
-                + "   \"stagingKey\":{ \n"
-                + "      \"externalId\":\"222\",\n"
-                + "      \"providerId\":\"300\",\n"
-                + "      \"sourceId\":\"99\"\n"
-                + "   },\n"
-                + "   \"expediaId\":4608680,\n"
-                + "   \"categoryId\":\"801\",\n"
-                + "   \"callback\":\"http://multi.source.callback/callback\",\n"
-                + "   \"caption\":\"caption to move\",\n"
-                + "   \"captionLocaleId\":\"1033\"\n"
-                + "}";
-                
-        final String convert =
-                "{\"fileUrl\":\"http:\\/\\/localhost:38081\\/4608680_300_office.jpg\",\"providedName\":\"4608680_300_office.jpg\",\"fileName\":\"4608680_300_office.jpg\",\"domain\":\"Lodging\",\"callback\":\"http:\\/\\/multi.source.callback\\/callback\",\"active\":\"true\",\"stagingKey\":{\"externalId\":\"222\",\"providerId\":\"300\",\"sourceId\":\"99\"},\"domainId\":\"4608680\",\"domainFields\":{\"subcategoryId\":\"801\",\"caption\":\"caption to move\",\"captionLocaleId\":\"1033\"},\"domainProvider\":\"EPC Internal User\",\"userId\":\"Multisource\",\"clientId\":\"Multisource\"}";
-        final ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
-        final Map messageMap = JSONUtil.buildMapFromJson(message);
-        final Properties properties = new Properties();
-        properties.put("1", "EPC Internal User");
-        
-        final String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, properties);
-        final ImageMessage convertCommonMessage = ImageMessage.parseJsonMessage(mediaCommonMessage);
-        assertEquals(convert, mediaCommonMessage);
-        assertEquals("caption to move", convertCommonMessage.getOuterDomainData().getDomainFieldValue("caption"));
-    }
-
 }

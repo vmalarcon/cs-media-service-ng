@@ -6,7 +6,6 @@ import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import org.apache.commons.io.FilenameUtils;
 
-
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -128,7 +127,6 @@ public class FileNameUtil {
         }
     }
 
-
     /**
      * resolve FileName by the MediaProvider name
      *
@@ -168,18 +166,4 @@ public class FileNameUtil {
         return FilenameUtils.getBaseName(url)
                 + "." + FilenameUtils.getExtension(url);
     }
-
-    /**
-     * returns the fileName from a url
-     * Example:  getFileNameFromUrl("https://www.ACoolWebSite.com/CoolPics/LargePics/BestQuality/aPrettySweetPic.jpeg", ".jpg") will
-     * return "aPrettySweetPic.jpg"
-     *
-     * @param url
-     * @param extension
-     * @return fileName from the input url
-     */
-    public static String getFileNameFromUrl(final String url, final String extension) {
-        return FilenameUtils.getBaseName(url) + extension;
-    }
-
 }

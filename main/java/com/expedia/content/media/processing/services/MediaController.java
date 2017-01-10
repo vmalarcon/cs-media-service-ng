@@ -156,44 +156,6 @@ public class MediaController extends CommonServiceController {
     private KafkaPublisher kafkaPublisher;
 
     /**
-     * web service interface to consume media message.
-     * Note that the {@code @Meter} {@code @Timer} {@code @Retryable} annotations introduce aspects from metrics-support and spring-retry
-     * modules. The aspects should be applied in order, Metrics being outside (outer) and retry being inside (inner).
-     *
-     * @param message is json format media message,fileUrl and expedia is required.
-     * @return ResponseEntity Standard spring response object.
-     * @throws Exception Thrown if processing the message fails.
-     */
-    @Meter(name = "acquireMessageCounter")
-    @Timer(name = "acquireMessageTimer")
-    @SuppressWarnings({"PMD.SignatureDeclareThrowsException", "rawtypes"})
-    @RequestMapping(value = "/acquireMedia", method = RequestMethod.POST)
-    @Deprecated public ResponseEntity<String> acquireMedia(@RequestBody final String message, @RequestHeader MultiValueMap<String,String> headers) throws Exception {
-        final Date timeReceived = new Date();
-        final String requestID = verifyRequestId(headers, false);
-        final String serviceUrl = MediaServiceUrl.ACQUIRE_MEDIA.getUrl();
-        LOGGER.info("RECEIVED ACQUIRE REQUEST ServiceUrl={} RequestId={} JsonMessage={}", serviceUrl, requestID, message);
-        try {
-            final ImageMessage imageMessageOld = ImageMessage.parseJsonMessage(message);
-            final Map messageMap = JSONUtil.buildMapFromJson(message);
-            final String mediaCommonMessage = JSONUtil.convertToCommonMessage(imageMessageOld, messageMap, providerProperties);
-            LOGGER.info("ACQUIRE REQUEST CONVERTED RequestId={}", Arrays.asList(requestID), mediaCommonMessage);
-            final String userName = "Multisource";
-            return processRequest(mediaCommonMessage, requestID, serviceUrl, userName, OK, timeReceived);
-        } catch (IllegalStateException | ImageMessageException ex) {
-            final ResponseEntity<String> responseEntity = this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
-            LOGGER.error(ex, "ERROR ServiceUrl={} ResponseStatus={} ResponseBody={} RequestId={} ErrorMessage={} JSONMessage={}",
-                    responseEntity.getStatusCode().toString(), responseEntity.getBody(), serviceUrl, requestID, ex.getMessage(), message);
-            return new ResponseEntity<>(StringEscapeUtils.escapeHtml(responseEntity.getBody()), responseEntity.getStatusCode());
-        } catch (Exception ex) {
-            LOGGER.error(ex, "ERROR ServiceUrl={} RequestId={} ErrorMessage={} JSONMessage={}", serviceUrl, requestID, ex.getMessage(), message);
-            poker.poke("Media Services failed to process an acquireMedia request - RequestId: " + requestID, hipChatRoom,
-                    message, ex);
-                throw ex;
-        }
-    }
-
-    /**
      * Web service interface to push a media file into the media processing pipeline.
      *
      * @param message JSON formated ImageMessage.
@@ -642,7 +604,6 @@ public class MediaController extends CommonServiceController {
      * Resolves which fileName should be used as the ProvidedName. If the fileName field does not exist a name
      * is extracted from the FileURL.
      * - Note - this method will only be called on new media sent through MediaAdd.
-     * - Note - Media sent through AcquireMedia will already have a providedName when the json
      * message is parsed and Reprocessed Media will never end up in the branch in @updateImageMessage()
      * that calls this method
      *
