@@ -25,7 +25,7 @@ server:
   additional:
     port: 8080
   ssl:
-    key-alias: "expedia-${EXPEDIA_ENVIRONMENT:test}-${AWS_REGION:us-west-2}"
+    key-alias: "expedia-${EXPEDIA_DEPLOYED_ENVIRONMENT:test}-${AWS_REGION:us-west-2}"
     key-store: "classpath:keystore.jks"
     key-store-password: vvkukrunblhthlejlhrkrreuccfhtncdifrdibjjuvhe
     enabled: true

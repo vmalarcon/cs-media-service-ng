@@ -1,4 +1,6 @@
 server:
+   ssl:
+      key-alias: "cs-media-service.prod-p.expedia.com"
    tomcat:
       max-threads: 200
 cs:
