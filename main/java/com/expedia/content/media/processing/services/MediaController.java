@@ -301,8 +301,8 @@ public class MediaController extends CommonServiceController {
     @Meter(name = "deleteMediaByGUIDMessageCounter")
     @Timer(name = "deleteMediaByGUIDMessageTimer")
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/images/{mediaGUID}", method = RequestMethod.DELETE) public ResponseEntity<String> deleteMedia(
-            @PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
+    @RequestMapping(value = "/media/v1/images/{mediaGUID}", method = RequestMethod.DELETE)
+    public ResponseEntity<String> deleteMedia(@PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
         final String requestID = getRequestId(headers);
         final String clientID = getClientId();
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
