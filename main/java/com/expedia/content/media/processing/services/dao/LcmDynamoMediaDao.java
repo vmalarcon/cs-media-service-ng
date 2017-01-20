@@ -1,27 +1,5 @@
 package com.expedia.content.media.processing.services.dao;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.annotation.Resource;
-
-import org.apache.commons.lang3.math.NumberUtils;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
@@ -52,6 +30,27 @@ import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
+import org.apache.commons.lang3.math.NumberUtils;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Media data access operations through LCM and the Dynamo MediaDB.
@@ -220,8 +219,26 @@ public class LcmDynamoMediaDao implements MediaDao {
             .map(convertMedia(mediaLcmMediaIdMap, lcmRoomMediaMap))
             .collect(Collectors.toList());
         /* @formatter:on */
-        domainIdMedia.removeAll(mediaLcmMediaIdMap.values());
+        // do not rely on equals() and hashCode() to remove items
+        // domainIdMedia.removeAll(mediaLcmMediaIdMap.values());
+        removeExistingLcmMediaIds(domainIdMedia, mediaLcmMediaIdMap);
         domainIdMedia.addAll(0, lcmMediaList);
+    }
+
+    /**
+     * Make sure the media that has both sources (LCM and Dynamo) are deduped. Only Dynamo media will remain.
+     * This method modifies the original parameter. This method doesn't rely on the equals() method of Media.
+     *
+     * @param original List of media. This method modifies in place.
+     * @param lcmMediaIds Map<String, Media> The String being the lcm media id
+     */
+    private void removeExistingLcmMediaIds(List<Media> original, Map<String, Media> lcmMediaIds) {
+        for (final Iterator<Media> it = original.iterator(); it.hasNext(); ) {
+            final Media media = it.next();
+            if (lcmMediaIds.containsKey(media.getLcmMediaId())) {
+                it.remove();
+            }
+        }
     }
 
     /**
