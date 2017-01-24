@@ -218,7 +218,7 @@ public class LcmDynamoMediaDao implements MediaDao {
             .map(convertMedia(mediaLcmMediaIdMap, lcmRoomMediaMap))
             .collect(Collectors.toList());
         /* @formatter:on */
-        // do not rely on equals() and hashCode() to remove items
+        // do not rely on equals() and hashCode() to remove items. The below line does not work.
         // domainIdMedia.removeAll(mediaLcmMediaIdMap.values());
         domainIdMedia.removeIf(media -> mediaLcmMediaIdMap.containsKey(media.getLcmMediaId()));
         domainIdMedia.addAll(0, lcmMediaList);
