@@ -247,7 +247,7 @@ public class SourceURLControllerTest {
     //@Test
     public void testDownLoadSourceImageMultiple() throws Exception {
         String jsonMessage = "{ \n"
-                + "  \"mediaUrl\":\"s3://images.trvl-media.com/hotels/5000000/4610000/4600500/4600417/4600417_2_y.jpg\", \n"
+                + "  \"mediaUrl\":\"s3://images.trvl-media.com/hotels/5000000/4610000/4600500/4600417/4600417_2_y.jpg\" \n"
                 + "}";
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
