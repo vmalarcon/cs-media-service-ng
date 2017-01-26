@@ -33,6 +33,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.MultiValueMap;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -111,6 +112,37 @@ public class SourceURLControllerTest {
     }
 
     @Test
+    public void testSuccessfulWithNoneJPGMediaRequest() throws Exception {
+        String jsonMessage = "{ \n"
+                + "  \"mediaUrl\":\"http://images.trvl-media.com/hotels/5000000/4610000/4600500/4600417/4a8a5b92_t.jpg\" \n"
+                + "}";
+        MediaDao mockMediaDao = mock(LcmDynamoMediaDao.class);
+        LcmMedia lcmMedia = LcmMedia.builder().domainId(123).fileName("I_dont_end_with_a_normal_extension.10").mediaId(1234).build();
+        when(mockMediaDao.getContentProviderName(anyString())).thenReturn(lcmMedia);
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+        FileSourceFinder fileSourceFinder = new FileSourceFinder();
+        ImageCopy mockImageCopy = mock(ImageCopy.class);
+        setFieldValue(fileSourceFinder, "queryS3BucketOnly", true);
+        setFieldValue(fileSourceFinder, "imageCopy", mockImageCopy);
+        when(mockImageCopy.getImage(anyString(), any())).thenReturn(mock(S3Object.class));
+        setFieldValue(sourceURLController, "fileSourceFinder", fileSourceFinder);
+        setFieldValue(sourceURLController, "mediaDao", mockMediaDao);
+        Media media = Media.builder()
+                .mediaGuid("4a8a5b92_real_guid_nota_fakeguid1234")
+                .build();
+        List<Media> mediaList = new ArrayList<>();
+        mediaList.add(media);
+        when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(mediaList);
+        ResponseEntity<String> responseEntity = sourceURLController.getSourceURL(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"mediaSourceUrl\":\"s3://null/null/5000000/4610000/4600500/4600417/4a8a5b92_real_guid_nota_fakeguid1234.10\""));
+        assertTrue(responseEntity.getBody().contains("\"contentProviderMediaName\":\"I_dont_end_with_a_normal_extension.10\""));
+    }
+
+    @Test
     public void testSuccessfulRequestGuid() throws Exception {
         String jsonMessage = "{ \n"
                 + "  \"mediaUrl\":\"http://images.trvl-media.com/hotels/11000000/10440000/10430400/10430311/8b9680cd_y.jpg\" \n"
@@ -122,7 +154,7 @@ public class SourceURLControllerTest {
         when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(mediaList);
         FileSourceFinder fileSourceFinder = mock(FileSourceFinder.class);
         String s3Location = "s3://ewe-cs-media-test/test/source/lodging/11000000/10440000/10430400/10430311/8b9680cd-f9f9-4f78-9344-2f00aba91a69.jpg";
-        when(fileSourceFinder.getSourcePath(anyString(), anyString(), anyString(), anyInt(), anyString())).thenReturn(s3Location);
+        when(fileSourceFinder.getSourcePath(anyString(), anyString(), anyString(), anyString(), any())).thenReturn(s3Location);
 
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -152,7 +184,7 @@ public class SourceURLControllerTest {
         when(mockMediaDao.getContentProviderName(anyString())).thenReturn(null);
         FileSourceFinder fileSourceFinder = mock(FileSourceFinder.class);
         String s3Location = "s3://ewe-cs-media-test/test/source/lodging/11000000/10440000/10430400/10430311/8b9680cd-f9f9-4f78-9344-2f00aba91a69.jpg";
-        when(fileSourceFinder.getSourcePath(anyString(), anyString(), anyString(), anyInt(), anyString())).thenReturn(s3Location);
+        when(fileSourceFinder.getSourcePath(anyString(), anyString(), anyString(), anyString(), any())).thenReturn(s3Location);
         setFieldValue(sourceURLController, "mediaDao", mockMediaDao);
         setFieldValue(sourceURLController, "fileSourceFinder", fileSourceFinder);
         ResponseEntity<String> responseEntity = sourceURLController.getSourceURL(jsonMessage, mockHeader);
@@ -199,7 +231,7 @@ public class SourceURLControllerTest {
     }
 
     @Test
-    public void testDownLoadSouceImageNotFound() throws Exception {
+    public void testDownLoadSourceImageNotFound() throws Exception {
         String jsonMessage = "{ \n"
                 + "  \"mediaUrl\":\"s3://images.trvl-media.com/hotels/5000000/4610000/4600500/4600417/4600417_2_y.jpg\" \n"
                 + "}";
@@ -213,9 +245,9 @@ public class SourceURLControllerTest {
     }
 
     //@Test
-    public void testDownLoadSouceImageMultiple() throws Exception {
+    public void testDownLoadSourceImageMultiple() throws Exception {
         String jsonMessage = "{ \n"
-                + "  \"mediaUrl\":\"s3://images.trvl-media.com/hotels/5000000/4610000/4600500/4600417/4600417_2_y.jpg\" \n"
+                + "  \"mediaUrl\":\"s3://images.trvl-media.com/hotels/5000000/4610000/4600500/4600417/4600417_2_y.jpg\", \n"
                 + "}";
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();

@@ -69,7 +69,7 @@ public class StatusController extends CommonServiceController {
         final String requestID = getRequestId(headers);
         LOGGER.info("RECEIVED LATEST STATUS REQUEST ServiceUrl={} RequestId={} RequestMessage={}",
                 MediaServiceUrl.MEDIA_STATUS.getUrl(), requestID, message);
-        String jsonResponse = null;
+        String jsonResponse;
         try {
             final ValidationStatus validationStatus = validateMediaStatus(message);
             if (!validationStatus.isValid()) {

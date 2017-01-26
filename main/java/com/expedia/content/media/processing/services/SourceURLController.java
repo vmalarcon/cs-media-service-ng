@@ -30,13 +30,15 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
-
-import java.util.Optional;
 
 /**
  * Web service controller to get Source URL by derivative file name..
@@ -78,7 +80,7 @@ public class SourceURLController extends CommonServiceController {
     public ResponseEntity getSourceURL(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
         final String requestID = getRequestId(headers);
         LOGGER.info("RECEIVED SOURCE URL REQUEST ServiceUrl={} RequestMessage={} RequestId={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message, requestID);
-        String jsonResponse = null;
+        String jsonResponse;
         try {
             final Map messageMap = JSONUtil.buildMapFromJson(message);
             final String fileUrl = (String) messageMap.get("mediaUrl");
@@ -97,7 +99,7 @@ public class SourceURLController extends CommonServiceController {
                     return buildErrorResponse("can not found GUID.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
                 }
             }
-            final String sourcePath = fileSourceFinder.getSourcePath(bucketName, bucketPrefix, fileUrl, lcmMedia.getDomainId(), guid);
+            final String sourcePath = fileSourceFinder.getSourcePath(bucketName, bucketPrefix, fileUrl, guid, lcmMedia);
             final Map<String, String> response = new HashMap<>();
             response.put("contentProviderMediaName", lcmMedia.getFileName());
             response.put("mediaSourceUrl", sourcePath);
@@ -131,7 +133,7 @@ public class SourceURLController extends CommonServiceController {
         if (StringUtils.isNumeric(mediaId)) {
             final List<Media> mediaList = mediaDao.getMediaByMediaId(mediaId);
             if (!mediaList.isEmpty()) {
-                final Optional<Media> existMedia = mediaList.stream().max((m1, m2) -> m1.getLastUpdated().compareTo(m2.getLastUpdated()));
+                final Optional<Media> existMedia = mediaList.stream().max(Comparator.comparing(Media::getLastUpdated));
                 if (existMedia.isPresent()) {
                     return existMedia.get().getMediaGuid();
                 }

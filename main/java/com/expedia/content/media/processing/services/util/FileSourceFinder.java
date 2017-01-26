@@ -4,14 +4,12 @@ import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.model.S3Object;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.ImageCopy;
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Find file path from S3 or window share.
@@ -26,8 +24,6 @@ public class FileSourceFinder {
     public static final String SOURCE_DIR = "\\\\CHE-FILIDXIMG01\\GSO_media\\lodging";
     public static final String SOURCE_DIR_NEW = "\\\\CHE-FILIDXIMG01\\GSO_MediaNew\\lodging";
 
-    public static final List<String> IMAGEFORMATS = Arrays.asList(".jpg", ".JPG",".jpeg", ".JPEG", ".gif", ".GIF", ".png", ".PNG", ".bmp", ".BMP", "tiff", ".TIFF");
-
     @Value("${media.source.query.s3only}")
     private boolean queryS3BucketOnly;
 
@@ -39,20 +35,18 @@ public class FileSourceFinder {
      *
      * @return true if found, false otherwise.
      */
-    public String getGUIDFilePath(String bucketName, String prefix, String millonFolder, String guid) {
+    public String getGUIDFilePath(String bucketName, String prefix, String millonFolder, String guid, String extension) {
         S3Object object;
-        for (final String extension : IMAGEFORMATS) {
-            final String objectName = prefix + millonFolder + guid + extension;
-            try {
-                object = imageCopy.getImage(bucketName, objectName);
-                if (object != null) {
-                    //bug fix CSPB-533800, if close the object, there is no connection timeout error.
-                    object.close();
-                    return S3_PREFIX + bucketName + "/" + objectName;
-                }
-            } catch (AmazonServiceException | IOException e) {
-                LOGGER.warn(e, "s3 query exception MediaGuid={} BucketName={} ObjectName={}", guid, bucketName, objectName);
+        final String objectName = prefix + millonFolder + guid + extension;
+        try {
+            object = imageCopy.getImage(bucketName, objectName);
+            if (object != null) {
+                //bug fix CSPB-533800, if close the object, there is no connection timeout error.
+                object.close();
+                return S3_PREFIX + bucketName + "/" + objectName;
             }
+        } catch (AmazonServiceException | IOException e) {
+            LOGGER.warn(e, "s3 query exception MediaGuid={} BucketName={} ObjectName={}", guid, bucketName, objectName);
         }
         return "";
     }
@@ -63,25 +57,26 @@ public class FileSourceFinder {
      * @param bucketName
      * @param prefix
      * @param fileUrl
-     * @param domainId
+     * @param guid
+     * @param lcmMedia
      * @return
      */
-    public String getSourcePath(String bucketName, String prefix, String fileUrl, int domainId, String guid) {
+    public String getSourcePath(String bucketName, String prefix, String fileUrl, String guid, LcmMedia lcmMedia) {
         final String fileName = getFileNameFromUrl(fileUrl);
-        final String millonFolder = getMillonFolderFromUrl(fileUrl);
+        final String millionFolder = getMillionFolderFromUrl(fileUrl);
         if (matchGuid(fileName)) {
-            return getGUIDFilePath(bucketName, prefix, millonFolder, guid);
+            return getGUIDFilePath(bucketName, prefix, millionFolder, guid, "." + FilenameUtils.getExtension(lcmMedia.getFileName()));
         }
         final String pattern = "_[\\w]{1}.jpg";
         if (queryS3BucketOnly) {
             final String sourceName = fileName.replaceFirst(pattern, ".jpg");
-            return getGUIDFilePath(bucketName, prefix, millonFolder, FilenameUtils.getBaseName(sourceName));
+            return getGUIDFilePath(bucketName, prefix, millionFolder, FilenameUtils.getBaseName(sourceName), "." + FilenameUtils.getExtension(lcmMedia.getFileName()));
         }
         else {
-            if (domainId < MILLION_FOLDER_LIMIT) {
-                return SOURCE_DIR + millonFolder.replace("/", "\\") + fileName.replaceFirst(pattern, ".jpg");
+            if (lcmMedia.getDomainId() < MILLION_FOLDER_LIMIT) {
+                return SOURCE_DIR + millionFolder.replace("/", "\\") + fileName.replaceFirst(pattern, ".jpg");
             } else {
-                return SOURCE_DIR_NEW + millonFolder.replace("/", "\\") + fileName.replaceFirst(pattern, ".jpg");
+                return SOURCE_DIR_NEW + millionFolder.replace("/", "\\") + fileName.replaceFirst(pattern, ".jpg");
             }
         }
     }
@@ -104,7 +99,7 @@ public class FileSourceFinder {
         return false;
     }
 
-    private String getMillonFolderFromUrl(String fileUrl) {
+    private String getMillionFolderFromUrl(String fileUrl) {
         //http://images.trvl-media.com/hotels/1000000/10000/8400/8393/4a8a5b92_t.jpg
         if (fileUrl.contains(HOTELS) && fileUrl.contains("/")) {
             final int lastLoc = fileUrl.lastIndexOf('/');

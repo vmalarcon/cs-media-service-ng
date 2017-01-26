@@ -3,6 +3,7 @@ package com.expedia.content.media.processing.services.util;
 import com.amazonaws.services.s3.model.S3Object;
 import com.expedia.content.media.processing.pipeline.util.FileImageCopy;
 import com.expedia.content.media.processing.pipeline.util.ImageCopy;
+import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.testing.TestingUtil;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,8 +36,12 @@ public class FileSourceFinderTest {
     public void testGenerateJsonResponse() throws Exception {
         FileImageCopy fileImageCopy = mock(FileImageCopy.class);
         TestingUtil.setFieldValue(fileSourceFinder, "imageCopy", fileImageCopy);
+        LcmMedia lcmMedia = LcmMedia.builder()
+                .domainId(123)
+                .fileName("fileName.jpg")
+                .build();
         String sourcePath = fileSourceFinder.getSourcePath("bucket", "test", "http://images.trvl-media.com/hotels/1000000/10000/200/123/5d003ca8_e.jpg",
-                123, "");
+                "", lcmMedia);
         assertEquals("", sourcePath);
     }
 
@@ -48,25 +53,36 @@ public class FileSourceFinderTest {
         when(fileImageCopy.getImage(anyString(),anyString())).thenReturn(s3Object);
         TestingUtil.setFieldValue(fileSourceFinder, "queryS3BucketOnly", true);
         TestingUtil.setFieldValue(fileSourceFinder, "imageCopy", fileImageCopy);
-
+        LcmMedia lcmMedia = LcmMedia.builder()
+                .domainId(7000925)
+                .fileName("fileName.jpg")
+                .build();
         String sourcePath = fileSourceFinder.getSourcePath("bucket", "test", "http://images.trvl-media.com/hotels/8000000/7010000/7001000/7000925/7000925_1_t.jpg",
-                        7000925, "");
+                "", lcmMedia);
         assertEquals("s3://bucket/test/8000000/7010000/7001000/7000925/7000925_1.jpg", sourcePath);
     }
 
     @Test
     public void testGetWindowSourceUrl() throws Exception {
+        LcmMedia lcmMedia = LcmMedia.builder()
+                .domainId(7000925)
+                .fileName("fileName.jpg")
+                .build();
         String sourcePath =
                 fileSourceFinder.getSourcePath("bucket", "test", "http://images.trvl-media.com/hotels/8000000/7010000/7001000/7000925/7000925_1_t.jpg",
-                        7000925, "");
+                        "", lcmMedia);
         assertEquals("\\\\CHE-FILIDXIMG01\\GSO_MediaNew\\lodging\\8000000\\7010000\\7001000\\7000925\\7000925_1.jpg", sourcePath);
     }
 
     @Test
     public void testGetWindowSourceUrlSecond() throws Exception {
+        LcmMedia lcmMedia = LcmMedia.builder()
+                .domainId(4600417)
+                .fileName("fileName.jpg")
+                .build();
         String sourcePath =
                 fileSourceFinder.getSourcePath("bucket", "test", "http://images.trvl-media.com/hotels/5000000/4610000/4600500/4600417/4600417_2_y.jpg",
-                        4600417, "");
+                        "", lcmMedia);
         assertEquals("\\\\CHE-FILIDXIMG01\\GSO_media\\lodging\\5000000\\4610000\\4600500\\4600417\\4600417_2.jpg", sourcePath);
     }
 
