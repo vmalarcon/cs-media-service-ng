@@ -34,6 +34,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.expedia.content.media.processing.pipeline.kafka.KafkaCommonPublisher;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.codehaus.plexus.util.ReflectionUtils;
 import org.joda.time.format.DateTimeFormat;
@@ -112,7 +113,7 @@ public class MediaControllerTest {
     @Mock
     Properties mockProviderProperties;
     @Mock
-    private KafkaPublisher kafkaPublisher;
+    private KafkaCommonPublisher kafkaCommonPublisher;
 
     private Set<Map.Entry<Object, Object>> providerMapping;
     private MediaController mediaController;
@@ -144,8 +145,8 @@ public class MediaControllerTest {
         DynamoMediaRepository dynamoMediaRepository = mock(DynamoMediaRepository.class);
         Mockito.doNothing().when(dynamoMediaRepository).storeMediaAddMessage(anyObject(), anyObject());
         FieldUtils.writeField(mediaController, "dynamoMediaRepository", dynamoMediaRepository, true);
-        FieldUtils.writeField(mediaController, "kafkaPublisher", kafkaPublisher, true);
-        Mockito.doNothing().when(kafkaPublisher).publishToTopic(anyObject());
+        FieldUtils.writeField(mediaController, "kafkaCommonPublisher", kafkaCommonPublisher, true);
+        Mockito.doNothing().when(kafkaCommonPublisher).publishImageMessage(anyObject(),anyString());
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -195,7 +196,7 @@ public class MediaControllerTest {
                 + ",\"appName\":\"cs-media-service\",\"activityTime\":" ));
         verifyZeroInteractions(mockLcmDynamoMediaDao);
         ArgumentCaptor<ImageMessage> imageMessage = ArgumentCaptor.forClass(ImageMessage.class);
-        verify(kafkaPublisher, times(1)).publishToTopic(imageMessage.capture());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage.capture(),anyString());
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -2154,7 +2155,7 @@ public class MediaControllerTest {
         Mockito.doNothing().when(catalogItemMediaDao).addCatalogItemForRoom(anyInt(), anyInt(), anyInt(), anyObject());
         FieldUtils.writeField(mockUpdateProcess, "catalogItemMediaDao", catalogItemMediaDao, true);
         FieldUtils.writeField(mockUpdateProcess, "catalogHeroProcessor", catalogHeroProcessor, true);
-        setFieldValue(mockUpdateProcess, "kafkaPublisher", kafkaPublisher);
+        setFieldValue(mockUpdateProcess, "kafkaCommonPublisher", kafkaCommonPublisher);
         return mockUpdateProcess;
     }
 

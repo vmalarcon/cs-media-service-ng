@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 
+import com.expedia.content.media.processing.pipeline.kafka.KafkaCommonPublisher;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -52,7 +53,7 @@ public class MediaUpdateProcessorTest {
     private MediaUpdateProcessor mediaUpdateProcessor;
 
     @Mock
-    private KafkaPublisher kafkaPublisher;
+    private KafkaCommonPublisher kafkaCommonPublisher;
 
     @Before
     public void testSetUp() throws Exception {
@@ -61,7 +62,7 @@ public class MediaUpdateProcessorTest {
         setFieldValue(mediaUpdateProcessor, "catalogItemMediaDao", catalogItemMediaDao);
         setFieldValue(mediaUpdateProcessor, "mediaDao", mediaDao);
         setFieldValue(mediaUpdateProcessor, "catalogHeroProcessor", catalogHeroProcessor);
-        setFieldValue(mediaUpdateProcessor, "kafkaPublisher", kafkaPublisher);
+        setFieldValue(mediaUpdateProcessor, "kafkaCommonPublisher", kafkaCommonPublisher);
     }
 
     @Test
@@ -105,7 +106,7 @@ public class MediaUpdateProcessorTest {
         verify(catalogHeroProcessor)
                 .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
         ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
-        verify(kafkaPublisher, times(1)).publishToTopic(imageMessage2.capture());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage2.capture(), anyString());
     }
 
     @Test
@@ -127,7 +128,7 @@ public class MediaUpdateProcessorTest {
         verify(catalogHeroProcessor, never())
                 .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
         ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
-        verify(kafkaPublisher, times(1)).publishToTopic(imageMessage2.capture());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage2.capture(), anyString());
     }
 
     @Test
@@ -152,7 +153,8 @@ public class MediaUpdateProcessorTest {
         verify(catalogHeroProcessor)
                 .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
         ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
-        verify(kafkaPublisher, times(1)).publishToTopic(imageMessage2.capture());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage2.capture(), anyString());
+
     }
 
     @Test
@@ -172,7 +174,7 @@ public class MediaUpdateProcessorTest {
         verify(mediaUpdateDao).updateMedia(imageMessage, 123);
         verify(catalogHeroProcessor).updateTimestamp(anyObject(), anyObject());
         ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
-        verify(kafkaPublisher, times(1)).publishToTopic(imageMessage2.capture());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage2.capture(), anyString());
     }
 
     @Test
@@ -204,7 +206,7 @@ public class MediaUpdateProcessorTest {
         verify(catalogItemMediaDao).getLcmRoomsByMediaId(123);
         verify(mediaUpdateDao).updateMediaTimestamp(anyObject(), anyObject());
         ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
-        verify(kafkaPublisher, times(1)).publishToTopic(imageMessage2.capture());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage2.capture(), anyString());
     }
     
     @Test
@@ -233,7 +235,7 @@ public class MediaUpdateProcessorTest {
         verify(mediaUpdateDao).updateMedia(updateMessage, 123);
         assertTrue(Boolean.FALSE.toString().equals(dynamoMedia.getActive()));
         ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
-        verify(kafkaPublisher, times(2)).publishToTopic(imageMessage2.capture());
+        verify(kafkaCommonPublisher, times(2)).publishImageMessage(imageMessage2.capture(), anyString());
     }
 
         @Test

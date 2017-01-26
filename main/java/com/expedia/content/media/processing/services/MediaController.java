@@ -24,6 +24,7 @@ import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
+import com.expedia.content.media.processing.pipeline.kafka.KafkaCommonPublisher;
 import com.expedia.content.media.processing.pipeline.reporting.Activity;
 import com.expedia.content.media.processing.pipeline.reporting.App;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
@@ -149,10 +150,15 @@ public class MediaController extends CommonServiceController {
     private SKUGroupCatalogItemDao skuGroupCatalogItemDao;
     @Value("${cs.poke.hip-chat.room}")
     private String hipChatRoom;
+    @Value("${kafka.imagemessage.topic}")
+    private String imageMessageTopic;
+    @Value("${kafka.activity.topic}")
+    private String activityTopic;
+
     @Autowired
     private Poker poker;
     @Autowired
-    private KafkaPublisher kafkaPublisher;
+    private KafkaCommonPublisher kafkaCommonPublisher;
 
     /**
      * Web service interface to push a media file into the media processing pipeline.
@@ -206,7 +212,8 @@ public class MediaController extends CommonServiceController {
         final String requestID = getRequestId(headers);
         final String clientID = getClientId();
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl() + "/" + queryId;
-        LOGGER.info("RECEIVED UPDATE REQUEST ServiceUrl={} QueryId={} ClientId={} RequestId={} JSONMessage={}", serviceUrl, queryId, clientID, requestID, message);
+        LOGGER.info("RECEIVED UPDATE REQUEST ServiceUrl={} QueryId={} ClientId={} RequestId={} JSONMessage={}", serviceUrl, queryId, clientID, requestID,
+                message);
         try {
             final Map<String, Object> objectMap = new HashMap<>();
             validateAndInitMap(objectMap, queryId, serviceUrl, message, requestID, clientID);
@@ -564,7 +571,7 @@ public class MediaController extends CommonServiceController {
             dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);
         }
         publishMsg(imageMessageNew);
-        kafkaPublisher.publishToTopic(imageMessageNew);
+        kafkaCommonPublisher.publishImageMessage(imageMessageNew, imageMessageTopic);
         final ResponseEntity<String> responseEntity = new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
         LOGGER.info("SUCCESS ResponseStatus={} ResponseBody={} ServiceUrl={}",
                 Arrays.asList(responseEntity.getStatusCode().toString(), responseEntity.getBody(), serviceUrl), imageMessageNew);
@@ -744,6 +751,8 @@ public class MediaController extends CommonServiceController {
                 new LogEntry(imageMessage.getFileName(), imageMessage.getMediaGuid(), activity, logDate, imageMessage.getOuterDomainData().getDomain(),
                         imageMessage.getOuterDomainData().getDomainId(), imageMessage.getOuterDomainData().getDerivativeCategory());
         logActivityProcess.log(logEntry, reporting);
+        kafkaCommonPublisher.publishActivityLogMsg(imageMessage, activity, App.MEDIA_SERVICE, activityTopic);
+
     }
 
     /**
