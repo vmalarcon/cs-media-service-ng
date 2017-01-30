@@ -155,20 +155,6 @@
         <constructor-arg name="deadLetterQueue" value="${media.aws.processlog.queue.name}" />
     </bean>
 
-    <bean id="compositeReporter" class="com.expedia.content.media.processing.pipeline.reporting.CompositeReporting" primary="true">
-        <constructor-arg name="reports">
-            <list>
-                <ref bean="dynamoReporter" />
-                <ref bean="lcmReporter" />
-            </list>
-        </constructor-arg>
-    </bean>
-
-    <bean id="dynamoReporter" class="com.expedia.content.media.processing.pipeline.reporting.dynamo.DynamoReporting">
-        <constructor-arg name="dynamoMapper" ref="dynamoMapper" />
-        <constructor-arg name="appName" value="${processname}" />
-    </bean>
-
     <bean id="amazonDynamoDB" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient">
         <property name="endpoint" value="${aws.endPoint}" />
     </bean>
@@ -180,10 +166,6 @@
     <bean id="dynamoMediaRepository" class="com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository">
         <constructor-arg name="dynamoMapper" ref="dynamoMapper"/>
         <constructor-arg name="environment" value="${EXPEDIA_ENVIRONMENT}"/>
-    </bean>
-    <bean id="lcmReporter" class="com.expedia.content.media.processing.pipeline.reporting.sql.LcmReporting">
-        <constructor-arg name="logEntryInsertProcedure" ref="lcmInsertSproc" />
-        <constructor-arg name="appName" value="${processname}" />
     </bean>
 
     <bean id="lcmInsertSproc" primary="true" class="com.expedia.content.media.processing.pipeline.reporting.sql.SQLLogEntryInsertSproc" />

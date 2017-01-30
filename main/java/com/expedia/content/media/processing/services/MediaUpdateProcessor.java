@@ -7,8 +7,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.expedia.content.media.processing.pipeline.kafka.KafkaCommonPublisher;
 import org.apache.commons.lang.reflect.FieldUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -38,6 +40,8 @@ public class MediaUpdateProcessor {
     public static final String MESSAGE_ROOMS = "rooms";
     public static final String MESSAGE_ROOM_HERO = "roomHero";
 
+    @Value("${kafka.imagemessage.topic}")
+    private String imageMessageTopic;
     @Autowired
     private MediaUpdateDao mediaUpdateDao;
     @Autowired
@@ -47,7 +51,7 @@ public class MediaUpdateProcessor {
     @Autowired
     private CatalogHeroProcessor catalogHeroProcessor;
     @Autowired
-    private KafkaPublisher kafkaPublisher;
+    private KafkaCommonPublisher kafkaCommonPublisher;
 
     /**
      * process media update, involve media table, catalogItemMedia table, and paragraph table in lcm.
@@ -87,7 +91,7 @@ public class MediaUpdateProcessor {
         }
         final Map<String, Object> response = new HashMap<>();
         response.put("status", Integer.valueOf(200));
-        kafkaPublisher.publishToTopic(imageMessage);
+        kafkaCommonPublisher.publishImageMessage(imageMessage,imageMessageTopic);
         final String jsonResponse = new ObjectMapper().writeValueAsString(response);
         return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
     }
