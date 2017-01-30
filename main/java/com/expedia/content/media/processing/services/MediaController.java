@@ -152,8 +152,7 @@ public class MediaController extends CommonServiceController {
     private String hipChatRoom;
     @Value("${kafka.imagemessage.topic}")
     private String imageMessageTopic;
-    @Value("${kafka.activity.topic}")
-    private String activityTopic;
+
 
     @Autowired
     private Poker poker;
@@ -751,7 +750,6 @@ public class MediaController extends CommonServiceController {
                 new LogEntry(imageMessage.getFileName(), imageMessage.getMediaGuid(), activity, logDate, imageMessage.getOuterDomainData().getDomain(),
                         imageMessage.getOuterDomainData().getDomainId(), imageMessage.getOuterDomainData().getDerivativeCategory());
         logActivityProcess.log(logEntry, reporting);
-        kafkaCommonPublisher.publishActivityLogMsg(imageMessage, activity, App.MEDIA_SERVICE, activityTopic);
 
     }
 

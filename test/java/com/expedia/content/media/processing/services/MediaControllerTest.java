@@ -239,6 +239,8 @@ public class MediaControllerTest {
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
         verifyZeroInteractions(mockLcmDynamoMediaDao);
+        ArgumentCaptor<ImageMessage> imageMessage = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage.capture(), anyString());
     }
 
     @Test
@@ -281,6 +283,8 @@ public class MediaControllerTest {
         verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), any());
         verifyZeroInteractions(mockLcmDynamoMediaDao);
+        ArgumentCaptor<ImageMessage> imageMessage = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage.capture(), anyString());
     }
 
     @Test
@@ -355,6 +359,8 @@ public class MediaControllerTest {
 
         verifyZeroInteractions(mockLogActivityProcess);
         verify(queueMessagingTemplateMock, times(0)).send(anyString(), any());
+        ArgumentCaptor<ImageMessage> imageMessage = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(kafkaCommonPublisher, times(0)).publishImageMessage(imageMessage.capture(), anyString());
     }
 
     @Test
@@ -651,6 +657,8 @@ public class MediaControllerTest {
         assertTrue(publishedMessageValue.getPayload().contains("\"mediaGuid\":\"" + "recent-but-inactive"));
         assertTrue(publishedMessageValue.getPayload().contains("\"lcmMediaId\":\"" + "456"));
         verify(mockMediaDao, times(1)).getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"));
+        ArgumentCaptor<ImageMessage> imageMessage = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage.capture(), anyString());
     }
 
 
@@ -704,6 +712,8 @@ public class MediaControllerTest {
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
         assertTrue(publishedMessageValue.getPayload().contains("\"lcmMediaId\":\"" + "456"));
         verify(mockMediaDao, times(1)).getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"));
+        ArgumentCaptor<ImageMessage> imageMessage = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage.capture(), anyString());
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -755,6 +765,8 @@ public class MediaControllerTest {
         assertTrue(publishedMessageValue.getPayload().contains("\"mediaGuid\":\"" + response.getMediaGuid() + "\""));
         assertFalse(publishedMessageValue.getPayload().contains("\"lcmMediaId\":"));
         verify(mockMediaDao, times(1)).getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"));
+        ArgumentCaptor<ImageMessage> imageMessage = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage.capture(), anyString());
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -916,6 +928,8 @@ public class MediaControllerTest {
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + TEST_CLIENT_ID));
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
         verifyZeroInteractions(mockLcmDynamoMediaDao);
+        ArgumentCaptor<ImageMessage> imageMessage = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage.capture(), anyString());
     }
 
     @Test
@@ -958,6 +972,8 @@ public class MediaControllerTest {
         verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
         verify(queueMessagingTemplateMock, times(1)).send(anyString(), any());
         verifyZeroInteractions(mockLcmDynamoMediaDao);
+        ArgumentCaptor<ImageMessage> imageMessage = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage.capture(), anyString());
     }
 
     @Test
