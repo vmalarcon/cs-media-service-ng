@@ -37,4 +37,47 @@ public class FileNameUtilTest {
         assertEquals("Ice Portal", result);
 
     }
+
+    @Test
+    public void testResolveFileNameByProviderFunkyUrl() {
+        ImageMessage message = new ImageMessage.ImageMessageBuilder()
+                .fileName("expedia.jpg")
+                .fileUrl("https://hotels.com//public/Executive Suite 3 Bedroom_0.jpg?itok=_n73wXoB")
+                .providedName(FileNameUtil.MediaProvider.HOTEL_PROVIDED.toString())
+                .mediaGuid("222")
+                .outerDomainData(new OuterDomain(Domain.LODGING, "123", "Hotel Provided", null, null))
+                .build();
+
+        String result = FileNameUtil.resolveFileNameByProvider(message);
+        assertEquals("123_HotelProvided_222.jpg", result);
+    }
+
+    @Test
+    public void testResolveFileNameByProviderNoExtension() {
+        ImageMessage message = new ImageMessage.ImageMessageBuilder()
+                .fileName("expedia.jpg")
+                .fileUrl("https://hotels.com//public/Executive Suite 3 Bedroom_0")
+                .providedName(FileNameUtil.MediaProvider.HOTEL_PROVIDED.toString())
+                .mediaGuid("222")
+                .outerDomainData(new OuterDomain(Domain.LODGING, "123", "Hotel Provided", null, null))
+                .build();
+
+        String result = FileNameUtil.resolveFileNameByProvider(message);
+        assertEquals("123_HotelProvided_222.", result);
+    }
+
+    @Test
+    public void testResolveFileNameByProviderEmptyExtension() {
+        ImageMessage message = new ImageMessage.ImageMessageBuilder()
+                .fileName("expedia.jpg")
+                .fileUrl("https://hotels.com//public/Executive Suite 3 Bedroom_0.")
+                .providedName(FileNameUtil.MediaProvider.HOTEL_PROVIDED.toString())
+                .mediaGuid("222")
+                .outerDomainData(new OuterDomain(Domain.LODGING, "123", "Hotel Provided", null, null))
+                .build();
+
+        String result = FileNameUtil.resolveFileNameByProvider(message);
+        assertEquals("123_HotelProvided_222.", result);
+    }
+
 }

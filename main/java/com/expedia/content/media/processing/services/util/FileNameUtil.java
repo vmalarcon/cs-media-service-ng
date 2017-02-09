@@ -8,6 +8,8 @@ import org.apache.commons.io.FilenameUtils;
 
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
@@ -15,6 +17,8 @@ import java.util.stream.Stream;
  * --ALL PROVIDERS ADDED TO THE ENUM SHOULD USE THE FUNCTION guidProviderNameToFileNameFunction--
  */
 public class FileNameUtil {
+
+    private static final Pattern INVALID_CHARS_FOR_EXTENSION = Pattern.compile(".*?([\\?\\=].*)");
 
     /**
      * --THIS FUNCTION SHOULD BE USED FOR ALL FUTURE PROVIDERS ADDED TO THE ENUM--
@@ -24,7 +28,7 @@ public class FileNameUtil {
      */
     private static final Function<ImageMessage, String> guidProviderNameToFileNameFunction = (consumedImageMessage) -> {
         final String fileNameFromMediaGUID = consumedImageMessage.getOuterDomainData().getDomainId() + "_" + StringUtils.replace(consumedImageMessage.getOuterDomainData().getProvider(), " ", "")
-                + "_" + consumedImageMessage.getMediaGuid() + "." + FilenameUtils.getExtension(consumedImageMessage.getFileUrl());
+                + "_" + consumedImageMessage.getMediaGuid() + "." + getExtension(consumedImageMessage.getFileUrl());
         return fileNameFromMediaGUID;
     };
 
@@ -37,11 +41,26 @@ public class FileNameUtil {
     private static final Function<ImageMessage, String> fileURLToFileNameFunction = (consumedImageMessage) -> {
         if (StringUtils.isNullOrEmpty(consumedImageMessage.getFileName())) {
             final String fileNameFromFileUrl =
-                    FilenameUtils.getBaseName(consumedImageMessage.getFileUrl()) + "." + FilenameUtils.getExtension(consumedImageMessage.getFileUrl());
+                    FilenameUtils.getBaseName(consumedImageMessage.getFileUrl()) + "." + getExtension(consumedImageMessage.getFileUrl());
             return fileNameFromFileUrl;
         }
         return consumedImageMessage.getFileName();
     };
+
+    /**
+     * Makes sure the extension doesn't contain any strange characters like ? or =
+     *
+     * @param url Url from where the extension is extracted.
+     * @return Extension cleaned up as a String
+     */
+    private static final String getExtension(String url) {
+        String extension = FilenameUtils.getExtension(url);
+        Matcher invalidMatcher = INVALID_CHARS_FOR_EXTENSION.matcher(extension);
+        if (invalidMatcher.matches()) {
+            extension = extension.replace(invalidMatcher.group(1), "");
+        }
+        return extension;
+    }
 
     /**
      * Mapping enum for LCM:MediaProvider to function logic for resolving a fileName
