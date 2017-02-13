@@ -110,6 +110,7 @@ public class MediaController extends CommonServiceController {
     private static final String DUPLICATED_STATUS = "DUPLICATE";
     private static final String DEFAULT_VALIDATION_RULES = "DEFAULT";
     private static final String REJECTED_STATUS = "REJECTED";
+    private static final String REPROCESS_OPERATION = "reprocess";
     private static final Integer LIVE_COUNT = 1;
     private static final long ONE_HOUR = 3600 * 1000;
     private static final Map<String, HttpStatus> STATUS_MAP = new HashMap<>();
@@ -594,7 +595,7 @@ public class MediaController extends CommonServiceController {
         final OuterDomain outerDomain = getDomainProviderFromMapping(imageMessage.getOuterDomainData());
         imageMessageBuilder.outerDomainData(outerDomain);
         if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
-            final Map<String, Boolean>  reprocessMap = processReplacement(imageMessage, imageMessageBuilder, clientId); 
+            final Map<String, Boolean>  reprocessMap = processReplacement(imageMessage, imageMessageBuilder, clientId);
             messageState.put(REPROCESSING_STATE_FIELD, reprocessMap.get(REPROCESSING_STATE_FIELD));
             messageState.put(STORE_MEDIA_ADD_MESSAGE_FIELD, reprocessMap.get(STORE_MEDIA_ADD_MESSAGE_FIELD));
         } else {
@@ -656,7 +657,7 @@ public class MediaController extends CommonServiceController {
                 imageMessageBuilder.outerDomainData(domainBuilder.build());
                 imageMessageBuilder.mediaGuid(media.getMediaGuid());
                 imageMessageBuilder.providedName(media.getProvidedName());
-
+                imageMessageBuilder.operation(REPROCESS_OPERATION);
                 LOGGER.info("REPLACEMENT MEDIA MediaGuid={} lcmMediaId={}", Arrays.asList(media.getMediaGuid(), media.getDomainId()), imageMessage);
                 reprocessMap.put(STORE_MEDIA_ADD_MESSAGE_FIELD, false);
                 reprocessMap.put(REPROCESSING_STATE_FIELD, true);
@@ -669,6 +670,7 @@ public class MediaController extends CommonServiceController {
                     final OuterDomain.OuterDomainBuilder domainBuilder = OuterDomain.builder().from(imageMessage.getOuterDomainData());
                     domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, lcmMedia.getMediaId().toString());
                     imageMessageBuilder.outerDomainData(domainBuilder.build());
+                    imageMessageBuilder.operation(REPROCESS_OPERATION);
                     LOGGER.info("REPLACEMENT MEDIA LCM INFORMATION LcmMediaId={}", Arrays.asList(String.valueOf(lcmMedia.getMediaId())), imageMessage);
                     reprocessMap.put(STORE_MEDIA_ADD_MESSAGE_FIELD, true);
                     reprocessMap.put(REPROCESSING_STATE_FIELD, true);
