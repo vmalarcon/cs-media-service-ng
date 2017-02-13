@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -664,7 +665,7 @@ public class MediaController extends CommonServiceController {
                 return reprocessMap;
             } else {
                 final List<LcmMedia> lcmMediaList = mediaDao.getMediaByFilenameInLCM(Integer.valueOf(imageMessage.getOuterDomainData().getDomainId()), imageMessage.getFileName());
-                final Optional<LcmMedia> existMedia = lcmMediaList.stream().max((m1, m2) -> m1.getLastUpdateDate().compareTo(m2.getLastUpdateDate()));
+                final Optional<LcmMedia> existMedia = lcmMediaList.stream().max(Comparator.comparing(LcmMedia::getLastUpdateDate));
                 if (existMedia.isPresent()) {
                     final LcmMedia lcmMedia = existMedia.get();
                     final OuterDomain.OuterDomainBuilder domainBuilder = OuterDomain.builder().from(imageMessage.getOuterDomainData());
