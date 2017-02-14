@@ -522,6 +522,7 @@ public class MediaController extends CommonServiceController {
     @SuppressWarnings({"PMD.PrematureDeclaration", "PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
     private ResponseEntity<String> processRequest(final String message, final String requestID,
             final String serviceUrl, final String clientId, HttpStatus successStatus, Date timeReceived) throws Exception {
+        LOGGER.info("Validation of image: RequestId={}", Arrays.asList(requestID), message);
         final String json = validateImageMessage(message, clientId);
         if (!"[]".equals(json)) {
             LOGGER.warn("Returning bad request ServiceUrl={} ClientId={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, clientId, requestID, json), message);
