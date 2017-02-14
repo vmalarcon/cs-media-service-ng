@@ -700,6 +700,7 @@ public class MediaController extends CommonServiceController {
     private void publishMsg(final ImageMessage message) {
         message.addLogEntry(new LogEntry(App.MEDIA_SERVICE, Activity.MEDIA_MESSAGE_RECEIVED, new Date()));        
         try {
+            LOGGER.info("Publishing to SQS", message);
             sendMessageToQueue(messagingTemplate, publishQueue, message);
             logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED, null);
         } catch (Exception ex) {
