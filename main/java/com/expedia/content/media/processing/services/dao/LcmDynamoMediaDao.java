@@ -85,6 +85,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Integer FORMAT_ID_2 = 2;
     private static final Integer ACTIVITY_COUNT_THRESHOLD = 12;
+    public static final String DERIVATIVES_CREATED_STATUS = "DERIVATIVES_CREATED";
 
     @Autowired
     private SQLMediaListSproc lcmMediaListSproc;
@@ -193,6 +194,7 @@ public class LcmDynamoMediaDao implements MediaDao {
         final List<DomainIdMedia> images = transformMediaListForResponse(domainIdMedia).stream()
                 .filter(media -> skipCategoryFiltering || (media.getDomainDerivativeCategory() == null ? derivativeCategoryFilter.contains("Default")
                         : derivativeCategoryFilter.contains(media.getDomainDerivativeCategory())))
+                .filter(media -> !(media.getMediaGuid() == null && DERIVATIVES_CREATED_STATUS.equals(media.getStatus()) && media.getDomainFields().get(RESPONSE_FIELD_LCM_MEDIA_ID) == null))
                 .collect(Collectors.toList());
         return MediaByDomainIdResponse.builder().domain(domain.getDomain()).domainId(domainId).totalMediaCount(totalMediaCount)
                 .images(images).build();
