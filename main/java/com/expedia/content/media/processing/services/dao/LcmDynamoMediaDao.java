@@ -57,6 +57,7 @@ import java.util.stream.Stream;
 @Component
 public class LcmDynamoMediaDao implements MediaDao {
 
+    private static final String DERIVATIVES_CREATED_STATUS = "DERIVATIVES_CREATED";
     private static final int LCM_HERO_CATEGORY = 3;
     private static final long KB_TO_BYTES_CONVERTER = 1024L;
     private static final String LODGING_VIRTUAL_TOUR_DERIVATIVE_TYPE = "VirtualTour";
@@ -85,7 +86,6 @@ public class LcmDynamoMediaDao implements MediaDao {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Integer FORMAT_ID_2 = 2;
     private static final Integer ACTIVITY_COUNT_THRESHOLD = 12;
-    public static final String DERIVATIVES_CREATED_STATUS = "DERIVATIVES_CREATED";
 
     @Autowired
     private SQLMediaListSproc lcmMediaListSproc;
