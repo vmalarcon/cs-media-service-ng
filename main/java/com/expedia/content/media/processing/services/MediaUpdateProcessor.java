@@ -238,26 +238,26 @@ public class MediaUpdateProcessor {
     /**
      * replace 'room','subcategoryId','propertyHero' the domainFields value with the input JSON message.
      *
-     * @param domainFieldsDynamo
-     * @param domainFieldsNew
+     * @param domainFieldsInDB The domain fields from the database.
+     * @param domainFieldsNew The domain fields from the update message.
      * @return
      */
-    private Map<String, Object> combineDomainFields(Map<String, Object> domainFieldsDynamo, Map<String, Object> domainFieldsNew) {
+    private Map<String, Object> combineDomainFields(Map<String, Object> domainFieldsInDB, Map<String, Object> domainFieldsNew) {
         if (domainFieldsNew == null || domainFieldsNew.isEmpty()) {
-            return domainFieldsDynamo;
-        } else if (domainFieldsDynamo == null || domainFieldsDynamo.isEmpty()) {
+            return domainFieldsInDB;
+        } else if (domainFieldsInDB == null || domainFieldsInDB.isEmpty()) {
             return domainFieldsNew;
         } else {
             if (domainFieldsNew.get(MESSAGE_ROOMS) != null) {
-                domainFieldsDynamo.put(MESSAGE_ROOMS, domainFieldsNew.get(MESSAGE_ROOMS));
+                domainFieldsInDB.put(MESSAGE_ROOMS, domainFieldsNew.get(MESSAGE_ROOMS));
             }
             if (domainFieldsNew.get(MESSAGE_SUB_CATEGORY_ID) != null) {
-                domainFieldsDynamo.put(MESSAGE_SUB_CATEGORY_ID, domainFieldsNew.get(MESSAGE_SUB_CATEGORY_ID));
+                domainFieldsInDB.put(MESSAGE_SUB_CATEGORY_ID, domainFieldsNew.get(MESSAGE_SUB_CATEGORY_ID));
             }
             if (domainFieldsNew.get(MESSAGE_PROPERTY_HERO) != null) {
-                domainFieldsDynamo.put(MESSAGE_PROPERTY_HERO, domainFieldsNew.get(MESSAGE_PROPERTY_HERO));
+                domainFieldsInDB.put(MESSAGE_PROPERTY_HERO, domainFieldsNew.get(MESSAGE_PROPERTY_HERO));
             }
-            return domainFieldsDynamo;
+            return domainFieldsInDB;
         }
     }
 

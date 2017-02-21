@@ -156,8 +156,7 @@ public class LcmDynamoMediaDao implements MediaDao {
     @Override
     @SuppressWarnings("unchecked")
     public MediaByDomainIdResponse getMediaByDomainId(final Domain domain, final String domainId, final String activeFilter, final String derivativeFilter,
-                                                      final String derivativeCategoryFilter, final Integer pageSize, final Integer pageIndex) throws
-            PaginationValidationException {
+                                                      final String derivativeCategoryFilter, final Integer pageSize, final Integer pageIndex) throws Exception {
         List<Media> domainIdMedia = mediaRepo.loadMedia(domain, domainId).stream().map(media -> completeMedia(media, derivativeFilter)).collect(Collectors.toList());
         if (Domain.LODGING.equals(domain)) {
             extractLcmData(domainId, derivativeFilter, domainIdMedia);

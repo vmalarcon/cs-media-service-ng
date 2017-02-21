@@ -17,6 +17,8 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.expedia.content.media.processing.services.dao.domain.Category;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+
 
 /**
  * Contains methods to process JSON requests and generate JSON responses.
@@ -63,9 +65,10 @@ public final class JSONUtil {
         }
     }
 
-    public static List<Map> buildMapListFromJson(String jsonMessage) throws RequestMessageException {
+    public static List<Map<String, Object>> buildMapListFromJson(String jsonMessage) throws RequestMessageException {
         try {
-            return OBJECT_MAPPER.readValue(jsonMessage, List.class);
+            final TypeReference<List<Map<String, Object>>> typeReference = new TypeReference<List<Map<String, Object>>>() {};
+            return OBJECT_MAPPER.readValue(jsonMessage, typeReference);
         } catch (IOException ex) {
             final String errorMsg = MessageFormat.format("Error parsing/converting Json message: {0}", jsonMessage);
             throw new RequestMessageException(errorMsg, ex);
