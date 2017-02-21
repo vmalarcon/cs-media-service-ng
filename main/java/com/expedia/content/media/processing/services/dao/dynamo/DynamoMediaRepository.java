@@ -127,12 +127,14 @@ public class DynamoMediaRepository {
         final HashMap<String, AttributeValue> params = new HashMap<>();
         params.put(":pDomainId", new AttributeValue().withS(domainId));
         params.put(":pDomain", new AttributeValue().withS(domainName));
+        params.put(":pPropertyHero", new AttributeValue().withS("\"propertyHero\":\"true\""));
 
         try {
             final DynamoDBQueryExpression<Media> query = new DynamoDBQueryExpression<Media>()
                     .withIndexName("cs-mediadb-index-Media-DomainID-Domain")
                     .withConsistentRead(false)
                     .withKeyConditionExpression("DomainID = :pDomainId and #domain = :pDomain")
+                    .withFilterExpression("contains(DomainField, :pPropertyHero)")
                     .withExpressionAttributeNames(names)
                     .withExpressionAttributeValues(params);
 
