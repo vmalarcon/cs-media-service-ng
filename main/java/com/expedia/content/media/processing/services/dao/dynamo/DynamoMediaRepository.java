@@ -142,7 +142,6 @@ public class DynamoMediaRepository {
             return results.stream()
                     .filter(item -> !(Boolean.TRUE.equals(item.isHidden())))
                     .filter(item -> environment.equals(item.getEnvironment()))
-                    .filter(item -> item.getPropertyHero() != null && item.getPropertyHero())
                     .collect(Collectors.toList());
         } catch (Exception ex) {
             final String message = String.format("ERROR retrieving hero media for domainId=[%s], domainName=[%s]", domainId, domainName);
