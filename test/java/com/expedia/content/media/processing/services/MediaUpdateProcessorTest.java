@@ -18,7 +18,6 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
@@ -238,7 +237,7 @@ public class MediaUpdateProcessorTest {
         verify(kafkaCommonPublisher, times(2)).publishImageMessage(imageMessage2.capture(), anyString());
     }
 
-        @Test
+    @Test
     public void testNonLodgingDomain() throws Exception {
         ImageMessage imageMessage = ImageMessage.builder().outerDomainData(
                 OuterDomain.builder().domain(Domain.CONTENT_REPO).build()
