@@ -122,13 +122,14 @@ public class CatalogHeroProcessor {
     public void setOldCategoryForHeroPropertyMedia(ImageMessage imageMessage, String domainId, String guid, int mediaId) throws MediaDBException {
         final String catalogItemId = domainId;
         final List<Media> dynamoHeroMedia = mediaRepo.retrieveHeroPropertyMedia(catalogItemId, LODGING.getDomain());
-        for (Media dynamoMedia : dynamoHeroMedia) {
+        for (final Media dynamoMedia : dynamoHeroMedia) {
             if (!guid.equals(dynamoMedia.getMediaGuid()) && !StringUtils.isEmpty(dynamoMedia.getLcmMediaId()) && dynamoMedia.getDomainFields() != null) {
-                dynamoMedia.setDomainFields(StringUtils.replace(dynamoMedia.getDomainFields(),
+                final Media mediaToSave = new Media(dynamoMedia);
+                mediaToSave.setDomainFields(StringUtils.replace(dynamoMedia.getDomainFields(),
                         "\"propertyHero\":\"true\"", "\"propertyHero\":\"false\""));
-                dynamoMedia.setUserId(imageMessage.getUserId());
-                dynamoMedia.setLastUpdated(new Date());
-                mediaDao.saveMedia(dynamoMedia);
+                mediaToSave.setUserId(imageMessage.getUserId());
+                mediaToSave.setLastUpdated(new Date());
+                mediaDao.saveMedia(mediaToSave);
             }
         }
         List<LcmCatalogItemMedia> lcmHeroMedia = mediaLstWithCatalogItemMediaAndMediaFileNameSproc.getMedia(Integer.parseInt(catalogItemId));
@@ -148,11 +149,6 @@ public class CatalogHeroProcessor {
 
     /**
      * Builds a list of CategoryMedia to be updated in LCM with the subcategoryId to be updated to.
-     * How it works:
-     * 1) puts all the LCMMedia with MediaUseRank 0 or 3 into a lcmMediamap.
-     * 2) get all the subcategoryId's from Dynamo where the update time is more recent in Dynamo than LCM
-     *    and put those media into the dynamoLcmIdSet and the a CategoryMedia List.
-     * 3) If there's an LcmMedia that doesn't have a Dynamo Media corresponding to it and it has MediaUseRank 3, set it to 0.
      *
      * @param lcmMediaList    list of all LCM media of a property
      * @param dynamoMediaList list of Dynamo Media with propertyHero flag set to "true"
@@ -160,17 +156,22 @@ public class CatalogHeroProcessor {
      */
     private List<CategoryMedia> buildCategoryMediaList(List<LcmCatalogItemMedia> lcmMediaList, List<Media> dynamoMediaList) {
         final List<CategoryMedia> categoryMediaList = new ArrayList<>();
-        final Map<Integer, Date> lcmMediaMap = new HashMap<>();
+        final Map<Integer, Date> lcmIdLastUpdateDateMap = new HashMap<>();
         final Set<Integer> dynamoLcmIdSet = new HashSet<>();
-        // Only add media with MediaUseRank 0 or 3 to the lcmMediaMap.
+        // Only add media that don't have mediaUseRank 3 and that have a corresponding PropertyHero Dynamo Media to the lcmIdLastUpdateDateMap.
         lcmMediaList.stream()
-                .filter(media -> media.getMediaUseRank() == 0 || media.getMediaUseRank() == 3)
-                .forEach(media -> lcmMediaMap.put(media.getMediaId(), media.getLastUpdateDate()));
-        // Only get the subcategoryId from Dynamo if the dynamo media's update time is more recent,
-        // then add it to the categoryMediaList and dynamoLcmIdSet.
+                .filter(media -> media.getMediaUseRank() != 3 &&
+                        dynamoMediaList.stream().anyMatch(dynamoMedia -> Integer.parseInt(dynamoMedia.getLcmMediaId()) == media.getMediaId()))
+                .forEach(media -> lcmIdLastUpdateDateMap.put(media.getMediaId(), media.getLastUpdateDate()));
+        // Only get the subcategoryID from dynamo if the following are true:
+        // - A Dynamo media has an LCMMediaId
+        // - A LCMMedia doesn't have use rank 3
+        // - The last update date in Dynamo is more recent than lCM
         dynamoMediaList.stream()
-                .filter(media -> (media.getLcmMediaId() == null || lcmMediaMap.get(Integer.valueOf(media.getLcmMediaId())) == null) ? false :
-                        compareDates(lcmMediaMap.get(Integer.valueOf(media.getLcmMediaId())), media.getLastUpdated()))
+                .filter(media -> media.getLcmMediaId() != null &&
+                        ((lcmIdLastUpdateDateMap.get(Integer.valueOf(media.getLcmMediaId())) == null) ? true :
+                                compareDates(lcmIdLastUpdateDateMap.get(Integer.valueOf(media.getLcmMediaId())), media.getLastUpdated()))
+                )
                 .forEach(media -> {
                     if (media.getDomainFields() != null && media.getLcmMediaId() != null) {
                         final Map map = JSONUtil.buildMapFromJson(media.getDomainFields());

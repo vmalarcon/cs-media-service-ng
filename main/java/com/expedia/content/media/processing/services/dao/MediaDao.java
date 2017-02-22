@@ -3,7 +3,6 @@ package com.expedia.content.media.processing.services.dao;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.expedia.content.media.processing.services.exception.PaginationValidationException;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 
@@ -25,8 +24,8 @@ public interface MediaDao {
      * @param pageIndex        Positive integer to filter the page to display. pageIndex is inclusive with pageSize.
      * @return List of media that belongs to the domain item.
      */
-    MediaByDomainIdResponse getMediaByDomainId(Domain domain, String domainId, String activeFilter, String derivativeFilter, String derivativeCategoryFilter, Integer pageSize, Integer pageIndex) throws Exception,
-            PaginationValidationException;
+    MediaByDomainIdResponse getMediaByDomainId(Domain domain, String domainId, String activeFilter, String derivativeFilter, String derivativeCategoryFilter,
+                                               Integer pageSize, Integer pageIndex) throws Exception;
 
     /**
      * Given a fileName returns all the media that were saved with that name.

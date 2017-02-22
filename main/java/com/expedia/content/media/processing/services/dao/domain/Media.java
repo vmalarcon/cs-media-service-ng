@@ -19,11 +19,12 @@ import lombok.Setter;
  * This class encapsulated the media properties before store in the database The
  * Media is build base on the received image message
  */
+
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @DynamoDBTable(tableName = "cs-mediadb-Media")
-@SuppressWarnings({"PMD.TooManyFields", "PMD.ExcessivePublicCount","PMD.UnusedPrivateField", "PMD.SingularField"})
+@SuppressWarnings({"PMD.TooManyFields", "PMD.ExcessivePublicCount","PMD.UnusedPrivateField", "PMD.SingularField", "PMD.ImmutableField"})
 public class Media {
 
     @Setter private String mediaGuid;
@@ -55,6 +56,38 @@ public class Media {
     @Setter private Boolean propertyHero;
     @Setter private Boolean hidden;
     @Setter private String providedName;
+
+    public Media(Media media) {
+        this.mediaGuid = media.mediaGuid;
+        this.fileUrl = media.fileUrl;
+        this.fileName = media.fileName;
+        this.fileSize = media.fileSize;
+        this.width = media.width;
+        this.height = media.height;
+        this.sourceUrl = media.sourceUrl;
+        this.domain = media.domain;
+        this.domainId = media.domainId;
+        this.domainFields = media.domainFields;
+        this.lastUpdated = media.lastUpdated;
+        this.active = media.active;
+        this.provider = media.provider;
+        this.clientId = media.clientId;
+        this.userId = media.userId;
+        this.metadata = media.metadata;
+        this.derivatives = media.derivatives;
+        this.pHash = media.pHash;
+        this.sha1 = media.sha1;
+        this.environment = media.environment;
+        this.lcmMediaId = media.lcmMediaId;
+        this.derivativesList = media.derivativesList;
+        this.domainData = media.domainData;
+        this.commentList = media.commentList;
+        this.status = media.status;
+        this.domainDerivativeCategory = media.domainDerivativeCategory;
+        this.propertyHero = media.propertyHero;
+        this.hidden = media.hidden;
+        this.providedName = media.providedName;
+    }
 
     @DynamoDBHashKey
     @DynamoDBAttribute(attributeName = "MediaGUID")
