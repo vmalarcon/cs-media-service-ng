@@ -1,6 +1,7 @@
 package com.expedia.content.media.processing.services;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
 import com.expedia.content.media.processing.services.dao.MediaDBException;
 import com.expedia.content.media.processing.services.dao.MediaDao;
@@ -32,6 +33,7 @@ import static com.expedia.content.media.processing.pipeline.domain.Domain.LODGIN
 @Component
 public class CatalogHeroProcessor {
 
+    private static final FormattedLogger LOGGER = new FormattedLogger(CatalogHeroProcessor.class);
     private static final String SUBCATEGORY_ID = "subcategoryId";
     private static final int DEFAULT_USER_RANK = 0;
     private static final int HERO_USE_RANK = 3;
@@ -122,6 +124,7 @@ public class CatalogHeroProcessor {
     public void setOldCategoryForHeroPropertyMedia(ImageMessage imageMessage, String domainId, String guid, int mediaId) throws MediaDBException {
         final String catalogItemId = domainId;
         final List<Media> dynamoHeroMedia = mediaRepo.retrieveHeroPropertyMedia(catalogItemId, LODGING.getDomain());
+        LOGGER.info("propertyHero count from dynamo DomainId={} Count={}", domainId, dynamoHeroMedia.size());
         for (final Media dynamoMedia : dynamoHeroMedia) {
             if (!guid.equals(dynamoMedia.getMediaGuid()) && !StringUtils.isEmpty(dynamoMedia.getLcmMediaId()) && dynamoMedia.getDomainFields() != null) {
                 final Media mediaToSave = new Media(dynamoMedia);
@@ -129,7 +132,9 @@ public class CatalogHeroProcessor {
                         "\"propertyHero\":\"true\"", "\"propertyHero\":\"false\""));
                 mediaToSave.setUserId(imageMessage.getUserId());
                 mediaToSave.setLastUpdated(new Date());
+                LOGGER.info("Setting propertyHero false for DomainId={} MediaGuid={}", domainId, mediaToSave.getMediaGuid());
                 mediaDao.saveMedia(mediaToSave);
+                LOGGER.info("Completed setting propertyHero false for DomainId={} MediaGuid={}", domainId, mediaToSave.getMediaGuid());
             }
         }
         List<LcmCatalogItemMedia> lcmHeroMedia = mediaLstWithCatalogItemMediaAndMediaFileNameSproc.getMedia(Integer.parseInt(catalogItemId));
