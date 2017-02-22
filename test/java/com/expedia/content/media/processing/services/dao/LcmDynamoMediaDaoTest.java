@@ -1,44 +1,5 @@
 package com.expedia.content.media.processing.services.dao;
 
-import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-import static junit.framework.TestCase.assertFalse;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import org.joda.time.LocalDateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-import org.junit.Before;
-import org.junit.Test;
-import org.springframework.util.ReflectionUtils;
-
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaAndDerivative;
@@ -61,6 +22,44 @@ import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
 import com.expedia.content.media.processing.services.util.FileNameUtil;
 import com.google.common.collect.Maps;
+import org.joda.time.LocalDateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.util.ReflectionUtils;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
+import static junit.framework.TestCase.assertFalse;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 public class LcmDynamoMediaDaoTest {
 
@@ -943,6 +942,44 @@ public class LcmDynamoMediaDaoTest {
         Stream stream = (Stream) method.invoke(lcmDynamoMediaDao, items, 5, 2);
         assertEquals(5, stream.count());
     }
+
+    @Test
+    public void testGetMediaByDomainIdFilterInTransit() throws Exception {
+        SQLMediaListSproc mediaListSproc = mock(SQLMediaListSproc.class);
+        List<LcmMediaAndDerivative> mediaList = make2Media2DerivativeMediaResultWithTransit(true, false, true, true, true, true, 2);
+        Map<String, Object> mediaResult = new HashMap<>();
+        mediaResult.put(SQLMediaListSproc.MEDIA_SET, mediaList);
+        when(mediaListSproc.execute(anyInt())).thenReturn(mediaResult);
+
+        SQLMediaItemGetSproc mediaSproc = mock(SQLMediaItemGetSproc.class);
+
+        DynamoMediaRepository mockMediaDBRepo = mock(DynamoMediaRepository.class);
+        List<Media> dynamoMediaList = new ArrayList<>();
+        String guid1 = "d2d4d480-9627-47f9-86c6-1874c18d3aaa";
+        Media dynamoMedia1 = Media.builder()
+                .mediaGuid(guid1).domain("Lodging").domainId("1234").fileUrl("s3://fileUrl/imageName.jpg").providedName("sick_name.jpg").fileName("transit.jpg")
+                .domainFields("{\"subcategoryId\":\"4321\",\"propertyHero\": \"false\"}")
+                .derivatives("[{\"type\":\"v\",\"width\":179,\"height\":240,\"fileSize\":10622,\"location\":\"s3://ewe-cs-media-test/test/derivative/lodging/1000000/10000/7200/7139/dfec2df8_v.jpg\"}]")
+                .status("DERIVATIVES_CREATED")
+                .lastUpdated(new Date())
+                .build();
+        String guid3 = "d2d4d480-9627-47f9-86c6-1874c18d3bbb";
+        Media dynamoMedia3 = Media.builder().mediaGuid(guid3).domain("Lodging").domainId("1234").lastUpdated(LocalDateTime.now().minusMinutes(5).toDate()).build();
+        dynamoMediaList.add(dynamoMedia1);
+        dynamoMediaList.add(dynamoMedia3);
+        when(mockMediaDBRepo.loadMedia(any(), anyString())).thenReturn(dynamoMediaList);
+
+        final Properties properties = new Properties();
+        properties.put("1", "EPC Internal User");
+
+        MediaDao mediaDao = makeMockMediaDao(mediaListSproc, mediaSproc, mockMediaDBRepo, properties, null, makeMockProcessLogDaoInTransit());
+        MediaByDomainIdResponse testMediaResponse = mediaDao.getMediaByDomainId(Domain.LODGING, "1234", null, null, null, null, null);
+
+        assertEquals(3, testMediaResponse.getImages().size());
+        assertEquals(1, testMediaResponse.getImages().stream().filter(i -> i.getMediaGuid() != null && i.getStatus().equals("DERIVATIVES_CREATED")).count());
+        assertEquals(1, testMediaResponse.getImages().stream().filter(i -> i.getMediaGuid() == null && i.getStatus().equals("PUBLISHED")).count());
+        assertEquals(1, testMediaResponse.getImages().stream().filter(i -> i.getMediaGuid() != null && i.getStatus().equals("RECEIVED")).count());
+    }
     
     private MediaDao makeMockMediaDao(SQLMediaListSproc mediaIdSproc, SQLMediaItemGetSproc mediaItemSproc, DynamoMediaRepository mockMediaDBRepo,
                                       final Properties properties, SQLMediaGetSproc mediaGetSproc, LcmProcessLogDao processLogDao) throws NoSuchFieldException, IllegalAccessException {
@@ -1001,8 +1038,13 @@ public class LcmDynamoMediaDaoTest {
         activityMapping2.setActivityType("Reject");
         activityMapping2.setMediaType(".*");
         activityMapping2.setStatusMessage("REJECTED");
+        ActivityMapping activityMapping3 = new ActivityMapping();
+        activityMapping3.setActivityType("DerivativeCreation");
+        activityMapping3.setMediaType(".*");
+        activityMapping3.setStatusMessage("DERIVATIVES_CREATED");
         whitelist.add(activityMapping1);
         whitelist.add(activityMapping2);
+        whitelist.add(activityMapping3);
         return whitelist;
     }
 
@@ -1013,6 +1055,21 @@ public class LcmDynamoMediaDaoTest {
         mediaLogStatuses.add(mediaLogStatus1);
         MediaProcessLog mediaLogStatus2 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "image1.jpg", "Publish", "Lodging");
         mediaLogStatuses.add(mediaLogStatus2);
+        when(mockProcessLogDao.findMediaStatus(any())).thenReturn(mediaLogStatuses);
+        return mockProcessLogDao;
+    }
+
+    private LcmProcessLogDao makeMockProcessLogDaoInTransit() {
+        LcmProcessLogDao mockProcessLogDao = mock(LcmProcessLogDao.class);
+        List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
+        MediaProcessLog mediaLogStatus1 = new MediaProcessLog("2014-07-29 10:08:11.6890000 -07:00", "image1.jpg", "Something", "Lodging");
+        mediaLogStatuses.add(mediaLogStatus1);
+        MediaProcessLog mediaLogStatus2 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "image1.jpg", "Publish", "Lodging");
+        mediaLogStatuses.add(mediaLogStatus2);
+        MediaProcessLog mediaLogStatus3 = new MediaProcessLog("2014-07-29 10:08:11.6890000 -07:00", "transit.jpg", "Something", "Lodging");
+        mediaLogStatuses.add(mediaLogStatus3);
+        MediaProcessLog mediaLogStatus4 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "transit.jpg", "DerivativeCreation", "Lodging");
+        mediaLogStatuses.add(mediaLogStatus4);
         when(mockProcessLogDao.findMediaStatus(any())).thenReturn(mediaLogStatuses);
         return mockProcessLogDao;
     }
@@ -1086,6 +1143,31 @@ public class LcmDynamoMediaDaoTest {
         LcmMediaAndDerivative media2d2 = LcmMediaAndDerivative.builder().mediaId(2).domainId(1234).fileName("image2.jpg").active(active2).width(40)
                 .height(41).fileSize(500).lastUpdatedBy("test").lastUpdateDate(new Date()).mediaLastUpdatedBy("test").mediaLastUpdateDate(new Date())
                 .provider(400).category(500).comment("Comment").fileProcessed(published22).derivativeSizeTypeId(2).derivativeFileName("image2_s.jpg")
+                .derivativeWidth(20).derivativeHeight(21).derivativeFileSize(200).build();
+        List<LcmMediaAndDerivative> mediaList = new ArrayList<>();
+        mediaList.add(media1d1);
+        mediaList.add(media1d2);
+        mediaList.add(media2d1);
+        mediaList.add(media2d2);
+        return mediaList;
+    }
+
+    private List<LcmMediaAndDerivative> make2Media2DerivativeMediaResultWithTransit(boolean active1, boolean active2, boolean published11, boolean published12, boolean published21, boolean published22, Integer formatId) {
+        LcmMediaAndDerivative media1d1 = LcmMediaAndDerivative.builder().mediaId(1).domainId(1234).fileName("image1.jpg").active(active1).width(20)
+                .height(21).fileSize(200).lastUpdatedBy("test").lastUpdateDate(new Date()).mediaLastUpdatedBy("test").mediaLastUpdateDate(new Date())
+                .provider(400).category(3).comment("Comment").fileProcessed(published11).derivativeSizeTypeId(1).derivativeFileName("image1_t.jpg")
+                .derivativeWidth(10).derivativeHeight(11).derivativeFileSize(100).formatId(formatId).build();
+        LcmMediaAndDerivative media1d2 = LcmMediaAndDerivative.builder().mediaId(1).domainId(1234).fileName("image1.jpg").active(active1).width(20)
+                .height(21).fileSize(200).lastUpdatedBy("test").lastUpdateDate(new Date()).mediaLastUpdatedBy("test").mediaLastUpdateDate(new Date())
+                .provider(400).category(3).comment("Comment").fileProcessed(published12).derivativeSizeTypeId(2).derivativeFileName("image1_s.jpg")
+                .derivativeWidth(20).derivativeHeight(21).derivativeFileSize(200).formatId(formatId).build();
+        LcmMediaAndDerivative media2d1 = LcmMediaAndDerivative.builder().mediaId(2).domainId(1234).fileName("transit.jpg").active(active2).width(40)
+                .height(41).fileSize(500).lastUpdatedBy("test").lastUpdateDate(new Date()).mediaLastUpdatedBy("test").mediaLastUpdateDate(new Date())
+                .provider(400).category(500).comment("Comment").fileProcessed(published21).derivativeSizeTypeId(1).derivativeFileName("transit_t.jpg")
+                .derivativeWidth(10).derivativeHeight(11).derivativeFileSize(100).build();
+        LcmMediaAndDerivative media2d2 = LcmMediaAndDerivative.builder().mediaId(2).domainId(1234).fileName("transit.jpg").active(active2).width(40)
+                .height(41).fileSize(500).lastUpdatedBy("test").lastUpdateDate(new Date()).mediaLastUpdatedBy("test").mediaLastUpdateDate(new Date())
+                .provider(400).category(500).comment("Comment").fileProcessed(published22).derivativeSizeTypeId(2).derivativeFileName("transit_s.jpg")
                 .derivativeWidth(20).derivativeHeight(21).derivativeFileSize(200).build();
         List<LcmMediaAndDerivative> mediaList = new ArrayList<>();
         mediaList.add(media1d1);
