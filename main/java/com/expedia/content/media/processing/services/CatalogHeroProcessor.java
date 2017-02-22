@@ -163,10 +163,9 @@ public class CatalogHeroProcessor {
                 .filter(media -> media.getMediaUseRank() != 3 &&
                         dynamoMediaList.stream().anyMatch(dynamoMedia -> Integer.parseInt(dynamoMedia.getLcmMediaId()) == media.getMediaId()))
                 .forEach(media -> lcmIdLastUpdateDateMap.put(media.getMediaId(), media.getLastUpdateDate()));
-        // Only get the subcategoryID from dynamo if the following are true:
-        // - A Dynamo media has an LCMMediaId
-        // - A LCMMedia doesn't have use rank 3
-        // - The last update date in Dynamo is more recent than lCM
+        // Only get the subcategoryID from Dynamo if A dynamo media has an LCMMediaId and one of the following are true:
+        // 1) A LCMMedia has a MediaUseRank 3
+        // 2) The last update date in Dynamo is more recent than lCM
         dynamoMediaList.stream()
                 .filter(media -> media.getLcmMediaId() != null &&
                         ((lcmIdLastUpdateDateMap.get(Integer.valueOf(media.getLcmMediaId())) == null) ? true :
