@@ -57,36 +57,11 @@ public class Media {
     @Setter private Boolean hidden;
     @Setter private String providedName;
 
-    public Media(Media media) {
-        this.mediaGuid = media.mediaGuid;
-        this.fileUrl = media.fileUrl;
-        this.fileName = media.fileName;
-        this.fileSize = media.fileSize;
-        this.width = media.width;
-        this.height = media.height;
-        this.sourceUrl = media.sourceUrl;
-        this.domain = media.domain;
-        this.domainId = media.domainId;
-        this.domainFields = media.domainFields;
-        this.lastUpdated = media.lastUpdated;
-        this.active = media.active;
-        this.provider = media.provider;
-        this.clientId = media.clientId;
-        this.userId = media.userId;
-        this.metadata = media.metadata;
-        this.derivatives = media.derivatives;
-        this.pHash = media.pHash;
-        this.sha1 = media.sha1;
-        this.environment = media.environment;
-        this.lcmMediaId = media.lcmMediaId;
-        this.derivativesList = media.derivativesList;
-        this.domainData = media.domainData;
-        this.commentList = media.commentList;
-        this.status = media.status;
-        this.domainDerivativeCategory = media.domainDerivativeCategory;
-        this.propertyHero = media.propertyHero;
-        this.hidden = media.hidden;
-        this.providedName = media.providedName;
+    public static Media of(Media media) {
+        return new Media(media.mediaGuid, media.fileUrl, media.fileName, media.fileSize, media.width, media.height, media.sourceUrl, media.domain, media.domainId, media.domainFields,
+                media.lastUpdated, media.active, media.provider, media.clientId, media.userId, media.metadata, media.derivatives, media.pHash, media.sha1, media.environment,
+                media.lcmMediaId, media.derivativesList, media.domainData, media.commentList, media.status, media.domainDerivativeCategory, media.propertyHero, media.hidden,
+                media.providedName);
     }
 
     @DynamoDBHashKey

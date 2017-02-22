@@ -127,7 +127,7 @@ public class CatalogHeroProcessor {
         LOGGER.info("propertyHero count from dynamo DomainId={} Count={}", domainId, dynamoHeroMedia.size());
         for (final Media dynamoMedia : dynamoHeroMedia) {
             if (!guid.equals(dynamoMedia.getMediaGuid()) && !StringUtils.isEmpty(dynamoMedia.getLcmMediaId()) && dynamoMedia.getDomainFields() != null) {
-                final Media mediaToSave = new Media(dynamoMedia);
+                final Media mediaToSave = Media.of(dynamoMedia);
                 mediaToSave.setDomainFields(StringUtils.replace(dynamoMedia.getDomainFields(),
                         "\"propertyHero\":\"true\"", "\"propertyHero\":\"false\""));
                 mediaToSave.setUserId(imageMessage.getUserId());
