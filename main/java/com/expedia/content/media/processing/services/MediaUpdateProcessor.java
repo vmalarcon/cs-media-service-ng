@@ -91,7 +91,8 @@ public class MediaUpdateProcessor {
         }
         final Map<String, Object> response = new HashMap<>();
         response.put("status", Integer.valueOf(200));
-        kafkaCommonPublisher.publishImageMessage(imageMessage,imageMessageTopic);
+        final ImageMessage newImageMessage = imageMessage.createBuilderFromMessage().mediaGuid(dynamoMedia.getMediaGuid()).build();
+        kafkaCommonPublisher.publishImageMessage(newImageMessage, imageMessageTopic);
         final String jsonResponse = new ObjectMapper().writeValueAsString(response);
         return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
     }
