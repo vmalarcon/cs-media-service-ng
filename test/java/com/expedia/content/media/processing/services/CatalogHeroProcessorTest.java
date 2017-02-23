@@ -58,6 +58,16 @@ public class CatalogHeroProcessorTest {
                 .mediaGuid("12345678-aaaa-bbbb-cccc-123456789112")
                 .lastUpdated(dateNow)
                 .build();
+        Media dynamoMediaNullLcmId = Media.builder()
+                .active("true")
+                .propertyHero(true)
+                .clientId("userId")
+                .domain("Lodging")
+                .domainId("123")
+                .domainFields("{\"propertyHero\":\"true\", \"subcategoryId\":\"20000\"}")
+                .mediaGuid("12345678-aaaa-bbbb-cccc-123456784321")
+                .lastUpdated(dateNow)
+                .build();
         Media dynamoMediaNewHero = Media.builder()
                 .active("true")
                 .propertyHero(false)
@@ -86,7 +96,7 @@ public class CatalogHeroProcessorTest {
                 + "}";
 
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
-        when(mediaRepo.retrieveHeroPropertyMedia("123", "Lodging")).thenReturn(Arrays.asList(dynamoMedia, dynamoMediaNewHero));
+        when(mediaRepo.retrieveHeroPropertyMedia("123", "Lodging")).thenReturn(Arrays.asList(dynamoMedia, dynamoMediaNullLcmId, dynamoMediaNewHero));
         when(mediaLstWithCatalogItemMediaAndMediaFileNameSproc.getMedia(123)).thenReturn(Arrays.asList(lcmMedia));
         catalogHeroProcessor.setOldCategoryForHeroPropertyMedia(imageMessage, "123", "12345678-aaaa-bbbb-cccc-123456789324", 12346);
         verify(catalogItemMediaChgSproc, times(1)).updateCategory(123, 12345, 20000, "bobthegreat", "Media Service");
