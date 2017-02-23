@@ -1,15 +1,5 @@
 package com.expedia.content.media.processing.services.dao.dynamo;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import org.springframework.stereotype.Repository;
-
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
@@ -23,6 +13,15 @@ import com.expedia.content.media.processing.services.dao.domain.MediaDerivative;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.springframework.stereotype.Repository;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * DynamoDB implementation of the MediaConfigRepository interface.
@@ -128,12 +127,14 @@ public class DynamoMediaRepository {
         final HashMap<String, AttributeValue> params = new HashMap<>();
         params.put(":pDomainId", new AttributeValue().withS(domainId));
         params.put(":pDomain", new AttributeValue().withS(domainName));
+        params.put(":pPropertyHero", new AttributeValue().withS("\"propertyHero\":\"true\""));
 
         try {
             final DynamoDBQueryExpression<Media> query = new DynamoDBQueryExpression<Media>()
                     .withIndexName("cs-mediadb-index-Media-DomainID-Domain")
                     .withConsistentRead(false)
                     .withKeyConditionExpression("DomainID = :pDomainId and #domain = :pDomain")
+                    .withFilterExpression("contains(DomainField, :pPropertyHero)")
                     .withExpressionAttributeNames(names)
                     .withExpressionAttributeValues(params);
 
@@ -188,6 +189,7 @@ public class DynamoMediaRepository {
      */
     public void storeMediaAddMessage(ImageMessage imageMessage, Thumbnail thumbnail) {
         try {
+            LOGGER.info("Adding Media to dynamodb", imageMessage);
             dynamoMapper.save(buildMedia(imageMessage, thumbnail));
             LOGGER.info("Media successfully added in dynamodb", imageMessage);
             if (imageMessage.isGenerateThumbnail()) {

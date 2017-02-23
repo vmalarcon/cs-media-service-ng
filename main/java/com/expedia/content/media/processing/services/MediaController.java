@@ -522,6 +522,7 @@ public class MediaController extends CommonServiceController {
     @SuppressWarnings({"PMD.PrematureDeclaration", "PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
     private ResponseEntity<String> processRequest(final String message, final String requestID,
             final String serviceUrl, final String clientId, HttpStatus successStatus, Date timeReceived) throws Exception {
+        LOGGER.info("Validation of image: RequestId={}", Arrays.asList(requestID), message);
         final String json = validateImageMessage(message, clientId);
         if (!"[]".equals(json)) {
             LOGGER.warn("Returning bad request ServiceUrl={} ClientId={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, clientId, requestID, json), message);
@@ -700,6 +701,7 @@ public class MediaController extends CommonServiceController {
     private void publishMsg(final ImageMessage message) {
         message.addLogEntry(new LogEntry(App.MEDIA_SERVICE, Activity.MEDIA_MESSAGE_RECEIVED, new Date()));        
         try {
+            LOGGER.info("Publishing to SQS", message);
             sendMessageToQueue(messagingTemplate, publishQueue, message);
             logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED, null);
         } catch (Exception ex) {
