@@ -122,25 +122,25 @@ public class CatalogHeroProcessor {
      * @param imageMessage Image message to use
      */
     public void setOldCategoryForHeroPropertyMedia(ImageMessage imageMessage, String domainId, String guid, int mediaId) throws MediaDBException {
-        final String catalogItemId = domainId;
-        final List<Media> dynamoHeroMedia = mediaRepo.retrieveHeroPropertyMedia(catalogItemId, LODGING.getDomain());
-        LOGGER.info("propertyHero count from dynamo DomainId={} Count={}", domainId, dynamoHeroMedia.size());
-        for (final Media dynamoMedia : dynamoHeroMedia) {
-            if (!guid.equals(dynamoMedia.getMediaGuid()) && !StringUtils.isEmpty(dynamoMedia.getLcmMediaId()) && dynamoMedia.getDomainFields() != null) {
-                final Media mediaToSave = Media.of(dynamoMedia);
-                mediaToSave.setDomainFields(StringUtils.replace(dynamoMedia.getDomainFields(),
-                        "\"propertyHero\":\"true\"", "\"propertyHero\":\"false\""));
-                mediaToSave.setUserId(imageMessage.getUserId());
-                mediaToSave.setLastUpdated(new Date());
-                LOGGER.info("Setting propertyHero false for DomainId={} MediaGuid={}", domainId, mediaToSave.getMediaGuid());
-                mediaDao.saveMedia(mediaToSave);
-                LOGGER.info("Completed setting propertyHero false for DomainId={} MediaGuid={}", domainId, mediaToSave.getMediaGuid());
-            }
-        }
-        List<LcmCatalogItemMedia> lcmHeroMedia = mediaLstWithCatalogItemMediaAndMediaFileNameSproc.getMedia(Integer.parseInt(catalogItemId));
-        lcmHeroMedia = lcmHeroMedia.stream().filter(item -> item.getMediaId() != mediaId).collect(Collectors.toList());
-        final List<CategoryMedia> categoryMediaList = buildCategoryMediaList(lcmHeroMedia, dynamoHeroMedia);
         try {
+            final String catalogItemId = domainId;
+            final List<Media> dynamoHeroMedia = mediaRepo.retrieveHeroPropertyMedia(catalogItemId, LODGING.getDomain());
+            LOGGER.info("propertyHero count from dynamo DomainId={} Count={}", domainId, dynamoHeroMedia.size());
+            for (final Media dynamoMedia : dynamoHeroMedia) {
+                if (!guid.equals(dynamoMedia.getMediaGuid()) && dynamoMedia.getDomainFields() != null) {
+                    final Media mediaToSave = Media.of(dynamoMedia);
+                    mediaToSave.setDomainFields(StringUtils.replace(dynamoMedia.getDomainFields(),
+                            "\"propertyHero\":\"true\"", "\"propertyHero\":\"false\""));
+                    mediaToSave.setUserId(imageMessage.getUserId());
+                    mediaToSave.setLastUpdated(new Date());
+                    LOGGER.info("Setting propertyHero false for DomainId={} MediaGuid={}", domainId, mediaToSave.getMediaGuid());
+                    mediaDao.saveMedia(mediaToSave);
+                    LOGGER.info("Completed setting propertyHero false for DomainId={} MediaGuid={}", domainId, mediaToSave.getMediaGuid());
+                }
+            }
+            List<LcmCatalogItemMedia> lcmHeroMedia = mediaLstWithCatalogItemMediaAndMediaFileNameSproc.getMedia(Integer.parseInt(catalogItemId));
+            lcmHeroMedia = lcmHeroMedia.stream().filter(item -> item.getMediaId() != mediaId).collect(Collectors.toList());
+            final List<CategoryMedia> categoryMediaList = buildCategoryMediaList(lcmHeroMedia, dynamoHeroMedia);
             for (final CategoryMedia categoryMedia : categoryMediaList) {
                 catalogItemMediaChgSproc.updateCategory(Integer.parseInt(catalogItemId), categoryMedia.getLcmMediaId(),
                         categoryMedia.getSubcategoryId(), imageMessage.getUserId(), ROOM_UPDATED_BY);
@@ -148,6 +148,7 @@ public class CatalogHeroProcessor {
         } catch (Exception ex) {
             final String error = String.format("ERROR updating previous category to hero image when processing GUID=[%s]",
                     guid);
+            LOGGER.error(ex, error + " DomainID={}", domainId);
             throw new MediaDBException(error, ex);
         }
     }
@@ -165,25 +166,24 @@ public class CatalogHeroProcessor {
         final Set<Integer> dynamoLcmIdSet = new HashSet<>();
         // Only add media that don't have mediaUseRank 3 and that have a corresponding PropertyHero Dynamo Media to the lcmIdLastUpdateDateMap.
         lcmMediaList.stream()
-                .filter(media -> media.getMediaUseRank() != 3 &&
-                        dynamoMediaList.stream().anyMatch(dynamoMedia -> Integer.parseInt(dynamoMedia.getLcmMediaId()) == media.getMediaId()))
+                .filter(media -> media.getMediaUseRank() != 3)
+                .filter(media -> dynamoMediaList.stream()
+                        .filter(dynamoMedia -> dynamoMedia.getLcmMediaId() != null)
+                        .anyMatch(dynamoMedia -> Integer.parseInt(dynamoMedia.getLcmMediaId()) == media.getMediaId()))
                 .forEach(media -> lcmIdLastUpdateDateMap.put(media.getMediaId(), media.getLastUpdateDate()));
         // Only get the subcategoryID from Dynamo if A dynamo media has an LCMMediaId and one of the following are true:
         // 1) A LCMMedia has a MediaUseRank 3
         // 2) The last update date in Dynamo is more recent than lCM
         dynamoMediaList.stream()
-                .filter(media -> media.getLcmMediaId() != null &&
-                        ((lcmIdLastUpdateDateMap.get(Integer.valueOf(media.getLcmMediaId())) == null) ? true :
+                .filter(media -> media.getLcmMediaId() != null && media.getDomainFields() != null)
+                .filter(media -> (lcmIdLastUpdateDateMap.get(Integer.valueOf(media.getLcmMediaId())) == null) ? true :
                                 compareDates(lcmIdLastUpdateDateMap.get(Integer.valueOf(media.getLcmMediaId())), media.getLastUpdated()))
-                )
                 .forEach(media -> {
-                    if (media.getDomainFields() != null && media.getLcmMediaId() != null) {
-                        final Map map = JSONUtil.buildMapFromJson(media.getDomainFields());
-                        final String subcategory = (String) map.get(SUBCATEGORY_ID);
-                        final int subcategoryId = Integer.parseInt(StringUtils.isEmpty(subcategory) ? "0" : subcategory);
-                        dynamoLcmIdSet.add(Integer.valueOf(media.getLcmMediaId()));
-                        categoryMediaList.add(new CategoryMedia(subcategoryId, Integer.parseInt(media.getLcmMediaId())));
-                    }
+                    final Map map = JSONUtil.buildMapFromJson(media.getDomainFields());
+                    final String subcategory = (String) map.get(SUBCATEGORY_ID);
+                    final int subcategoryId = Integer.parseInt(StringUtils.isEmpty(subcategory) ? "0" : subcategory);
+                    dynamoLcmIdSet.add(Integer.valueOf(media.getLcmMediaId()));
+                    categoryMediaList.add(new CategoryMedia(subcategoryId, Integer.parseInt(media.getLcmMediaId())));
                 });
         // If a media is not contained in the dynamoLcmIdSet and has a MediaUseRank of 3, give it a subcategoryId of 0.
         lcmMediaList.stream()
