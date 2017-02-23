@@ -91,8 +91,12 @@ public class MediaUpdateProcessor {
         }
         final Map<String, Object> response = new HashMap<>();
         response.put("status", Integer.valueOf(200));
-        final ImageMessage newImageMessage = imageMessage.createBuilderFromMessage().mediaGuid(dynamoMedia.getMediaGuid()).build();
-        kafkaCommonPublisher.publishImageMessage(newImageMessage, imageMessageTopic);
+        if (dynamoMedia == null) {
+            kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic);
+        } else {
+            final ImageMessage newImageMessage = imageMessage.createBuilderFromMessage().mediaGuid(dynamoMedia.getMediaGuid()).build();
+            kafkaCommonPublisher.publishImageMessage(newImageMessage, imageMessageTopic);
+        }
         final String jsonResponse = new ObjectMapper().writeValueAsString(response);
         return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
     }
