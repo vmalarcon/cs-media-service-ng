@@ -71,15 +71,13 @@ public class MediaUpdateProcessor {
                                                  Media dynamoMedia) throws Exception {
         //TODO remove later, only for test purpose, the message only go to kafka topic
         // and be consumed by lcm consumer
-        if (imageMessage.getComment() != null && imageMessage.getComment().contains(KAFKA_TEST_FLAG)) {
-            if (dynamoMedia != null) {
-                final ImageMessage newImageMessage = imageMessage.createBuilderFromMessage().mediaGuid(dynamoMedia.getMediaGuid()).build();
-                kafkaCommonPublisher.publishImageMessage(newImageMessage, imageMessageTopic);
-                final Map<String, Object> response = new HashMap<>();
-                response.put("status", Integer.valueOf(200));
-                final String jsonResponse = new ObjectMapper().writeValueAsString(response);
-                return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
-            }
+        if (imageMessage.getComment() != null && imageMessage.getComment().contains(KAFKA_TEST_FLAG) && dynamoMedia != null) {
+            final ImageMessage newImageMessage = imageMessage.createBuilderFromMessage().mediaGuid(dynamoMedia.getMediaGuid()).build();
+            kafkaCommonPublisher.publishImageMessage(newImageMessage, imageMessageTopic);
+            final Map<String, Object> response = new HashMap<>();
+            response.put("status", Integer.valueOf(200));
+            final String jsonResponse = new ObjectMapper().writeValueAsString(response);
+            return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
         }
 
         // Only proceed to the following if the domain is Lodging
