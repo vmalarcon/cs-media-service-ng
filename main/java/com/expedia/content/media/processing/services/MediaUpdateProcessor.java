@@ -39,6 +39,7 @@ public class MediaUpdateProcessor {
     public static final String MESSAGE_SUB_CATEGORY_ID = "subcategoryId";
     public static final String MESSAGE_ROOMS = "rooms";
     public static final String MESSAGE_ROOM_HERO = "roomHero";
+    private static final String KAFKA_TEST_FLAG = "kafkaTestLCM$#$";
 
     @Value("${kafka.imagemessage.topic}")
     private String imageMessageTopic;
@@ -65,8 +66,20 @@ public class MediaUpdateProcessor {
      * @throws Exception
      */
     @Transactional
+    @SuppressWarnings("PMD.CyclomaticComplexity")
     public ResponseEntity<String> processRequest(final ImageMessage imageMessage, final String mediaId, String domainId,
                                                  Media dynamoMedia) throws Exception {
+        //TODO remove later, only for test purpose, the message only go to kafka topic
+        // and be consumed by lcm consumer
+        if (imageMessage.getComment() != null && imageMessage.getComment().contains(KAFKA_TEST_FLAG) && dynamoMedia != null) {
+            final ImageMessage newImageMessage = imageMessage.createBuilderFromMessage().mediaGuid(dynamoMedia.getMediaGuid()).build();
+            kafkaCommonPublisher.publishImageMessage(newImageMessage, imageMessageTopic);
+            final Map<String, Object> response = new HashMap<>();
+            response.put("status", Integer.valueOf(200));
+            final String jsonResponse = new ObjectMapper().writeValueAsString(response);
+            return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
+        }
+
         // Only proceed to the following if the domain is Lodging
         if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING) && mediaId != null && org.apache.commons.lang3.StringUtils.isNumeric(mediaId)) {
             final Integer expediaId = Integer.valueOf(domainId);
@@ -91,7 +104,12 @@ public class MediaUpdateProcessor {
         }
         final Map<String, Object> response = new HashMap<>();
         response.put("status", Integer.valueOf(200));
-        kafkaCommonPublisher.publishImageMessage(imageMessage,imageMessageTopic);
+        if (dynamoMedia == null) {
+            kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic);
+        } else {
+            final ImageMessage newImageMessage = imageMessage.createBuilderFromMessage().mediaGuid(dynamoMedia.getMediaGuid()).build();
+            kafkaCommonPublisher.publishImageMessage(newImageMessage, imageMessageTopic);
+        }
         final String jsonResponse = new ObjectMapper().writeValueAsString(response);
         return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
     }

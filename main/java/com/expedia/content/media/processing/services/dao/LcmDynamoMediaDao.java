@@ -57,6 +57,7 @@ import java.util.stream.Stream;
 @Component
 public class LcmDynamoMediaDao implements MediaDao {
 
+    private static final String DERIVATIVES_CREATED_STATUS = "DERIVATIVES_CREATED";
     private static final int LCM_HERO_CATEGORY = 3;
     private static final long KB_TO_BYTES_CONVERTER = 1024L;
     private static final String LODGING_VIRTUAL_TOUR_DERIVATIVE_TYPE = "VirtualTour";
@@ -192,6 +193,7 @@ public class LcmDynamoMediaDao implements MediaDao {
         final List<DomainIdMedia> images = transformMediaListForResponse(domainIdMedia).stream()
                 .filter(media -> skipCategoryFiltering || (media.getDomainDerivativeCategory() == null ? derivativeCategoryFilter.contains("Default")
                         : derivativeCategoryFilter.contains(media.getDomainDerivativeCategory())))
+                .filter(media -> !(media.getMediaGuid() == null && DERIVATIVES_CREATED_STATUS.equals(media.getStatus())))
                 .collect(Collectors.toList());
         return MediaByDomainIdResponse.builder().domain(domain.getDomain()).domainId(domainId).totalMediaCount(totalMediaCount)
                 .images(images).build();

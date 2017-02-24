@@ -19,11 +19,12 @@ import lombok.Setter;
  * This class encapsulated the media properties before store in the database The
  * Media is build base on the received image message
  */
+
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @DynamoDBTable(tableName = "cs-mediadb-Media")
-@SuppressWarnings({"PMD.TooManyFields", "PMD.ExcessivePublicCount","PMD.UnusedPrivateField", "PMD.SingularField"})
+@SuppressWarnings({"PMD.TooManyFields", "PMD.ExcessivePublicCount","PMD.UnusedPrivateField", "PMD.SingularField", "PMD.ImmutableField"})
 public class Media {
 
     @Setter private String mediaGuid;
@@ -55,6 +56,13 @@ public class Media {
     @Setter private Boolean propertyHero;
     @Setter private Boolean hidden;
     @Setter private String providedName;
+
+    public static Media of(Media media) {
+        return new Media(media.mediaGuid, media.fileUrl, media.fileName, media.fileSize, media.width, media.height, media.sourceUrl, media.domain, media.domainId, media.domainFields,
+                media.lastUpdated, media.active, media.provider, media.clientId, media.userId, media.metadata, media.derivatives, media.pHash, media.sha1, media.environment,
+                media.lcmMediaId, media.derivativesList, media.domainData, media.commentList, media.status, media.domainDerivativeCategory, media.propertyHero, media.hidden,
+                media.providedName);
+    }
 
     @DynamoDBHashKey
     @DynamoDBAttribute(attributeName = "MediaGUID")

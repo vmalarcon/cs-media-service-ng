@@ -13,6 +13,7 @@ import com.expedia.content.media.processing.services.dao.domain.MediaDerivative;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
@@ -141,8 +142,8 @@ public class DynamoMediaRepository {
             final List<Media> results = dynamoMapper.query(Media.class, query);
             return results.stream()
                     .filter(item -> !(Boolean.TRUE.equals(item.isHidden())))
+                    .filter(item -> !StringUtils.isEmpty(item.getLcmMediaId()))
                     .filter(item -> environment.equals(item.getEnvironment()))
-                    .filter(item -> item.getPropertyHero() != null && item.getPropertyHero())
                     .collect(Collectors.toList());
         } catch (Exception ex) {
             final String message = String.format("ERROR retrieving hero media for domainId=[%s], domainName=[%s]", domainId, domainName);

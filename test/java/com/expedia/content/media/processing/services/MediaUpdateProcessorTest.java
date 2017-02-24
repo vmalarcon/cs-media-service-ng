@@ -18,7 +18,6 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
@@ -107,6 +106,33 @@ public class MediaUpdateProcessorTest {
                 .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
         ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
         verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage2.capture(), anyString());
+    }
+
+    @Test
+    public void testSpecialTagFieldInRQ() throws Exception {
+        String jsonMsg = "{  \n"
+                + "   \"userId\":\"bobthegreat\",\n"
+                + "    \"domain\":\"Lodging\",\n"
+                + "    \"comment\":\"kafkaTestLCM$#$\",\n"
+                + "   \"domainFields\":{  \n"
+                + "      \"propertyHero\":\"true\"\n"
+                + "    }\n"
+                + "}";
+        ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        Media dynamoMedia =
+                new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"propertyHero\":\"true\"}",
+                        new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
+                        new HashMap<>(), new ArrayList<>(),
+                        "", "", true, false, null);
+        LcmCatalogItemMedia lcmCatalogItemMedia = mock(LcmCatalogItemMedia.class);
+        when(catalogHeroProcessor.getCatalogItemMeida(12345, 123)).thenReturn(lcmCatalogItemMedia);
+        mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
+        verify(catalogHeroProcessor,times(0))
+                .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
+        ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage2.capture(), anyString());
+        verify(catalogHeroProcessor, times(0)).setMediaToHero(eq("bobthegreat"), eq(lcmCatalogItemMedia), anyBoolean(), anyString());
+
     }
 
     @Test
@@ -238,7 +264,7 @@ public class MediaUpdateProcessorTest {
         verify(kafkaCommonPublisher, times(2)).publishImageMessage(imageMessage2.capture(), anyString());
     }
 
-        @Test
+    @Test
     public void testNonLodgingDomain() throws Exception {
         ImageMessage imageMessage = ImageMessage.builder().outerDomainData(
                 OuterDomain.builder().domain(Domain.CONTENT_REPO).build()
