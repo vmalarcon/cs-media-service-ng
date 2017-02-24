@@ -141,7 +141,7 @@ public class DynamoMediaRepository {
                     .withExpressionAttributeValues(params);
 
             final List<Media> results = dynamoMapper.query(Media.class, query);
-            if (results.size() > 0) {
+            if (results.size() < 1) {
                 LOGGER.warn("No results returned from Dynamo for DomainId={}", domainId);
             }
             return results.stream()
