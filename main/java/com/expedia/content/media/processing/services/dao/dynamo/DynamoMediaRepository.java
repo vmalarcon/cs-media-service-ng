@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 /**
  * DynamoDB implementation of the MediaConfigRepository interface.
  */
+@SuppressWarnings({"PMD.UseCollectionIsEmpty"})
 @Repository
 public class DynamoMediaRepository {
 
@@ -118,8 +119,8 @@ public class DynamoMediaRepository {
     /**
      * Returns all property hero media for the domain id and domain name passed in the arguments.
      *
-     * @param domainId   The domain id for a media.
-     * @param domainName The domain name for a media.
+     * @param domainId          The domain id for a media.
+     * @param domainName        The domain name for a media.
      */
     public List<Media> retrieveHeroPropertyMedia(String domainId, String domainName) throws MediaDBException {
         final HashMap<String, String> names = new HashMap<>();
@@ -140,6 +141,9 @@ public class DynamoMediaRepository {
                     .withExpressionAttributeValues(params);
 
             final List<Media> results = dynamoMapper.query(Media.class, query);
+            if (results.size() > 0) {
+                LOGGER.warn("No results returned from Dynamo for DomainId={}", domainId);
+            }
             return results.stream()
                     .filter(item -> !(Boolean.TRUE.equals(item.isHidden())))
                     .filter(item -> !StringUtils.isEmpty(item.getLcmMediaId()))
