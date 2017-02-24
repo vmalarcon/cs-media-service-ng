@@ -179,7 +179,7 @@
         </property>
     </bean>
 
-    <bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource">
+    <bean id="dataSource" primary="true" class="org.apache.commons.dbcp2.BasicDataSource">
         <property name="driverClassName" value="net.sourceforge.jtds.jdbc.Driver" />
         <property name="url" value="${datasource.url}" />
         <property name="username" value="${datasource.username}" />

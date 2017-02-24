@@ -7,12 +7,14 @@ import com.expedia.content.media.processing.pipeline.reporting.KafkaReporting;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.pipeline.reporting.dynamo.DynamoReporting;
 import com.expedia.content.media.processing.pipeline.reporting.sql.LcmReporting;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,6 +32,30 @@ public class ApplicationConfiguration {
 
     @Value("${kafka.message.send.enable}")
     private String enableSend;
+
+    @Value("${mdb.datasource.username}")
+    private String username;
+
+    @Value("${mdb.datasource.password}")
+    private String password;
+
+    @Value("${mdb.datasource.url}")
+    private String dataSourceURL;
+
+    @Bean
+    public DriverManagerDataSource mediaDBDataSource() {
+        final DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        dataSource.setUrl(dataSourceURL);
+        dataSource.setUsername(username);
+        dataSource.setPassword(password);
+        return dataSource;
+    }
+
+    @Bean
+    public MediaDBMediaDao mediaDBMediaDao() {
+        return new MediaDBMediaDao(mediaDBDataSource());
+    }
 
     @Bean
     public KafkaCommonPublisher kafkaCommonPublisher() throws IOException {

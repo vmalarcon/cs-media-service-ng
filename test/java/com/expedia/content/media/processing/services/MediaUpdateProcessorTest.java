@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.HashMap;
 
 import com.expedia.content.media.processing.pipeline.kafka.KafkaCommonPublisher;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,6 +49,8 @@ public class MediaUpdateProcessorTest {
     private MediaDao mediaDao;
     @Mock
     private CatalogHeroProcessor catalogHeroProcessor;
+    @Mock
+    private MediaDBMediaDao mediaDBMediaDao;
 
     private MediaUpdateProcessor mediaUpdateProcessor;
 
@@ -62,6 +65,7 @@ public class MediaUpdateProcessorTest {
         setFieldValue(mediaUpdateProcessor, "mediaDao", mediaDao);
         setFieldValue(mediaUpdateProcessor, "catalogHeroProcessor", catalogHeroProcessor);
         setFieldValue(mediaUpdateProcessor, "kafkaCommonPublisher", kafkaCommonPublisher);
+        setFieldValue(mediaUpdateProcessor, "mediaDBMediaDao", mediaDBMediaDao);
     }
 
     @Test
@@ -100,6 +104,7 @@ public class MediaUpdateProcessorTest {
                         "", "", true, false, null);
         LcmCatalogItemMedia lcmCatalogItemMedia = mock(LcmCatalogItemMedia.class);
         when(catalogHeroProcessor.getCatalogItemMeida(12345, 123)).thenReturn(lcmCatalogItemMedia);
+        when(mediaDBMediaDao.getMediaByGuid("12345678-aaaa-bbbb-cccc-123456789112")).thenReturn(dynamoMedia);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(catalogHeroProcessor).setMediaToHero(eq("bobthegreat"), eq(lcmCatalogItemMedia), anyBoolean(), anyString());
         verify(catalogHeroProcessor)
@@ -149,6 +154,7 @@ public class MediaUpdateProcessorTest {
                 new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"propertyHero\":\"false\"}",
                         new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
                         new HashMap<>(), new ArrayList<>(), "", "", false, false, null);
+        when(mediaDBMediaDao.getMediaByGuid("12345678-aaaa-bbbb-cccc-123456789112")).thenReturn(dynamoMedia);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(catalogHeroProcessor).getCatalogItemMeida(12345, 123);
         verify(catalogHeroProcessor, never())
@@ -174,6 +180,7 @@ public class MediaUpdateProcessorTest {
                 new HashMap<>(), new ArrayList<>(), "", "", true, false, null);
         LcmCatalogItemMedia lcmCatalogItemMedia = mock(LcmCatalogItemMedia.class);
         when(catalogHeroProcessor.getCatalogItemMeida(12345, 123)).thenReturn(lcmCatalogItemMedia);
+        when(mediaDBMediaDao.getMediaByGuid("12345678-aaaa-bbbb-cccc-123456789112")).thenReturn(dynamoMedia);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(catalogHeroProcessor).setMediaToHero(eq("bobthegreat"), eq(lcmCatalogItemMedia), anyBoolean(), anyString());
         verify(catalogHeroProcessor)
@@ -196,6 +203,7 @@ public class MediaUpdateProcessorTest {
         Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{}",
                 new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
                 new HashMap<>(), new ArrayList<>(), "", "", false, false, null);
+        when(mediaDBMediaDao.getMediaByGuid("12345678-aaaa-bbbb-cccc-123456789112")).thenReturn(dynamoMedia);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(mediaUpdateDao).updateMedia(imageMessage, 123);
         verify(catalogHeroProcessor).updateTimestamp(anyObject(), anyObject());
@@ -228,6 +236,7 @@ public class MediaUpdateProcessorTest {
                 "{\"rooms\":[{\"roomId\":\"934779\",\"roomHero\":\"false\"},{\"roomId\":\"928675\",\"roomHero\":\"true\"}]}",
                 new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
                 new HashMap<>(), new ArrayList<>(), "", "", false, false, null);
+        when(mediaDBMediaDao.getMediaByGuid("12345678-aaaa-bbbb-cccc-123456789112")).thenReturn(dynamoMedia);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(catalogItemMediaDao).getLcmRoomsByMediaId(123);
         verify(mediaUpdateDao).updateMediaTimestamp(anyObject(), anyObject());
@@ -246,6 +255,7 @@ public class MediaUpdateProcessorTest {
 
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
         Media dynamoMedia = Media.builder().active("false").clientId("userId").domain("Lodging").domainId("123").mediaGuid("12345678-aaaa-bbbb-cccc-123456789112").build();
+        when(mediaDBMediaDao.getMediaByGuid("12345678-aaaa-bbbb-cccc-123456789112")).thenReturn(dynamoMedia);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(mediaUpdateDao).updateMedia(imageMessage, 123);
         assertTrue(Boolean.TRUE.toString().equals(dynamoMedia.getActive()));
@@ -257,6 +267,7 @@ public class MediaUpdateProcessorTest {
                 + "}";
         dynamoMedia = Media.builder().active("false").clientId("userId").domain("Lodging").domainId("123").mediaGuid("12345678-aaaa-bbbb-cccc-123456789112").build();
         final ImageMessage updateMessage = setActiveToNull(ImageMessage.parseJsonMessage(anotherJsonMsg));
+        when(mediaDBMediaDao.getMediaByGuid("12345678-aaaa-bbbb-cccc-123456789112")).thenReturn(dynamoMedia);
         mediaUpdateProcessor.processRequest(updateMessage, "123", "12345", dynamoMedia);
         verify(mediaUpdateDao).updateMedia(updateMessage, 123);
         assertTrue(Boolean.FALSE.toString().equals(dynamoMedia.getActive()));
@@ -279,6 +290,8 @@ public class MediaUpdateProcessorTest {
         verify(mediaUpdateDao, never()).updateMedia(any(ImageMessage.class), anyInt());
         verify(mediaDao).saveMedia(dynamoMedia);
     }
+
+
     
     private ImageMessage setActiveToNull(final ImageMessage imageMessage) {
         ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();

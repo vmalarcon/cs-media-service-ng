@@ -35,6 +35,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -55,6 +56,7 @@ import java.util.stream.Stream;
  * Media data access operations through LCM and the Dynamo MediaDB.
  */
 @Component
+@Primary
 public class LcmDynamoMediaDao implements MediaDao {
 
     private static final String DERIVATIVES_CREATED_STATUS = "DERIVATIVES_CREATED";

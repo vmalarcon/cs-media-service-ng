@@ -1,7 +1,8 @@
-package com.expedia.content.media.processing.services.dao;
+package com.expedia.content.media.processing.services.dao.mediadb;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
+import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.reqres.Comment;
@@ -27,7 +28,6 @@ public class MediaDBMediaDao implements MediaDao {
     private static final FormattedLogger LOGGER = new FormattedLogger(MediaDBMediaDao.class);
     private static final String ACTIVE_FILTER_ALL = "all";
     private static final String ACTIVE_FILTER_TRUE = "true";
-    private static final String VARCHAR = "VARCHAR";
     private static final String MEDIA_BY_DOMAIN_ID_QUERY_BASE = "SELECT SQL_CALC_FOUND_ROWS * FROM `media` WHERE `domain` = ? AND `domain-id` = ? AND `hidden` = 0";
     private static final String MEDIA_BY_DOMAIN_ID_ACTIVE_FILTER = " AND `active` = ?";
     private static final String MEDIA_BY_DOMAIN_ID_DERIVATIVE_CATEGORY_FILTER = " AND `derivative-category` IN (?)";
@@ -41,8 +41,8 @@ public class MediaDBMediaDao implements MediaDao {
 
     private final JdbcTemplate jdbcTemplate;
 
-    public MediaDBMediaDao(DataSource dataSource) {
-        this.jdbcTemplate = new JdbcTemplate(dataSource);
+    public MediaDBMediaDao(DataSource mediaDBDataSource) {
+        this.jdbcTemplate = new JdbcTemplate(mediaDBDataSource);
     }
 
     @Override

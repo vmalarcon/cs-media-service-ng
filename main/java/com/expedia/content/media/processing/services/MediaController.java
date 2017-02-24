@@ -167,7 +167,7 @@ public class MediaController extends CommonServiceController {
      * @param message JSON formated ImageMessage.
      * @return headers Request headers.
      * @throws Exception Thrown if processing the message fails.
-     * @see com.expedia.content.media.processing.pipeline.domain.ImageMessage
+     * @see ImageMessage
      */
     @Meter(name = "addMessageCounter")
     @Timer(name = "addMessageTimer")

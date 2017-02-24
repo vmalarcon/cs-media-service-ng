@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.expedia.content.media.processing.pipeline.kafka.KafkaCommonPublisher;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
 import org.apache.commons.lang.reflect.FieldUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,6 +54,8 @@ public class MediaUpdateProcessor {
     private CatalogHeroProcessor catalogHeroProcessor;
     @Autowired
     private KafkaCommonPublisher kafkaCommonPublisher;
+    @Autowired
+     private MediaDBMediaDao mediaDBMediaDao;
 
     /**
      * process media update, involve media table, catalogItemMedia table, and paragraph table in lcm.
@@ -66,7 +69,7 @@ public class MediaUpdateProcessor {
      * @throws Exception
      */
     @Transactional
-    @SuppressWarnings("PMD.CyclomaticComplexity")
+    @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
     public ResponseEntity<String> processRequest(final ImageMessage imageMessage, final String mediaId, String domainId,
                                                  Media dynamoMedia) throws Exception {
         //TODO remove later, only for test purpose, the message only go to kafka topic
@@ -101,15 +104,19 @@ public class MediaUpdateProcessor {
             dynamoMedia.setLastUpdated(new Date());
             dynamoMedia.setHidden(imageMessage.getHidden());
             mediaDao.saveMedia(dynamoMedia);
+
+            final Media media = mediaDBMediaDao.getMediaByGuid(dynamoMedia.getMediaGuid());
+            if (media != null) {
+                media.setActive(dynamoMedia.getActive() == null ? "true" : dynamoMedia.getActive());
+                media.setDomainFields(dynamoMedia.getDomainFields());
+                media.setHidden(dynamoMedia.isHidden());
+                media.setLastUpdated(dynamoMedia.getLastUpdated());
+                final ImageMessage updateImageMessage = media.toImageMessage();
+                kafkaCommonPublisher.publishImageMessage(updateImageMessage, imageMessageTopic);
+            }
         }
         final Map<String, Object> response = new HashMap<>();
         response.put("status", Integer.valueOf(200));
-        if (dynamoMedia == null) {
-            kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic);
-        } else {
-            final ImageMessage newImageMessage = imageMessage.createBuilderFromMessage().mediaGuid(dynamoMedia.getMediaGuid()).build();
-            kafkaCommonPublisher.publishImageMessage(newImageMessage, imageMessageTopic);
-        }
         final String jsonResponse = new ObjectMapper().writeValueAsString(response);
         return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
     }
@@ -341,4 +348,6 @@ public class MediaUpdateProcessor {
         }
         return lcmMediaRoomList;
     }
+
+
 }
