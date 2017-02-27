@@ -78,7 +78,12 @@ public class MediaUpdateProcessor {
             HttpStatus status =  HttpStatus.OK;
             final Map<String, Object> response = new HashMap<>();
             final Media media = mediaDBMediaDao.getMediaByGuid(dynamoMedia.getMediaGuid());
-            if (media != null) {
+            if (media == null) {
+                response.put("error", "Not Found");
+                response.put("message", dynamoMedia.getMediaGuid() + " Does not exist in MediaDB");
+                response.put("status", Integer.valueOf(404));
+                status = HttpStatus.NOT_FOUND;
+            } else {
                 media.setActive(imageMessage.isActive() == null ? "true" : imageMessage.isActive().toString());
                 setMedia(imageMessage, media);
                 dynamoMedia.setHidden(imageMessage.getHidden());
@@ -86,11 +91,6 @@ public class MediaUpdateProcessor {
                 final ImageMessage updatedImageMessage = media.toImageMessage();
                 kafkaCommonPublisher.publishImageMessage(updatedImageMessage, imageMessageTopic);
                 response.put("status", Integer.valueOf(200));
-            } else {
-                response.put("error", "Not Found");
-                response.put("message", dynamoMedia.getMediaGuid() + " Does not exist in MediaDB");
-                response.put("status", Integer.valueOf(404));
-                status = HttpStatus.NOT_FOUND;
             }
 
             final String jsonResponse = new ObjectMapper().writeValueAsString(response);
