@@ -15,8 +15,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import javax.sql.DataSource;
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -201,11 +207,7 @@ public class MediaDBMediaDao implements MediaDao {
     @Override
     @SuppressWarnings("CPD-END")
     public void deleteMediaByGUID(String mediaGUID) {
-        jdbcTemplate.update((Connection connection) -> {
-            PreparedStatement statement = connection.prepareStatement(DELETE_MEDIA_BY_GUID);
-            statement.setString(1, mediaGUID);
-            return statement;
-        });
+        // no-op
     }
 
     @Deprecated
@@ -337,7 +339,7 @@ public class MediaDBMediaDao implements MediaDao {
     private String setSQLTokensWithArray(String sqlString, String[] array) {
         StringBuilder tokens = new StringBuilder();
         String delimiter = "";
-        for(String el : array) {
+        for (int i = 0; i < array.length; i++) {
             tokens.append(delimiter).append("?");
             delimiter = ",";
         }

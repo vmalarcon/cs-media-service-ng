@@ -75,12 +75,26 @@ public class MediaUpdateProcessor {
         //TODO remove later, only for test purpose, the message only go to kafka topic
         // and be consumed by lcm consumer
         if (imageMessage.getComment() != null && imageMessage.getComment().contains(KAFKA_TEST_FLAG) && dynamoMedia != null) {
-            final ImageMessage newImageMessage = imageMessage.createBuilderFromMessage().mediaGuid(dynamoMedia.getMediaGuid()).build();
-            kafkaCommonPublisher.publishImageMessage(newImageMessage, imageMessageTopic);
+            HttpStatus status =  HttpStatus.OK;
             final Map<String, Object> response = new HashMap<>();
-            response.put("status", Integer.valueOf(200));
+            final Media media = mediaDBMediaDao.getMediaByGuid(dynamoMedia.getMediaGuid());
+            if (media != null) {
+                media.setActive(imageMessage.isActive() == null ? "true" : imageMessage.isActive().toString());
+                setMedia(imageMessage, media);
+                dynamoMedia.setHidden(imageMessage.getHidden());
+                media.setLastUpdated(new Date());
+                final ImageMessage updatedImageMessage = media.toImageMessage();
+                kafkaCommonPublisher.publishImageMessage(updatedImageMessage, imageMessageTopic);
+                response.put("status", Integer.valueOf(200));
+            } else {
+                response.put("error", "Not Found");
+                response.put("message", dynamoMedia.getMediaGuid() + " Does not exist in MediaDB");
+                response.put("status", Integer.valueOf(404));
+                status = HttpStatus.NOT_FOUND;
+            }
+
             final String jsonResponse = new ObjectMapper().writeValueAsString(response);
-            return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
+            return new ResponseEntity<>(jsonResponse, status);
         }
 
         // Only proceed to the following if the domain is Lodging
@@ -91,7 +105,7 @@ public class MediaUpdateProcessor {
                 mediaUpdateDao.updateMedia(imageMessage, Integer.valueOf(mediaId));
             }
             processCategory(imageMessage, mediaId, dynamoMedia, expediaId);
-            updateCatelogItemTimestamp(imageMessage, mediaId, domainId);
+            updateCatalogItemTimestamp(imageMessage, mediaId, domainId);
 
         }
         // step 4. save media to dynamo
@@ -100,20 +114,11 @@ public class MediaUpdateProcessor {
             if (active != null) {
                 dynamoMedia.setActive(active.toString());
             }
-            setDynamoMedia(imageMessage, dynamoMedia);
+            setMedia(imageMessage, dynamoMedia);
             dynamoMedia.setLastUpdated(new Date());
             dynamoMedia.setHidden(imageMessage.getHidden());
             mediaDao.saveMedia(dynamoMedia);
 
-            final Media media = mediaDBMediaDao.getMediaByGuid(dynamoMedia.getMediaGuid());
-            if (media != null) {
-                media.setActive(dynamoMedia.getActive() == null ? "true" : dynamoMedia.getActive());
-                media.setDomainFields(dynamoMedia.getDomainFields());
-                media.setHidden(dynamoMedia.isHidden());
-                media.setLastUpdated(dynamoMedia.getLastUpdated());
-                final ImageMessage updateImageMessage = media.toImageMessage();
-                kafkaCommonPublisher.publishImageMessage(updateImageMessage, imageMessageTopic);
-            }
         }
         final Map<String, Object> response = new HashMap<>();
         response.put("status", Integer.valueOf(200));
@@ -129,7 +134,7 @@ public class MediaUpdateProcessor {
      * @param mediaId
      * @param domainId
      */
-    private void updateCatelogItemTimestamp(final ImageMessage imageMessage, final String mediaId, final String domainId) {
+    private void updateCatalogItemTimestamp(final ImageMessage imageMessage, final String mediaId, final String domainId) {
         if ((imageMessage.isActive() != null || imageMessage.getComment() != null) && imageMessage.getOuterDomainData().getDomainFields() == null) {
             final LcmCatalogItemMedia lcmCatalogItemMedia = catalogHeroProcessor.getCatalogItemMeida(Integer.valueOf(domainId), Integer.valueOf(mediaId));
             catalogHeroProcessor.updateTimestamp(imageMessage.getUserId(), lcmCatalogItemMedia);
@@ -234,29 +239,29 @@ public class MediaUpdateProcessor {
     }
 
     /**
-     * only update part of property in DynamoMedia
+     * only update part of property in Media
      *
-     * @param imageMessage
-     * @param dynamoMedia
+     * @param updateImageMessage
+     * @param media
      * @throws Exception
      */
     @SuppressWarnings("PMD.NPathComplexity")
-    private void setDynamoMedia(ImageMessage imageMessage, Media dynamoMedia) throws Exception {
-        if (imageMessage.getComment() != null) {
+    private void setMedia(ImageMessage updateImageMessage, Media media) throws Exception {
+        if (updateImageMessage.getComment() != null) {
             final List<String> commentList = new ArrayList<>();
-            commentList.add(imageMessage.getComment());
-            FieldUtils.writeField(dynamoMedia, "commentList", commentList, true);
+            commentList.add(updateImageMessage.getComment());
+            FieldUtils.writeField(media, "commentList", commentList, true);
         }
-        if (imageMessage.isActive() != null) {
-            FieldUtils.writeField(dynamoMedia, "active", imageMessage.isActive() ? "true" : "false", true);
+        if (updateImageMessage.isActive() != null) {
+            FieldUtils.writeField(media, "active", updateImageMessage.isActive() ? "true" : "false", true);
         }
 
-        FieldUtils.writeField(dynamoMedia, "userId", StringUtils.isNullOrEmpty(imageMessage.getUserId()) ? imageMessage.getClientId() : imageMessage.getUserId(), true);
-        final String domainFields = dynamoMedia.getDomainFields();
+        FieldUtils.writeField(media, "userId", StringUtils.isNullOrEmpty(updateImageMessage.getUserId()) ? updateImageMessage.getClientId() : updateImageMessage.getUserId(), true);
+        final String domainFields = media.getDomainFields();
         final Map<String, Object> domainFieldsDynamo = domainFields == null ? new HashMap<>() : JSONUtil.buildMapFromJson(domainFields);
-        final Map<String, Object> domainFieldsNew = imageMessage.getOuterDomainData().getDomainFields();
+        final Map<String, Object> domainFieldsNew = updateImageMessage.getOuterDomainData().getDomainFields();
         final Map<String, Object> domainFieldsCombine = combineDomainFields(domainFieldsDynamo, domainFieldsNew);
-        FieldUtils.writeField(dynamoMedia, "domainFields", new ObjectMapper().writeValueAsString(domainFieldsCombine), true);
+        FieldUtils.writeField(media, "domainFields", new ObjectMapper().writeValueAsString(domainFieldsCombine), true);
 
     }
 
