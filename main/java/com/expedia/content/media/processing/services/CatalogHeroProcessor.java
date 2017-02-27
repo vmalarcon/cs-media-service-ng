@@ -124,8 +124,10 @@ public class CatalogHeroProcessor {
     public void setOldCategoryForHeroPropertyMedia(ImageMessage imageMessage, String domainId, String guid, int mediaId) throws MediaDBException {
         try {
             final String catalogItemId = domainId;
+            List<LcmCatalogItemMedia> lcmHeroMedia = mediaLstWithCatalogItemMediaAndMediaFileNameSproc.getMedia(Integer.parseInt(catalogItemId));
+            lcmHeroMedia = lcmHeroMedia.stream().filter(item -> item.getMediaId() != mediaId).collect(Collectors.toList());
             final List<Media> dynamoHeroMedia = mediaRepo.retrieveHeroPropertyMedia(catalogItemId, LODGING.getDomain());
-            LOGGER.info("propertyHero count from dynamo DomainId={} Count={}", domainId, dynamoHeroMedia.size());
+            LOGGER.info("propertyHero count from dynamo DomainId={} Count={} Updating MediaGuid={}", domainId, dynamoHeroMedia.size(), guid);
             for (final Media dynamoMedia : dynamoHeroMedia) {
                 if (!guid.equals(dynamoMedia.getMediaGuid()) && dynamoMedia.getDomainFields() != null) {
                     final Media mediaToSave = Media.of(dynamoMedia);
@@ -138,8 +140,6 @@ public class CatalogHeroProcessor {
                     LOGGER.info("Completed setting propertyHero false for DomainId={} MediaGuid={}", domainId, mediaToSave.getMediaGuid());
                 }
             }
-            List<LcmCatalogItemMedia> lcmHeroMedia = mediaLstWithCatalogItemMediaAndMediaFileNameSproc.getMedia(Integer.parseInt(catalogItemId));
-            lcmHeroMedia = lcmHeroMedia.stream().filter(item -> item.getMediaId() != mediaId).collect(Collectors.toList());
             final List<CategoryMedia> categoryMediaList = buildCategoryMediaList(lcmHeroMedia, dynamoHeroMedia);
             for (final CategoryMedia categoryMedia : categoryMediaList) {
                 catalogItemMediaChgSproc.updateCategory(Integer.parseInt(catalogItemId), categoryMedia.getLcmMediaId(),
