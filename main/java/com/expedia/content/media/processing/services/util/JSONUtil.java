@@ -18,7 +18,7 @@ import com.expedia.content.media.processing.services.dao.domain.Category;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
-
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Contains methods to process JSON requests and generate JSON responses.
@@ -66,6 +66,9 @@ public final class JSONUtil {
     }
 
     public static List<Map<String, Object>> buildMapListFromJson(String jsonMessage) throws RequestMessageException {
+        if (StringUtils.isEmpty(jsonMessage)) {
+            return new ArrayList<>();
+        }
         try {
             final TypeReference<List<Map<String, Object>>> typeReference = new TypeReference<List<Map<String, Object>>>() {};
             return OBJECT_MAPPER.readValue(jsonMessage, typeReference);

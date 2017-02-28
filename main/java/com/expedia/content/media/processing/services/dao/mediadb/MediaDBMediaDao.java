@@ -292,7 +292,7 @@ public class MediaDBMediaDao implements MediaDao {
                     .pHash(pHash)
                     .sha1(sha1)
                     .environment(null)
-                    .lcmMediaId(domainData.get("lcmMediaId").toString())
+                    .lcmMediaId(domainData.get("lcmMediaId") == null ? "" : domainData.get("lcmMediaId").toString())
                     .derivativesList(JSONUtil.buildMapListFromJson(derivatives))
                     .domainData(domainData)
                     .commentList(Arrays.asList(resultSet.getString("comments")))

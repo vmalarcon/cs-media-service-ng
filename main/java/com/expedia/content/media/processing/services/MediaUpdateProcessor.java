@@ -118,6 +118,10 @@ public class MediaUpdateProcessor {
             dynamoMedia.setLastUpdated(new Date());
             dynamoMedia.setHidden(imageMessage.getHidden());
             mediaDao.saveMedia(dynamoMedia);
+            //no special message, still need to put to topic, and it will only consumed by media db consumer
+            // because now in lcm it only consume message with the special tag.
+            final ImageMessage newImageMessage = imageMessage.createBuilderFromMessage().mediaGuid(dynamoMedia.getMediaGuid()).build();
+            kafkaCommonPublisher.publishImageMessage(newImageMessage, imageMessageTopic);
 
         }
         final Map<String, Object> response = new HashMap<>();
