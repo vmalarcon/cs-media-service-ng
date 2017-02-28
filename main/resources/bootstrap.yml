@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: ${application.name}
+
+  cloud:
+    vault:
+      enabled: false
+      primer:
+        token-file: ${HOME}/.auth_token
+        profile-separator: "-"
+      host:  ewe-vault.test.expedia.com
+      port: 8200
+      generic:
+        # Don't change this configuration. It is due to how vault is used inside Expedia. We are not able to have a generic context accessible for any apps
+        default-context: ${spring.application.name}
+        application-name:
