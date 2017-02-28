@@ -69,61 +69,52 @@ public class MediaUpdateProcessor {
      * @throws Exception
      */
     @Transactional
-    @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
+    @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.NPathComplexity", "PMD.AvoidDeeplyNestedIfStmts"})
     public ResponseEntity<String> processRequest(final ImageMessage imageMessage, final String mediaId, String domainId,
                                                  Media dynamoMedia) throws Exception {
-        //TODO remove later, only for test purpose, the message only go to kafka topic
-        // and be consumed by lcm consumer
+        // TODO: in future only use mediaDB
         if (imageMessage.getComment() != null && imageMessage.getComment().contains(KAFKA_TEST_FLAG) && dynamoMedia != null) {
-            HttpStatus status =  HttpStatus.OK;
-            final Map<String, Object> response = new HashMap<>();
             final Media media = mediaDBMediaDao.getMediaByGuid(dynamoMedia.getMediaGuid());
-            if (media == null) {
-                response.put("error", "Not Found");
-                response.put("message", dynamoMedia.getMediaGuid() + " Does not exist in MediaDB");
-                response.put("status", Integer.valueOf(404));
-                status = HttpStatus.NOT_FOUND;
-            } else {
-                media.setActive(imageMessage.isActive() == null ? "true" : imageMessage.isActive().toString());
+            if (media != null) {
+                final Boolean active = imageMessage.isActive();
+                if (active != null) {
+                    media.setActive(active.toString());
+                }
                 setMedia(imageMessage, media);
-                dynamoMedia.setHidden(imageMessage.getHidden());
                 media.setLastUpdated(new Date());
+                media.setHidden(imageMessage.getHidden());
                 final ImageMessage updatedImageMessage = media.toImageMessage();
                 kafkaCommonPublisher.publishImageMessage(updatedImageMessage, imageMessageTopic);
-                response.put("status", Integer.valueOf(200));
+            }
+        } else {
+            // Only proceed to the following if the domain is Lodging
+            if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING) && mediaId != null && org.apache.commons.lang3.StringUtils.isNumeric(mediaId)) {
+                final Integer expediaId = Integer.valueOf(domainId);
+                // step1. update media table, if comment or active fields are not null
+                if (imageMessage.getComment() != null || imageMessage.isActive() != null) {
+                    mediaUpdateDao.updateMedia(imageMessage, Integer.valueOf(mediaId));
+                }
+                processCategory(imageMessage, mediaId, dynamoMedia, expediaId);
+                updateCatalogItemTimestamp(imageMessage, mediaId, domainId);
             }
 
-            final String jsonResponse = new ObjectMapper().writeValueAsString(response);
-            return new ResponseEntity<>(jsonResponse, status);
-        }
+            // TODO: remove dynamo dependency in future
+            // step 4. save media to dynamo
+            if (dynamoMedia != null) {
+                final Boolean active = imageMessage.isActive();
+                if (active != null) {
+                    dynamoMedia.setActive(active.toString());
+                }
+                setMedia(imageMessage, dynamoMedia);
+                dynamoMedia.setLastUpdated(new Date());
+                dynamoMedia.setHidden(imageMessage.getHidden());
+                mediaDao.saveMedia(dynamoMedia);
 
-        // Only proceed to the following if the domain is Lodging
-        if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING) && mediaId != null && org.apache.commons.lang3.StringUtils.isNumeric(mediaId)) {
-            final Integer expediaId = Integer.valueOf(domainId);
-            // step1. update media table, if comment or active fields are not null
-            if (imageMessage.getComment() != null || imageMessage.isActive() != null) {
-                mediaUpdateDao.updateMedia(imageMessage, Integer.valueOf(mediaId));
+                final ImageMessage updatedImageMessage = dynamoMedia.toImageMessage();
+                kafkaCommonPublisher.publishImageMessage(updatedImageMessage, imageMessageTopic);
             }
-            processCategory(imageMessage, mediaId, dynamoMedia, expediaId);
-            updateCatalogItemTimestamp(imageMessage, mediaId, domainId);
-
         }
-        // step 4. save media to dynamo
-        if (dynamoMedia != null) {
-            final Boolean active = imageMessage.isActive();
-            if (active != null) {
-                dynamoMedia.setActive(active.toString());
-            }
-            setMedia(imageMessage, dynamoMedia);
-            dynamoMedia.setLastUpdated(new Date());
-            dynamoMedia.setHidden(imageMessage.getHidden());
-            mediaDao.saveMedia(dynamoMedia);
-            //no special message, still need to put to topic, and it will only consumed by media db consumer
-            // because now in lcm it only consume message with the special tag.
-            final ImageMessage newImageMessage = imageMessage.createBuilderFromMessage().mediaGuid(dynamoMedia.getMediaGuid()).build();
-            kafkaCommonPublisher.publishImageMessage(newImageMessage, imageMessageTopic);
 
-        }
         final Map<String, Object> response = new HashMap<>();
         response.put("status", Integer.valueOf(200));
         final String jsonResponse = new ObjectMapper().writeValueAsString(response);

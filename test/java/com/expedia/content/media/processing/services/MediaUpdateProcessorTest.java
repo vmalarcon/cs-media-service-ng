@@ -128,13 +128,13 @@ public class MediaUpdateProcessorTest {
                         new HashMap<>(), new ArrayList<>(),
                         "", "", true, false, null);
         LcmCatalogItemMedia lcmCatalogItemMedia = mock(LcmCatalogItemMedia.class);
+        when(mediaDBMediaDao.getMediaByGuid("12345678-aaaa-bbbb-cccc-123456789112")).thenReturn(dynamoMedia);
         when(catalogHeroProcessor.getCatalogItemMeida(12345, 123)).thenReturn(lcmCatalogItemMedia);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
-        verify(catalogHeroProcessor,times(0))
+        verify(catalogHeroProcessor, never())
                 .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
-        ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
-        verify(catalogHeroProcessor, times(0)).setMediaToHero(eq("bobthegreat"), eq(lcmCatalogItemMedia), anyBoolean(), anyString());
-        verify(kafkaCommonPublisher, never()).publishImageMessage(any(ImageMessage.class), anyString());
+        verify(catalogHeroProcessor, never()).setMediaToHero(eq("bobthegreat"), eq(lcmCatalogItemMedia), anyBoolean(), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
 
     }
 
