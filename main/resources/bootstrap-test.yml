@@ -2,4 +2,3 @@ spring:
   cloud:
     vault:
       enabled: true
-      host: ewe-vault.test.expedia.com
