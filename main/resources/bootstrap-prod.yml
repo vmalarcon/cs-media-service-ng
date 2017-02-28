@@ -1,0 +1,5 @@
+spring:
+  cloud:
+    vault:
+      enabled: true
+      host: ewe-vault.prod.expedia.com
