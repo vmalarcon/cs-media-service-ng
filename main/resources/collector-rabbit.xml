@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Sets up the Rabbit configuration for MediaServices and Collector -->
+<!-- This configuration is shared by both components -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                            http://www.springframework.org/schema/rabbit http://www.springframework.org/schema/rabbit/spring-rabbit.xsd">
+
+    <bean id="rabbitConnectionFactory" class="org.springframework.amqp.rabbit.connection.CachingConnectionFactory">
+        <constructor-arg name="hostname" value="${rabbitmq.host}" />
+        <constructor-arg name="port" value="${rabbitmq.port}" />
+        <property name="username" value="${rabbitmq.user}" />
+        <property name="password" value="${rabbitmq.pass}" />
+    </bean>
+
+    <rabbit:admin id="rabbitAdmin" connection-factory="rabbitConnectionFactory" />
+
+    <rabbit:queue id="collector-queue" name="${collector.queue}" durable="true" auto-declare="true" auto-delete="false">
+        <rabbit:queue-arguments>
+            <entry key="x-dead-letter-exchange" value="${mpp.dlx}" />
+        </rabbit:queue-arguments>
+    </rabbit:queue>
+
+    <rabbit:queue id="dead-letter" name="${collector.dead.letter}" auto-declare="true" auto-delete="false" durable="true" />
+
+    <rabbit:direct-exchange id="dlx" name="${mpp.dlx}" auto-declare="true" durable="true" auto-delete="false">
+        <rabbit:bindings>
+            <rabbit:binding key="${collector.queue}" queue="dead-letter" />
+        </rabbit:bindings>
+    </rabbit:direct-exchange>
+
+</beans>

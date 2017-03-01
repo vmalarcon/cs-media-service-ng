@@ -19,6 +19,7 @@
 
     <context:property-placeholder location="classpath:${EXPEDIA_ENVIRONMENT}.${AWS_REGION}.properties"/>
     <aop:config proxy-target-class="true" />
+    <import resource="collector-rabbit.xml" />
 
     <aws-messaging:annotation-driven-queue-listener wait-time-out="20" />
 
@@ -34,6 +35,12 @@
     </mvc:annotation-driven>
 
     <aws-messaging:notification-argument-resolver id="notificationResolver" />
+
+    <bean id="filenamesRabbitTemplate" class="org.springframework.amqp.rabbit.core.RabbitTemplate">
+        <property name="connectionFactory" ref="rabbitConnectionFactory"/>
+        <property name="queue" value="${collector.queue}" />
+        <property name="routingKey" value="${collector.queue}" />
+    </bean>
 
     <bean id="retryableAspect" class="com.expedia.content.media.processing.pipeline.retry.RetryableAspect" factory-method="aspectOf" autowire="byType" />
 
@@ -174,9 +181,9 @@
 
     <bean id="dataSource" primary="true" class="org.apache.commons.dbcp2.BasicDataSource">
         <property name="driverClassName" value="net.sourceforge.jtds.jdbc.Driver" />
-        <property name="url" value="${${EXPEDIA_ENVIRONMENT}.datasource.url}" />
-        <property name="username" value="${${EXPEDIA_ENVIRONMENT}.datasource.username}" />
-        <property name="password" value="${${EXPEDIA_ENVIRONMENT}.datasource.password}" />
+        <property name="url" value="${datasource.url}" />
+        <property name="username" value="${datasource.username}" />
+        <property name="password" value="${datasource.password}" />
         <property name="validationQuery" value="select 1" />
         <property name="initialSize" value="10" />
         <property name="maxTotal" value="25" />

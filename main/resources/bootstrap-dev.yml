@@ -1,7 +1,0 @@
-spring:
-  cloud:
-    vault:
-      enabled: false
-      primer:
-        token-file: ${HOME}/.auth_token
-
