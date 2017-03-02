@@ -1,7 +1,7 @@
 spring:
   cloud:
     vault:
-      enabled: false
+      enabled: true
       primer:
         token-file: ${HOME}/.auth_token
 
