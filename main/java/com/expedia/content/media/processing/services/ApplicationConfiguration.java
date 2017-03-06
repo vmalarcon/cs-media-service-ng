@@ -75,6 +75,10 @@ public class ApplicationConfiguration {
         dataSource.setUrl(dataSourceURL);
         dataSource.setUsername(username);
         dataSource.setPassword(password);
+        dataSource.setValidationQuery("select 1");
+        dataSource.setInitialSize(INIT_POOL);
+        dataSource.setMinIdle(MIN_POOL);
+        dataSource.setMaxIdle(MAX_POOL);
         return dataSource;
     }
 
