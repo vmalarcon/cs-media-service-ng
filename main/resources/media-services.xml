@@ -161,7 +161,6 @@
         <constructor-arg name="environment" value="${EXPEDIA_ENVIRONMENT}"/>
     </bean>
 
-    <!--<bean id="lcmInsertSproc" primary="true" class="com.expedia.content.media.processing.pipeline.reporting.sql.SQLLogEntryInsertSproc" />-->
 
     <bean id="providerProperties"
           class="org.springframework.beans.factory.config.PropertiesFactoryBean">
