@@ -20,6 +20,7 @@ import com.expedia.content.media.processing.services.dao.sql.SQLMediaLogSproc;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -93,8 +94,15 @@ public class ApplicationConfiguration {
     }
 
     @Bean
+    @Qualifier("lcm")
     public PlatformTransactionManager transactionManager() {
         return new DataSourceTransactionManager(dataSource());
+    }
+
+    @Bean
+    @Qualifier("mysql")
+    public PlatformTransactionManager transactionManager2() {
+        return new DataSourceTransactionManager(mediaDBDataSource());
     }
 
     @Bean
