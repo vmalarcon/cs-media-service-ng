@@ -23,6 +23,7 @@ server:
   port: 8443
 # TODO remove addtional.port once all clients moved to HTTPS
   additional:
+    #fix weird deployment issue with error 'Port 8080 was already in use'
     port: 8080
   ssl:
     key-alias: "expedia-${EXPEDIA_DEPLOYED_ENVIRONMENT:test}-${AWS_REGION:us-west-2}"
