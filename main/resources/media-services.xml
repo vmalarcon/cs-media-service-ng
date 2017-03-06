@@ -19,7 +19,6 @@
 
     <context:property-placeholder location="classpath:${EXPEDIA_ENVIRONMENT}.${AWS_REGION}.properties"/>
     <aop:config proxy-target-class="true" />
-    <import resource="collector-rabbit.xml" />
 
     <aws-messaging:annotation-driven-queue-listener wait-time-out="20" />
 
@@ -35,12 +34,6 @@
     </mvc:annotation-driven>
 
     <aws-messaging:notification-argument-resolver id="notificationResolver" />
-
-    <bean id="filenamesRabbitTemplate" class="org.springframework.amqp.rabbit.core.RabbitTemplate">
-        <property name="connectionFactory" ref="rabbitConnectionFactory"/>
-        <property name="queue" value="${collector.queue}" />
-        <property name="routingKey" value="${collector.queue}" />
-    </bean>
 
     <bean id="retryableAspect" class="com.expedia.content.media.processing.pipeline.retry.RetryableAspect" factory-method="aspectOf" autowire="byType" />
 
@@ -179,16 +172,15 @@
         </property>
     </bean>
 
-    <bean id="dataSource" primary="true"  class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
-        <property name="driverClass" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" />
-        <property name="jdbcUrl" value="${datasource.url}" />
-        <property name="user" value="${datasource.username}" />
-        <property name="password" value="${datasource.password}" />
-        <!-- pool sizing -->
-        <property name="initialPoolSize" value="10" />
-        <property name="minPoolSize" value="5" />
-        <property name="maxPoolSize" value="25" />
-        <property name="acquireIncrement" value="3" />
+    <bean id="dataSource" primary="true" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+        <property name="driverClass" value="com.microsoft.sqlserver.jdbc.SQLServerDriver"/>
+        <property name="jdbcUrl" value="${${EXPEDIA_ENVIRONMENT}.datasource.url}"/>
+        <property name="user" value="${${EXPEDIA_ENVIRONMENT}.datasource.username}"/>
+        <property name="password" value="${${EXPEDIA_ENVIRONMENT}.datasource.password}"/>
+        <property name="initialPoolSize" value="10"/>
+        <property name="minPoolSize" value="5"/>
+        <property name="maxPoolSize" value="25"/>
+        <property name="acquireIncrement" value="3"/>
     </bean>
 
     <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">

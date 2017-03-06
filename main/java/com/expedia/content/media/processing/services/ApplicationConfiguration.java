@@ -33,13 +33,13 @@ public class ApplicationConfiguration {
     @Value("${kafka.message.send.enable}")
     private String enableSend;
 
-    @Value("${mdb.datasource.username}")
+    @Value("${${EXPEDIA_ENVIRONMENT}.mdb.datasource.username}")
     private String username;
 
-    @Value("${mdb.datasource.password}")
+    @Value("${${EXPEDIA_ENVIRONMENT}.mdb.datasource.password}")
     private String password;
 
-    @Value("${mdb.datasource.url}")
+    @Value("${${EXPEDIA_ENVIRONMENT}.mdb.datasource.url}")
     private String dataSourceURL;
 
     @Bean
