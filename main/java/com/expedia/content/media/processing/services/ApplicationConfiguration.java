@@ -17,7 +17,6 @@ import com.expedia.content.media.processing.services.dao.SKUGroupGetSproc;
 import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaDomainCategoriesSproc;
 import com.expedia.content.media.processing.services.dao.sql.SQLMediaLogSproc;
-import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -26,6 +25,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
@@ -37,9 +37,6 @@ import java.util.Properties;
 @Configuration
 public class ApplicationConfiguration {
 
-    private static final int MIN_POOL = 5;
-    private static final int MAX_POOL = 25;
-    private static final int INIT_POOL = 15;
 
     @Value("${kafka.broker.server}")
     private String brokerServer;
@@ -69,31 +66,23 @@ public class ApplicationConfiguration {
     private String lcmPassword;
 
     @Bean
-    public DataSource mediaDBDataSource() {
-        final BasicDataSource dataSource = new BasicDataSource();
+    public DriverManagerDataSource mediaDBDataSource() {
+        final DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
         dataSource.setUrl(dataSourceURL);
         dataSource.setUsername(username);
         dataSource.setPassword(password);
-        dataSource.setValidationQuery("select 1");
-        dataSource.setInitialSize(INIT_POOL);
-        dataSource.setMinIdle(MIN_POOL);
-        dataSource.setMaxIdle(MAX_POOL);
         return dataSource;
     }
 
     @Bean
     @Primary
     public DataSource dataSource() {
-        final BasicDataSource dataSource = new BasicDataSource();
-        dataSource.setDriverClassName("net.sourceforge.jtds.jdbc.Driver");
+        final DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setDriverClassName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
         dataSource.setUrl(lcmDataSourceURL);
         dataSource.setUsername(lcmUserName);
         dataSource.setPassword(lcmPassword);
-        dataSource.setValidationQuery("select 1");
-        dataSource.setInitialSize(INIT_POOL);
-        dataSource.setMinIdle(MIN_POOL);
-        dataSource.setMaxIdle(MAX_POOL);
         return dataSource;
     }
 
