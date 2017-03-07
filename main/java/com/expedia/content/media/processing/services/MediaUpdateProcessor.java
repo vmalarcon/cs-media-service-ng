@@ -68,7 +68,7 @@ public class MediaUpdateProcessor {
      * @return
      * @throws Exception
      */
-    @Transactional("lcm")
+    @Transactional
     @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.NPathComplexity", "PMD.AvoidDeeplyNestedIfStmts"})
     public ResponseEntity<String> processRequest(final ImageMessage imageMessage, final String mediaId, String domainId,
                                                  Media dynamoMedia) throws Exception {

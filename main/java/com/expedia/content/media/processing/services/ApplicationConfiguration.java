@@ -7,28 +7,15 @@ import com.expedia.content.media.processing.pipeline.reporting.KafkaReporting;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.pipeline.reporting.dynamo.DynamoReporting;
 import com.expedia.content.media.processing.pipeline.reporting.sql.LcmReporting;
-import com.expedia.content.media.processing.pipeline.reporting.sql.SQLLogEntryInsertSproc;
-import com.expedia.content.media.processing.services.dao.LcmProcessLogDao;
-import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
-import com.expedia.content.media.processing.services.dao.PropertyRoomTypeGetIDSproc;
-import com.expedia.content.media.processing.services.dao.RoomTypeDao;
-import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
-import com.expedia.content.media.processing.services.dao.SKUGroupGetSproc;
 import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
-import com.expedia.content.media.processing.services.dao.sql.SQLMediaDomainCategoriesSproc;
-import com.expedia.content.media.processing.services.dao.sql.SQLMediaLogSproc;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.springframework.transaction.PlatformTransactionManager;
 
-import javax.sql.DataSource;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +23,6 @@ import java.util.Properties;
 
 @Configuration
 public class ApplicationConfiguration {
-
 
     @Value("${kafka.broker.server}")
     private String brokerServer;
@@ -56,15 +42,6 @@ public class ApplicationConfiguration {
     @Value("${${EXPEDIA_ENVIRONMENT}.mdb.datasource.url}")
     private String dataSourceURL;
 
-    @Value("${${EXPEDIA_ENVIRONMENT}.datasource.url}")
-    private String lcmDataSourceURL;
-
-    @Value("${${EXPEDIA_ENVIRONMENT}.datasource.username}")
-    private String lcmUserName;
-
-    @Value("${${EXPEDIA_ENVIRONMENT}.datasource.password}")
-    private String lcmPassword;
-
     @Bean
     public DriverManagerDataSource mediaDBDataSource() {
         final DriverManagerDataSource dataSource = new DriverManagerDataSource();
@@ -73,29 +50,6 @@ public class ApplicationConfiguration {
         dataSource.setUsername(username);
         dataSource.setPassword(password);
         return dataSource;
-    }
-
-    @Bean
-    @Primary
-    public DataSource dataSource() {
-        final DriverManagerDataSource dataSource = new DriverManagerDataSource();
-        dataSource.setDriverClassName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-        dataSource.setUrl(lcmDataSourceURL);
-        dataSource.setUsername(lcmUserName);
-        dataSource.setPassword(lcmPassword);
-        return dataSource;
-    }
-
-    @Bean
-    @Qualifier("lcm")
-    public PlatformTransactionManager transactionManager() {
-        return new DataSourceTransactionManager(dataSource());
-    }
-
-    @Bean
-    @Qualifier("mysql")
-    public PlatformTransactionManager transactionManager2() {
-        return new DataSourceTransactionManager(mediaDBDataSource());
     }
 
     @Bean
@@ -131,36 +85,10 @@ public class ApplicationConfiguration {
         props.put("enableSend", enableSend);
         props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
         final KafkaCommonPublisher kafkaCommonPublisher = new KafkaCommonPublisher(props);
-        final KafkaReporting kafkaReporting = new KafkaReporting(kafkaCommonPublisher, appname, activityTopic);
+        final KafkaReporting kafkaReporting = new KafkaReporting (kafkaCommonPublisher, appname, activityTopic);
         reportings.add(kafkaReporting);
         reportings.add(lcmReporting);
         return new CompositeReporting(reportings);
-    }
-
-    @Bean
-    public RoomTypeDao roomTypeDao() {
-        return new RoomTypeDao(new PropertyRoomTypeGetIDSproc(dataSource()));
-    }
-
-    @Bean
-    public SKUGroupCatalogItemDao skuGroupCatalogItemDao() {
-        return new SKUGroupCatalogItemDao(new SKUGroupGetSproc(dataSource()));
-    }
-
-    @Bean
-    public MediaDomainCategoriesDao mediaDomainCategoriesDao() {
-        return new MediaDomainCategoriesDao(new SQLMediaDomainCategoriesSproc(dataSource()));
-    }
-
-    @Bean
-    public LcmProcessLogDao processLogDao() {
-        return new LcmProcessLogDao(new SQLMediaLogSproc(dataSource()));
-    }
-
-    @Bean
-    @Primary
-    public SQLLogEntryInsertSproc lcmInsertSproc() {
-        return new SQLLogEntryInsertSproc(dataSource());
     }
 
 }
