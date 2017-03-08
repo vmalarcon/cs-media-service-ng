@@ -159,7 +159,6 @@
         <constructor-arg name="environment" value="${EXPEDIA_ENVIRONMENT}"/>
     </bean>
 
-    <bean id="lcmInsertSproc" primary="true" class="com.expedia.content.media.processing.pipeline.reporting.sql.SQLLogEntryInsertSproc" />
 
     <bean id="providerProperties"
           class="org.springframework.beans.factory.config.PropertiesFactoryBean">
@@ -170,23 +169,6 @@
         </property>
     </bean>
 
-    <bean id="dataSource" primary="true" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
-        <property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" />
-        <property name="url" value="${${EXPEDIA_ENVIRONMENT}.datasource.url}" />
-        <property name="username" value="${${EXPEDIA_ENVIRONMENT}.datasource.username}" />
-        <property name="password" value="${${EXPEDIA_ENVIRONMENT}.datasource.password}" />
-        <!--<property name="validationQuery" value="select 1" />-->
-        <!--<property name="initialSize" value="10" />-->
-        <!--<property name="maxTotal" value="25" />-->
-        <!--<property name="maxIdle" value="15" />-->
-        <!--<property name="minIdle" value="5" />-->
-    </bean>
-
-    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
-        <property name="dataSource" ref="dataSource" />
-    </bean>
-
-    <tx:annotation-driven transaction-manager="transactionManager"/>
 
     <!-- Retry -->
     <bean id="loggingRetryListener" class="com.expedia.content.media.processing.pipeline.retry.LoggingRetryListener" />
@@ -289,32 +271,6 @@
           class="com.expedia.content.media.processing.services.validator.MediaNamesValidator">
     </bean>
 
-    <bean id="processLogDao" class="com.expedia.content.media.processing.services.dao.LcmProcessLogDao">
-        <constructor-arg name="sqlMediaLogSproc">
-            <bean class="com.expedia.content.media.processing.services.dao.sql.SQLMediaLogSproc" />
-        </constructor-arg>
-    </bean>
-    <!-- /Status Controller -->
-
-    <!-- Category Controller -->
-    <bean id="mediaDomainCategoriesDao" class="com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao">
-        <constructor-arg name="sproc">
-            <bean class="com.expedia.content.media.processing.services.dao.sql.SQLMediaDomainCategoriesSproc" />
-        </constructor-arg>
-    </bean>
-    <!-- /Category Controller -->
-
-    <bean id="skuGroupCatalogItemDao" class="com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao">
-        <constructor-arg name="sproc">
-            <bean class="com.expedia.content.media.processing.services.dao.SKUGroupGetSproc" />
-        </constructor-arg>
-    </bean>
-
-    <bean id="roomTypeDao" class="com.expedia.content.media.processing.services.dao.RoomTypeDao">
-        <constructor-arg name="sproc">
-            <bean class="com.expedia.content.media.processing.services.dao.PropertyRoomTypeGetIDSproc" />
-        </constructor-arg>
-    </bean>
 
     <bean id="lodgingValidator" class="com.expedia.content.media.processing.services.validator.LodgingValidator" />
 
