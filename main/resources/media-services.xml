@@ -155,7 +155,7 @@
           class="com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper">
         <constructor-arg name="dynamoDB" ref="amazonDynamoDB" />
     </bean>
-    
+
     <bean id="dynamoMediaRepository" class="com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository">
         <constructor-arg name="dynamoMapper" ref="dynamoMapper"/>
         <constructor-arg name="environment" value="${EXPEDIA_ENVIRONMENT}"/>
@@ -174,9 +174,9 @@
 
     <bean id="dataSource" primary="true" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
         <property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" />
-        <property name="url" value="${${EXPEDIA_ENVIRONMENT}.datasource.url}" />
-        <property name="username" value="${${EXPEDIA_ENVIRONMENT}.datasource.username}" />
-        <property name="password" value="${${EXPEDIA_ENVIRONMENT}.datasource.password}" />
+        <property name="url" value="${datasource.url}" />
+        <property name="username" value="${datasource.username}" />
+        <property name="password" value="${datasource.password}" />
         <!--<property name="validationQuery" value="select 1" />-->
         <!--<property name="initialSize" value="10" />-->
         <!--<property name="maxTotal" value="25" />-->
