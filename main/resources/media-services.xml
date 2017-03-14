@@ -3,11 +3,13 @@
        xmlns:util="http://www.springframework.org/schema/util"
        xmlns:context="http://www.springframework.org/schema/context"
        xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:tx="http://www.springframework.org/schema/tx"
        xmlns:aws-context="http://www.springframework.org/schema/cloud/aws/context"
        xmlns:aws-messaging="http://www.springframework.org/schema/cloud/aws/messaging"
        xmlns:aop="http://www.springframework.org/schema/aop"
        xmlns="http://www.springframework.org/schema/beans"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
                            http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
                            http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.1.xsd
                            http://www.springframework.org/schema/cloud/aws/context http://www.springframework.org/schema/cloud/aws/context/spring-cloud-aws-context-1.0.xsd
@@ -153,7 +155,7 @@
           class="com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper">
         <constructor-arg name="dynamoDB" ref="amazonDynamoDB" />
     </bean>
-    
+
     <bean id="dynamoMediaRepository" class="com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository">
         <constructor-arg name="dynamoMapper" ref="dynamoMapper"/>
         <constructor-arg name="environment" value="${EXPEDIA_ENVIRONMENT}"/>
@@ -169,6 +171,23 @@
         </property>
     </bean>
 
+    <bean id="dataSource" primary="true" class="org.apache.commons.dbcp2.BasicDataSource">
+        <property name="driverClassName" value="net.sourceforge.jtds.jdbc.Driver" />
+        <property name="url" value="${${EXPEDIA_ENVIRONMENT}.datasource.url}" />
+        <property name="username" value="${${EXPEDIA_ENVIRONMENT}.datasource.username}" />
+        <property name="password" value="${${EXPEDIA_ENVIRONMENT}.datasource.password}" />
+        <property name="validationQuery" value="select 1" />
+        <property name="initialSize" value="10" />
+        <property name="maxTotal" value="25" />
+        <property name="maxIdle" value="15" />
+        <property name="minIdle" value="5" />
+    </bean>
+
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource" />
+    </bean>
+
+    <tx:annotation-driven transaction-manager="transactionManager"/>
 
     <!-- Retry -->
     <bean id="loggingRetryListener" class="com.expedia.content.media.processing.pipeline.retry.LoggingRetryListener" />

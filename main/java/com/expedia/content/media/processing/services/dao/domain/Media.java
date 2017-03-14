@@ -259,7 +259,7 @@ public class Media {
                 // no categoryId
                 // no caption
                 // no providerId
-                .comment(this.getCommentList().toString())
+                .comment((this.getCommentList() == null || this.getCommentList().isEmpty()) ? "" : this.getCommentList().get(0))
                 .outerDomainData(outerDomain)
                 // no staging-key
                 // no logEntries
