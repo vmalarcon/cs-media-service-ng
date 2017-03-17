@@ -95,7 +95,7 @@ public class SourceURLController extends CommonServiceController {
             final String guid = "";
             String sourcePath = "";
             if (fileSourceFinder.matchGuid(fileName)) {
-                final Media dynamo = getGuidByMediaId(lcmMedia.getMediaId().toString());
+                final Media dynamo = getDynamoByMediaId(lcmMedia.getMediaId().toString());
                 if (dynamo == null) {
                     return buildErrorResponse("can not found GUID.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
                 }
@@ -132,7 +132,7 @@ public class SourceURLController extends CommonServiceController {
     }
 
     @SuppressWarnings("PMD")
-    private Media getGuidByMediaId(String mediaId) {
+    private Media getDynamoByMediaId(String mediaId) {
         if (StringUtils.isNumeric(mediaId)) {
             final List<Media> mediaList = mediaDao.getMediaByMediaId(mediaId);
             if (!mediaList.isEmpty()) {
