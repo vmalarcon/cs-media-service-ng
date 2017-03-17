@@ -131,6 +131,7 @@ public class SourceURLControllerTest {
         setFieldValue(sourceURLController, "mediaDao", mockMediaDao);
         Media media = Media.builder()
                 .mediaGuid("4a8a5b92_real_guid_nota_fakeguid1234")
+                .sourceUrl("s3://ewe-cs-media-test/source/5000000/4610000/4600500/4600417/4a8a5b92_real_guid_nota_fakeguid1234.10")
                 .build();
         List<Media> mediaList = new ArrayList<>();
         mediaList.add(media);
@@ -138,7 +139,7 @@ public class SourceURLControllerTest {
         ResponseEntity<String> responseEntity = sourceURLController.getSourceURL(jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-        assertTrue(responseEntity.getBody().contains("\"mediaSourceUrl\":\"s3://null/null/5000000/4610000/4600500/4600417/4a8a5b92_real_guid_nota_fakeguid1234.10\""));
+        assertTrue(responseEntity.getBody().contains("\"mediaSourceUrl\":\"s3://ewe-cs-media-test/source/5000000/4610000/4600500/4600417/4a8a5b92_real_guid_nota_fakeguid1234.10\""));
         assertTrue(responseEntity.getBody().contains("\"contentProviderMediaName\":\"I_dont_end_with_a_normal_extension.10\""));
     }
 

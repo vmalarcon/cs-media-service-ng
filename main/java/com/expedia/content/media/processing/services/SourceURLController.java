@@ -92,14 +92,17 @@ public class SourceURLController extends CommonServiceController {
             if (!checkDBResultValid(lcmMedia)) {
                 return buildErrorResponse(fileUrl + " not found.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
             }
-            String guid = "";
+            final String guid = "";
+            String sourcePath = "";
             if (fileSourceFinder.matchGuid(fileName)) {
-                guid = getGuidByMediaId(lcmMedia.getMediaId().toString());
-                if (guid == null) {
+                final Media dynamo = getGuidByMediaId(lcmMedia.getMediaId().toString());
+                if (dynamo == null) {
                     return buildErrorResponse("can not found GUID.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
                 }
+                 sourcePath = dynamo.getSourceUrl();
+            } else if (StringUtils.isEmpty(sourcePath)) {
+                sourcePath = fileSourceFinder.getSourcePath(bucketName, bucketPrefix, fileUrl, guid, lcmMedia);
             }
-            final String sourcePath = fileSourceFinder.getSourcePath(bucketName, bucketPrefix, fileUrl, guid, lcmMedia);
             final Map<String, String> response = new HashMap<>();
             response.put("contentProviderMediaName", lcmMedia.getFileName());
             response.put("mediaSourceUrl", sourcePath);
@@ -129,13 +132,13 @@ public class SourceURLController extends CommonServiceController {
     }
 
     @SuppressWarnings("PMD")
-    private String getGuidByMediaId(String mediaId) {
+    private Media getGuidByMediaId(String mediaId) {
         if (StringUtils.isNumeric(mediaId)) {
             final List<Media> mediaList = mediaDao.getMediaByMediaId(mediaId);
             if (!mediaList.isEmpty()) {
                 final Optional<Media> existMedia = mediaList.stream().max(Comparator.comparing(Media::getLastUpdated));
                 if (existMedia.isPresent()) {
-                    return existMedia.get().getMediaGuid();
+                    return existMedia.get();
                 }
             }
         }
