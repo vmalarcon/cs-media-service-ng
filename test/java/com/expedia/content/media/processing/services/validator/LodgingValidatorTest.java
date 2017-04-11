@@ -1,23 +1,14 @@
 package com.expedia.content.media.processing.services.validator;
 
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
-import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
-import com.expedia.content.media.processing.services.dao.PropertyRoomTypeGetIDSproc;
-import com.expedia.content.media.processing.services.dao.RoomType;
-import com.expedia.content.media.processing.services.dao.RoomTypeDao;
-import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
-import com.expedia.content.media.processing.services.dao.domain.MediaCategory;
-import com.expedia.content.media.processing.services.dao.domain.MediaSubCategory;
-import com.expedia.content.media.processing.services.dao.sql.SQLMediaDomainCategoriesSproc;
-import org.codehaus.plexus.util.ReflectionUtils;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.springframework.test.context.ContextConfiguration;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -28,16 +19,26 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
+import org.codehaus.plexus.util.ReflectionUtils;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.springframework.test.context.ContextConfiguration;
+
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
+import com.expedia.content.media.processing.services.dao.PropertyRoomTypeGetIDSproc;
+import com.expedia.content.media.processing.services.dao.RoomType;
+import com.expedia.content.media.processing.services.dao.RoomTypeDao;
+import com.expedia.content.media.processing.services.dao.RoomTypeThirdPartyGet;
+import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
+import com.expedia.content.media.processing.services.dao.domain.MediaCategory;
+import com.expedia.content.media.processing.services.dao.domain.MediaSubCategory;
+import com.expedia.content.media.processing.services.dao.sql.SQLMediaDomainCategoriesSproc;
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
 @RunWith(MockitoJUnitRunner.class)
@@ -53,6 +54,9 @@ public class LodgingValidatorTest {
     PropertyRoomTypeGetIDSproc mockPropertyRoomTypeGetIDSproc;
 
     @Mock
+    RoomTypeThirdPartyGet mockRoomTypeThirdPartyGet;
+
+    @Mock
     Properties mockProviderProperties;
 
     LodgingAddValidator lodgingAddValidator;
@@ -65,7 +69,9 @@ public class LodgingValidatorTest {
     MediaDomainCategoriesDao mockMediaDomainCategoriesDao;
     RoomTypeDao roomTypeDao;
     List<RoomType> mockRoomTypes;
+    List<RoomType> mockRoomTypesThirdParty;
     Map<String, Object> mockRoomResults = new HashMap<>();
+    Map<String, Object> mockRoomResultsThirdParty = new HashMap<>();
     Set<Map.Entry<Object, Object>> providerMapping;
 
     @BeforeClass
@@ -96,9 +102,13 @@ public class LodgingValidatorTest {
         mockRoomTypes = new ArrayList<>();
         mockRoomTypes.add(new RoomType(222, 555, new Timestamp(1339150200000L), "phoenix", "phoenix"));
         mockRoomTypes.add(new RoomType(333, 444, new Timestamp(1339150200000L), "phoenix", "phoenix"));
+        mockRoomTypesThirdParty = new ArrayList<>();
+        mockRoomTypesThirdParty.add(new RoomType(1, 777, new Timestamp(1339150200000L), "cs-room-processor", "R3PService"));
         mockRoomResults = new HashMap<>();
+        mockRoomResultsThirdParty = new HashMap<>();
         mockRoomResults.put(PropertyRoomTypeGetIDSproc.ROOM_TYPE_RESULT_SET, mockRoomTypes);
-        roomTypeDao = spy(new RoomTypeDao(mockPropertyRoomTypeGetIDSproc));
+        mockRoomResultsThirdParty.put(RoomTypeThirdPartyGet.RESULTS_KEY, mockRoomTypesThirdParty);
+        roomTypeDao = spy(new RoomTypeDao(mockPropertyRoomTypeGetIDSproc, mockRoomTypeThirdPartyGet));
         ReflectionUtils.setVariableValueInObject(lodgingAddValidator, "providerProperties", mockProviderProperties);
         ReflectionUtils.setVariableValueInObject(lodgingAddValidator, "skuGroupCatalogItemDao", mockSKUGroupCatalogItemDao);
         ReflectionUtils.setVariableValueInObject(lodgingAddValidator, "mediaDomainCategoriesDao", mockMediaDomainCategoriesDao);
@@ -139,6 +149,7 @@ public class LodgingValidatorTest {
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
+        when(mockRoomTypeThirdPartyGet.getRooms(anyInt(), anyInt(), anyInt(), anyInt())).thenReturn(mockRoomResultsThirdParty);
         final List<String> errorList = lodgingAddValidator.validateImages(imageMessageList);
         assertTrue(errorList.size() == 0);
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
@@ -175,6 +186,7 @@ public class LodgingValidatorTest {
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.FALSE);
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
+        when(mockRoomTypeThirdPartyGet.getRooms(anyInt(), anyInt(), anyInt(), anyInt())).thenReturn(mockRoomResultsThirdParty);
         final List<String> errorList = lodgingAddValidator.validateImages(imageMessageList);
         assertTrue(errorList.size() == 1);
         assertTrue(errorList.get(0).equals("The provided domainId does not exist."));
@@ -212,6 +224,7 @@ public class LodgingValidatorTest {
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
+        when(mockRoomTypeThirdPartyGet.getRooms(anyInt(), anyInt(), anyInt(), anyInt())).thenReturn(mockRoomResultsThirdParty);
         final List<String> errorList = lodgingAddValidator.validateImages(imageMessageList);
         assertTrue(errorList.size() == 1);
         assertTrue(errorList.get(0).equals("The provided mediaProvider does not exist."));
@@ -249,6 +262,7 @@ public class LodgingValidatorTest {
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
+        when(mockRoomTypeThirdPartyGet.getRooms(anyInt(), anyInt(), anyInt(), anyInt())).thenReturn(mockRoomResultsThirdParty);
         final List<String> errorList = lodgingAddValidator.validateImages(imageMessageList);
         assertTrue(errorList.size() == 1);
         assertTrue(errorList.get(0).equals("The provided category does not exist."));
@@ -312,6 +326,7 @@ public class LodgingValidatorTest {
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
+        when(mockRoomTypeThirdPartyGet.getRooms(anyInt(), anyInt(), anyInt(), anyInt())).thenReturn(mockRoomResultsThirdParty);
         final List<String> errorList = lodgingAddValidator.validateImages(imageMessageList);
         assertTrue(errorList.size() == 0);
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
@@ -348,6 +363,7 @@ public class LodgingValidatorTest {
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
+        when(mockRoomTypeThirdPartyGet.getRooms(anyInt(), anyInt(), anyInt(), anyInt())).thenReturn(mockRoomResultsThirdParty);
         final List<String> errorList = lodgingAddValidator.validateImages(imageMessageList);
         assertTrue(errorList.size() == 1);
         assertTrue(errorList.get(0).equals("The following roomIds [5678] do not belong to the property."));
@@ -415,6 +431,7 @@ public class LodgingValidatorTest {
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
+        when(mockRoomTypeThirdPartyGet.getRooms(anyInt(), anyInt(), anyInt(), anyInt())).thenReturn(mockRoomResultsThirdParty);
         final List<String> errorList = lodgingAddValidator.validateImages(imageMessageList);
         assertTrue(errorList.size() == 0);
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
@@ -455,6 +472,7 @@ public class LodgingValidatorTest {
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
+        when(mockRoomTypeThirdPartyGet.getRooms(anyInt(), anyInt(), anyInt(), anyInt())).thenReturn(mockRoomResultsThirdParty);
         final List<String> errorList = lodgingAddValidator.validateImages(imageMessageList);
         assertTrue(errorList.size() == 1);
         assertTrue(errorList.get(0).equals("The request contains duplicate rooms."));
@@ -492,6 +510,7 @@ public class LodgingValidatorTest {
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
+        when(mockRoomTypeThirdPartyGet.getRooms(anyInt(), anyInt(), anyInt(), anyInt())).thenReturn(mockRoomResultsThirdParty);
         final List<String> errorList = lodgingAddValidator.validateImages(imageMessageList);
         assertTrue(errorList.size() == 0);
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
@@ -528,6 +547,7 @@ public class LodgingValidatorTest {
         when(mockSKUGroupCatalogItemDao.skuGroupExists(anyInt())).thenReturn(Boolean.TRUE);
         when(mockSQLMediaDomainCategoriesSproc.execute(LOCALID)).thenReturn(catMockResults);
         when(mockPropertyRoomTypeGetIDSproc.execute(anyInt())).thenReturn(mockRoomResults);
+        when(mockRoomTypeThirdPartyGet.getRooms(anyInt(), anyInt(), anyInt(), anyInt())).thenReturn(mockRoomResultsThirdParty);
         final List<String> errorList = lodgingAddValidator.validateImages(imageMessageList);
         assertTrue(errorList.size() == 1);
         assertTrue(errorList.get(0).equals("The provided category does not exist."));
@@ -536,7 +556,7 @@ public class LodgingValidatorTest {
         verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
         verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
     }
-    
+
     @Test
     public void testInvalidRoomsField() throws Exception {
         final String jsonMsg =
@@ -552,7 +572,7 @@ public class LodgingValidatorTest {
                         "          \"subcategoryId\": \"10000\"," +
                         "          \"propertyHero\": \"true\"," +
                         "          \"rooms\": [ " +
-                        "               {" +                      
+                        "               {" +
                         "                 \"roomHero\": \"true\" " +
                         "               }" +
                         "                     ]" +
@@ -575,8 +595,7 @@ public class LodgingValidatorTest {
     }
 
     @Test
-    public void testRoomsNotAList()
-    {
+    public void testRoomsNotAList() {
         final String jsonMsg =
                 "         { " +
                         "    \"fileUrl\": \"http://well-formed-url/hello.jpg\"," +
