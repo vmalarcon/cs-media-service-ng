@@ -39,6 +39,7 @@ public class MediaUpdateProcessor {
     public static final String MESSAGE_PROPERTY_HERO = "propertyHero";
     public static final String MESSAGE_SUB_CATEGORY_ID = "subcategoryId";
     public static final String MESSAGE_ROOMS = "rooms";
+    public static final String UPDATE_OPERATION = "mediaUpdate";
     public static final String MESSAGE_ROOM_HERO = "roomHero";
     private static final String KAFKA_TEST_FLAG = "kafkaTestLCM$#$";
 
@@ -84,7 +85,7 @@ public class MediaUpdateProcessor {
                 media.setLastUpdated(new Date());
                 media.setHidden(imageMessage.getHidden());
                 final ImageMessage updatedImageMessage = media.toImageMessage();
-                kafkaCommonPublisher.publishImageMessage(updatedImageMessage, imageMessageTopic);
+                kafkaCommonPublisher.publishImageMessage(addOperationTag(updatedImageMessage), imageMessageTopic);
             }
         } else {
             // Only proceed to the following if the domain is Lodging
@@ -111,7 +112,7 @@ public class MediaUpdateProcessor {
                 mediaDao.saveMedia(dynamoMedia);
 
                 final ImageMessage updatedImageMessage = dynamoMedia.toImageMessage();
-                kafkaCommonPublisher.publishImageMessage(updatedImageMessage, imageMessageTopic);
+                kafkaCommonPublisher.publishImageMessage(addOperationTag(updatedImageMessage), imageMessageTopic);
             }
         }
 
@@ -119,6 +120,13 @@ public class MediaUpdateProcessor {
         response.put("status", Integer.valueOf(200));
         final String jsonResponse = new ObjectMapper().writeValueAsString(response);
         return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
+    }
+
+    private ImageMessage addOperationTag(final ImageMessage imageMessage) {
+        ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
+        imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
+        imageMessageBuilder.operation(UPDATE_OPERATION);
+        return imageMessageBuilder.build();
     }
 
     /**
