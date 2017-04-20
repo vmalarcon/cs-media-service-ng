@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.expedia.content.media.processing.pipeline.kafka.KafkaCommonPublisher;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.codehaus.plexus.util.ReflectionUtils;
 import org.joda.time.format.DateTimeFormat;
@@ -131,6 +132,7 @@ public class MediaControllerTest {
     @Before
     public void initialize() throws IllegalAccessException {
         mediaController = new MediaController();
+        MediaDao mockMediaDBDAO = mock(MediaDBMediaDao.class);
 
         ReflectionUtils.setVariableValueInObject(mediaController, "providerProperties", mockProviderProperties);
         providerMapping = new HashSet<>();
@@ -146,6 +148,7 @@ public class MediaControllerTest {
         Mockito.doNothing().when(dynamoMediaRepository).storeMediaAddMessage(anyObject(), anyObject());
         FieldUtils.writeField(mediaController, "dynamoMediaRepository", dynamoMediaRepository, true);
         FieldUtils.writeField(mediaController, "kafkaCommonPublisher", kafkaCommonPublisher, true);
+        FieldUtils.writeField(mediaController, "mediaDBMediaDao", mockMediaDBDAO, true);
         Mockito.doNothing().when(kafkaCommonPublisher).publishImageMessage(anyObject(),anyString());
     }
 
@@ -2073,12 +2076,16 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "reporting", reporting);
 
         MediaDao mockMediaDao = mock(MediaDao.class);
+        MediaDao mockMediaDBDAO = mock(MediaDBMediaDao.class);
+
         when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"))).thenReturn(new ArrayList<>());
         final LcmMedia media1 = LcmMedia.builder().active(true).domainId(123).fileName("123_1_NASA_ISS-4.jpg").mediaId(12345).build();
         when(mockMediaDao.getMediaByFilenameInLCM(eq(123), eq("123_1_NASA_ISS-4.jpg")))
         .thenReturn(Lists.newArrayList(media1));
 
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        setFieldValue(mediaController, "mediaDBMediaDao", mockMediaDBDAO);
+
         setFieldValue(mediaController, "dynamoMediaRepository", dynamoMediaRepository);
         String requestId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -2100,6 +2107,8 @@ public class MediaControllerTest {
         verify(mockMediaDao, times(1)).getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"));
         verify(mockMediaDao, times(1)).getMediaByFilenameInLCM(eq(123), eq("123_1_NASA_ISS-4.jpg"));
         verify(dynamoMediaRepository, times(1)).storeMediaAddMessage(any(ImageMessage.class), any(Thumbnail.class));
+        verify(mockMediaDBDAO, times(1)).addMediaOnImageMessage(any(ImageMessage.class));
+
     }
 
 

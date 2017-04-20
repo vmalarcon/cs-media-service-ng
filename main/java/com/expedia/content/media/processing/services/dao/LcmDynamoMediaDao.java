@@ -2,6 +2,7 @@ package com.expedia.content.media.processing.services.dao;
 
 import com.amazonaws.util.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.LcmMediaAndDerivative;
@@ -754,6 +755,12 @@ public class LcmDynamoMediaDao implements MediaDao {
             }
         }
         return null;
+    }
+
+    @Override
+    @SuppressWarnings("PMD.UncommentedEmptyMethod")
+    public void addMediaOnImageMessage(ImageMessage message) throws Exception {
+
     }
 
     /**

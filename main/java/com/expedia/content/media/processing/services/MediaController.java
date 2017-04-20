@@ -41,6 +41,7 @@ import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
 import com.expedia.content.media.processing.services.exception.PaginationValidationException;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
@@ -144,6 +145,8 @@ public class MediaController extends CommonServiceController {
     private MediaDao mediaDao;
     @Autowired
     private MediaUpdateDao mediaUpdateDao;
+    @Autowired
+    private MediaDBMediaDao mediaDBMediaDao;
     @Autowired
     private DynamoMediaRepository dynamoMediaRepository;
     @Autowired
@@ -572,6 +575,7 @@ public class MediaController extends CommonServiceController {
         if (!isReprocessing || storeMediaAddMessage) {
             dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);
         }
+        mediaDBMediaDao.addMediaOnImageMessage(imageMessageNew);
         publishMsg(imageMessageNew);
         kafkaCommonPublisher.publishImageMessage(imageMessageNew, imageMessageTopic);
         final ResponseEntity<String> responseEntity = new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
