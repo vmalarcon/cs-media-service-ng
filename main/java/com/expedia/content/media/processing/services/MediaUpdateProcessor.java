@@ -77,10 +77,10 @@ public class MediaUpdateProcessor {
         // Only proceed to the following if the domain is Lodging
         if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING) && mediaId != null && org.apache.commons.lang3.StringUtils
                 .isNumeric(mediaId)) {
-            mediaDBMediaDao.updateMediaOnImageMessage(imageMessage);
             //update lcm by kafka lcm-cons
             if (imageMessage.getComment() != null && imageMessage.getComment().contains(KAFKA_TEST_FLAG) && dynamoMedia != null) {
                 updatedImageMessage = mergeDateFromMediaDB(dynamoMedia.getMediaGuid(), imageMessage);
+                mediaDBMediaDao.updateMediaOnImageMessage(imageMessage);
                 kafkaCommonPublisher.publishImageMessage(addOperationTag(updatedImageMessage), imageMessageTopic);
             } else {
                 final Integer expediaId = Integer.valueOf(domainId);
@@ -107,6 +107,8 @@ public class MediaUpdateProcessor {
             if (updatedImageMessage == null) {
                 updatedImageMessage = dynamoMedia.toImageMessage();
             }
+            mediaDBMediaDao.updateMediaOnImageMessage(imageMessage);
+
             //publish here because if update old Media without guid and data in dynamo
             //kafkaCommonPublisher.publishImageMessage(addOperationTag(updatedImageMessage), imageMessageTopic);
         }
