@@ -80,8 +80,6 @@ public class MediaUpdateProcessor {
             //update lcm by kafka lcm-cons
             if (imageMessage.getComment() != null && imageMessage.getComment().contains(KAFKA_TEST_FLAG) && dynamoMedia != null) {
                 updatedImageMessage = mergeDateFromMediaDB(dynamoMedia.getMediaGuid(), imageMessage);
-                mediaDBMediaDao.updateMediaOnImageMessage(imageMessage);
-                kafkaCommonPublisher.publishImageMessage(addOperationTag(updatedImageMessage), imageMessageTopic);
             } else {
                 final Integer expediaId = Integer.valueOf(domainId);
                 // step1. update media table, if comment or active fields are not null
@@ -107,10 +105,9 @@ public class MediaUpdateProcessor {
             if (updatedImageMessage == null) {
                 updatedImageMessage = dynamoMedia.toImageMessage();
             }
-            mediaDBMediaDao.updateMediaOnImageMessage(imageMessage);
-
+            mediaDBMediaDao.updateMediaOnImageMessage(updatedImageMessage);
             //publish here because if update old Media without guid and data in dynamo
-            //kafkaCommonPublisher.publishImageMessage(addOperationTag(updatedImageMessage), imageMessageTopic);
+            kafkaCommonPublisher.publishImageMessage(addOperationTag(updatedImageMessage), imageMessageTopic);
         }
         final Map<String, Object> response = new HashMap<>();
         response.put("status", Integer.valueOf(200));

@@ -757,16 +757,27 @@ public class LcmDynamoMediaDao implements MediaDao {
         return null;
     }
 
+    /**
+     * this interface only implemented in MediaDBDAO,make it empty for LCM and dynamo
+     * @param message
+     * @throws Exception
+     */
     @Override
     @SuppressWarnings("PMD.UncommentedEmptyMethod")
     public void addMediaOnImageMessage(ImageMessage message) throws Exception {
-
+        //no-op
     }
 
+    /**
+     * this interface only implemented in MediaDBDAO,make it empty for LCM and dynamo
+     *
+     * @param message
+     * @throws Exception
+     */
     @Override
     @SuppressWarnings("PMD.UncommentedEmptyMethod")
     public void updateMediaOnImageMessage(ImageMessage message) throws Exception {
-
+        //no-op
     }
 
     /**
