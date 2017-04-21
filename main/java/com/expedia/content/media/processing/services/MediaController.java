@@ -442,7 +442,7 @@ public class MediaController extends CommonServiceController {
             objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input queryId is invalid", serviceUrl, BAD_REQUEST));
             return;
         }
-        final String newJson = appendDomain(message, (String) objectMap.get(DOMAIN_ID), queryId);
+        final String newJson = appendDomain(message, (String) objectMap.get(DOMAIN_ID));
         objectMap.put(NEW_JASON_FIELD, newJson);
         final String jsonError = validateImageMessage(newJson, "EPCUpdate");
         if (!"[]".equals(jsonError)) {
@@ -483,13 +483,10 @@ public class MediaController extends CommonServiceController {
 
     }
 
-    private String appendDomain(String message, String domainId, String queryId) throws Exception {
+    private String appendDomain(String message, String domainId) throws Exception {
         final Map<String, Object> jsonMap = JSONUtil.buildMapFromJson(message);
         jsonMap.put(DOMAIN, Domain.LODGING.getDomain());
         jsonMap.put(DOMAIN_ID, domainId);
-        if (queryId.matches(GUID_REG)){
-            jsonMap.put("mediaGuid", queryId);
-        }
         return new ObjectMapper().writeValueAsString(jsonMap);
     }
 

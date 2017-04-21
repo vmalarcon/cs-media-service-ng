@@ -16,8 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.amazonaws.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
@@ -75,8 +74,7 @@ public class MediaUpdateProcessor {
                                                  Media dynamoMedia) throws Exception {
         ImageMessage updatedImageMessage = null;
         // Only proceed to the following if the domain is Lodging
-        if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING) && mediaId != null && org.apache.commons.lang3.StringUtils
-                .isNumeric(mediaId)) {
+        if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING) && mediaId != null && StringUtils.isNumeric(mediaId)) {
             //update lcm by kafka lcm-cons
             if (imageMessage.getComment() != null && imageMessage.getComment().contains(KAFKA_TEST_FLAG) && dynamoMedia != null) {
                 updatedImageMessage = mergeDateFromMediaDB(dynamoMedia.getMediaGuid(), imageMessage);
@@ -272,7 +270,7 @@ public class MediaUpdateProcessor {
             FieldUtils.writeField(media, "active", updateImageMessage.isActive() ? "true" : "false", true);
         }
 
-        FieldUtils.writeField(media, "userId", StringUtils.isNullOrEmpty(updateImageMessage.getUserId()) ? updateImageMessage.getClientId() : updateImageMessage.getUserId(), true);
+        FieldUtils.writeField(media, "userId", StringUtils.isEmpty(updateImageMessage.getUserId()) ? updateImageMessage.getClientId() : updateImageMessage.getUserId(), true);
         final String domainFields = media.getDomainFields();
         final Map<String, Object> domainFieldsDynamo = domainFields == null ? new HashMap<>() : JSONUtil.buildMapFromJson(domainFields);
         final Map<String, Object> domainFieldsNew = updateImageMessage.getOuterDomainData().getDomainFields();
