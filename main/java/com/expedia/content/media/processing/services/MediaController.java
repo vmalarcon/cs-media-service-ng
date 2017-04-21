@@ -331,7 +331,8 @@ public class MediaController extends CommonServiceController {
             }
             mediaDao.deleteMediaByGUID(mediaGUID);
         } catch (Exception ex) {
-            LOGGER.error(ex, "ERROR ServiceUrl={} ClientId={} RequestId={} MediaGuid={} ErrorMessage={}", serviceUrl, clientID, requestID, mediaGUID, ex.getMessage());
+            LOGGER.error(ex, "ERROR ServiceUrl={} ClientId={} RequestId={} MediaGuid={} ErrorMessage={}", serviceUrl, clientID, requestID, mediaGUID,
+                    ex.getMessage());
             poker.poke("Media Services failed to process a deleteMedia request - RequestId: " + requestID + " ClientId: " + clientID, hipChatRoom, mediaGUID, ex);
             throw ex;
         }
@@ -441,7 +442,7 @@ public class MediaController extends CommonServiceController {
             objectMap.put(MEDIA_VALIDATION_ERROR, this.buildErrorResponse("input queryId is invalid", serviceUrl, BAD_REQUEST));
             return;
         }
-        final String newJson = appendDomain(message, (String) objectMap.get(DOMAIN_ID));
+        final String newJson = appendDomain(message, (String) objectMap.get(DOMAIN_ID), queryId);
         objectMap.put(NEW_JASON_FIELD, newJson);
         final String jsonError = validateImageMessage(newJson, "EPCUpdate");
         if (!"[]".equals(jsonError)) {
@@ -482,10 +483,13 @@ public class MediaController extends CommonServiceController {
 
     }
 
-    private String appendDomain(String message, String domainId) throws Exception {
+    private String appendDomain(String message, String domainId, String queryId) throws Exception {
         final Map<String, Object> jsonMap = JSONUtil.buildMapFromJson(message);
         jsonMap.put(DOMAIN, Domain.LODGING.getDomain());
         jsonMap.put(DOMAIN_ID, domainId);
+        if (queryId.matches(GUID_REG)){
+            jsonMap.put("mediaGuid", queryId);
+        }
         return new ObjectMapper().writeValueAsString(jsonMap);
     }
 

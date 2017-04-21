@@ -108,7 +108,7 @@ public class MediaUpdateProcessorTest {
         verify(catalogHeroProcessor).setMediaToHero(eq("bobthegreat"), eq(lcmCatalogItemMedia), anyBoolean(), anyString());
         verify(catalogHeroProcessor)
                 .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        verify(kafkaCommonPublisher, times(0)).publishImageMessage(any(ImageMessage.class), anyString());
     }
 
     @Test
@@ -156,7 +156,7 @@ public class MediaUpdateProcessorTest {
         verify(catalogHeroProcessor).getCatalogItemMeida(12345, 123);
         verify(catalogHeroProcessor, never())
                 .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        verify(kafkaCommonPublisher, times(0)).publishImageMessage(any(ImageMessage.class), anyString());
     }
 
     @Test
@@ -180,7 +180,7 @@ public class MediaUpdateProcessorTest {
         verify(catalogHeroProcessor).setMediaToHero(eq("bobthegreat"), eq(lcmCatalogItemMedia), anyBoolean(), anyString());
         verify(catalogHeroProcessor)
                 .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        verify(kafkaCommonPublisher, times(0)).publishImageMessage(any(ImageMessage.class), anyString());
         ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
     }
 
@@ -200,8 +200,7 @@ public class MediaUpdateProcessorTest {
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(mediaUpdateDao).updateMedia(imageMessage, 123);
         verify(catalogHeroProcessor).updateTimestamp(anyObject(), anyObject());
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
-        ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(kafkaCommonPublisher, times(0)).publishImageMessage(any(ImageMessage.class), anyString());
     }
 
     @Test
@@ -232,7 +231,7 @@ public class MediaUpdateProcessorTest {
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(catalogItemMediaDao).getLcmRoomsByMediaId(123);
         verify(mediaUpdateDao).updateMediaTimestamp(anyObject(), anyObject());
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        verify(kafkaCommonPublisher, times(0)).publishImageMessage(any(ImageMessage.class), anyString());
         ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
     }
     
@@ -250,7 +249,7 @@ public class MediaUpdateProcessorTest {
         when(mediaDBMediaDao.getMediaByGuid("12345678-aaaa-bbbb-cccc-123456789112")).thenReturn(dynamoMedia);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(mediaUpdateDao).updateMedia(imageMessage, 123);
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        verify(kafkaCommonPublisher, times(0)).publishImageMessage(any(ImageMessage.class), anyString());
         assertTrue(Boolean.TRUE.toString().equals(dynamoMedia.getActive()));
         
         String anotherJsonMsg = "{  \n"
@@ -262,7 +261,7 @@ public class MediaUpdateProcessorTest {
         final ImageMessage updateMessage = setActiveToNull(ImageMessage.parseJsonMessage(anotherJsonMsg));
         mediaUpdateProcessor.processRequest(updateMessage, "123", "12345", dynamoMedia);
         verify(mediaUpdateDao).updateMedia(updateMessage, 123);
-        verify(kafkaCommonPublisher, times(2)).publishImageMessage(any(ImageMessage.class), anyString());
+        verify(kafkaCommonPublisher, times(0)).publishImageMessage(any(ImageMessage.class), anyString());
         assertTrue(Boolean.FALSE.toString().equals(dynamoMedia.getActive()));
     }
 
@@ -280,7 +279,7 @@ public class MediaUpdateProcessorTest {
             mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(mediaUpdateDao, never()).updateMedia(any(ImageMessage.class), anyInt());
         verify(mediaDao).saveMedia(dynamoMedia);
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        verify(kafkaCommonPublisher, times(0)).publishImageMessage(any(ImageMessage.class), anyString());
     }
 
     @Test

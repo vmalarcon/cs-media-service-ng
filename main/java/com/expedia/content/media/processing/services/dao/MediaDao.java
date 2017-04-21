@@ -95,6 +95,13 @@ public interface MediaDao {
     void addMediaOnImageMessage(ImageMessage message) throws Exception ;
 
     /**
+     * update imageMessage to mediaDB
+     * @param message
+     * @throws Exception
+     */
+     void updateMediaOnImageMessage(ImageMessage message) throws Exception;
+
+    /**
      * Pulls the latest processing status of media files. When a file doesn't have any process logs the file is
      * considered old and therefore published.
      *

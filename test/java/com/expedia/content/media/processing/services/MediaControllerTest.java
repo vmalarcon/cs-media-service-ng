@@ -116,6 +116,9 @@ public class MediaControllerTest {
     @Mock
     private KafkaCommonPublisher kafkaCommonPublisher;
 
+    @Mock
+    private MediaDBMediaDao mockMediaDBDAO ;
+
     private Set<Map.Entry<Object, Object>> providerMapping;
     private MediaController mediaController;
     private MediaController mediaControllerSpy;
@@ -132,7 +135,6 @@ public class MediaControllerTest {
     @Before
     public void initialize() throws IllegalAccessException {
         mediaController = new MediaController();
-        MediaDao mockMediaDBDAO = mock(MediaDBMediaDao.class);
 
         ReflectionUtils.setVariableValueInObject(mediaController, "providerProperties", mockProviderProperties);
         providerMapping = new HashSet<>();
@@ -2181,6 +2183,8 @@ public class MediaControllerTest {
         FieldUtils.writeField(mockUpdateProcess, "catalogItemMediaDao", catalogItemMediaDao, true);
         FieldUtils.writeField(mockUpdateProcess, "catalogHeroProcessor", catalogHeroProcessor, true);
         setFieldValue(mockUpdateProcess, "kafkaCommonPublisher", kafkaCommonPublisher);
+        setFieldValue(mockUpdateProcess, "mediaDBMediaDao", mockMediaDBDAO);
+
         return mockUpdateProcess;
     }
 

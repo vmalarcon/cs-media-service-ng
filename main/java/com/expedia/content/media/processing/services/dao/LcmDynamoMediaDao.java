@@ -763,6 +763,12 @@ public class LcmDynamoMediaDao implements MediaDao {
 
     }
 
+    @Override
+    @SuppressWarnings("PMD.UncommentedEmptyMethod")
+    public void updateMediaOnImageMessage(ImageMessage message) throws Exception {
+
+    }
+
     /**
      * Extract derivative data from the media objects.
      * JSON from the media DB.

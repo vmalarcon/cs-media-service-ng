@@ -56,6 +56,24 @@ public class MediaDBMediaDao implements MediaDao {
             "`domain`, `domain-id`, `provider`, `domain-fields`, `comments`, `provided-name`, `callback`)" +
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
+    private static final String UPDATE_WITH_IMAGEMESSAGEAVRO_QUERY = "UPDATE `media` SET " +
+            "`active` = IFNULL(?, active), " +
+            "`client-id` = IFNULL(?, `client-id`), " +
+            "`user-id` = ?, " +
+            "`hidden` = IFNULL(?, hidden), " +
+            "`updated-by` = ?, " +
+            "`update-date` = ?, " +
+            "`domain-fields` = IFNULL(?, `domain-fields`), " +
+            "`comments` = IFNULL(?, comments), " +
+            "`domain` = ?, " +
+            "`domain-id` = ?, " +
+            "`provider` = IFNULL(?, provider), " +
+            "`file-url` = IFNULL(?, `file-url`), " +
+            "`file-name` = IFNULL(?, `file-name`), " +
+            "`provided-name` = IFNULL(?, `provided-name`), " +
+            "`callback` = IFNULL(?, callback) " +
+            "WHERE `guid` = ?";
+
     private final JdbcTemplate jdbcTemplate;
 
     public MediaDBMediaDao(DataSource mediaDBDataSource) {
@@ -194,7 +212,38 @@ public class MediaDBMediaDao implements MediaDao {
             statement.setString(13, domainField);
             statement.setString(14, message.getComment());
             statement.setString(15, message.getProvidedName());
-            statement.setString(16, message.getCallback().toString());
+            statement.setString(16, message.getCallback() == null ? "" : message.getCallback().toString());
+            return statement;
+        });
+    }
+
+    @Override
+    public void updateMediaOnImageMessage(ImageMessage message) throws Exception {
+        String domain = message.getOuterDomainData().getDomain().getDomain();
+        String domainId = message.getOuterDomainData().getDomainId();
+        String domainProvider = message.getOuterDomainData().getProvider();
+        String domainField = WRITER.writeValueAsString(message.getOuterDomainData().getDomainFields());
+        LOGGER.debug("update media record with ImageMessageAvro sql={} MediaGuid={} RequestId={} ClientId={} Filename={} FileUrl={} Domain={}",
+                UPDATE_WITH_IMAGEMESSAGEAVRO_QUERY,
+                message.getMediaGuid(), message.getRequestId(), message.getClientId(), message.getFileName(), message.getFileUrl(), domain);
+        jdbcTemplate.update((Connection connection) -> {
+            PreparedStatement statement = connection.prepareStatement(UPDATE_WITH_IMAGEMESSAGEAVRO_QUERY);
+            statement.setInt(1, message.isActive() == null ? 0 : (message.isActive()) ? 1 : 0);
+            statement.setString(2, message.getClientId());
+            statement.setString(3, message.getUserId());
+            statement.setInt(4, message.getHidden() == null ? 0 : (message.getHidden()) ? 1 : 0);
+            statement.setString(5, App.MEDIA_SERVICE.getName());
+            statement.setTimestamp(6, new Timestamp(System.currentTimeMillis()));
+            statement.setString(7, domainField);
+            statement.setString(8, message.getComment());
+            statement.setString(9, domain);
+            statement.setString(10, domainId);
+            statement.setString(11, domainProvider);
+            statement.setString(12, message.getFileUrl());
+            statement.setString(13, message.getFileName());
+            statement.setString(14, message.getProvidedName());
+            statement.setString(15, message.getCallback() == null ? "" : message.getCallback().toString());
+            statement.setString(16, message.getMediaGuid());
             return statement;
         });
     }
