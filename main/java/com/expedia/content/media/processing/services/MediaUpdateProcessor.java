@@ -56,6 +56,8 @@ public class MediaUpdateProcessor {
     private KafkaCommonPublisher kafkaCommonPublisher;
     @Autowired
     private MediaDBMediaDao mediaDBMediaDao;
+    @Value("${kafka.message.send.enable}")
+    private boolean enableSend;
 
     /**
      * process media update, involve media table, catalogItemMedia table, and paragraph table in lcm.
@@ -103,7 +105,9 @@ public class MediaUpdateProcessor {
             if (updatedImageMessage == null) {
                 updatedImageMessage = dynamoMedia.toImageMessage();
             }
-            mediaDBMediaDao.updateMediaOnImageMessage(updatedImageMessage);
+            if (enableSend) {
+                mediaDBMediaDao.updateMediaOnImageMessage(updatedImageMessage);
+            }
             //publish here because if update old Media without guid and data in dynamo
             kafkaCommonPublisher.publishImageMessage(addOperationTag(updatedImageMessage), imageMessageTopic);
         }

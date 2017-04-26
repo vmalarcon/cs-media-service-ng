@@ -2087,6 +2087,8 @@ public class MediaControllerTest {
 
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
         setFieldValue(mediaController, "mediaDBMediaDao", mockMediaDBDAO);
+        setFieldValue(mediaController, "enableSend", true);
+        when(mockMediaDBDAO.getMediaByGuid(anyString())).thenReturn(null);
 
         setFieldValue(mediaController, "dynamoMediaRepository", dynamoMediaRepository);
         String requestId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";

@@ -87,6 +87,7 @@ import expedia.content.solutions.metrics.annotations.Timer;
  */
 @RestController
 @EnableScheduling
+@SuppressWarnings({"PMD.StdCyclomaticComplexity"})
 public class MediaController extends CommonServiceController {
 
     private static final FormattedLogger LOGGER = new FormattedLogger(MediaController.class);
@@ -157,6 +158,8 @@ public class MediaController extends CommonServiceController {
     private String hipChatRoom;
     @Value("${kafka.imagemessage.topic}")
     private String imageMessageTopic;
+    @Value("${kafka.message.send.enable}")
+    private boolean enableSend;
 
 
     @Autowired
@@ -576,7 +579,10 @@ public class MediaController extends CommonServiceController {
         if (!isReprocessing || storeMediaAddMessage) {
             dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);
         }
-        mediaDBMediaDao.addMediaOnImageMessage(imageMessageNew);
+        //only do add media to mediaDB then kafka is ready
+        if (enableSend && mediaDBMediaDao.getMediaByGuid(imageMessageNew.getMediaGuid()) == null) {
+            mediaDBMediaDao.addMediaOnImageMessage(imageMessageNew);
+        }
         publishMsg(imageMessageNew);
         kafkaCommonPublisher.publishImageMessage(imageMessageNew, imageMessageTopic);
         final ResponseEntity<String> responseEntity = new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
