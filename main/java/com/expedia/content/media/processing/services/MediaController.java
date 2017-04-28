@@ -679,7 +679,6 @@ public class MediaController extends CommonServiceController {
                 } else {
                     domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
                 }
-                domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
                 imageMessageBuilder.outerDomainData(domainBuilder.build());
                 imageMessageBuilder.mediaGuid(media.getMediaGuid());
                 imageMessageBuilder.providedName(media.getProvidedName());
