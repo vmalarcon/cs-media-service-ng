@@ -114,6 +114,7 @@ public class MediaController extends CommonServiceController {
     private static final String DEFAULT_VALIDATION_RULES = "DEFAULT";
     private static final String REJECTED_STATUS = "REJECTED";
     private static final String REPROCESS_OPERATION = "reprocess";
+    private static final String KAFKA_COMMENT = "kafkaTestLCM$#$";
     private static final Integer LIVE_COUNT = 1;
     private static final long ONE_HOUR = 3600 * 1000;
     private static final Map<String, HttpStatus> STATUS_MAP = new HashMap<>();
@@ -659,7 +660,12 @@ public class MediaController extends CommonServiceController {
     private  Map<String, Boolean> processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder, String clientId) {
         final Map<String, Boolean> reprocessMap = new HashMap<>();
         if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
-            final List<Media> mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
+            List<Media> mediaList = null;
+            if (imageMessage.getComment() != null && imageMessage.getComment().contains(KAFKA_COMMENT)) {
+                mediaList = mediaDBMediaDao.getMediaByFilename(imageMessage.getFileName());
+            } else {
+                mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
+            }
             final Optional<Media> bestMedia = MediaReplacement
                     .selectBestMedia(mediaList, imageMessage.getOuterDomainData().getDomainId(), imageMessage.getOuterDomainData().getProvider());
             // Replace the GUID and MediaId of the existing Media
