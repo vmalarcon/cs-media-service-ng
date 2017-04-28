@@ -673,7 +673,12 @@ public class MediaController extends CommonServiceController {
             if (bestMedia.isPresent()) {
                 final Media media = bestMedia.get();
                 final OuterDomain.OuterDomainBuilder domainBuilder = OuterDomain.builder().from(imageMessage.getOuterDomainData());
-                //TODO change to Integer , we store Integer in MediaDB
+                //TODO remove later , we store Integer in MediaDB
+                if (imageMessage.getComment() != null && imageMessage.getComment().contains(KAFKA_COMMENT)) {
+                    domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, Integer.valueOf(media.getLcmMediaId()));
+                } else {
+                    domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
+                }
                 domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
                 imageMessageBuilder.outerDomainData(domainBuilder.build());
                 imageMessageBuilder.mediaGuid(media.getMediaGuid());
