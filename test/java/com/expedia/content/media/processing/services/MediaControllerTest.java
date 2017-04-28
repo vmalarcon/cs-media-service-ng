@@ -715,7 +715,7 @@ public class MediaControllerTest {
         assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + MEDIA_CLOUD_ROUTER_CLIENT_ID));
         assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
         assertTrue(publishedMessageValue.getPayload().contains("\"mediaGuid\":\"" + "recent-but-inactive"));
-        assertTrue(publishedMessageValue.getPayload().contains("\"lcmMediaId\":\"" + "456"));
+        assertTrue(publishedMessageValue.getPayload().contains("\"lcmMediaId\":456"));
         verify(mockMediaDao, times(1)).getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"));
         ArgumentCaptor<ImageMessage> imageMessage = ArgumentCaptor.forClass(ImageMessage.class);
         verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage.capture(), anyString());
