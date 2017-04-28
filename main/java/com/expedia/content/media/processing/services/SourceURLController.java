@@ -99,7 +99,10 @@ public class SourceURLController extends CommonServiceController {
                 if (dynamo == null) {
                     return buildErrorResponse("can not found GUID.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
                 }
-                 sourcePath = dynamo.getSourceUrl();
+                 //sourcePath = dynamo.getSourceUrl();
+                 //Temp fix for us-west-2 and data migration. Data in dynamo is stored with the old us-west-1 url. 
+                 //TODO Replace once data has been migrated to Aurora Media DB.
+                 sourcePath = dynamo.getSourceUrl().replace("ewecs-mediaorigin.prod-p.expedia.com", "ewecs-mediaorigin.us-west-2.prod-p.expedia.com");
             } else if (StringUtils.isEmpty(sourcePath)) {
                 sourcePath = fileSourceFinder.getSourcePath(bucketName, bucketPrefix, fileUrl, guid, lcmMedia);
             }
