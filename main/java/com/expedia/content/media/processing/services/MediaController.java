@@ -661,6 +661,7 @@ public class MediaController extends CommonServiceController {
         final Map<String, Boolean> reprocessMap = new HashMap<>();
         if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
             List<Media> mediaList = null;
+            //TODO remove the logic to get data from Dynamo later.
             if (imageMessage.getComment() != null && imageMessage.getComment().contains(KAFKA_COMMENT)) {
                 mediaList = mediaDBMediaDao.getMediaByFilename(imageMessage.getFileName());
             } else {
@@ -672,6 +673,7 @@ public class MediaController extends CommonServiceController {
             if (bestMedia.isPresent()) {
                 final Media media = bestMedia.get();
                 final OuterDomain.OuterDomainBuilder domainBuilder = OuterDomain.builder().from(imageMessage.getOuterDomainData());
+                //TODO change to Integer , we store Integer in MediaDB
                 domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
                 imageMessageBuilder.outerDomainData(domainBuilder.build());
                 imageMessageBuilder.mediaGuid(media.getMediaGuid());
