@@ -159,8 +159,8 @@ public class MediaController extends CommonServiceController {
     private String hipChatRoom;
     @Value("${kafka.imagemessage.topic}")
     private String imageMessageTopic;
-    @Value("${kafka.message.send.enable}")
-    private boolean enableSend;
+    @Value("${kafka.mediadb.update.enable}")
+    private boolean enableMediaDBUpdate;
 
 
     @Autowired
@@ -581,7 +581,7 @@ public class MediaController extends CommonServiceController {
             dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);
         }
         //only do add media to mediaDB then kafka is ready
-        if (enableSend && mediaDBMediaDao.getMediaByGuid(imageMessageNew.getMediaGuid()) == null) {
+        if (enableMediaDBUpdate && mediaDBMediaDao.getMediaByGuid(imageMessageNew.getMediaGuid()) == null) {
             mediaDBMediaDao.addMediaOnImageMessage(imageMessageNew);
         }
         publishMsg(imageMessageNew);
