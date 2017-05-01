@@ -666,6 +666,60 @@ public class MediaControllerTest {
         verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage.capture(), anyString());
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Test
+    public void testReplaceImageSuccessWithKafkaComments() throws Exception {
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getName()).thenReturn(MEDIA_CLOUD_ROUTER_CLIENT_ID);
+        SecurityContext securityContext = mock(SecurityContext.class);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", " + "\"fileName\": \"123_1_NASA_ISS-4.jpg\", "
+                + "\"userId\": \"bobthegreat\", " + "\"comment\":\"kafkaTestLCM$#$12\","+ "\"domain\": \"Lodging\", " + "\"domainId\": \"1238\", " + "\"domainProvider\": \"SCORE\", "
+                + "\"domainFields\": { " + "    \"replace\": \"true\" " + "  } " + "}";
+
+        Map<String, List<MapMessageValidator>> validators = getMockValidators();
+        setFieldValue(mediaController, "mapValidatorList", validators);
+
+        LogActivityProcess mockLogActivityProcess = mock(LogActivityProcess.class);
+        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
+        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
+        setFieldValue(mediaController, "reporting", reporting);
+
+        // Inactive images should be considered. 2016-10-10 is more recent than the others
+        MediaDao mockMediaDao = mock(MediaDBMediaDao.class);
+        when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg")))
+                .thenReturn(Lists.newArrayList(createByFileNameMedia("old-guid", "1238", "false", DATE_FORMAT.parse("2016-02-17 12:00:00"), "4561"),
+                        createByFileNameMedia("recent-but-inactive", "1238", "true", DATE_FORMAT.parse("2016-10-10 12:00:00"), "456"),
+                        createByFileNameMedia("too-old", "1238", "true", DATE_FORMAT.parse("2016-02-17 11:59:59"), "4562")));
+        setFieldValue(mediaController, "mediaDBMediaDao", mockMediaDao);
+
+        String requestId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        ResponseEntity<String> responseEntity = mediaController.mediaAdd(jsonMessage, mockHeader);
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.ACCEPTED, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("\"mediaGuid\":\"recent-but-inactive\""));
+        assertTrue(responseEntity.getBody().contains("\"status\":\"RECEIVED\""));
+
+        ArgumentCaptor<LogEntry> logEntryCaptor = ArgumentCaptor.forClass(LogEntry.class);
+        verify(mockLogActivityProcess, times(2)).log(logEntryCaptor.capture(), eq(reporting));
+        ArgumentCaptor<Message> publishedMessage = ArgumentCaptor.forClass(Message.class);
+        verify(queueMessagingTemplateMock, times(1)).send(anyString(), publishedMessage.capture());
+        final Message<String> publishedMessageValue = publishedMessage.getValue();
+        assertTrue(publishedMessageValue.getPayload().contains("\"fileName\":\"123_1_NASA_ISS-4.jpg\""));
+        assertTrue(publishedMessageValue.getPayload().contains("\"active\":\"true\""));
+        assertTrue(publishedMessageValue.getPayload().contains("\"clientId\":\"" + MEDIA_CLOUD_ROUTER_CLIENT_ID));
+        assertTrue(publishedMessageValue.getPayload().contains("\"requestId\":\"" + requestId));
+        assertTrue(publishedMessageValue.getPayload().contains("\"mediaGuid\":\"" + "recent-but-inactive"));
+        assertTrue(publishedMessageValue.getPayload().contains("\"lcmMediaId\":456"));
+        verify(mockMediaDao, times(1)).getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"));
+        ArgumentCaptor<ImageMessage> imageMessage = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage.capture(), anyString());
+    }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
