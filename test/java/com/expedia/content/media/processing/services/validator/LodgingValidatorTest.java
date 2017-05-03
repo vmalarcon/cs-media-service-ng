@@ -192,8 +192,8 @@ public class LodgingValidatorTest {
         assertTrue(errorList.get(0).equals("The provided domainId does not exist."));
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
         verify(mockProviderProperties, times(1)).entrySet();
-        verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
-        verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
+        verify(mockMediaDomainCategoriesDao, times(0)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
+        verify(mockPropertyRoomTypeGetIDSproc, times(0)).execute(any(OuterDomain.class));
     }
 
     @Test
@@ -230,8 +230,8 @@ public class LodgingValidatorTest {
         assertTrue(errorList.get(0).equals("The provided mediaProvider does not exist."));
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
         verify(mockProviderProperties, times(1)).entrySet();
-        verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
-        verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
+        verify(mockMediaDomainCategoriesDao, times(0)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
+        verify(mockPropertyRoomTypeGetIDSproc, times(0)).execute(any(OuterDomain.class));
     }
 
     @Test
@@ -553,8 +553,8 @@ public class LodgingValidatorTest {
         assertTrue(errorList.get(0).equals("The provided category does not exist."));
         verify(mockSKUGroupCatalogItemDao, times(1)).skuGroupExists(anyInt());
         verify(mockProviderProperties, times(1)).entrySet();
-        verify(mockMediaDomainCategoriesDao, times(1)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
-        verify(mockPropertyRoomTypeGetIDSproc, times(1)).execute(any(OuterDomain.class));
+        verify(mockMediaDomainCategoriesDao, times(0)).subCategoryIdExists(any(OuterDomain.class), eq("1033"));
+        verify(mockPropertyRoomTypeGetIDSproc, times(0)).execute(any(OuterDomain.class));
     }
 
     @Test
