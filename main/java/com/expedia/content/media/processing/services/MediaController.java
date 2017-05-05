@@ -288,7 +288,7 @@ public class MediaController extends CommonServiceController {
             if (dynamoGuid != null) {
                 final ResponseEntity<String> responseEntity = this.buildErrorResponse("Media GUID " + dynamoGuid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
                 LOGGER.info("INVALID GET REQUEST ResponseStatus={} ResponseBody={} ErrorMessage=\"Media GUID exists please use GUID in request\" MediaID={} MediaGuid={} ClientId={} RequestId={}",
-                        responseEntity.getStatusCode().toString(), responseEntity.getBody(), mediaGUID, dynamoGuid, clientID, requestID);
+                        responseEntity.getStatusCode().toString(), responseEntity.getBody(), mediaGUID,  dynamoGuid, clientID, requestID);
                 return responseEntity;
             }
             mediaResponse = mediaDao.getMediaByGUID(mediaGUID);
@@ -334,6 +334,8 @@ public class MediaController extends CommonServiceController {
                 return this.buildErrorResponse("Media GUID " + dynamoGuid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
             }
             mediaDao.deleteMediaByGUID(mediaGUID);
+            final ImageMessage imageMessage = ImageMessage.builder().mediaGuid(mediaGUID).operation("deleteMedia").build();
+            kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic);
         } catch (Exception ex) {
             LOGGER.error(ex, "ERROR ServiceUrl={} ClientId={} RequestId={} MediaGuid={} ErrorMessage={}", serviceUrl, clientID, requestID, mediaGUID,
                     ex.getMessage());

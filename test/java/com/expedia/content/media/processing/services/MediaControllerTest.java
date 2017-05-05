@@ -1152,6 +1152,26 @@ public class MediaControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+
+    @Test
+    public void testDeleteMediaByGUIDWithKafka() throws Exception {
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+        MediaDao mockMediaDao = mock(MediaDao.class);
+        List<Media> medias = new ArrayList<>();
+        Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
+                .lcmMediaId("123456").lastUpdated(new Date()).lcmMediaId("123456").mediaGuid("6fe9b8d4-5ce0-41b0-9e17-b4880f542da8").build();
+        medias.add(resultMedia);
+        when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(medias);
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        ResponseEntity<String> responseEntity = mediaController.deleteMedia("6fe9b8d4-5ce0-41b0-9e17-b4880f542da8", mockHeader);
+        assertNotNull(responseEntity);
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(), anyString());
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
     @Test
     public void testMediaUpdateByGuidHeroWithUnPublishMedia() throws Exception {
 
