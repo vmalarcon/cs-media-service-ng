@@ -333,7 +333,15 @@ public class MediaController extends CommonServiceController {
                         mediaGUID, dynamoGuid, clientID, requestID);
                 return this.buildErrorResponse("Media GUID " + dynamoGuid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
             }
+            //TODO after migration is done and lcm-consumer deployed, remove the old delete logic
             mediaDao.deleteMediaByGUID(mediaGUID);
+            if (mediaGUID.matches(REG_EX_GUID) && enableMediaDBUpdate) {
+                final Media media = mediaDBMediaDao.getMediaByGuid(mediaGUID);
+                media.setHidden(true);
+                final ImageMessage imageMessage = media.toImageMessage();
+                kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic);
+            }
+
         } catch (Exception ex) {
             LOGGER.error(ex, "ERROR ServiceUrl={} ClientId={} RequestId={} MediaGuid={} ErrorMessage={}", serviceUrl, clientID, requestID, mediaGUID,
                     ex.getMessage());
@@ -674,7 +682,7 @@ public class MediaController extends CommonServiceController {
                 final Media media = bestMedia.get();
                 final OuterDomain.OuterDomainBuilder domainBuilder = OuterDomain.builder().from(imageMessage.getOuterDomainData());
                 //TODO remove later , we store Integer in MediaDB
-                if (imageMessage.getComment() != null && imageMessage.getComment().contains(KAFKA_COMMENT)) {
+                if (imageMessage.getComment() != null && imageMessage.getComment().contains(KAFKA_COMMENT) && !StringUtils.isEmpty(media.getLcmMediaId())) {
                     domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, Integer.valueOf(media.getLcmMediaId()));
                 } else {
                     domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());

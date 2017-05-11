@@ -23,6 +23,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * This class encapsulated the media properties before store in the database The
@@ -242,7 +243,9 @@ public class Media {
         outerDomainMap.put("domainId", this.getDomainId());
         outerDomainMap.put("domainDerivativeCategory", this.getDomainDerivativeCategory());
         outerDomainMap.put("domainProvider", this.getProvider());
-        outerDomainMap.put("domainFields", (Map<String, Object>) JSONUtil.buildMapFromJson(this.getDomainFields()));
+        if(!StringUtils.isEmpty(this.getDomainFields())){
+            outerDomainMap.put("domainFields", (Map<String, Object>) JSONUtil.buildMapFromJson(this.getDomainFields()));
+        }
         final OuterDomain outerDomain = retrieveOuterDomainDomain(outerDomainMap);
 
         return ImageMessage.builder()
