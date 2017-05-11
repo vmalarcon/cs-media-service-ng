@@ -47,6 +47,7 @@ import com.expedia.content.media.processing.services.reqres.MediaByDomainIdRespo
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.FileNameUtil;
+import com.expedia.content.media.processing.services.util.ImageUtil;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaReplacement;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
@@ -87,7 +88,7 @@ import expedia.content.solutions.metrics.annotations.Timer;
  */
 @RestController
 @EnableScheduling
-@SuppressWarnings({"PMD.StdCyclomaticComplexity"})
+@SuppressWarnings({"PMD.StdCyclomaticComplexity","PMD.ModifiedCyclomaticComplexity"})
 public class MediaController extends CommonServiceController {
 
     private static final FormattedLogger LOGGER = new FormattedLogger(MediaController.class);
@@ -114,7 +115,9 @@ public class MediaController extends CommonServiceController {
     private static final String DEFAULT_VALIDATION_RULES = "DEFAULT";
     private static final String REJECTED_STATUS = "REJECTED";
     private static final String REPROCESS_OPERATION = "reprocess";
-    private static final String KAFKA_COMMENT = "kafkaTestLCM$#$";
+    //TODO remove once all msg go to lcmConsumer
+    public static final String DELETE_KEYSTORE = "deleteKeyStore";
+
     private static final Integer LIVE_COUNT = 1;
     private static final long ONE_HOUR = 3600 * 1000;
     private static final Map<String, HttpStatus> STATUS_MAP = new HashMap<>();
@@ -161,6 +164,9 @@ public class MediaController extends CommonServiceController {
     private String imageMessageTopic;
     @Value("${kafka.mediadb.update.enable}")
     private boolean enableMediaDBUpdate;
+    //TODO remove later after route all message to lcm
+    @Value("${kafak.route.lcm.cons.percentage}")
+    private int routeLcmPercentage;
 
 
     @Autowired
@@ -187,7 +193,6 @@ public class MediaController extends CommonServiceController {
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
         LOGGER.info("RECEIVED ADD REQUEST ServiceUrl={} ClientId={} RequestId={} JSONMessage={}", serviceUrl, clientID, requestID, message);
         try {
-
             return processRequest(message, requestID, serviceUrl, clientID, ACCEPTED, timeReceived);
         } catch (ImageMessageException ex) {
             final ResponseEntity<String> responseEntity = this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
@@ -527,7 +532,7 @@ public class MediaController extends CommonServiceController {
      * @return The response for the service call.
      * @throws Exception Thrown if the message can't be validated or the response can't be serialized.
      */
-    @SuppressWarnings({"PMD.PrematureDeclaration", "PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
+    @SuppressWarnings({"PMD.PrematureDeclaration", "PMD.CyclomaticComplexity", "PMD.NPathComplexity","PMD.ModifiedCyclomaticComplexity"})
     private ResponseEntity<String> processRequest(final String message, final String requestID,
             final String serviceUrl, final String clientId, HttpStatus successStatus, Date timeReceived) throws Exception {
         LOGGER.info("Validation of image: RequestId={}", Arrays.asList(requestID), message);
@@ -536,6 +541,7 @@ public class MediaController extends CommonServiceController {
             LOGGER.warn("Returning bad request ServiceUrl={} ClientId={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, clientId, requestID, json), message);
             return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
         }
+        final boolean routeLcmCons = ImageUtil.routeKafkaLcmConsByPercentage(routeLcmPercentage);
         @SuppressWarnings("CPD-START")
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
         final ValidationStatus fileValidation = verifyUrl(imageMessage.getFileUrl());
@@ -572,6 +578,7 @@ public class MediaController extends CommonServiceController {
                 thumbnail = thumbnailProcessor.createThumbnail(imageMessageNew);
             } catch (Exception e) {
                 response.put(RESPONSE_FIELD_STATUS, REJECTED_STATUS);
+
                 response.put(ERROR_MESSAGE, e.getLocalizedMessage());
                 return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), HttpStatus.UNPROCESSABLE_ENTITY);
             }
@@ -585,7 +592,12 @@ public class MediaController extends CommonServiceController {
             mediaDBMediaDao.addMediaOnImageMessage(imageMessageNew);
         }
         publishMsg(imageMessageNew);
-        kafkaCommonPublisher.publishImageMessage(imageMessageNew, imageMessageTopic);
+        if (routeLcmCons) {
+            kafkaCommonPublisher.publishImageMessage(imageMessageNew, imageMessageTopic);
+        } else {
+            final ImageMessage messageWithDeleteTag = imageMessageNew.createBuilderFromMessage().operation(DELETE_KEYSTORE).build();
+            kafkaCommonPublisher.publishImageMessage(messageWithDeleteTag, imageMessageTopic);
+        }
         final ResponseEntity<String> responseEntity = new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
         LOGGER.info("SUCCESS ResponseStatus={} ResponseBody={} ServiceUrl={}",
                 Arrays.asList(responseEntity.getStatusCode().toString(), responseEntity.getBody(), serviceUrl), imageMessageNew);
@@ -661,24 +673,16 @@ public class MediaController extends CommonServiceController {
         final Map<String, Boolean> reprocessMap = new HashMap<>();
         if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
             List<Media> mediaList = null;
-            //TODO remove the logic to get data from Dynamo later.
-            if (imageMessage.getComment() != null && imageMessage.getComment().contains(KAFKA_COMMENT)) {
-                mediaList = mediaDBMediaDao.getMediaByFilename(imageMessage.getFileName());
-            } else {
-                mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
-            }
+            //TODO replace with MediaDB query.
+            mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
             final Optional<Media> bestMedia = MediaReplacement
                     .selectBestMedia(mediaList, imageMessage.getOuterDomainData().getDomainId(), imageMessage.getOuterDomainData().getProvider());
             // Replace the GUID and MediaId of the existing Media
             if (bestMedia.isPresent()) {
                 final Media media = bestMedia.get();
                 final OuterDomain.OuterDomainBuilder domainBuilder = OuterDomain.builder().from(imageMessage.getOuterDomainData());
-                //TODO remove later , we store Integer in MediaDB
-                if (imageMessage.getComment() != null && imageMessage.getComment().contains(KAFKA_COMMENT)) {
-                    domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, Integer.valueOf(media.getLcmMediaId()));
-                } else {
-                    domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
-                }
+                //TODO change later , we store Integer in MediaDB
+                domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
                 imageMessageBuilder.outerDomainData(domainBuilder.build());
                 imageMessageBuilder.mediaGuid(media.getMediaGuid());
                 imageMessageBuilder.providedName(media.getProvidedName());

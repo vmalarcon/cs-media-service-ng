@@ -9,6 +9,7 @@ import java.util.Map;
 
 import com.expedia.content.media.processing.pipeline.kafka.KafkaCommonPublisher;
 import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
+import com.expedia.content.media.processing.services.util.ImageUtil;
 import org.apache.commons.lang.reflect.FieldUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,10 +41,12 @@ public class MediaUpdateProcessor {
     public static final String MESSAGE_ROOMS = "rooms";
     public static final String UPDATE_OPERATION = "mediaUpdate";
     public static final String MESSAGE_ROOM_HERO = "roomHero";
-    private static final String KAFKA_TEST_FLAG = "kafkaTestLCM$#$";
 
     @Value("${kafka.imagemessage.topic}")
     private String imageMessageTopic;
+    //TODO remove once all msg go to lcm consumer.
+    @Value("${kafak.route.lcm.cons.percentage}")
+    private int routeLcmPercentage;
     @Autowired
     private MediaUpdateDao mediaUpdateDao;
     @Autowired
@@ -75,10 +78,11 @@ public class MediaUpdateProcessor {
     public ResponseEntity<String> processRequest(final ImageMessage imageMessage, final String mediaId, String domainId,
                                                  Media dynamoMedia) throws Exception {
         ImageMessage updatedImageMessage = null;
+        final boolean routeLcm = ImageUtil.routeKafkaLcmConsByPercentage(routeLcmPercentage);
         // Only proceed to the following if the domain is Lodging
         if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING) && mediaId != null && StringUtils.isNumeric(mediaId)) {
             //update lcm by kafka lcm-cons
-            if (imageMessage.getComment() != null && imageMessage.getComment().contains(KAFKA_TEST_FLAG) && dynamoMedia != null) {
+            if (routeLcm) {
                 updatedImageMessage = mergeDateFromMediaDB(dynamoMedia.getMediaGuid(), imageMessage);
             } else {
                 final Integer expediaId = Integer.valueOf(domainId);
@@ -109,7 +113,7 @@ public class MediaUpdateProcessor {
                 mediaDBMediaDao.updateMediaOnImageMessage(updatedImageMessage);
             }
             //publish here because if update old Media without guid and data in dynamo
-            kafkaCommonPublisher.publishImageMessage(addOperationTag(updatedImageMessage), imageMessageTopic);
+            kafkaCommonPublisher.publishImageMessage(addOperationTag(updatedImageMessage, routeLcm), imageMessageTopic);
         }
         final Map<String, Object> response = new HashMap<>();
         response.put("status", Integer.valueOf(200));
@@ -137,10 +141,13 @@ public class MediaUpdateProcessor {
      * @param imageMessage
      * @return
      */
-    private ImageMessage addOperationTag(final ImageMessage imageMessage) {
+    private ImageMessage addOperationTag(final ImageMessage imageMessage, boolean routeLcmCons) {
         ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
         imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
-        imageMessageBuilder.operation(UPDATE_OPERATION);
+        //TODO remove later.
+        if (routeLcmCons) {
+            imageMessageBuilder.operation(UPDATE_OPERATION);
+        }
         return imageMessageBuilder.build();
     }
 

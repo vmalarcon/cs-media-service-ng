@@ -116,8 +116,7 @@ public class MediaUpdateProcessorTest {
         String jsonMsg = "{  \n"
                 + "   \"userId\":\"bobthegreat\",\n"
                 + "    \"domain\":\"Lodging\",\n"
-                + "    \"comment\":\"kafkaTestLCM$#$\",\n"
-                + "   \"domainFields\":{  \n"
+                 + "   \"domainFields\":{  \n"
                 + "      \"propertyHero\":\"true\"\n"
                 + "    }\n"
                 + "}";
@@ -130,6 +129,7 @@ public class MediaUpdateProcessorTest {
         LcmCatalogItemMedia lcmCatalogItemMedia = mock(LcmCatalogItemMedia.class);
         when(mediaDBMediaDao.getMediaByGuid("12345678-aaaa-bbbb-cccc-123456789112")).thenReturn(dynamoMedia);
         when(catalogHeroProcessor.getCatalogItemMeida(12345, 123)).thenReturn(lcmCatalogItemMedia);
+        setFieldValue(mediaUpdateProcessor, "routeLcmPercentage", 100);
         mediaUpdateProcessor.processRequest(imageMessage, "123", "12345", dynamoMedia);
         verify(catalogHeroProcessor, never())
                 .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
