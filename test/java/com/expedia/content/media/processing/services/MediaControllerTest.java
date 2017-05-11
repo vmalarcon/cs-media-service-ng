@@ -1164,7 +1164,9 @@ public class MediaControllerTest {
                 .lcmMediaId("123456").lastUpdated(new Date()).lcmMediaId("123456").mediaGuid("6fe9b8d4-5ce0-41b0-9e17-b4880f542da8").build();
         medias.add(resultMedia);
         when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(medias);
+        when(mockMediaDBDAO.getMediaByGuid(anyString())).thenReturn(resultMedia);
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        setFieldValue(mediaController, "enableMediaDBUpdate", true);
         ResponseEntity<String> responseEntity = mediaController.deleteMedia("6fe9b8d4-5ce0-41b0-9e17-b4880f542da8", mockHeader);
         assertNotNull(responseEntity);
         verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(), anyString());
