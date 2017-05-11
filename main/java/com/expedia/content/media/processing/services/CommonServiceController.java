@@ -33,7 +33,7 @@ public abstract class CommonServiceController {
      * @return A response with an error code.
      */
     @Counter(name = "badRequestCounter")
-    public ResponseEntity<String> buildErrorResponse(final String errorMessage, final String resourcePath,
+    public static ResponseEntity<String> buildErrorResponse(final String errorMessage, final String resourcePath,
             final HttpStatus httpStatus) {
         final String responseMessage = JSONUtil.generateJsonForErrorResponse(errorMessage, resourcePath, httpStatus.value(), httpStatus.getReasonPhrase());
         return new ResponseEntity<>(responseMessage, httpStatus);

@@ -63,7 +63,7 @@ public class TempDerivativeController extends CommonServiceController {
      */
     @RequestMapping(value = "/media/v1/tempderivative", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     public ResponseEntity<String> getTempDerivative(@RequestBody final String message, @RequestHeader MultiValueMap<String,String> headers) throws Exception {
-        final String requestID = this.getRequestId(headers);
+        final String requestID = getRequestId(headers);
         final String serviceUrl = MediaServiceUrl.MEDIA_TEMP_DERIVATIVE.getUrl();
         LOGGER.info("RECEIVED TEMP DERIVATIVE REQUEST ServiceUrl={} RequestId={} RequestMessage={}", serviceUrl, requestID, message);
         try {
@@ -71,12 +71,12 @@ public class TempDerivativeController extends CommonServiceController {
             final String errors = tempDerivativeMVELValidator.validateTempDerivativeMessage(tempDerivativeMessage);
             if (!errors.isEmpty()) {
                 LOGGER.error("ERROR ServiceUrl={} ErrorMessage={} RequestId={} RequestMessage={}", serviceUrl, errors, requestID, message);
-                return this.buildErrorResponse("JSON request format is invalid. " + errors + " Json message=" + message, serviceUrl, BAD_REQUEST);
+                return buildErrorResponse("JSON request format is invalid. " + errors + " Json message=" + message, serviceUrl, BAD_REQUEST);
             }
             @SuppressWarnings("CPD-START")
             final ValidationStatus fileValidation = verifyUrl(tempDerivativeMessage.getFileUrl());
             if (!fileValidation.isValid()) {
-                final ResponseEntity<String> responseEntity = this.buildErrorResponse(fileValidation.getMessage(), serviceUrl, STATUS_MAP.get(fileValidation.getStatus()) == null ?
+                final ResponseEntity<String> responseEntity = buildErrorResponse(fileValidation.getMessage(), serviceUrl, STATUS_MAP.get(fileValidation.getStatus()) == null ?
                         BAD_REQUEST : STATUS_MAP.get(fileValidation.getStatus()));
                 switch (fileValidation.getStatus()) {
                     case ValidationStatus.NOT_FOUND:

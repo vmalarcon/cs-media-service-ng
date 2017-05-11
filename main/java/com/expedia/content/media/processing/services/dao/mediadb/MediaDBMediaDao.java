@@ -8,6 +8,7 @@ import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.expedia.content.media.processing.services.reqres.Comment;
 import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
@@ -25,6 +26,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -38,7 +40,7 @@ import java.util.stream.Collectors;
 public class MediaDBMediaDao implements MediaDao {
 
     private static final FormattedLogger LOGGER = new FormattedLogger(MediaDBMediaDao.class);
-    private final static ObjectWriter WRITER = new ObjectMapper().writer();
+    private static final ObjectWriter WRITER = new ObjectMapper().writer();
     private static final String ACTIVE_FILTER_ALL = "all";
     private static final String ACTIVE_FILTER_TRUE = "true";
     private static final String MEDIA_BY_DOMAIN_ID_QUERY_BASE = "SELECT SQL_CALC_FOUND_ROWS * FROM `media` WHERE `domain` = ? AND `domain-id` = ? AND `hidden` = 0";
@@ -250,12 +252,11 @@ public class MediaDBMediaDao implements MediaDao {
 
     @Override
     public List<Media> getMediaByFilename(String fileName) {
-        final List<Media> medias = jdbcTemplate.query((Connection connection) -> {
+        return jdbcTemplate.query((Connection connection) -> {
             PreparedStatement statement = connection.prepareStatement(MEDIA_BY_FILE_NAME_QUERY);
             statement.setString(1, fileName);
             return statement;
         }, (ResultSet resultSet, int rowNumb) -> buildMediaFromResultSet(resultSet)).stream().collect(Collectors.toList());
-        return medias;
     }
 
     @Override
@@ -343,6 +344,19 @@ public class MediaDBMediaDao implements MediaDao {
             return statement;
         }, (ResultSet resultSet, int rowNumb) -> statusMap.put(resultSet.getString("file-name"), resultSet.getString("status")));
         return statusMap;
+    }
+
+    @Override
+    public List<MediaProcessLog> findMediaStatus(List<String> fileNames) {
+        final String[] fileNamesArray = fileNames.toArray(new String[fileNames.size()]);
+        List<MediaProcessLog> processLogList = new ArrayList<>();
+        jdbcTemplate.query((Connection connection) -> {
+            PreparedStatement statement = connection.prepareStatement(setSQLTokensWithArray(MEDIAS_BY_FILE_NAMES_QUERY, fileNamesArray));
+            setArray(statement, 1, fileNamesArray);
+            return statement;
+        }, (ResultSet resultSet, int rowNumb) -> processLogList.add(new MediaProcessLog(resultSet.getString("update-date"), resultSet.getString("file-name"),
+                resultSet.getString("status"), resultSet.getString("domain"))));
+        return processLogList;
     }
 
     /**

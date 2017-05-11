@@ -6,6 +6,7 @@ import com.expedia.content.media.processing.services.dao.DomainNotFoundException
 import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
 import com.expedia.content.media.processing.services.dao.domain.Category;
 import com.expedia.content.media.processing.services.dao.domain.Subcategory;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDomainCategoriesDao;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import org.apache.commons.lang3.StringUtils;
@@ -37,9 +38,12 @@ public class CategoryController extends CommonServiceController {
 
     private static final FormattedLogger LOGGER = new FormattedLogger(CategoryController.class);
     private static final String SKIP_NULL_CATEGORIES = "0";
+    private static final String SKIP_FEATURE_CATEGORIES = "3";
 
     @Autowired
     private MediaDomainCategoriesDao mediaDomainCategoriesDao;
+    @Autowired
+    private MediaDBMediaDomainCategoriesDao mediaDBMediaDomainCategoriesDao;
     @Value("${cs.poke.hip-chat.room}")
     private String hipChatRoom;
     @Autowired
@@ -60,7 +64,6 @@ public class CategoryController extends CommonServiceController {
         final String localePath = (localeId == null) ? "" : "?localeId=" + localeId;
         LOGGER.info("RECEIVED DOMAIN CATEGORIES REQUEST Url={} RequestId={}", MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + "/" + domainName + localePath,
                 getRequestId(headers));
-        String response = null;
         try {
             if (localeId != null) {
                 if (!StringUtils.isNumeric(localeId) || localeId.length() > 5) {
@@ -68,7 +71,8 @@ public class CategoryController extends CommonServiceController {
                             MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + domainName + localePath, BAD_REQUEST);
                 }
             }
-            response = getDomainCategories(domainName, localeId);
+            String response = getDomainCategories(domainName, localeId);
+            return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (DomainNotFoundException e) {
             LOGGER.error(e, "ERROR ErrorMessage={} DomainName={} RequestId={}", e.getMessage(), domainName, headers.get(REQUEST_ID));
             return buildErrorResponse("Requested resource with ID " + domainName + " was not found.",
@@ -80,11 +84,10 @@ public class CategoryController extends CommonServiceController {
                     MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + "/" + domainName + localePath, ex);
             throw ex;
         }
-        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
     /**
-     * query LCM DB to get the Categories of a Domain
+     * query MediaDB to get the Categories of a Domain
      * if a category has at least one 0 subcategory, the category is not returned
      *
      * @param domain The domain to query
@@ -93,8 +96,7 @@ public class CategoryController extends CommonServiceController {
      * @throws DomainNotFoundException
      */
     private String getDomainCategories(String domain, String localeId) throws DomainNotFoundException {
-        final List<Category> domainCategories = mediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
-
+        final List<Category> domainCategories = mediaDBMediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
         final List<Category> categoriesWithNonNullSubCategories = domainCategories.stream()
                 .filter(category -> !containsNullSubCategory(category.getSubcategories()))
                 .collect(Collectors.toList());
@@ -110,6 +112,7 @@ public class CategoryController extends CommonServiceController {
      */
     private boolean containsNullSubCategory(List<Subcategory> subcategories) {
         return subcategories.stream()
-                .anyMatch(subcategory -> subcategory.getSubcategoryId().equals(SKIP_NULL_CATEGORIES));
+                .anyMatch(subcategory -> subcategory.getSubcategoryId().equals(SKIP_NULL_CATEGORIES) ||
+                        subcategory.getSubcategoryId().equals(SKIP_FEATURE_CATEGORIES));
     }
 }

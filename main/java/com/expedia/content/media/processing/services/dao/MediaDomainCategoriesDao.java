@@ -143,22 +143,6 @@ public class MediaDomainCategoriesDao {
     }
 
     /**
-     * verifies the subCategory in the message is not 3
-     * if an image is feature, propertyHero should be set to true, not subcategory being set to 3
-     *
-     * @param outerDomain
-     * @return
-     */
-    public Boolean isFeatureImage(OuterDomain outerDomain) {
-        final String category = getCategory(outerDomain);
-        Boolean isFeature = Boolean.FALSE;
-        if (StringUtils.isNotBlank(category) && StringUtils.isNumeric(category)) {
-            isFeature = String.valueOf(SKIP_FEATURE_CATEGORIES).equals(category) ? Boolean.TRUE : Boolean.FALSE;
-        }
-        return isFeature;
-    }
-
-    /**
      * extracts category
      *
      * @param outerDomain
@@ -183,7 +167,6 @@ public class MediaDomainCategoriesDao {
                 mediaSubCategoryIds.add(subcategory.getSubcategoryId());
             }
         }
-
         expiryDate.add(Calendar.DATE, 1);
         mediaSubCategoryCache = new MediaSubCategoryCache(mediaSubCategoryIds, expiryDate.getTime());
     }

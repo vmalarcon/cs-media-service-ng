@@ -5,6 +5,7 @@ import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
 import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
 import com.expedia.content.media.processing.services.dao.RoomTypeDao;
 import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDomainCategoriesDao;
 import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.ValidatorUtil;
 import lombok.Getter;
@@ -25,7 +26,7 @@ public class LodgingValidator implements MapMessageValidator {
     @Getter protected SKUGroupCatalogItemDao skuGroupCatalogItemDao;
 
     @Autowired
-    @Getter protected MediaDomainCategoriesDao mediaDomainCategoriesDao;
+    @Getter protected MediaDBMediaDomainCategoriesDao mediaDBMediaDomainCategoriesDao;
 
     @Autowired
     @Getter protected RoomTypeDao roomTypeDao;
@@ -55,7 +56,7 @@ public class LodgingValidator implements MapMessageValidator {
                 errorMsg.append("The rooms field must be a list.");
             }
 
-            if (!mediaDomainCategoriesDao.subCategoryIdExists(imageMessage.getOuterDomainData(), DEFAULT_LANG_ID)) {
+            if (!mediaDBMediaDomainCategoriesDao.subCategoryIdExists(imageMessage.getOuterDomainData(), DEFAULT_LANG_ID)) {
                 errorMsg.append("The provided category does not exist.");
             }
             domainFieldsValidation(errorMsg, imageMessage);

@@ -5,6 +5,7 @@ import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.ProcessLogDao;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
@@ -47,7 +48,7 @@ public class StatusController extends CommonServiceController {
     @Autowired
     private List<ActivityMapping> activityWhiteList;
     @Autowired
-    private ProcessLogDao processLogDao;
+    private MediaDBMediaDao mediaDBMediaDao;
     @Value("${cs.poke.hip-chat.room}")
     private String hipChatRoom;
     @Autowired
@@ -69,16 +70,16 @@ public class StatusController extends CommonServiceController {
         final String requestID = getRequestId(headers);
         LOGGER.info("RECEIVED LATEST STATUS REQUEST ServiceUrl={} RequestId={} RequestMessage={}",
                 MediaServiceUrl.MEDIA_STATUS.getUrl(), requestID, message);
-        String jsonResponse;
         try {
             final ValidationStatus validationStatus = validateMediaStatus(message);
             if (!validationStatus.isValid()) {
                 return buildErrorResponse(validationStatus.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl(), BAD_REQUEST);
             }
             final Map<String, Object> map = JSONUtil.buildMapFromJson(message);
-            jsonResponse = getMediaStatusList((List<String>) map.get("mediaNames"));
+            String jsonResponse = getMediaStatusList((List<String>) map.get("mediaNames"));
             LOGGER.info("RESPONSE ServiceUrl={} RequestId={} ResponseMessage={}",
                     MediaServiceUrl.MEDIA_STATUS.getUrl(), requestID, jsonResponse);
+            return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
         } catch (RequestMessageException ex) {
             LOGGER.error(ex, "ERROR ServiceUrl={} RequestId={} RequestMessage={} ErrorMessage={}",
                     MediaServiceUrl.MEDIA_STATUS.getUrl(), requestID, message, ex.getMessage());
@@ -90,7 +91,7 @@ public class StatusController extends CommonServiceController {
                     message, ex);
             throw ex;
         }
-        return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
+
     }
 
     /**
@@ -127,7 +128,7 @@ public class StatusController extends CommonServiceController {
     @Timer(name = "mediaStatusTimer")
     @RetryableMethod
     private String getMediaStatusList(final List<String> fileNameList) {
-        final List<MediaProcessLog> statusLogList = processLogDao.findMediaStatus(fileNameList);
+        final List<MediaProcessLog> statusLogList = mediaDBMediaDao.findMediaStatus(fileNameList);
         final Map<String, List<MediaProcessLog>> mapList = new HashMap<>();
         JSONUtil.divideStatusListToMap(statusLogList, mapList, fileNameList.size());
         return JSONUtil.generateJsonByProcessLogList(mapList, fileNameList, activityWhiteList);

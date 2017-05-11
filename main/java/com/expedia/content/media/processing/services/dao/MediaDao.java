@@ -4,6 +4,7 @@ import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 
@@ -109,4 +110,12 @@ public interface MediaDao {
      * @return The latest status of a media file.
      */
     Map<String, String> getLatestStatus(List<String> fileNames);
+
+    /**
+     * Pulls the latest processing status of media files.
+     *
+     * @param fileNames media file name list.
+     * @return the media status object
+     */
+    List<MediaProcessLog> findMediaStatus(final List<String> fileNames);
 }
