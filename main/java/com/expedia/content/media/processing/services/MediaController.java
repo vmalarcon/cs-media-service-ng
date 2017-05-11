@@ -17,6 +17,7 @@ import java.util.UUID;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.exception.ImageMessageException;
+import com.expedia.content.media.processing.pipeline.kafka.KafkaCommonPublisher;
 import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
 import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
@@ -74,16 +75,9 @@ public class MediaController extends CommonServiceController {
 
     private static final FormattedLogger LOGGER = new FormattedLogger(MediaController.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private static final String RESPONSE_FIELD_LCM_MEDIA_ID = "lcmMediaId";
-    private static final String MEDIA_VALIDATION_ERROR = "validationError";
     private static final String UNAUTHORIZED_USER_MESSAGE = "User is not authorized.";
     private static final String DOMAIN = "domain";
     private static final String DOMAIN_ID = "domainId";
-    private static final String DYNAMO_MEDIA_FIELD = "dynamoMedia";
-    private static final String NEW_JSON_FIELD = "newJson";
-
-    private static final String GUID_REG = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
-    private static final String REG_EX_NUMERIC = "\\d+";
     private static final String REG_EX_GUID = "[a-z0-9]{8}(-[a-z0-9]{4}){3}-[a-z0-9]{12}";
     private static final String DUPLICATED_STATUS = "DUPLICATE";
     private static final String DEFAULT_VALIDATION_RULES = "DEFAULT";
@@ -116,9 +110,9 @@ public class MediaController extends CommonServiceController {
     @Autowired
     private QueueMessagingTemplate messagingTemplate;
     @Autowired
-    private MediaDao mediaDao;
-    @Autowired
     private MediaDBMediaDao mediaDBMediaDao;
+    @Autowired
+    private KafkaCommonPublisher kafkaCommonPublisher;
     @Autowired
     private MediaUpdateProcessor mediaUpdateProcessor;
     @Autowired
@@ -246,7 +240,7 @@ public class MediaController extends CommonServiceController {
         LOGGER.info("RECEIVED UPDATE REQUEST ServiceUrl={} QueryId={} ClientId={} RequestId={} JSONMessage={}", serviceUrl, queryId, clientID, requestID,
                 message);
         try {
-            if (!queryId.matches(GUID_REG)) {
+            if (!queryId.matches(REG_EX_GUID)) {
                 return buildErrorResponse("input queryId is invalid", serviceUrl, BAD_REQUEST);
             }
             final Media mediaInMediaDB = mediaDBMediaDao.getMediaByGuid(queryId);
@@ -369,6 +363,48 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
+     * Web services interface to delete media information by its GUID.
+     *
+     * @param mediaGUID The GUID of the media to delete.
+     * @param headers Headers of the request.
+     * @throws Exception Thrown if processing the message fails.
+     */
+    @Meter(name = "deleteMediaByGUIDMessageCounter")
+    @Timer(name = "deleteMediaByGUIDMessageTimer")
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
+    @RequestMapping(value = "/media/v1/images/{mediaGUID}", method = RequestMethod.DELETE)
+    public ResponseEntity<String> deleteMedia(@PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
+        final String requestID = getRequestId(headers);
+        final String clientID = getClientId();
+        final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
+        try {
+            LOGGER.info("RECEIVED DELETE REQUEST ServiceUrl={} ClientId={} RequestId={} MediaGUID={}", serviceUrl, clientID, requestID, mediaGUID);
+            if (!mediaGUID.matches(REG_EX_GUID)) {
+                LOGGER.warn("INVALID DELETE REQUEST ServiceUrl={} ClientId={} RequestId={} MediaGUID={}", serviceUrl, clientID, requestID, mediaGUID);
+                return buildErrorResponse("Invalid media GUID provided.", serviceUrl, BAD_REQUEST);
+            }
+            final String dynamoGuid = getGuidByMediaId(mediaGUID);
+            if (dynamoGuid != null) {
+                LOGGER.info("INVALID GET REQUEST ErrorMessage=\"Media GUID exists please use GUID in request\" MediaID={} MediaGuid={} ClientId={} RequestId={}",
+                        mediaGUID, dynamoGuid, clientID, requestID);
+                return buildErrorResponse("Media GUID " + dynamoGuid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
+            }
+            final Media media = mediaDBMediaDao.getMediaByGuid(mediaGUID);
+            media.setHidden(true);
+            final ImageMessage imageMessage = media.toImageMessage();
+            kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic);
+
+
+        } catch (Exception ex) {
+            LOGGER.error(ex, "ERROR ServiceUrl={} ClientId={} RequestId={} MediaGuid={} ErrorMessage={}", serviceUrl, clientID, requestID, mediaGUID,
+                    ex.getMessage());
+            poker.poke("Media Services failed to process a deleteMedia request - RequestId: " + requestID + " ClientId: " + clientID, hipChatRoom, mediaGUID, ex);
+            throw ex;
+        }
+        return new ResponseEntity<>("Media GUID " + StringEscapeUtils.escapeHtml(mediaGUID) + " has been deleted successfully.", OK);
+    }
+
+    /**
      * Web services interface to retrieve media information by domain name and id.
      *
      * @param domainName Name of the domain the domain id belongs to.
@@ -441,43 +477,6 @@ public class MediaController extends CommonServiceController {
             return new ResponseEntity<>("Domain not found " + domainName, NOT_FOUND);
         }
         return null;
-    }
-
-    /**
-     * Web services interface to delete media information by its GUID.
-     *
-     * @param mediaGUID The GUID of the media to delete.
-     * @param headers Headers of the request.
-     * @throws Exception Thrown if processing the message fails.
-     */
-    @Meter(name = "deleteMediaByGUIDMessageCounter")
-    @Timer(name = "deleteMediaByGUIDMessageTimer")
-    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    @RequestMapping(value = "/media/v1/images/{mediaGUID}", method = RequestMethod.DELETE)
-    public ResponseEntity<String> deleteMedia(@PathVariable("mediaGUID") final String mediaGUID, @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
-        final String requestID = getRequestId(headers);
-        final String clientID = getClientId();
-        final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
-        try {
-            LOGGER.info("RECEIVED DELETE REQUEST ServiceUrl={} ClientId={} RequestId={} MediaGUID={}", serviceUrl, clientID, requestID, mediaGUID);
-            if (!mediaGUID.matches(REG_EX_GUID) && !mediaGUID.matches(REG_EX_NUMERIC)) {
-                LOGGER.warn("INVALID DELETE REQUEST ServiceUrl={} ClientId={} RequestId={} MediaGUID={}", serviceUrl, clientID, requestID, mediaGUID);
-                return this.buildErrorResponse("Invalid media GUID provided.", serviceUrl, BAD_REQUEST);
-            }
-            final String dynamoGuid = getGuidByMediaId(mediaGUID);
-            if (dynamoGuid != null) {
-                LOGGER.info("INVALID GET REQUEST ErrorMessage=\"Media GUID exists please use GUID in request\" MediaID={} MediaGuid={} ClientId={} RequestId={}",
-                        mediaGUID, dynamoGuid, clientID, requestID);
-                return this.buildErrorResponse("Media GUID " + dynamoGuid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
-            }
-            mediaDao.deleteMediaByGUID(mediaGUID);
-        } catch (Exception ex) {
-            LOGGER.error(ex, "ERROR ServiceUrl={} ClientId={} RequestId={} MediaGuid={} ErrorMessage={}", serviceUrl, clientID, requestID, mediaGUID,
-                    ex.getMessage());
-            poker.poke("Media Services failed to process a deleteMedia request - RequestId: " + requestID + " ClientId: " + clientID, hipChatRoom, mediaGUID, ex);
-            throw ex;
-        }
-        return new ResponseEntity<>("Media GUID " + StringEscapeUtils.escapeHtml(mediaGUID) + " has been deleted successfully.", OK);
     }
 
     /**
