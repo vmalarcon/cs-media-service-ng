@@ -116,7 +116,7 @@ public class MediaController extends CommonServiceController {
     private static final String REJECTED_STATUS = "REJECTED";
     private static final String REPROCESS_OPERATION = "reprocess";
     //TODO remove once all msg go to lcmConsumer
-    public static final String DELETE_KEYSTORE = "deleteKeyStore";
+    public static final String LCM_ROUTING = "lcmRouting";
 
     private static final Integer LIVE_COUNT = 1;
     private static final long ONE_HOUR = 3600 * 1000;
@@ -599,7 +599,6 @@ public class MediaController extends CommonServiceController {
             mediaDBMediaDao.addMediaOnImageMessage(imageMessageNew);
         }
         publishMsg(imageMessageNew);
-        publishKafkaMsg(imageMessageNew);
         final ResponseEntity<String> responseEntity = new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
         LOGGER.info("SUCCESS ResponseStatus={} ResponseBody={} ServiceUrl={}",
                 Arrays.asList(responseEntity.getStatusCode().toString(), responseEntity.getBody(), serviceUrl), imageMessageNew);
@@ -607,17 +606,19 @@ public class MediaController extends CommonServiceController {
     }
 
     /**
-     * publish message to kafka topic based on routingRate.
+     * publish message to kafka topic and SQS based on routingRate.
      *
      * @param imageMessage
      */
-    private void publishKafkaMsg(ImageMessage imageMessage) {
+    private void publishMsg(ImageMessage imageMessage) {
         final boolean routeLcmCons = ImageUtil.routeKafkaLcmConsByPercentage(routeLcmPercentage);
         if (routeLcmCons) {
-            kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic);
+            final ImageMessage messageWithRoutingTag = imageMessage.createBuilderFromMessage().operation(LCM_ROUTING).build();
+            publishMsgSQS(messageWithRoutingTag);
+            kafkaCommonPublisher.publishImageMessage(messageWithRoutingTag, imageMessageTopic);
         } else {
-            final ImageMessage messageWithDeleteTag = imageMessage.createBuilderFromMessage().operation(DELETE_KEYSTORE).build();
-            kafkaCommonPublisher.publishImageMessage(messageWithDeleteTag, imageMessageTopic);
+            publishMsgSQS(imageMessage);
+            kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic);
         }
     }
 
@@ -742,7 +743,7 @@ public class MediaController extends CommonServiceController {
     @Timer(name = "publishMessageTimer")
     @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     @RetryableMethod
-    private void publishMsg(final ImageMessage message) {
+    private void publishMsgSQS(final ImageMessage message) {
         message.addLogEntry(new LogEntry(App.MEDIA_SERVICE, Activity.MEDIA_MESSAGE_RECEIVED, new Date()));        
         try {
             LOGGER.info("Publishing to SQS", message);

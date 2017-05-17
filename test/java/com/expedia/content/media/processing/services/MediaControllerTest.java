@@ -911,6 +911,7 @@ public class MediaControllerTest {
         LcmDynamoMediaDao mockLcmDynamoMediaDao = mock(LcmDynamoMediaDao.class);
         setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
         setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
+        setFieldValue(mediaController, "routeLcmPercentage", 100);
 
         String requestId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -939,7 +940,7 @@ public class MediaControllerTest {
         verifyZeroInteractions(mockLcmDynamoMediaDao);
         ArgumentCaptor<ImageMessage> imageMessage = ArgumentCaptor.forClass(ImageMessage.class);
         verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage.capture(), anyString());
-        assertTrue(imageMessage.getValue().toJSONMessage().contains("deleteKeyStore"));
+        assertTrue(imageMessage.getValue().toJSONMessage().contains("lcmRouting"));
 
     }
 
