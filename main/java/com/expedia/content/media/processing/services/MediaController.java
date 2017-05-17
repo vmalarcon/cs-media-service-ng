@@ -532,7 +532,7 @@ public class MediaController extends CommonServiceController {
      * @return The response for the service call.
      * @throws Exception Thrown if the message can't be validated or the response can't be serialized.
      */
-    @SuppressWarnings({"PMD.PrematureDeclaration", "PMD.CyclomaticComplexity", "PMD.NPathComplexity","PMD.ModifiedCyclomaticComplexity"})
+    @SuppressWarnings({"PMD.PrematureDeclaration", "PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
     private ResponseEntity<String> processRequest(final String message, final String requestID,
             final String serviceUrl, final String clientId, HttpStatus successStatus, Date timeReceived) throws Exception {
         LOGGER.info("Validation of image: RequestId={}", Arrays.asList(requestID), message);
@@ -541,7 +541,6 @@ public class MediaController extends CommonServiceController {
             LOGGER.warn("Returning bad request ServiceUrl={} ClientId={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, clientId, requestID, json), message);
             return this.buildErrorResponse(json, serviceUrl, BAD_REQUEST);
         }
-        final boolean routeLcmCons = ImageUtil.routeKafkaLcmConsByPercentage(routeLcmPercentage);
         @SuppressWarnings("CPD-START")
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
         final ValidationStatus fileValidation = verifyUrl(imageMessage.getFileUrl());
@@ -592,16 +591,26 @@ public class MediaController extends CommonServiceController {
             mediaDBMediaDao.addMediaOnImageMessage(imageMessageNew);
         }
         publishMsg(imageMessageNew);
-        if (routeLcmCons) {
-            kafkaCommonPublisher.publishImageMessage(imageMessageNew, imageMessageTopic);
-        } else {
-            final ImageMessage messageWithDeleteTag = imageMessageNew.createBuilderFromMessage().operation(DELETE_KEYSTORE).build();
-            kafkaCommonPublisher.publishImageMessage(messageWithDeleteTag, imageMessageTopic);
-        }
+        publishKafkaMsg(imageMessageNew);
         final ResponseEntity<String> responseEntity = new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
         LOGGER.info("SUCCESS ResponseStatus={} ResponseBody={} ServiceUrl={}",
                 Arrays.asList(responseEntity.getStatusCode().toString(), responseEntity.getBody(), serviceUrl), imageMessageNew);
         return responseEntity;
+    }
+
+    /**
+     * publish message to kafka topic based on routingRate.
+     *
+     * @param imageMessage
+     */
+    private void publishKafkaMsg(ImageMessage imageMessage) {
+        final boolean routeLcmCons = ImageUtil.routeKafkaLcmConsByPercentage(routeLcmPercentage);
+        if (routeLcmCons) {
+            kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic);
+        } else {
+            final ImageMessage messageWithDeleteTag = imageMessage.createBuilderFromMessage().operation(DELETE_KEYSTORE).build();
+            kafkaCommonPublisher.publishImageMessage(messageWithDeleteTag, imageMessageTopic);
+        }
     }
 
     /**
