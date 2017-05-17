@@ -122,7 +122,8 @@ public class FileNameUtil {
         ORBITZ("orbitz", guidProviderNameToFileNameFunction),
         REPLACEPROVIDER("replaceprovider", guidProviderNameToFileNameFunction),
         TOURICO("Tourico", guidProviderNameToFileNameFunction),
-        WOORI("Woori", guidProviderNameToFileNameFunction);
+        YELLO("Yello", guidProviderNameToFileNameFunction),
+        AMOMA("Amoma", guidProviderNameToFileNameFunction);
 
         private final String name;
         private final Function<ImageMessage, String> function;

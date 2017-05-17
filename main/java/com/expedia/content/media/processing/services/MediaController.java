@@ -338,7 +338,15 @@ public class MediaController extends CommonServiceController {
                         mediaGUID, dynamoGuid, clientID, requestID);
                 return this.buildErrorResponse("Media GUID " + dynamoGuid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
             }
+            //TODO after migration is done and lcm-consumer deployed, remove the old delete logic
             mediaDao.deleteMediaByGUID(mediaGUID);
+            if (mediaGUID.matches(REG_EX_GUID) && enableMediaDBUpdate) {
+                final Media media = mediaDBMediaDao.getMediaByGuid(mediaGUID);
+                media.setHidden(true);
+                final ImageMessage imageMessage = media.toImageMessage();
+                kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic);
+            }
+
         } catch (Exception ex) {
             LOGGER.error(ex, "ERROR ServiceUrl={} ClientId={} RequestId={} MediaGuid={} ErrorMessage={}", serviceUrl, clientID, requestID, mediaGUID,
                     ex.getMessage());
