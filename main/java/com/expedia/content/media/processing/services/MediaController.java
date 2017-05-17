@@ -88,7 +88,7 @@ import expedia.content.solutions.metrics.annotations.Timer;
  */
 @RestController
 @EnableScheduling
-@SuppressWarnings({"PMD.StdCyclomaticComplexity","PMD.ModifiedCyclomaticComplexity"})
+@SuppressWarnings({"PMD.StdCyclomaticComplexity"})
 public class MediaController extends CommonServiceController {
 
     private static final FormattedLogger LOGGER = new FormattedLogger(MediaController.class);
