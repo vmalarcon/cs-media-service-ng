@@ -98,17 +98,16 @@ public class DomainDataUtil {
     }
         
     /**
-     * Collect  roomIds which are integer  provided in the message.
+     * Collect  roomIds which are integer provided in the message.
      * 
      * @param rooms provided domain fields.
      * @return
      */
-    public static List<Integer> collectValidFormatRoomIds(OuterDomain outerDomain) {
+    public static List<String> collectValidFormatRoomIds(OuterDomain outerDomain) {
         return collectRoomIds(outerDomain).stream()
-                .filter(room-> room == null ? false : isNumeric(room.toString()))
-                .map(room->{
-                    return Integer.parseInt(room.toString());
-                }).collect(Collectors.toList());
+                .filter(room -> room != null && isNumeric(room.toString()))
+                .map(Object::toString)
+                .collect(Collectors.toList());
     }
         
     /**
@@ -119,7 +118,7 @@ public class DomainDataUtil {
      */
     public static List<Object> collectMalFormatRoomIds(OuterDomain outerDomain) {
         return collectRoomIds(outerDomain).stream()
-                .filter(room->room == null ? false : !isNumeric(room.toString()))
+                .filter(room -> room != null && !isNumeric(room.toString()))
                 .collect(Collectors.toList()); 
     }
     
@@ -131,7 +130,9 @@ public class DomainDataUtil {
      */
     public static List<Object> collectRoomIds(OuterDomain outerDomain) {
         final List<Map<String, Object>> rooms = getRoomList(outerDomain);
-        return rooms.stream().map(room->room.get(ROOMID)).collect(Collectors.toList());
+        return rooms.stream()
+                .map(room -> room.get(ROOMID))
+                .collect(Collectors.toList());
     }
     
     /**
@@ -147,16 +148,14 @@ public class DomainDataUtil {
     
     /**
      * Retrieve the invalid room list from the domain fileds.
-     * A room entry is invalid when it is not a Map or it is not empty and not contains no roomId key.
+     * A room entry is invalid when it is not a Map or it is not empty and doesn't contains a roomId key.
      * 
      * @param outerDomain provided domain
      * @return
      */
     private static List<Map<String, Object>> getInvalidRoomList(OuterDomain outerDomain) {
         final List<Map<String, Object>> allRooms = getRoomList(outerDomain);
-        return allRooms.stream().filter(r->{
-            return !(r instanceof Map) || (!r.isEmpty() && !r.containsKey(ROOMID));
-        }).collect(Collectors.toList());
+        return allRooms.stream().filter(r -> (r == null) || (!r.isEmpty() && !r.containsKey(ROOMID))).collect(Collectors.toList());
     }
 
 }

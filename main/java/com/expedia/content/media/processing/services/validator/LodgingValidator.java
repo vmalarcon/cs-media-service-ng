@@ -2,10 +2,9 @@ package com.expedia.content.media.processing.services.validator;
 
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
-import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
-import com.expedia.content.media.processing.services.dao.RoomTypeDao;
-import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
-import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDomainCategoriesDao;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBLodgingReferenceHotelIdDao;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBLodgingReferenceRoomIdDao;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBDomainCategoriesDao;
 import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.ValidatorUtil;
 import lombok.Getter;
@@ -23,13 +22,13 @@ import java.util.Properties;
 public class LodgingValidator implements MapMessageValidator {
 
     @Autowired
-    @Getter protected SKUGroupCatalogItemDao skuGroupCatalogItemDao;
+    @Getter protected MediaDBLodgingReferenceRoomIdDao mediaDBLodgingReferenceRoomIdDao;
 
     @Autowired
-    @Getter protected MediaDBMediaDomainCategoriesDao mediaDBMediaDomainCategoriesDao;
+    @Getter protected MediaDBLodgingReferenceHotelIdDao mediaDBLodgingReferenceHotelIdDao;
 
     @Autowired
-    @Getter protected RoomTypeDao roomTypeDao;
+    @Getter protected MediaDBDomainCategoriesDao mediaDBMediaDomainCategoriesDao;
 
     @Resource(name = "providerProperties") 
     @Getter protected Properties providerProperties;
@@ -42,7 +41,7 @@ public class LodgingValidator implements MapMessageValidator {
         final StringBuffer errorMsg = new StringBuffer();
         for (final ImageMessage imageMessage : messageList) {
             try {
-                final List<Object> invalidRoomIds = roomTypeDao.getInvalidRoomIds(imageMessage.getOuterDomainData());
+                final List<Object> invalidRoomIds = mediaDBLodgingReferenceRoomIdDao.getInvalidRoomIds(imageMessage.getOuterDomainData());
                 if (!invalidRoomIds.isEmpty()) {
                     errorMsg.append("The following roomIds " + invalidRoomIds + " do not belong to the property.");
                 }

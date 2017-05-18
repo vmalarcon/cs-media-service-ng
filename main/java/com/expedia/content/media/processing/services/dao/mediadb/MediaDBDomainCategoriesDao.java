@@ -1,7 +1,8 @@
 package com.expedia.content.media.processing.services.dao.mediadb;
 
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
-import com.expedia.content.media.processing.services.dao.DomainNotFoundException;
+import com.expedia.content.media.processing.services.dao.DomainCategoriesDao;
+import com.expedia.content.media.processing.services.exception.DomainNotFoundException;
 import com.expedia.content.media.processing.services.dao.MediaSubCategoryCache;
 import com.expedia.content.media.processing.services.dao.domain.Category;
 import com.expedia.content.media.processing.services.dao.domain.DomainCategory;
@@ -10,6 +11,7 @@ import com.expedia.content.media.processing.services.dao.domain.Subcategory;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -23,18 +25,19 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class MediaDBMediaDomainCategoriesDao {
+public class MediaDBDomainCategoriesDao implements DomainCategoriesDao {
     private MediaSubCategoryCache mediaSubCategoryCache;
-    private final static String SUBCATEGORY_ID = "subcategoryId";
+    private static final String SUBCATEGORY_ID = "subcategoryId";
     private static final String ALL_CATEGORIES_AND_SUBCATEGORIES_QUERY = "SELECT * FROM `domain-category` WHERE `domain` = ?";
     private static final String CATEGORIES_AND_SUBCATEGORIES_BY_LOCAL_ID_QUERY = "SELECT * FROM `domain-category` WHERE `domain` = ? AND `locale-id` = ?";
 
     private final JdbcTemplate jdbcTemplate;
 
-    public MediaDBMediaDomainCategoriesDao(JdbcTemplate jdbcTemplate) {
-        this.jdbcTemplate = jdbcTemplate;
+    public MediaDBDomainCategoriesDao(DataSource mediaDBDataSource) {
+        this.jdbcTemplate = new JdbcTemplate(mediaDBDataSource);
     }
 
+    @Override
     public List<Category> getMediaCategoriesWithSubCategories(String domain, String localeId) throws DomainNotFoundException {
         if ("lodging".equals(domain.toLowerCase(Locale.US))) {
             return (localeId == null) ? getAllMediaCategoriesWithSubCategories(domain) : getMediaCategoriesWithSubCategoriesByLocaleId(domain, localeId);

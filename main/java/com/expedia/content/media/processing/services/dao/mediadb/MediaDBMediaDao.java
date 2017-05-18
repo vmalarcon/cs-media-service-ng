@@ -1,12 +1,10 @@
 package com.expedia.content.media.processing.services.dao.mediadb;
 
-import com.expedia.content.media.processing.pipeline.avro.ImageMessageAvro;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.reporting.App;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.MediaDao;
-import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.expedia.content.media.processing.services.reqres.Comment;
@@ -18,7 +16,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -32,6 +29,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static com.expedia.content.media.processing.services.dao.mediadb.MediaDBSQLUtil.setArray;
+import static com.expedia.content.media.processing.services.dao.mediadb.MediaDBSQLUtil.setSQLTokensWithArray;
 
 /**
  * Media data access operations through MediaDB.
@@ -50,7 +50,8 @@ public class MediaDBMediaDao implements MediaDao {
     private static final String TOTAL_ROWS_QUERY = "SELECT COUNT(*) FROM `media` WHERE `domain` = ? AND `domain-id` = ? AND `hidden` = 0";
     private static final String MEDIA_BY_FILE_NAME_QUERY = "SELECT * FROM `media` WHERE `file-name` = ?";
     private static final String MEDIAS_BY_FILE_NAMES_QUERY = "SELECT * FROM `media` WHERE `file-name` IN (?)";
-    private static final String MEDIA_BY_GUID_QUERY = "SELECT * FROM `media` WHERE `guid` = ?";
+    private static final String MEDIA_BY_GUID_QUERY = "SELECT `guid`, `file-url`, `source-url`, `file-name`, `active`, `width`, `height`, `file-size`, `status`, `updated-by`, " +
+            "`update-date`, `provider`, `derivative-category`, `domain-fields`, `derivatives`, `comments`, `update-date`, `domain`, `domain-id` FROM `media` WHERE `guid` = ?";
     private static final String DELETE_MEDIA_BY_GUID = "DELETE FROM `media` WHERE `guid` = ?";
     private static final String MEDIA_BY_LCM_MEDIA_ID = "SELECT * FROM `media` WHERE `domain-fields` LIKE ?";
     private static final String ADD_WITH_IMAGEMESSAGEAVRO_QUERY = "INSERT INTO `media` " +
@@ -189,7 +190,7 @@ public class MediaDBMediaDao implements MediaDao {
     }
 
     @Override
-    public void addMediaOnImageMessage(ImageMessage message) throws Exception {
+    public void addMedia(ImageMessage message) throws Exception {
         String domain = message.getOuterDomainData().getDomain().getDomain();
         String domainId = message.getOuterDomainData().getDomainId();
         String domainProvider = message.getOuterDomainData().getProvider();
@@ -220,7 +221,7 @@ public class MediaDBMediaDao implements MediaDao {
     }
 
     @Override
-    public void updateMediaOnImageMessage(ImageMessage message) throws Exception {
+    public void updateMedia(ImageMessage message) throws Exception {
         String domain = message.getOuterDomainData().getDomain().getDomain();
         String domainId = message.getOuterDomainData().getDomainId();
         String domainProvider = message.getOuterDomainData().getProvider();
@@ -260,13 +261,8 @@ public class MediaDBMediaDao implements MediaDao {
     }
 
     @Override
-    public List<LcmMedia> getMediaByFilenameInLCM(int domainId, String fileName) {
-        return null;
-    }
-
-    @Override
     @SuppressWarnings("CPD-START")
-    public MediaGetResponse getMediaByGUID(String mediaGUID) {
+    public MediaGetResponse getMediaGetResponseByGUID(String mediaGUID) {
         return jdbcTemplate.query((Connection connection) -> {
             PreparedStatement statement = connection.prepareStatement(MEDIA_BY_GUID_QUERY);
             statement.setString(1, mediaGUID);
@@ -302,17 +298,11 @@ public class MediaDBMediaDao implements MediaDao {
         // no-op
     }
 
-    @Deprecated
     @Override
-    public LcmMedia getContentProviderName(String fileName) {
-        return null;
-    }
-
-    @Override
-    public Media getMediaByGuid(String guid) {
+    public Media getMediaByGuid(String mediaGUID) {
         return jdbcTemplate.query((Connection connection) -> {
             PreparedStatement statement = connection.prepareStatement(MEDIA_BY_GUID_QUERY);
-            statement.setString(1, guid);
+            statement.setString(1, mediaGUID);
             return statement;
         }, (ResultSet resultSet) -> resultSet.next() ? buildMediaFromResultSet(resultSet) : null);
     }
@@ -326,12 +316,6 @@ public class MediaDBMediaDao implements MediaDao {
             return statement;
         }, (ResultSet resultSet, int rowNumb) -> buildMediaFromResultSet(resultSet)).stream().collect(Collectors.toList());
         return medias;
-    }
-
-    @Deprecated
-    @Override
-    public void saveMedia(Media media) {
-        // no-op
     }
 
     @Override
@@ -411,43 +395,5 @@ public class MediaDBMediaDao implements MediaDao {
             LOGGER.error(e, "Error querying MediaDB result-set={}", resultSet.toString());
             return null;
         }
-    }
-
-    /**
-     * A helper method to set elements of an Array into a PreparedStatement.
-     *
-     * @param statement The PreparedStatement to set values in.
-     * @param startIndex The start index to start setting elements.
-     * @param array The array of elements to set int he PreparedStatement.
-     * @return The final index +1 for setting elements after the array.
-     */
-    private int setArray(PreparedStatement statement, int startIndex, String[] array) {
-        for(String el : array) {
-            try {
-                statement.setString(startIndex, el);
-                startIndex++;
-            } catch (Exception e) {
-                LOGGER.error("couldn't set element={} from array={}", el, Arrays.toString(array));
-            }
-        }
-        return startIndex;
-    }
-
-    /**
-     * A helper method to set tokens for an array of elements in a SQL Query String with \"IN (?)\".
-     * i.e. for an array of 3 elements and a query string: FROM table WHERE value IN (?) -> FROM table WHERE value IN (?,?,?)
-     *
-     * @param sqlString The SQL Query string to add tokens to.
-     * @param array The array to add tokens for.
-     * @return The SQL Query String with new tokens added.
-     */
-    private String setSQLTokensWithArray(String sqlString, String[] array) {
-        StringBuilder tokens = new StringBuilder();
-        String delimiter = "";
-        for (int i = 0; i < array.length; i++) {
-            tokens.append(delimiter).append("?");
-            delimiter = ",";
-        }
-        return StringUtils.replace(sqlString, "IN (?)", "IN (" + tokens.toString() + ")");
     }
 }

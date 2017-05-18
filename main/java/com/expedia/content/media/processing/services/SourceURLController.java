@@ -4,18 +4,13 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.ImageCopy;
 import com.expedia.content.media.processing.pipeline.util.Poker;
-import com.expedia.content.media.processing.services.dao.MediaDao;
-import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
-import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.util.FileSourceFinder;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
-import com.expedia.content.media.processing.services.util.RequestMessageException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.expedia.content.media.processing.services.exception.RequestMessageException;
 import expedia.content.solutions.metrics.annotations.Meter;
 import expedia.content.solutions.metrics.annotations.Timer;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -31,11 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -49,9 +40,7 @@ public class SourceURLController extends CommonServiceController {
 
     private static final FormattedLogger LOGGER = new FormattedLogger(SourceURLController.class);
     @Autowired
-    private MediaDao mediaDao;
-    @Autowired
-    FileSourceFinder fileSourceFinder;
+    private FileSourceFinder fileSourceFinder;
     @Value("${media.bucket.name}")
     private String bucketName;
     @Value("${media.bucket.prefix.name}")
@@ -63,7 +52,6 @@ public class SourceURLController extends CommonServiceController {
 
     @Autowired
     private ImageCopy imageCopy;
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     /**
      * Web service interface to source URL and contentProviderName from  derivative file name.
@@ -80,37 +68,15 @@ public class SourceURLController extends CommonServiceController {
     public ResponseEntity getSourceURL(@RequestBody final String message, @RequestHeader MultiValueMap<String, String> headers) throws Exception {
         final String requestID = getRequestId(headers);
         LOGGER.info("RECEIVED SOURCE URL REQUEST ServiceUrl={} RequestMessage={} RequestId={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), message, requestID);
-        String jsonResponse;
         try {
             final Map messageMap = JSONUtil.buildMapFromJson(message);
-            final String fileUrl = (String) messageMap.get("mediaUrl");
-            if (fileUrl == null) {
-                return this.buildErrorResponse("mediaUrl is required in message.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), BAD_REQUEST);
+            final String mediaUrl = (String) messageMap.get("mediaUrl");
+            if (mediaUrl == null) {
+                return buildErrorResponse("mediaUrl is required in message.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), BAD_REQUEST);
             }
-            final String fileName = fileSourceFinder.getFileNameFromUrl(fileUrl);
-            final LcmMedia lcmMedia = mediaDao.getContentProviderName(fileName);
-            if (!checkDBResultValid(lcmMedia)) {
-                return buildErrorResponse(fileUrl + " not found.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
-            }
-            final String guid = "";
-            String sourcePath = "";
-            if (fileSourceFinder.matchGuid(fileName)) {
-                final Media dynamo = getDynamoByMediaId(lcmMedia.getMediaId().toString());
-                if (dynamo == null) {
-                    return buildErrorResponse("can not found GUID.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
-                }
-                 //sourcePath = dynamo.getSourceUrl();
-                 //Temp fix for us-west-2 and data migration. Data in dynamo is stored with the old us-west-1 url. 
-                 //TODO Replace once data has been migrated to Aurora Media DB.
-                 sourcePath = dynamo.getSourceUrl().replace("ewecs-mediaorigin.prod-p.expedia.com", "ewecs-mediaorigin.us-west-2.prod-p.expedia.com");
-            } else if (StringUtils.isEmpty(sourcePath)) {
-                sourcePath = fileSourceFinder.getSourcePath(bucketName, bucketPrefix, fileUrl, guid, lcmMedia);
-            }
-            final Map<String, String> response = new HashMap<>();
-            response.put("contentProviderMediaName", lcmMedia.getFileName());
-            response.put("mediaSourceUrl", sourcePath);
-            jsonResponse = OBJECT_MAPPER.writeValueAsString(response);
-            LOGGER.info("SOURCE URL RESPONSE ServiceUrl={} ResponseMessage={} RequestId={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), jsonResponse, requestID);
+            final ResponseEntity response = fileSourceFinder.getSourceUrl(mediaUrl);
+            LOGGER.info("SOURCE URL RESPONSE ServiceUrl={} ResponseMessage={} RequestId={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), response.getBody(), requestID);
+            return response;
         } catch (RequestMessageException ex) {
             final ResponseEntity<String> responseEntity = buildErrorResponse(ex.getMessage(), MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), BAD_REQUEST);
             LOGGER.error(ex, "ERROR ResponseStatus={} ResponseBody={} ServiceUrl={} RequestMessage={} RequestId={} ErrorMessage={}",
@@ -124,28 +90,7 @@ public class SourceURLController extends CommonServiceController {
                     message, ex);
             throw ex;
         }
-        return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
-    }
 
-    private boolean checkDBResultValid(LcmMedia lcmMedia) {
-        if (lcmMedia == null || StringUtils.isBlank(lcmMedia.getFileName()) || lcmMedia.getDomainId() == null || lcmMedia.getMediaId() == null) {
-            return false;
-        }
-        return true;
-    }
-
-    @SuppressWarnings("PMD")
-    private Media getDynamoByMediaId(String mediaId) {
-        if (StringUtils.isNumeric(mediaId)) {
-            final List<Media> mediaList = mediaDao.getMediaByMediaId(mediaId);
-            if (!mediaList.isEmpty()) {
-                final Optional<Media> existMedia = mediaList.stream().max(Comparator.comparing(Media::getLastUpdated));
-                if (existMedia.isPresent()) {
-                    return existMedia.get();
-                }
-            }
-        }
-        return null;
     }
 
     /**
@@ -163,7 +108,7 @@ public class SourceURLController extends CommonServiceController {
                 MediaServiceUrl.MEDIA_SOURCEIMAGE.getUrl(), message, requestID);
         final Map messageMap = JSONUtil.buildMapFromJson(message);
         final String fromUrl = (String) messageMap.get("mediaUrl");
-        final String objectName = fromUrl.substring(("s3://"+bucketName).length()+1);
+        final String objectName = fromUrl.substring(("s3://" + bucketName).length() + 1);
         try {
             final S3Object object = imageCopy.getImage(bucketName, objectName);
             if (object == null) {

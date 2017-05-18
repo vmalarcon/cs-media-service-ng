@@ -1,13 +1,14 @@
 package com.expedia.content.media.processing.services;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.expedia.content.media.processing.pipeline.kafka.KafkaCommonPublisher;
 import com.expedia.content.media.processing.pipeline.reporting.CompositeReporting;
 import com.expedia.content.media.processing.pipeline.reporting.KafkaReporting;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
-import com.expedia.content.media.processing.pipeline.reporting.dynamo.DynamoReporting;
-import com.expedia.content.media.processing.pipeline.reporting.sql.LcmReporting;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBDerivativesDao;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBLodgingReferenceHotelIdDao;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBLodgingReferenceRoomIdDao;
 import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBDomainCategoriesDao;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.springframework.beans.factory.annotation.Value;
@@ -58,6 +59,26 @@ public class ApplicationConfiguration {
     }
 
     @Bean
+    public MediaDBLodgingReferenceHotelIdDao mediaDBLodgingReferenceHotelIdDao() {
+        return new MediaDBLodgingReferenceHotelIdDao(mediaDBDataSource());
+    }
+
+    @Bean
+    public MediaDBLodgingReferenceRoomIdDao mediaDBLodgingReferenceRoomIdDao() {
+        return new MediaDBLodgingReferenceRoomIdDao(mediaDBDataSource());
+    }
+
+    @Bean
+    public MediaDBDomainCategoriesDao mediaDBMediaDomainCategoriesDao() {
+        return new MediaDBDomainCategoriesDao(mediaDBDataSource());
+    }
+
+    @Bean
+    public MediaDBDerivativesDao mediaDBDerivativesDao() {
+        return new MediaDBDerivativesDao(mediaDBDataSource());
+    }
+
+    @Bean
     public KafkaCommonPublisher kafkaCommonPublisher() throws IOException {
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokerServer);
@@ -71,12 +92,10 @@ public class ApplicationConfiguration {
 
     @Bean
     @Primary
-    public CompositeReporting compositeReporting(@Value("${appname}") final String appname, final DynamoDBMapper dynamoMapper,
-            final LcmReporting lcmReporting, @Value("${kafka.activity.topic}") String activityTopic)
+    public CompositeReporting compositeReporting(@Value("${appname}") final String appname,
+                                                 @Value("${kafka.activity.topic}") String activityTopic)
             throws IOException {
         final List<Reporting> reportings = new ArrayList<>();
-        final DynamoReporting dynamoReporting = new DynamoReporting(dynamoMapper, appname);
-        reportings.add(dynamoReporting);
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokerServer);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroSerializer");
@@ -87,7 +106,6 @@ public class ApplicationConfiguration {
         final KafkaCommonPublisher kafkaCommonPublisher = new KafkaCommonPublisher(props);
         final KafkaReporting kafkaReporting = new KafkaReporting (kafkaCommonPublisher, appname, activityTopic);
         reportings.add(kafkaReporting);
-        reportings.add(lcmReporting);
         return new CompositeReporting(reportings);
     }
 

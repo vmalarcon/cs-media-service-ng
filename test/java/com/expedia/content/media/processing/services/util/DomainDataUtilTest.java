@@ -265,8 +265,8 @@ public class DomainDataUtilTest {
         final OuterDomain outerDomain = new OuterDomain.OuterDomainBuilder()
                 .addField("rooms", rooms)
                 .build();
-        List<Integer> roomIds = DomainDataUtil.collectValidFormatRoomIds(outerDomain);
+        List<String> roomIds = DomainDataUtil.collectValidFormatRoomIds(outerDomain);
         assertEquals(1, roomIds.size());
-        assertEquals(1673824, roomIds.get(0).intValue());
+        assertEquals("1673824", roomIds.get(0));
     }    
 }

@@ -110,9 +110,9 @@ public class MediaAddProcessor {
         }
         // checks if the media is a reprocess, updating the record if it is, and inserting a record if it is not.
         if (mediaDBMediaDao.getMediaByGuid(imageMessage.getMediaGuid()) == null) {
-            mediaDBMediaDao.addMediaOnImageMessage(imageMessage);
+            mediaDBMediaDao.addMedia(imageMessage);
         } else {
-            mediaDBMediaDao.updateMediaOnImageMessage(imageMessage);
+            mediaDBMediaDao.updateMedia(imageMessage);
         }
         publishMsg(imageMessage);
         final ResponseEntity<String> responseEntity = new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
@@ -262,7 +262,7 @@ public class MediaAddProcessor {
     }
 
     /**
-     * Logs a completed activity, its time, and ExepdiaId are appended before the file name TODO
+     * Logs a completed activity, its time, and ExepdiaId are appended before the file name
      *
      * @param imageMessage The imageMessage of the file being processed.
      * @param activity The activity to log.

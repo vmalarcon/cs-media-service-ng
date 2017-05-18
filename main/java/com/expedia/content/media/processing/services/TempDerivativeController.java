@@ -5,7 +5,7 @@ import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
-import com.expedia.content.media.processing.services.util.RequestMessageException;
+import com.expedia.content.media.processing.services.exception.RequestMessageException;
 import com.expedia.content.media.processing.services.validator.TempDerivativeMVELValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,4 +1,4 @@
-package com.expedia.content.media.processing.services.dao;
+package com.expedia.content.media.processing.services.exception;
 
 /**
  * Signals that a Domain was not found

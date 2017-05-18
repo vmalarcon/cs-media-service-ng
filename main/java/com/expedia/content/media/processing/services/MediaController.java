@@ -1,6 +1,5 @@
 package com.expedia.content.media.processing.services;
 
-import static com.expedia.content.media.processing.pipeline.util.SQSUtil.sendMessageToQueue;
 import static org.springframework.http.HttpStatus.ACCEPTED;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -23,11 +22,7 @@ import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.Poker;
-import com.expedia.content.media.processing.services.dao.MediaDao;
-import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
-import com.expedia.content.media.processing.services.dao.SKUGroupCatalogItemDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
 import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
 import com.expedia.content.media.processing.services.exception.PaginationValidationException;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
@@ -117,7 +112,6 @@ public class MediaController extends CommonServiceController {
     private MediaUpdateProcessor mediaUpdateProcessor;
     @Autowired
     private MediaAddProcessor mediaAddProcessor;
-
     @Autowired
     private Poker poker;
 
@@ -347,7 +341,7 @@ public class MediaController extends CommonServiceController {
                 LOGGER.warn("INVALID GET REQUEST ServiceUrl={} ClientId={} RequestId={} MediaGUID={}", serviceUrl, clientID, requestID, mediaGUID);
                 return buildErrorResponse("Invalid media GUID provided.", serviceUrl, BAD_REQUEST);
             }
-            final MediaGetResponse mediaResponse = mediaDBMediaDao.getMediaByGUID(mediaGUID);
+            final MediaGetResponse mediaResponse = mediaDBMediaDao.getMediaGetResponseByGUID(mediaGUID);
             if (mediaResponse == null) {
                 final ResponseEntity<String> errorResponse = buildErrorResponse("Provided media GUID does not exist.", serviceUrl, NOT_FOUND);
                 LOGGER.info("INVALID GET REQUEST ResponseStatus={} ResponseBody={} ErrorMessage=\"Response not found. Provided media GUID does not exist\" MediaGUID={} ClientId={} RequestId={}",

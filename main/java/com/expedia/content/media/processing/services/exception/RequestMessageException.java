@@ -1,4 +1,4 @@
-package com.expedia.content.media.processing.services.util;
+package com.expedia.content.media.processing.services.exception;
 
 /**
  * This exception happens when JSON image message cannot be parsed into Java object}

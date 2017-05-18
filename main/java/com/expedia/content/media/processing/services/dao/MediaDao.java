@@ -2,7 +2,6 @@ package com.expedia.content.media.processing.services.dao;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
@@ -38,20 +37,12 @@ public interface MediaDao {
     List<Media> getMediaByFilename(String fileName);
 
     /**
-     * Given a fileName returns all the media that were saved with that name by query LCM.
-     *
-     * @param fileName File name of the Media.
-     * @return List of Media with the requested Filename.
-     */
-    List<LcmMedia> getMediaByFilenameInLCM(int domainId, String fileName);
-
-    /**
      * Retrieves a media by its GUID.
      *
      * @param mediaGUID GUID of the required media.
      * @return Media with the requested GUID.
      */
-    MediaGetResponse getMediaByGUID(String mediaGUID);
+    MediaGetResponse getMediaGetResponseByGUID(String mediaGUID);
 
     /**
      * Deletes a media by its GUID.
@@ -61,46 +52,33 @@ public interface MediaDao {
     void deleteMediaByGUID(String mediaGUID);
 
     /**
-     * get the domainId and ContentProviderMediaName from DB by derivative file name.
-     *
-     * @param fileName
-     * @return
-     */
-    LcmMedia getContentProviderName(String fileName);
-
-    /**
      * get Media info from Dynamo by GUID
-     * @param guid
+     * @param mediaGUID
      * @return
      */
-    Media getMediaByGuid(String guid);
+    Media getMediaByGuid(String mediaGUID);
 
     /**
-     * get Media list from Dynamo by lcmMedia ID.
+     * get Media list from MediaDB by lcmMedia ID.
      * @param mediaId
      * @return
      */
     List<Media> getMediaByMediaId(String mediaId);
 
-    /**
-     * save media info to dynamo Media table.
-     * @param media
-     */
-    void saveMedia(Media media);
 
     /**
      * store message to media DB
      * @param message
      * @throws Exception
      */
-    void addMediaOnImageMessage(ImageMessage message) throws Exception ;
+    void addMedia(ImageMessage message) throws Exception;
 
     /**
      * update imageMessage to mediaDB
      * @param message
      * @throws Exception
      */
-     void updateMediaOnImageMessage(ImageMessage message) throws Exception;
+     void updateMedia(ImageMessage message) throws Exception;
 
     /**
      * Pulls the latest processing status of media files. When a file doesn't have any process logs the file is

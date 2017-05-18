@@ -1,13 +1,9 @@
 package com.expedia.content.media.processing.services;
 
-import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 
@@ -21,49 +17,31 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.springframework.test.context.ContextConfiguration;
 
-import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
-import com.expedia.content.media.processing.services.dao.CatalogItemMediaDao;
-import com.expedia.content.media.processing.services.dao.MediaDao;
-import com.expedia.content.media.processing.services.dao.MediaUpdateDao;
-import com.expedia.content.media.processing.services.dao.domain.LcmCatalogItemMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
+
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.anyObject;
 import static org.mockito.Mockito.times;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 
 
 @ContextConfiguration(locations = "classpath:media-services.xml")
 @RunWith(MockitoJUnitRunner.class)
 public class MediaUpdateProcessorTest {
     @Mock
-    private MediaUpdateDao mediaUpdateDao;
-    @Mock
-    private CatalogItemMediaDao catalogItemMediaDao;
-    @Mock
-    private MediaDao mediaDao;
-    @Mock
-    private CatalogHeroProcessor catalogHeroProcessor;
-    @Mock
     private MediaDBMediaDao mediaDBMediaDao;
+    @Mock
+    private KafkaCommonPublisher kafkaCommonPublisher;
 
     private MediaUpdateProcessor mediaUpdateProcessor;
 
-    @Mock
-    private KafkaCommonPublisher kafkaCommonPublisher;
 
     @Before
     public void testSetUp() throws Exception {
         mediaUpdateProcessor = new MediaUpdateProcessor();
-        setFieldValue(mediaUpdateProcessor, "mediaUpdateDao", mediaUpdateDao);
-        setFieldValue(mediaUpdateProcessor, "catalogItemMediaDao", catalogItemMediaDao);
-        setFieldValue(mediaUpdateProcessor, "mediaDao", mediaDao);
-        setFieldValue(mediaUpdateProcessor, "catalogHeroProcessor", catalogHeroProcessor);
         setFieldValue(mediaUpdateProcessor, "kafkaCommonPublisher", kafkaCommonPublisher);
         setFieldValue(mediaUpdateProcessor, "mediaDBMediaDao", mediaDBMediaDao);
     }
@@ -75,16 +53,23 @@ public class MediaUpdateProcessorTest {
                 + "   \"active\":\"true\",\n"
                 + "    \"domain\":\"Lodging\",\n"
                 + "   \"domainFields\":{  \n"
-                + "      \"subcategoryId\":\"22003\"\n"
+                + "      \"subcategoryId\":\"22001\"\n"
                 + "    }\n"
                 + "}";
 
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
-        Media dynamoMedia =
+        Media media =
                 new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"subcategoryId\":\"22003\"}",
-                        new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
+                        new Date(), "true", "EPC", "EPC", "bobtheokay", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
                         new HashMap<>(), new ArrayList<>(), "", "", false, false, null);
-        mediaUpdateProcessor.processRequest(imageMessage, dynamoMedia);
+        mediaUpdateProcessor.processRequest(imageMessage, media);
+        media.setUserId("bobthegreat");
+        media.setDomainFields("{\"subcategoryId\":\"22001\"}");
+        ImageMessage updatedImageMessage = media.toImageMessage();
+        ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(mediaDBMediaDao, times(1)).updateMedia(argument.capture());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        assertEquals(updatedImageMessage.getOuterDomainData().getDomainFields(), argument.getValue().getOuterDomainData().getDomainFields());
     }
 
     @Test
@@ -97,46 +82,21 @@ public class MediaUpdateProcessorTest {
                 + "    }\n"
                 + "}";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
-        Media dynamoMedia =
-                new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"propertyHero\":\"true\"}",
-                        new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
+        Media media =
+                new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"propertyHero\":\"false\"}",
+                        new Date(), "true", "EPC", "EPC", "bobtheokay", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
                         new HashMap<>(), new ArrayList<>(),
                         "", "", true, false, null);
-        LcmCatalogItemMedia lcmCatalogItemMedia = mock(LcmCatalogItemMedia.class);
-        when(catalogHeroProcessor.getCatalogItemMeida(12345, 123)).thenReturn(lcmCatalogItemMedia);
-        mediaUpdateProcessor.processRequest(imageMessage, dynamoMedia);
-        verify(catalogHeroProcessor).setMediaToHero(eq("bobthegreat"), eq(lcmCatalogItemMedia), anyBoolean(), anyString());
-        verify(catalogHeroProcessor)
-                .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
+        mediaUpdateProcessor.processRequest(imageMessage, media);
+        media.setUserId("bobthegreat");
+        media.setDomainFields("{\"propertyHero\":\"true\"}");
+        ImageMessage updatedImageMessage = media.toImageMessage();
+        ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(mediaDBMediaDao, times(1)).updateMedia(argument.capture());
         verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        assertEquals(updatedImageMessage.getOuterDomainData().getDomainFields(), argument.getValue().getOuterDomainData().getDomainFields());
     }
 
-    @Test
-    public void testSpecialTagFieldInRQ() throws Exception {
-        String jsonMsg = "{  \n"
-                + "   \"userId\":\"bobthegreat\",\n"
-                + "    \"domain\":\"Lodging\",\n"
-                + "    \"comment\":\"kafkaTestLCM$#$\",\n"
-                + "   \"domainFields\":{  \n"
-                + "      \"propertyHero\":\"true\"\n"
-                + "    }\n"
-                + "}";
-        ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
-        Media dynamoMedia =
-                new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"propertyHero\":\"true\"}",
-                        new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
-                        new HashMap<>(), new ArrayList<>(),
-                        "", "", true, false, null);
-        LcmCatalogItemMedia lcmCatalogItemMedia = mock(LcmCatalogItemMedia.class);
-        when(mediaDBMediaDao.getMediaByGuid("12345678-aaaa-bbbb-cccc-123456789112")).thenReturn(dynamoMedia);
-        when(catalogHeroProcessor.getCatalogItemMeida(12345, 123)).thenReturn(lcmCatalogItemMedia);
-        mediaUpdateProcessor.processRequest(imageMessage, dynamoMedia);
-        verify(catalogHeroProcessor, never())
-                .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
-        verify(catalogHeroProcessor, never()).setMediaToHero(eq("bobthegreat"), eq(lcmCatalogItemMedia), anyBoolean(), anyString());
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
-
-    }
 
     @Test
     public void testHeroFalseFieldInRQ() throws Exception {
@@ -148,15 +108,19 @@ public class MediaUpdateProcessorTest {
                 + "    }\n"
                 + "}";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
-        Media dynamoMedia =
-                new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"propertyHero\":\"false\"}",
-                        new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
-                        new HashMap<>(), new ArrayList<>(), "", "", false, false, null);
-        mediaUpdateProcessor.processRequest(imageMessage, dynamoMedia);
-        verify(catalogHeroProcessor).getCatalogItemMeida(12345, 123);
-        verify(catalogHeroProcessor, never())
-                .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
+        Media media =
+                new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"propertyHero\":\"true\"}",
+                        new Date(), "true", "EPC", "EPC", "bobtheokay", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
+                        new HashMap<>(), new ArrayList<>(),
+                        "", "", true, false, null);
+        mediaUpdateProcessor.processRequest(imageMessage, media);
+        media.setUserId("bobthegreat");
+        media.setDomainFields("{\"propertyHero\":\"false\"}");
+        ImageMessage updatedImageMessage = media.toImageMessage();
+        ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(mediaDBMediaDao, times(1)).updateMedia(argument.capture());
         verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        assertEquals(updatedImageMessage.getOuterDomainData().getDomainFields(), argument.getValue().getOuterDomainData().getDomainFields());
     }
 
     @Test
@@ -170,18 +134,18 @@ public class MediaUpdateProcessorTest {
                 + "    }\n"
                 + "}";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
-        Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345",
-                "{\"propertyHero\":\"true\",\"subcategoryId\":\"22003\"}",
-                new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
+        Media media = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345",
+                "{\"propertyHero\":\"false\",\"subcategoryId\":\"22001\"}",
+                new Date(), "true", "EPC", "EPC", "bobtheokay", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
                 new HashMap<>(), new ArrayList<>(), "", "", true, false, null);
-        LcmCatalogItemMedia lcmCatalogItemMedia = mock(LcmCatalogItemMedia.class);
-        when(catalogHeroProcessor.getCatalogItemMeida(12345, 123)).thenReturn(lcmCatalogItemMedia);
-        mediaUpdateProcessor.processRequest(imageMessage, dynamoMedia);
-        verify(catalogHeroProcessor).setMediaToHero(eq("bobthegreat"), eq(lcmCatalogItemMedia), anyBoolean(), anyString());
-        verify(catalogHeroProcessor)
-                .setOldCategoryForHeroPropertyMedia(any(ImageMessage.class), eq("12345"), eq("12345678-aaaa-bbbb-cccc-123456789112"), eq(123));
+        mediaUpdateProcessor.processRequest(imageMessage, media);
+        media.setUserId("bobthegreat");
+        media.setDomainFields("{\"propertyHero\":\"true\",\"subcategoryId\":\"22003\"}");
+        ImageMessage updatedImageMessage = media.toImageMessage();
+        ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(mediaDBMediaDao, times(1)).updateMedia(argument.capture());
         verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
-        ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
+        assertEquals(updatedImageMessage.getOuterDomainData().getDomainFields(), argument.getValue().getOuterDomainData().getDomainFields());
     }
 
     @Test
@@ -194,13 +158,17 @@ public class MediaUpdateProcessorTest {
                 + "}";
 
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
-        Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{}",
+        Media media = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{}",
                 new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
                 new HashMap<>(), new ArrayList<>(), "", "", false, false, null);
-        mediaUpdateProcessor.processRequest(imageMessage, dynamoMedia);
-        verify(mediaUpdateDao).updateMedia(imageMessage, 123);
-        verify(catalogHeroProcessor).updateTimestamp(anyObject(), anyObject());
+        mediaUpdateProcessor.processRequest(imageMessage, media);
+        media.setUserId("bobthegreat");
+        media.setCommentList(new ArrayList<>(Arrays.asList("I'm a comment")));
+        ImageMessage updatedImageMessage = media.toImageMessage();
+        ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(mediaDBMediaDao, times(1)).updateMedia(argument.capture());
         verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        assertEquals(updatedImageMessage.getComment(), argument.getValue().getComment());
     }
 
     @Test
@@ -222,17 +190,18 @@ public class MediaUpdateProcessorTest {
                 + "    }\n"
                 + "}";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
-        //no active in imageMessage
-        setFieldValue(imageMessage, "active", null);
-        Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345",
-                "{\"rooms\":[{\"roomId\":\"934779\",\"roomHero\":\"false\"},{\"roomId\":\"928675\",\"roomHero\":\"true\"}]}",
+        Media media = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345",
+                "{}",
                 new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
                 new HashMap<>(), new ArrayList<>(), "", "", false, false, null);
-        mediaUpdateProcessor.processRequest(imageMessage, dynamoMedia);
-        verify(catalogItemMediaDao).getLcmRoomsByMediaId(123);
-        verify(mediaUpdateDao).updateMediaTimestamp(anyObject(), anyObject());
+        mediaUpdateProcessor.processRequest(imageMessage, media);
+        media.setUserId("bobthegreat");
+        media.setDomainFields("{\"rooms\":[{\"roomId\":\"934779\",\"roomHero\":\"false\"},{\"roomId\":\"928675\",\"roomHero\":\"true\"}]}");
+        ImageMessage updatedImageMessage = media.toImageMessage();
+        ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(mediaDBMediaDao, times(1)).updateMedia(argument.capture());
         verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
-        ArgumentCaptor<ImageMessage> imageMessage2 = ArgumentCaptor.forClass(ImageMessage.class);
+        assertEquals(updatedImageMessage.getOuterDomainData().getDomainFields(), argument.getValue().getOuterDomainData().getDomainFields());
     }
     
     @Test
@@ -245,41 +214,15 @@ public class MediaUpdateProcessorTest {
                 + "}";
 
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
-        Media dynamoMedia = Media.builder().active("false").clientId("userId").domain("Lodging").domainId("123").mediaGuid("12345678-aaaa-bbbb-cccc-123456789112").build();
-        when(mediaDBMediaDao.getMediaByGuid("12345678-aaaa-bbbb-cccc-123456789112")).thenReturn(dynamoMedia);
-        mediaUpdateProcessor.processRequest(imageMessage, dynamoMedia);
-        verify(mediaUpdateDao).updateMedia(imageMessage, 123);
+        Media media = Media.builder().active("false").clientId("userId").domain("Lodging").domainId("123").mediaGuid("12345678-aaaa-bbbb-cccc-123456789112").build();
+        mediaUpdateProcessor.processRequest(imageMessage, media);
+        media.setUserId("bobthegreat");
+        media.setActive("true");
+        ImageMessage updatedImageMessage = media.toImageMessage();
+        ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(mediaDBMediaDao, times(1)).updateMedia(argument.capture());
         verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
-        assertTrue(Boolean.TRUE.toString().equals(dynamoMedia.getActive()));
-        
-        String anotherJsonMsg = "{  \n"
-                + "   \"userId\":\"bobthegreat\",\n"
-                + "    \"domain\":\"Lodging\",\n"
-                + "   \"comment\":\"I'm a comment\"\n"
-                + "}";
-        dynamoMedia = Media.builder().active("false").clientId("userId").domain("Lodging").domainId("123").mediaGuid("12345678-aaaa-bbbb-cccc-123456789112").build();
-        final ImageMessage updateMessage = setActiveToNull(ImageMessage.parseJsonMessage(anotherJsonMsg));
-        mediaUpdateProcessor.processRequest(updateMessage, dynamoMedia);
-        verify(mediaUpdateDao).updateMedia(updateMessage, 123);
-        verify(kafkaCommonPublisher, times(2)).publishImageMessage(any(ImageMessage.class), anyString());
-        assertTrue(Boolean.FALSE.toString().equals(dynamoMedia.getActive()));
-    }
-
-    @Test
-    public void testNonLodgingDomain() throws Exception {
-        ImageMessage imageMessage = ImageMessage.builder().outerDomainData(
-                OuterDomain.builder().domain(Domain.CONTENT_REPO).build()
-        ).build();
-
-        Media dynamoMedia = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "ContentRepo", "12345",
-                "{}",
-                new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
-                new HashMap<>(), new ArrayList<>(), "", "", false, false, null);
-
-            mediaUpdateProcessor.processRequest(imageMessage, dynamoMedia);
-        verify(mediaUpdateDao, never()).updateMedia(any(ImageMessage.class), anyInt());
-        verify(mediaDao).saveMedia(dynamoMedia);
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        assertEquals(updatedImageMessage.isActive(), argument.getValue().isActive());
     }
 
     @Test
@@ -295,20 +238,11 @@ public class MediaUpdateProcessorTest {
                 + "}";
 
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
-        Media dynamoMedia =
+        Media media =
                 new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345", "{\"subcategoryId\":\"22003\"}",
                         new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
                         new HashMap<>(), new ArrayList<>(), "", "", false, false, null);
-        when(mediaDBMediaDao.getMediaByGuid("12345678-aaaa-bbbb-cccc-123456789112")).thenReturn(dynamoMedia);
-        mediaUpdateProcessor.processRequest(imageMessage, dynamoMedia);
+        mediaUpdateProcessor.processRequest(imageMessage, media);
         verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
-    }
-
-    
-    private ImageMessage setActiveToNull(final ImageMessage imageMessage) {
-        ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
-        imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
-        imageMessageBuilder.active(null);
-        return imageMessageBuilder.build();
     }
 }

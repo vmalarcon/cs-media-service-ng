@@ -1,4 +1,4 @@
-package com.expedia.content.media.processing.services.dao;
+package com.expedia.content.media.processing.services.exception;
 
 /**
  * Exception to thrown when a Media DB exception occures.

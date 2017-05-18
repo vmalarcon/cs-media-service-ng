@@ -2,11 +2,10 @@ package com.expedia.content.media.processing.services;
 
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.Poker;
-import com.expedia.content.media.processing.services.dao.DomainNotFoundException;
-import com.expedia.content.media.processing.services.dao.MediaDomainCategoriesDao;
+import com.expedia.content.media.processing.services.exception.DomainNotFoundException;
 import com.expedia.content.media.processing.services.dao.domain.Category;
 import com.expedia.content.media.processing.services.dao.domain.Subcategory;
-import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDomainCategoriesDao;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBDomainCategoriesDao;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import org.apache.commons.lang3.StringUtils;
@@ -41,9 +40,7 @@ public class CategoryController extends CommonServiceController {
     private static final String SKIP_FEATURE_CATEGORIES = "3";
 
     @Autowired
-    private MediaDomainCategoriesDao mediaDomainCategoriesDao;
-    @Autowired
-    private MediaDBMediaDomainCategoriesDao mediaDBMediaDomainCategoriesDao;
+    private MediaDBDomainCategoriesDao mediaDBMediaDomainCategoriesDao;
     @Value("${cs.poke.hip-chat.room}")
     private String hipChatRoom;
     @Autowired

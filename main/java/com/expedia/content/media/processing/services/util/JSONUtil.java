@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import com.expedia.content.media.processing.pipeline.util.ESAPIValidationUtil;
+import com.expedia.content.media.processing.services.exception.RequestMessageException;
 import com.fasterxml.jackson.core.JsonParser;
 
 import com.expedia.content.media.processing.services.dao.domain.Category;

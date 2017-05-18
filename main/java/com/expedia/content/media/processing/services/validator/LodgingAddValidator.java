@@ -30,7 +30,7 @@ public class LodgingAddValidator extends LodgingValidator {
     
     private StringBuffer validateRequest (ImageMessage imageMessage) {
         final StringBuffer errorMsg = new StringBuffer();
-        if (!getSkuGroupCatalogItemDao().skuGroupExists(Integer.parseInt(imageMessage.getOuterDomainData().getDomainId()))) {
+        if (!getMediaDBLodgingReferenceHotelIdDao().domainIdExists(imageMessage.getOuterDomainData().getDomainId())) {
             errorMsg.append("The provided domainId does not exist.");
         }
         

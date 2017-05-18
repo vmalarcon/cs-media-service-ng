@@ -15,7 +15,7 @@ public enum MediaServiceUrl {
 
     private String url;
 
-    private MediaServiceUrl(final String imageType) {
+    MediaServiceUrl(final String imageType) {
         this.url = imageType;
     }
     

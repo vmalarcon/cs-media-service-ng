@@ -33,8 +33,6 @@ public class MediaUpdateProcessor {
     private KafkaCommonPublisher kafkaCommonPublisher;
     @Autowired
     private MediaDBMediaDao mediaDBMediaDao;
-    @Value("${kafka.mediadb.update.enable}")
-    private boolean enableMediaDBUpdate;
 
     /**
      * Processed an Update ImageMessage request. Merges the data from the originalMedia (media from the MediaDB) with the updateImageMessage,
@@ -50,7 +48,7 @@ public class MediaUpdateProcessor {
     public ResponseEntity<String> processRequest(final ImageMessage updateImageMessage,
                                                  Media originalMedia) throws Exception {
         final ImageMessage updatedImageMessage = buildUpdatedImageMessage(updateImageMessage, originalMedia);
-        mediaDBMediaDao.updateMediaOnImageMessage(updatedImageMessage);
+        mediaDBMediaDao.updateMedia(updatedImageMessage);
         kafkaCommonPublisher.publishImageMessage(addUpdateOperationTag(updatedImageMessage), imageMessageTopic);
         final Map<String, Object> response = new HashMap<>();
         response.put("status", 200);
