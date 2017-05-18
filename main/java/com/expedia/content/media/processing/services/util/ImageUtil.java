@@ -49,4 +49,20 @@ public final class ImageUtil {
         }
         return imageMetadata;
     }
+
+
+
+    /**
+     * get the percentage configuration value
+     * and compare the value with java random value to decide route to Kafka Component or not.
+     *
+     * @return boolean indicate whether
+     */
+    public static boolean routeKafkaLcmConsByPercentage(int routePercentage) {
+        final int ranNum = (int) (Math.random() * 100);
+        if (ranNum < routePercentage) {
+            return true;
+        }
+        return false;
+    }
 }
