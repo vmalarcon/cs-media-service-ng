@@ -82,7 +82,7 @@ public class MediaUpdateProcessor {
         // Only proceed to the following if the domain is Lodging
         if (imageMessage.getOuterDomainData().getDomain().equals(Domain.LODGING) && mediaId != null && StringUtils.isNumeric(mediaId)) {
             //update lcm by kafka lcm-cons
-            if (routeLcm) {
+            if (routeLcm && dynamoMedia != null) {
                 updatedImageMessage = mergeDateFromMediaDB(dynamoMedia.getMediaGuid(), imageMessage);
             } else {
                 final Integer expediaId = Integer.valueOf(domainId);
