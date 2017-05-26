@@ -610,7 +610,7 @@ public class MediaController extends CommonServiceController {
      *
      * @param imageMessage
      */
-    private void publishMsg(ImageMessage imageMessage) {
+    private void publishMsg(ImageMessage imageMessage) throws Exception {
         final boolean routeLcmCons = ImageUtil.routeKafkaLcmConsByPercentage(routeLcmPercentage);
         if (routeLcmCons) {
             final ImageMessage messageWithRoutingTag = imageMessage.createBuilderFromMessage().operation(LCM_ROUTING).build();
