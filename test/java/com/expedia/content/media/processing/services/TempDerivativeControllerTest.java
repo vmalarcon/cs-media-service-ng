@@ -5,6 +5,7 @@ import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.expedia.content.media.processing.services.reqres.TempDerivativeMessage;
 import com.expedia.content.media.processing.services.validator.TempDerivativeMVELValidator;
+import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,8 +26,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,10 +40,6 @@ import static org.mockito.Mockito.when;
 public class TempDerivativeControllerTest {
     private static final String TEST_CLIENT_ID = "a-user";
 
-    @Mock
-    private Reporting reporting;
-    @Mock
-    private QueueMessagingTemplate queueMessagingTemplateMock;
 
     TempDerivativeController tempDerivativeController;
 
@@ -132,6 +132,30 @@ public class TempDerivativeControllerTest {
     }
 
     @Test
+    public void testTemporaryDerivativeRequestZeroBytes() throws Exception {
+        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgurdd.com/3PRGFii.jpg/why/would/someone/name/all/of/their/files/original.jpg\", "
+                + "\"rotation\": \"90\", " + "\"width\": 180, " + "\"height\": 180" + "}";
+        TempDerivativeMVELValidator tempDerivativeMVELValidator = mock(TempDerivativeMVELValidator.class);
+        when(tempDerivativeMVELValidator.validateTempDerivativeMessage(any())).thenReturn("");
+        setFieldValue(tempDerivativeController, "tempDerivativeMVELValidator", tempDerivativeMVELValidator);
+
+        ThumbnailProcessor thumbnailProcessor = mock(ThumbnailProcessor.class);
+        String thumbnailUrl = "http://url.net/thumbnail.jpg";
+        Thumbnail thumbnail = mock(Thumbnail.class);
+        when(thumbnail.getLocation()).thenReturn(thumbnailUrl);
+        when(thumbnailProcessor.createThumbnail(any())).thenReturn(thumbnail);
+        setFieldValue(tempDerivativeController, "thumbnailProcessor", thumbnailProcessor);
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+        TempDerivativeController tempDerivativeControllerSpy = spy(tempDerivativeController);
+        doReturn(new ValidationStatus(false, "0 Bytes", "0 Bytes")).when(tempDerivativeControllerSpy).verifyUrl(anyString());
+        ResponseEntity<String> responseEntity = tempDerivativeControllerSpy.getTempDerivative(jsonMessage, mockHeader);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
     public void testTemporaryDerivativeInvalidRequest() throws Exception {
         String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgurdd.com/3PRGF.jpg/why/would/someone/name/all/of/their/files/original.jpg\", "
                 + "\"rotation\": \"90\", " + "\"width\": 180, " + "\"height\": 180" + "}";
@@ -152,6 +176,30 @@ public class TempDerivativeControllerTest {
 
         ResponseEntity<String> responseEntity = tempDerivativeController.getTempDerivative(jsonMessage, mockHeader);
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+    }
+
+    @Test
+    public void testTemporaryDerivativeInvalidJSONRequest() throws Exception {
+        String jsonMessage = "{ " + "\"fileUrl\": \"http://i.imgurdd.com/3PRGF.jpg/why/would/someone/name/all/of/their/files/original.jpg\", "
+                + "\"rotation\": \"90\", " + "\"width\": 180, " + "\"height\": 180" + "}";
+        TempDerivativeMVELValidator tempDerivativeMVELValidator = mock(TempDerivativeMVELValidator.class);
+        when(tempDerivativeMVELValidator.validateTempDerivativeMessage(any())).thenReturn("whoa! your JSON is badly formatted!");
+        setFieldValue(tempDerivativeController, "tempDerivativeMVELValidator", tempDerivativeMVELValidator);
+
+        ThumbnailProcessor thumbnailProcessor = mock(ThumbnailProcessor.class);
+        String thumbnailUrl = "http://url.net/thumbnail.jpg";
+        Thumbnail thumbnail = mock(Thumbnail.class);
+        when(thumbnail.getLocation()).thenReturn(thumbnailUrl);
+        when(thumbnailProcessor.createThumbnail(any())).thenReturn(thumbnail);
+        setFieldValue(tempDerivativeController, "thumbnailProcessor", thumbnailProcessor);
+
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+
+        ResponseEntity<String> responseEntity = tempDerivativeController.getTempDerivative(jsonMessage, mockHeader);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("JSON request format is invalid. "));
     }
 
     @Test(expected = RuntimeException.class)

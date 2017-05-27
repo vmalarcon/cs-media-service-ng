@@ -1,28 +1,44 @@
 package com.expedia.content.media.processing.services.util;
 
-import com.amazonaws.services.s3.model.S3Object;
-import com.expedia.content.media.processing.pipeline.util.FileImageCopy;
-import com.expedia.content.media.processing.pipeline.util.ImageCopy;
-import com.expedia.content.media.processing.services.testing.TestingUtil;
+import com.expedia.content.media.processing.services.dao.DerivativesDao;
+import com.expedia.content.media.processing.services.dao.MediaDao;
+import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.dao.domain.MediaDerivative;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class FileSourceFinderTest {
 
+    @Mock
+    private DerivativesDao mediaDBDerivativesDao;
+    @Mock
+    private MediaDao mediaDBMediaDao;
+
     FileSourceFinder fileSourceFinder = new FileSourceFinder();
 
     @Before
-    public void insertMocks() throws Exception {
-        ImageCopy mockImageCopy = mock(ImageCopy.class);
-        TestingUtil.setFieldValue(fileSourceFinder, "imageCopy", mockImageCopy);
+    public void initialize() throws Exception {
+        String bucketName = "ewe-cs-media-test";
+        String bucketPrefix = "test/source/lodging";
+        String derivativeBucketPrefix = "test/derivative/lodging";
+        setFieldValue(fileSourceFinder, "mediaDBDerivativesDao", mediaDBDerivativesDao);
+        setFieldValue(fileSourceFinder, "mediaDBMediaDao", mediaDBMediaDao);
+        setFieldValue(fileSourceFinder, "bucketName", bucketName);
+        setFieldValue(fileSourceFinder, "bucketPrefix", bucketPrefix);
+        setFieldValue(fileSourceFinder, "derivativeBucketPrefix", derivativeBucketPrefix);
     }
 
     @Test
@@ -31,58 +47,41 @@ public class FileSourceFinderTest {
         assertEquals("5d003ca8_e.jpg", fileName);
     }
 
-//    @Test
-//    public void testGenerateJsonResponse() throws Exception {
-//        FileImageCopy fileImageCopy = mock(FileImageCopy.class);
-//        TestingUtil.setFieldValue(fileSourceFinder, "imageCopy", fileImageCopy);
-//        LcmMedia lcmMedia = LcmMedia.builder()
-//                .domainId(123)
-//                .fileName("fileName.jpg")
-//                .build();
-//        String sourcePath = fileSourceFinder.getSourcePath("bucket", "test", "http://images.trvl-media.com/hotels/1000000/10000/200/123/5d003ca8_e.jpg",
-//                "", lcmMedia);
-//        assertEquals("", sourcePath);
-//    }
-//
-//    @Test
-//    public void testGetWindowSourceUrlWithS3OnlyTrue() throws Exception {
-//        S3Object s3Object = new S3Object();
-//        s3Object.setBucketName("bucket");
-//        FileImageCopy fileImageCopy = mock(FileImageCopy.class);
-//        when(fileImageCopy.getImage(anyString(),anyString())).thenReturn(s3Object);
-//        TestingUtil.setFieldValue(fileSourceFinder, "queryS3BucketOnly", true);
-//        TestingUtil.setFieldValue(fileSourceFinder, "imageCopy", fileImageCopy);
-//        LcmMedia lcmMedia = LcmMedia.builder()
-//                .domainId(7000925)
-//                .fileName("fileName.jpg")
-//                .build();
-//        String sourcePath = fileSourceFinder.getSourcePath("bucket", "test", "http://images.trvl-media.com/hotels/8000000/7010000/7001000/7000925/7000925_1_t.jpg",
-//                "", lcmMedia);
-//        assertEquals("s3://bucket/test/8000000/7010000/7001000/7000925/7000925_1.jpg", sourcePath);
-//    }
-//
-//    @Test
-//    public void testGetWindowSourceUrl() throws Exception {
-//        LcmMedia lcmMedia = LcmMedia.builder()
-//                .domainId(7000925)
-//                .fileName("fileName.jpg")
-//                .build();
-//        String sourcePath =
-//                fileSourceFinder.getSourcePath("bucket", "test", "http://images.trvl-media.com/hotels/8000000/7010000/7001000/7000925/7000925_1_t.jpg",
-//                        "", lcmMedia);
-//        assertEquals("\\\\CHE-FILIDXIMG01\\GSO_MediaNew\\lodging\\8000000\\7010000\\7001000\\7000925\\7000925_1.jpg", sourcePath);
-//    }
-//
-//    @Test
-//    public void testGetWindowSourceUrlSecond() throws Exception {
-//        LcmMedia lcmMedia = LcmMedia.builder()
-//                .domainId(4600417)
-//                .fileName("fileName.jpg")
-//                .build();
-//        String sourcePath =
-//                fileSourceFinder.getSourcePath("bucket", "test", "http://images.trvl-media.com/hotels/5000000/4610000/4600500/4600417/4600417_2_y.jpg",
-//                        "", lcmMedia);
-//        assertEquals("\\\\CHE-FILIDXIMG01\\GSO_media\\lodging\\5000000\\4610000\\4600500\\4600417\\4600417_2.jpg", sourcePath);
-//    }
+    @Test
+    public void testMediaUrlToS3Path() throws Exception {
+        String derivativeUrl = "http://images.trvl-media.com/hotels/1000000/10000/200/123/5d003ca8_e.jpg";
+        String s3DerivativePath = fileSourceFinder.mediaUrlToS3Path(derivativeUrl, false);
+        assertEquals("s3://ewe-cs-media-test/test/derivative/lodging/1000000/10000/200/123/5d003ca8_e.jpg", s3DerivativePath);
+        String mediaUrl = "http://images.trvl-media.com/hotels/1000000/10000/200/123/5d003ca8-1234-1234-1234-010203040506.jpg";
+        String s3Path = fileSourceFinder.mediaUrlToS3Path(mediaUrl, true);
+        assertEquals("s3://ewe-cs-media-test/test/source/lodging/1000000/10000/200/123/5d003ca8-1234-1234-1234-010203040506.jpg", s3Path);
+    }
 
+    @Test
+    public void testGetMillionFolder() throws Exception {
+        String mediaUrl = "http://images.trvl-media.com/hotels/1000000/10000/200/123/5d003ca8-1234-1234-1234-010203040506.jpg";
+        String folderPath = fileSourceFinder.getMillionFolderFromUrl(mediaUrl);
+        assertEquals("/1000000/10000/200/123/", folderPath);
+    }
+
+    @Test
+    public void testMediaByDerivativeUrlSuccess() throws Exception {
+        String derivativeUrl = "http://images.trvl-media.com/hotels/1000000/10000/200/123/5d003ca8_e.jpg";
+
+        Media media = Media.builder().mediaGuid("5d003ca8-1234-1234-1234-010203040506")
+                .fileName("5d003ca8-1234-1234-1234-010203040506.jpg")
+                .sourceUrl("s3://ewe-cs-media-test/test/source/lodging/1000000/10000/200/123/5d003ca8-1234-1234-1234-010203040506.jpg")
+                .build();
+        MediaDerivative derivative = new MediaDerivative("5d003ca8-1234-1234-1234-010203040506", "s3://ewe-cs-media-test/test/derivative/lodging/1000000/10000/200/123/5d003ca8_e.jpg",
+                "e", 350, 350, 12000);
+        when(mediaDBDerivativesDao.getDerivativeByLocation(eq("s3://ewe-cs-media-test/test/derivative/lodging/1000000/10000/200/123/5d003ca8_e.jpg"))).thenReturn(derivative);
+        when(mediaDBMediaDao.getMediaByGuid(eq("5d003ca8-1234-1234-1234-010203040506"))).thenReturn(media);
+        Media returnedMedia = fileSourceFinder.getMediaByDerivativeUrl(derivativeUrl);
+        assertEquals(media, returnedMedia);
+        ArgumentCaptor<String> argument = ArgumentCaptor.forClass(String.class);
+        verify(mediaDBDerivativesDao, times(1)).getDerivativeByLocation(argument.capture());
+        assertEquals("s3://ewe-cs-media-test/test/derivative/lodging/1000000/10000/200/123/5d003ca8_e.jpg", argument.getValue());
+        verify(mediaDBMediaDao, times(1)).getMediaByGuid(argument.capture());
+        assertEquals("5d003ca8-1234-1234-1234-010203040506", argument.getValue());
+    }
 }

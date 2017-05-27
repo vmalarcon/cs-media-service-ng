@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.expedia.content.media.processing.pipeline.kafka.KafkaCommonPublisher;
-import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
+import com.expedia.content.media.processing.services.dao.MediaDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -32,7 +32,7 @@ public class MediaUpdateProcessor {
     @Autowired
     private KafkaCommonPublisher kafkaCommonPublisher;
     @Autowired
-    private MediaDBMediaDao mediaDBMediaDao;
+    private MediaDao mediaDBMediaDao;
 
     /**
      * Processed an Update ImageMessage request. Merges the data from the originalMedia (media from the MediaDB) with the updateImageMessage,

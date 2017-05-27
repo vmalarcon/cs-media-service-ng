@@ -27,20 +27,20 @@ public class MediaDBLodgingReferenceRoomIdDao {
     }
 
     public List<Object> getInvalidRoomIds(OuterDomain outerDomain) throws ClassCastException {
-        final List<Object> malFormatRoomIds = DomainDataUtil.collectMalFormatRoomIds(outerDomain);
         final List<String> validFormatRoomIds = DomainDataUtil.collectValidFormatRoomIds(outerDomain);
-        final String[] arrayOfValidRoomIds = (String[]) validFormatRoomIds.toArray();
+        final String[] arrayOfValidRoomIds = validFormatRoomIds.toArray(new String[validFormatRoomIds.size()]);
         if (outerDomain.getDomain().equals(Domain.LODGING) && !CollectionUtils.isNullOrEmpty(validFormatRoomIds)) {
             final String domainId = outerDomain.getDomainId();
             final String query = setSQLTokensWithArray(ROOM_LIST_QUERY, arrayOfValidRoomIds);
             final List<String> roomsInMediaDB = jdbcTemplate.query((Connection connection) -> {
-                        PreparedStatement statement = connection.prepareStatement(query);
+                        final PreparedStatement statement = connection.prepareStatement(query);
                         int index = setArray(statement, 1, arrayOfValidRoomIds);
                         statement.setString(index, domainId);
                         return statement;
                     }, (ResultSet resultSet, int rowNumb) -> resultSet.getString("room-id")).stream().collect(Collectors.toList());
             validFormatRoomIds.removeAll(roomsInMediaDB);
         }
+        final List<Object> malFormatRoomIds = DomainDataUtil.collectMalFormatRoomIds(outerDomain);
         malFormatRoomIds.addAll(validFormatRoomIds);
         return malFormatRoomIds;
     }

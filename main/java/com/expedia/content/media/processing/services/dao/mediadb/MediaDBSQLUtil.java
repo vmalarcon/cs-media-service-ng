@@ -23,16 +23,17 @@ public class MediaDBSQLUtil {
      * @param array The array of elements to set int he PreparedStatement.
      * @return The final index +1 for setting elements after the array.
      */
-    public static int setArray(PreparedStatement statement, int startIndex, String[] array) {
-        for(String el : array) {
+    public static int setArray(PreparedStatement statement, final int startIndex, String[] array) {
+        int index = startIndex;
+        for(final String el : array) {
             try {
                 statement.setString(startIndex, el);
-                startIndex++;
+                index++;
             } catch (Exception e) {
                 LOGGER.error("couldn't set element={} from array={}", el, Arrays.toString(array));
             }
         }
-        return startIndex;
+        return index;
     }
 
     /**
@@ -44,11 +45,14 @@ public class MediaDBSQLUtil {
      * @return The SQL Query String with new tokens added.
      */
     public static String setSQLTokensWithArray(String sqlString, String[] array) {
-        StringBuilder tokens = new StringBuilder();
-        String delimiter = "";
+        final StringBuilder tokens = new StringBuilder();
+        char delimiter = '\0';
         for (int i = 0; i < array.length; i++) {
-            tokens.append(delimiter).append("?");
-            delimiter = ",";
+            if (delimiter == '\0') {
+                tokens.append('?');
+                delimiter = ',';
+            }
+            tokens.append(delimiter).append('?');
         }
         return StringUtils.replace(sqlString, "IN (?)", "IN (" + tokens.toString() + ")");
     }

@@ -3,12 +3,12 @@
        xmlns:context="http://www.springframework.org/schema/context"
        xmlns:aws-context="http://www.springframework.org/schema/cloud/aws/context"
        xmlns:aws-messaging="http://www.springframework.org/schema/cloud/aws/messaging"
-       xmlns="http://www.springframework.org/schema/beans"
+       xmlns="http://www.springframework.org/schema/beans" xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
                           http://www.springframework.org/schema/cloud/aws/context
                           http://www.springframework.org/schema/cloud/aws/context/spring-cloud-aws-context-1.0.xsd
                           http://www.springframework.org/schema/cloud/aws/messaging http://www.springframework.org/schema/cloud/aws/messaging/spring-cloud-aws-messaging-1.0.xsd
-                          http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+                          http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
 
 
     <bean id="mvelValidator" class="com.expedia.content.media.processing.services.validator.MVELValidator">

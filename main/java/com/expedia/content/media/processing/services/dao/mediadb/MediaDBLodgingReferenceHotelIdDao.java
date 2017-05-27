@@ -19,8 +19,8 @@ public class MediaDBLodgingReferenceHotelIdDao {
     }
 
     public Boolean domainIdExists(String domainId) {
-        List<String> hotelList = jdbcTemplate.query((Connection connection) -> {
-            PreparedStatement statement = connection.prepareStatement(HOTEL_ID_QUERY);
+        final List<String> hotelList = jdbcTemplate.query((Connection connection) -> {
+            final PreparedStatement statement = connection.prepareStatement(HOTEL_ID_QUERY);
             statement.setString(1, domainId);
             return statement;
         }, (ResultSet resultSet, int rowNumb) -> resultSet.getString("name")).stream().collect(Collectors.toList());

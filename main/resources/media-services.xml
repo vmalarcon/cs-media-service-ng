@@ -148,17 +148,6 @@
         <constructor-arg name="deadLetterQueue" value="${media.aws.processlog.queue.name}" />
     </bean>
 
-    <bean id="amazonDynamoDB" class="com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient">
-        <property name="endpoint" value="${aws.endPoint}" />
-    </bean>
-    <bean id="dynamoMapper"
-          class="com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper">
-        <constructor-arg name="dynamoDB" ref="amazonDynamoDB" />
-    </bean>
-
-
-    <bean id="lcmInsertSproc" primary="true" class="com.expedia.content.media.processing.pipeline.reporting.sql.SQLLogEntryInsertSproc" />
-
     <bean id="providerProperties"
           class="org.springframework.beans.factory.config.PropertiesFactoryBean">
         <property name="locations">
@@ -167,7 +156,6 @@
             </list>
         </property>
     </bean>
-
 
 
     <tx:annotation-driven transaction-manager="transactionManager"/>

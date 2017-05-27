@@ -3,15 +3,26 @@ package com.expedia.content.media.processing.services.validator;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.domain.OuterDomain;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBLodgingReferenceHotelIdDao;
 import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.ValidatorUtil;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
-public class LodgingAddValidator extends LodgingValidator {
+public class LodgingAddValidator {
     private final static String SUBCATEGORY_ID = "subcategoryId";
+
+    @Autowired
+    private LodgingValidator lodgingValidator;
+    @Autowired
+    private MediaDBLodgingReferenceHotelIdDao mediaDBLodgingReferenceHotelIdDao;
+    @Resource(name = "providerProperties")
+    private Properties providerProperties;
 
 
     public List<String> validateImages(List<ImageMessage> messageList) {
@@ -23,18 +34,18 @@ public class LodgingAddValidator extends LodgingValidator {
             }
         }
         if (errorList.isEmpty()) {
-            errorList.addAll(super.validateImages(messageList));
+            errorList.addAll(lodgingValidator.validateImages(messageList));
         }
         return errorList;
     }
     
     private StringBuffer validateRequest (ImageMessage imageMessage) {
         final StringBuffer errorMsg = new StringBuffer();
-        if (!getMediaDBLodgingReferenceHotelIdDao().domainIdExists(imageMessage.getOuterDomainData().getDomainId())) {
+        if (!mediaDBLodgingReferenceHotelIdDao.domainIdExists(imageMessage.getOuterDomainData().getDomainId())) {
             errorMsg.append("The provided domainId does not exist.");
         }
         
-        if (StringUtils.isEmpty(DomainDataUtil.getDomainProvider(imageMessage.getOuterDomainData().getProvider(), getProviderProperties()))) {
+        if (StringUtils.isEmpty(DomainDataUtil.getDomainProvider(imageMessage.getOuterDomainData().getProvider(), providerProperties))) {
             errorMsg.append("The provided mediaProvider does not exist.");
         }
         

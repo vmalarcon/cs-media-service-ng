@@ -3,6 +3,7 @@ package com.expedia.content.media.processing.services.dao.domain;
 /**
  * Represents the data retrieved from the media process log.
  */
+@SuppressWarnings({"PMD.ImmutableField"})
 public class MediaProcessLog {
 
     private String activityTime;

@@ -3,6 +3,8 @@ package com.expedia.content.media.processing.services.util;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.google.common.collect.Lists;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.runners.MockitoJUnitRunner;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -10,6 +12,8 @@ import java.util.Date;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class MediaReplacementTest {
@@ -22,7 +26,7 @@ public class MediaReplacementTest {
     @Test
     public void testWithEmptyList() {
         Media media = MediaReplacement.selectBestMedia(Lists.newArrayList(), "456", "SCORE");
-        assertFalse(media == null);
+        assertTrue(media == null);
     }
 
     @Test
@@ -30,11 +34,7 @@ public class MediaReplacementTest {
         Media media = MediaReplacement.selectBestMedia(Lists.newArrayList(
                 createByFileNameMedia("a", "456", "true", new Date(), "456")
         ), "456", "SCORE");
-        assertTrue(media == null);
-        media = MediaReplacement.selectBestMedia(Lists.newArrayList(
-                createByFileNameMedia("a", "456", "false", new Date(), "456")
-        ), "456", "SCORE");
-        assertTrue(media == null);
+        assertNotNull(media);
     }
 
     @Test
@@ -42,11 +42,11 @@ public class MediaReplacementTest {
         Media media = MediaReplacement.selectBestMedia(Lists.newArrayList(
                 createByFileNameMedia("a", "456", "true", new Date(), "456")
         ), "456", "SCORE");
-        assertTrue(media == null);
+        assertNotNull(media);
         media = MediaReplacement.selectBestMedia(Lists.newArrayList(
                 createByFileNameMedia("a", "123", "true", new Date(), "456")
         ), "456", "SCORE");
-        assertFalse(media == null);
+        assertNull(media);
     }
 
     @Test
@@ -54,7 +54,7 @@ public class MediaReplacementTest {
         Media media = MediaReplacement.selectBestMedia(Lists.newArrayList(
                 createByGuidFileNameMedia("a", "456", "true", new Date(), "456", "918492_EPCInternalUser_22dcf000-f34c-4eee-81f0-f971d48cd8e8.jpeg")
         ), "456", "VFML");
-        assertTrue(media == null);
+        assertNotNull(media);
     }
 
     @Test
@@ -62,7 +62,7 @@ public class MediaReplacementTest {
         Media media = MediaReplacement.selectBestMedia(Lists.newArrayList(
                 createByGuidFileNameMedia("a", "456", "true", new Date(), "456", "918492_epc_testdfd.jpeg")
         ), "456", "VFML");
-        assertFalse(media == null);
+        assertNull(media);
     }
 
     @Test
@@ -73,21 +73,21 @@ public class MediaReplacementTest {
                 createByFileNameMedia("b", "456", "true", dateFormat.parse("2016-02-17 12:00:01"), "456"),
                 createByFileNameMedia("c", "456", "true", dateFormat.parse("2016-02-17 12:00:02"), "456")
         ), "456", "SCORE");
-        assertTrue(media == null);
+        assertNotNull(media);
         assertEquals("c", media.getMediaGuid());
         media = MediaReplacement.selectBestMedia(Lists.newArrayList(
                 createByFileNameMedia("a", "456", "true", dateFormat.parse("2016-02-17 12:00:00"), "456"),
                 createByFileNameMedia("b", "456", "true", dateFormat.parse("2016-02-17 12:00:01"), "456"),
                 createByFileNameMedia("c", "456", "false", dateFormat.parse("2016-02-17 12:00:02"), "456")
         ), "456", "SCORE");
-        assertTrue(media == null);
+        assertNotNull(media);
         assertEquals("c", media.getMediaGuid());
         media = MediaReplacement.selectBestMedia(Lists.newArrayList(
                 createByFileNameMedia("a", "456", "true", dateFormat.parse("2016-02-17 12:00:00"), "456"),
                 createByFileNameMedia("b", "456", "Yes", dateFormat.parse("2016-02-17 12:00:01"), "456"),
                 createByFileNameMedia("c", "456", "false", dateFormat.parse("2016-02-17 12:00:02"), "456")
         ), "456", "SCORE");
-        assertTrue(media == null);
+        assertNotNull(media);
         assertEquals("c", media.getMediaGuid());
     }
 

@@ -1,11 +1,12 @@
 package com.expedia.content.media.processing.services;
 
+import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.Poker;
+import com.expedia.content.media.processing.services.dao.DomainCategoriesDao;
 import com.expedia.content.media.processing.services.exception.DomainNotFoundException;
 import com.expedia.content.media.processing.services.dao.domain.Category;
 import com.expedia.content.media.processing.services.dao.domain.Subcategory;
-import com.expedia.content.media.processing.services.dao.mediadb.MediaDBDomainCategoriesDao;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import org.apache.commons.lang3.StringUtils;
@@ -40,7 +41,7 @@ public class CategoryController extends CommonServiceController {
     private static final String SKIP_FEATURE_CATEGORIES = "3";
 
     @Autowired
-    private MediaDBDomainCategoriesDao mediaDBMediaDomainCategoriesDao;
+    private DomainCategoriesDao mediaDBMediaDomainCategoriesDao;
     @Value("${cs.poke.hip-chat.room}")
     private String hipChatRoom;
     @Autowired
@@ -68,7 +69,7 @@ public class CategoryController extends CommonServiceController {
                             MediaServiceUrl.MEDIA_DOMAIN_CATEGORIES.getUrl() + domainName + localePath, BAD_REQUEST);
                 }
             }
-            String response = getDomainCategories(domainName, localeId);
+            final String response = getDomainCategories(domainName, localeId);
             return new ResponseEntity<>(response, HttpStatus.OK);
         } catch (DomainNotFoundException e) {
             LOGGER.error(e, "ERROR ErrorMessage={} DomainName={} RequestId={}", e.getMessage(), domainName, headers.get(REQUEST_ID));
@@ -93,11 +94,16 @@ public class CategoryController extends CommonServiceController {
      * @throws DomainNotFoundException
      */
     private String getDomainCategories(String domain, String localeId) throws DomainNotFoundException {
-        final List<Category> domainCategories = mediaDBMediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
-        final List<Category> categoriesWithNonNullSubCategories = domainCategories.stream()
-                .filter(category -> !containsNullSubCategory(category.getSubcategories()))
-                .collect(Collectors.toList());
-        return JSONUtil.generateJsonByCategoryList(categoriesWithNonNullSubCategories, domain);
+        if (Domain.LODGING.toString().equalsIgnoreCase(domain)) {
+            final List<Category> domainCategories = mediaDBMediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
+            final List<Category> categoriesWithNonNullSubCategories = domainCategories.stream()
+                    .filter(category -> !category.getCategoryId().equals(SKIP_FEATURE_CATEGORIES))
+                    .filter(category -> !containsNullSubCategory(category.getSubcategories()))
+                    .collect(Collectors.toList());
+            return JSONUtil.generateJsonByCategoryList(categoriesWithNonNullSubCategories, domain);
+        } else {
+            throw new DomainNotFoundException("Domain Not Found");
+        }
     }
 
     /**
@@ -108,8 +114,6 @@ public class CategoryController extends CommonServiceController {
      * @return
      */
     private boolean containsNullSubCategory(List<Subcategory> subcategories) {
-        return subcategories.stream()
-                .anyMatch(subcategory -> subcategory.getSubcategoryId().equals(SKIP_NULL_CATEGORIES) ||
-                        subcategory.getSubcategoryId().equals(SKIP_FEATURE_CATEGORIES));
+        return subcategories.stream().anyMatch(subcategory -> subcategory.getSubcategoryId().equals(SKIP_NULL_CATEGORIES));
     }
 }

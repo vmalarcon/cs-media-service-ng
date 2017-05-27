@@ -4,10 +4,12 @@ import com.amazonaws.services.s3.model.S3Object;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.ImageCopy;
 import com.expedia.content.media.processing.pipeline.util.Poker;
+import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.util.FileSourceFinder;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import com.expedia.content.media.processing.services.exception.RequestMessageException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import expedia.content.solutions.metrics.annotations.Meter;
 import expedia.content.solutions.metrics.annotations.Timer;
 import org.apache.commons.io.IOUtils;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
@@ -37,14 +40,12 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @Component
 @RestController
 public class SourceURLController extends CommonServiceController {
-
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final FormattedLogger LOGGER = new FormattedLogger(SourceURLController.class);
     @Autowired
     private FileSourceFinder fileSourceFinder;
     @Value("${media.bucket.name}")
     private String bucketName;
-    @Value("${media.bucket.prefix.name}")
-    private String bucketPrefix;
     @Value("${cs.poke.hip-chat.room}")
     private String hipChatRoom;
     @Autowired
@@ -74,7 +75,15 @@ public class SourceURLController extends CommonServiceController {
             if (mediaUrl == null) {
                 return buildErrorResponse("mediaUrl is required in message.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), BAD_REQUEST);
             }
-            final ResponseEntity response = fileSourceFinder.getSourceUrl(mediaUrl);
+            final Media media = fileSourceFinder.getMediaByDerivativeUrl(mediaUrl);
+            if (media == null || media.getFileName() == null || media.getSourceUrl() == null) {
+                return buildErrorResponse(mediaUrl + " not found.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
+            }
+            final Map<String, String> responseMap = new HashMap<>();
+            responseMap.put("contentProviderMediaName", media.getFileName());
+            responseMap.put("mediaSourceUrl", media.getSourceUrl());
+            final String jsonResponse = OBJECT_MAPPER.writeValueAsString(responseMap);
+            final ResponseEntity response = new ResponseEntity<>(jsonResponse, HttpStatus.OK);
             LOGGER.info("SOURCE URL RESPONSE ServiceUrl={} ResponseMessage={} RequestId={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), response.getBody(), requestID);
             return response;
         } catch (RequestMessageException ex) {

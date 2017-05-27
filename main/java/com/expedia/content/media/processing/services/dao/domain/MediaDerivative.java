@@ -2,7 +2,7 @@ package com.expedia.content.media.processing.services.dao.domain;
 
 import lombok.Getter;
 
-
+@SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField", "PMD.ImmutableField"})
 public class MediaDerivative {
     @Getter private String mediaGuid;
     @Getter private String location;

@@ -24,14 +24,14 @@ public class TestingUtil {
      * @return
      * @throws Exception
      */
-    public static File buildTestImage(int widht, int height, File fileName) throws Exception {
+    public static File buildTestImage(int width, int height, File fileName) throws Exception {
         try {
-            final BufferedImage img = new BufferedImage(widht, height, BufferedImage.TYPE_INT_RGB);
+            final BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
             final int red = 5;
             final int green = 25;
             final int blue = 255;
             final int color = (red << 16) | (green << 8) | blue;
-            for (int x = 0; x < widht; x++) {
+            for (int x = 0; x < width; x++) {
                 for (int y = 20; y < height; y++) {
                     img.setRGB(x, y, color);
                 }

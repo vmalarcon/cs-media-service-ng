@@ -138,7 +138,7 @@ public class MediaDBMediaDao implements MediaDao {
                 .lastUpdateDateTime(resultSet.getTimestamp("update-date").toString())
                 .domainProvider(resultSet.getString("provider"))
                 .domainDerivativeCategory(resultSet.getString("derivative-category"))
-                .domainFields(JSONUtil.buildMapFromJson(resultSet.getString("domain-fields")))
+                .domainFields(convertLcmMediaIdInMapToString(JSONUtil.buildMapFromJson(resultSet.getString("domain-fields"))))
                 .derivatives(resultSet.getString("derivatives") != null ?
                         (isDerivativeFilterUsed ? filterDerivatives(resultSet.getString("derivatives"), derivativeFilter) :
                         JSONUtil.buildMapListFromJson(resultSet.getString("derivatives"))) : null
@@ -281,7 +281,7 @@ public class MediaDBMediaDao implements MediaDao {
                 .lastUpdateDateTime(resultSet.getTimestamp("update-date").toString())
                 .domainProvider(resultSet.getString("provider"))
                 .domainDerivativeCategory(resultSet.getString("derivative-category"))
-                .domainFields(JSONUtil.buildMapFromJson(resultSet.getString("domain-fields")))
+                .domainFields(convertLcmMediaIdInMapToString(JSONUtil.buildMapFromJson(resultSet.getString("domain-fields"))))
                 .derivatives(JSONUtil.buildMapListFromJson(resultSet.getString("derivatives")))
                 .comments(Arrays.asList(Comment.builder()
                         .note(resultSet.getString("comments"))
@@ -310,12 +310,11 @@ public class MediaDBMediaDao implements MediaDao {
     @Override
     public List<Media> getMediaByMediaId(String mediaId) {
         final String lcmMediaIdSubstring = "%\"lcmMediaId\":\"" + mediaId + "\"%";
-        List<Media> medias = jdbcTemplate.query((Connection connection) -> {
+        return jdbcTemplate.query((Connection connection) -> {
             PreparedStatement statement = connection.prepareStatement(MEDIA_BY_LCM_MEDIA_ID);
             statement.setString(1, lcmMediaIdSubstring);
             return statement;
         }, (ResultSet resultSet, int rowNumb) -> buildMediaFromResultSet(resultSet)).stream().collect(Collectors.toList());
-        return medias;
     }
 
     @Override
@@ -352,7 +351,7 @@ public class MediaDBMediaDao implements MediaDao {
     private Media buildMediaFromResultSet(ResultSet resultSet) {
         try {
             final String domainFields = resultSet.getString("domain-fields");
-            final Map<String, Object> domainData = JSONUtil.buildMapFromJson(domainFields);
+            final Map<String, Object> domainData = convertLcmMediaIdInMapToString(JSONUtil.buildMapFromJson(domainFields));
             final String derivatives = resultSet.getString("derivatives");
             final String fingerprints = resultSet.getString("fingerprints");
             final List<Map<String, Object>> fingerprintsList = JSONUtil.buildMapListFromJson(fingerprints);
@@ -395,5 +394,13 @@ public class MediaDBMediaDao implements MediaDao {
             LOGGER.error(e, "Error querying MediaDB result-set={}", resultSet.toString());
             return null;
         }
+    }
+
+    private Map<String, Object> convertLcmMediaIdInMapToString(Map<String, Object> domainFieldsMap) {
+        if (domainFieldsMap != null && domainFieldsMap.get("lcmMediaId") != null) {
+            String lcmMediaId = String.valueOf(domainFieldsMap.get("lcmMediaId"));
+            domainFieldsMap.put("lcmMediaId", lcmMediaId);
+        }
+        return domainFieldsMap;
     }
 }

@@ -10,15 +10,16 @@ import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
+import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
-import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
 import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.FileNameUtil;
 import com.expedia.content.media.processing.services.util.MediaReplacement;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import expedia.content.solutions.metrics.annotations.Meter;
 import expedia.content.solutions.metrics.annotations.Timer;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
@@ -66,7 +67,7 @@ public class MediaAddProcessor {
     @Autowired
     private ThumbnailProcessor thumbnailProcessor;
     @Autowired
-    private MediaDBMediaDao mediaDBMediaDao;
+    private MediaDao mediaDBMediaDao;
     @Autowired
     private KafkaCommonPublisher kafkaCommonPublisher;
 
@@ -109,10 +110,10 @@ public class MediaAddProcessor {
             }
         }
         // checks if the media is a reprocess, updating the record if it is, and inserting a record if it is not.
-        if (mediaDBMediaDao.getMediaByGuid(imageMessage.getMediaGuid()) == null) {
-            mediaDBMediaDao.addMedia(imageMessage);
-        } else {
+        if (StringUtils.isNotEmpty(imageMessage.getOperation()) && imageMessage.getOperation().contains(REPROCESS_OPERATION)) {
             mediaDBMediaDao.updateMedia(imageMessage);
+        } else {
+            mediaDBMediaDao.addMedia(imageMessage);
         }
         publishMsg(imageMessage);
         final ResponseEntity<String> responseEntity = new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
@@ -184,7 +185,7 @@ public class MediaAddProcessor {
      * @return A Media Object (if it exists) of the Original Media to reprocess in the MediaId.
      */
     private Media findMediaToReprocess(String fileName, String domainId, String provider) {
-        List<Media> mediaList = mediaDBMediaDao.getMediaByFilename(fileName);
+        final List<Media> mediaList = mediaDBMediaDao.getMediaByFilename(fileName);
         return (mediaList == null) ? null : MediaReplacement.selectBestMedia(mediaList, domainId, provider);
     }
 
@@ -226,8 +227,7 @@ public class MediaAddProcessor {
 
     /**
      * get the domainProvider text from the mapping regardless of case-sensitivity
-     * if the exact text is not passed, datamanager fails to find it and defaults it
-     * to 1
+     * if the exact text is not passed, the default is set to 1.
      *
      * @param outerDomain The OuterDomain data of the ImageMessage being processed.
      * @return outerDomain with domainProvider replaced by the exact domainProvider from the mapping

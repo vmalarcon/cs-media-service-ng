@@ -3,8 +3,8 @@ package com.expedia.content.media.processing.services;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.pipeline.util.Poker;
+import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
-import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
 import com.expedia.content.media.processing.services.util.ActivityMapping;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
@@ -47,7 +47,7 @@ public class StatusController extends CommonServiceController {
     @Autowired
     private List<ActivityMapping> activityWhiteList;
     @Autowired
-    private MediaDBMediaDao mediaDBMediaDao;
+    private MediaDao mediaDBMediaDao;
     @Value("${cs.poke.hip-chat.room}")
     private String hipChatRoom;
     @Autowired
@@ -70,12 +70,12 @@ public class StatusController extends CommonServiceController {
         LOGGER.info("RECEIVED LATEST STATUS REQUEST ServiceUrl={} RequestId={} RequestMessage={}",
                 MediaServiceUrl.MEDIA_STATUS.getUrl(), requestID, message);
         try {
-            final ValidationStatus validationStatus = validateMediaStatus(message);
+            final ValidationStatus validationStatus = validateMediaStatusMessage(message);
             if (!validationStatus.isValid()) {
                 return buildErrorResponse(validationStatus.getMessage(), MediaServiceUrl.MEDIA_STATUS.getUrl(), BAD_REQUEST);
             }
             final Map<String, Object> map = JSONUtil.buildMapFromJson(message);
-            String jsonResponse = getMediaStatusList((List<String>) map.get("mediaNames"));
+            final String jsonResponse = getMediaStatusList((List<String>) map.get("mediaNames"));
             LOGGER.info("RESPONSE ServiceUrl={} RequestId={} ResponseMessage={}",
                     MediaServiceUrl.MEDIA_STATUS.getUrl(), requestID, jsonResponse);
             return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
@@ -103,7 +103,7 @@ public class StatusController extends CommonServiceController {
      * @throws Exception when the message is not valid json format.
      */
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    public ValidationStatus validateMediaStatus(final String message) throws Exception {
+    public ValidationStatus validateMediaStatusMessage(final String message) throws Exception {
         ValidationStatus validationStatus = new ValidationStatus();
         // in case, no validator defined, we make it true.
         validationStatus.setValid(true);

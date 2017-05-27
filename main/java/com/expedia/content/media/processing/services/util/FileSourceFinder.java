@@ -1,63 +1,62 @@
 package com.expedia.content.media.processing.services.util;
 
+import com.expedia.content.media.processing.services.dao.DerivativesDao;
+import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaDerivative;
-import com.expedia.content.media.processing.services.dao.mediadb.MediaDBDerivativesDao;
-import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Find file path from S3 or window share.
  */
 @Component
 public class FileSourceFinder {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
     public static final String S3_PREFIX = "s3://";
     public static final String HOTELS = "/hotels";
-    @Value("${media.source.query.s3only}")
-    private boolean queryS3BucketOnly;
     @Value("${media.bucket.name}")
     private String bucketName;
     @Value("${media.bucket.prefix.name}")
     private String bucketPrefix;
+    @Value("${media.bucket.prefix.derivative.name}")
+    private String derivativeBucketPrefix;
 
     @Autowired
-    private MediaDBDerivativesDao mediaDBDerivativesDao;
+    private DerivativesDao mediaDBDerivativesDao;
     @Autowired
-    private MediaDBMediaDao mediaDBMediaDao;
+    private MediaDao mediaDBMediaDao;
 
-    public ResponseEntity getSourceUrl(String mediaUrl) throws Exception {
-        final String derivativeLocation = mediaUrlToS3Path(mediaUrl);
+    /**
+     * Returns a source Media given the derivativeUrl.
+     * @param derivativeUrl the derivative derivativeUrl.
+     * @return A Media Object of the source media record.
+     * @throws Exception
+     */
+    public Media getMediaByDerivativeUrl(String derivativeUrl) throws Exception {
+        final String derivativeLocation = mediaUrlToS3Path(derivativeUrl, false);
         final MediaDerivative derivative = mediaDBDerivativesDao.getDerivativeByLocation(derivativeLocation);
-        final Media media = mediaDBMediaDao.getMediaByGuid(derivative.getMediaGuid());
-        final Map<String, String> response = new HashMap<>();
-        response.put("contentProviderMediaName", media.getFileName());
-        response.put("mediaSourceUrl", media.getSourceUrl());
-        final String jsonResponse = OBJECT_MAPPER.writeValueAsString(response);
-        return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
+        return mediaDBMediaDao.getMediaByGuid(derivative.getMediaGuid());
     }
 
     /**
      * Returns the s3 Path from a media url.
      *
-     * @param mediaUrl
-     * @return
+     * @param mediaUrl The MediaUrl to parse, to construct the s3 path.
+     * @param findSourcePath Boolean value to determine whether to return the source or derivative path.
+     * @return the S3 path to a image.
      */
-    private String mediaUrlToS3Path(String mediaUrl) {
+    public String mediaUrlToS3Path(String mediaUrl, boolean findSourcePath) {
         final String fileName = getFileNameFromUrl(mediaUrl);
         final String millionFolder = getMillionFolderFromUrl(mediaUrl);
-        return S3_PREFIX + bucketName + "/" + bucketPrefix + "/" + millionFolder + fileName;
+        if (findSourcePath) {
+            return S3_PREFIX + bucketName + "/" + bucketPrefix + millionFolder + fileName;
+        } else {
+            return S3_PREFIX + bucketName + "/" + derivativeBucketPrefix + millionFolder + fileName;
+        }
     }
 
-    private String getMillionFolderFromUrl(String fileUrl) {
+    public String getMillionFolderFromUrl(String fileUrl) {
         //http://images.trvl-media.com/hotels/1000000/10000/8400/8393/4a8a5b92_t.jpg
         if (fileUrl.contains(HOTELS) && fileUrl.contains("/")) {
             final int lastLoc = fileUrl.lastIndexOf('/');
@@ -72,8 +71,8 @@ public class FileSourceFinder {
     /**
      * get the derivative file name from http URL.
      *
-     * @param fileUrl
-     * @return
+     * @param fileUrl The file url to parse, to find the filename.
+     * @return The file name from the fileUrl.
      */
     public String getFileNameFromUrl(String fileUrl) {
         //http://images.trvl-media.com/hotels/1000000/10000/8400/8393/4a8a5b92_t.jpg

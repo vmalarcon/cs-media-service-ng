@@ -191,8 +191,39 @@ public class MediaUpdateProcessorTest {
                 + "}";
         ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
         Media media = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345",
-                "{}",
-                new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
+                "{\"rooms\":[{\"roomId\":\"934777\",\"roomHero\":\"false\"}]}", new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
+                new HashMap<>(), new ArrayList<>(), "", "", false, false, null);
+        mediaUpdateProcessor.processRequest(imageMessage, media);
+        media.setUserId("bobthegreat");
+        media.setDomainFields("{\"rooms\":[{\"roomId\":\"934779\",\"roomHero\":\"false\"},{\"roomId\":\"928675\",\"roomHero\":\"true\"}]}");
+        ImageMessage updatedImageMessage = media.toImageMessage();
+        ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(mediaDBMediaDao, times(1)).updateMedia(argument.capture());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        assertEquals(updatedImageMessage.getOuterDomainData().getDomainFields(), argument.getValue().getOuterDomainData().getDomainFields());
+    }
+
+    @Test
+    public void testRoomFieldmInRQAndNoRoomAssociationOriginally() throws Exception {
+        String jsonMsg = "{  \n"
+                + "   \"userId\":\"bobthegreat\",\n"
+                + "    \"domain\":\"Lodging\",\n"
+                + "   \"domainFields\":{  \n"
+                + "      \"rooms\":[ \n"
+                + "         {  \n"
+                + "            \"roomId\":\"934779\",\n"
+                + "            \"roomHero\":\"false\"\n"
+                + "         },\n"
+                + "         {\n"
+                + "             \"roomId\":\"928675\",\n"
+                + "            \"roomHero\":\"true\" \n"
+                + "         }\n"
+                + "      ]\n"
+                + "    }\n"
+                + "}";
+        ImageMessage imageMessage = ImageMessage.parseJsonMessage(jsonMsg);
+        Media media = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345",
+                "{}", new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
                 new HashMap<>(), new ArrayList<>(), "", "", false, false, null);
         mediaUpdateProcessor.processRequest(imageMessage, media);
         media.setUserId("bobthegreat");

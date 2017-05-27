@@ -2,6 +2,7 @@ package com.expedia.content.media.processing.services.dao.domain;
 
 import lombok.Getter;
 
+@SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField", "PMD.ImmutableField"})
 public class DomainCategory {
     @Getter private String parentCategoryId;
     @Getter private String categoryId;

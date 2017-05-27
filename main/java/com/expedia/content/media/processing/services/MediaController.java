@@ -22,8 +22,8 @@ import com.expedia.content.media.processing.pipeline.reporting.LogEntry;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.Poker;
+import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
 import com.expedia.content.media.processing.services.exception.PaginationValidationException;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
@@ -35,7 +35,6 @@ import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
@@ -65,7 +64,7 @@ import expedia.content.solutions.metrics.annotations.Timer;
  */
 @RestController
 @EnableScheduling
-@SuppressWarnings({"PMD.StdCyclomaticComplexity"})
+@SuppressWarnings({"PMD.StdCyclomaticComplexity", "PMD.CyclomaticComplexity"})
 public class MediaController extends CommonServiceController {
 
     private static final FormattedLogger LOGGER = new FormattedLogger(MediaController.class);
@@ -92,8 +91,6 @@ public class MediaController extends CommonServiceController {
     private String hipChatRoom;
     @Value("${kafka.imagemessage.topic}")
     private String imageMessageTopic;
-    @Value("${media.aws.collector.queue.name}")
-    private String publishQueue;
     @Value("${media.aws.processlog.queue.name}")
     private String mediaProcessLogQueue;
     @Value("#{imageMessageValidators}")
@@ -105,7 +102,7 @@ public class MediaController extends CommonServiceController {
     @Autowired
     private QueueMessagingTemplate messagingTemplate;
     @Autowired
-    private MediaDBMediaDao mediaDBMediaDao;
+    private MediaDao mediaDBMediaDao;
     @Autowired
     private KafkaCommonPublisher kafkaCommonPublisher;
     @Autowired
@@ -167,7 +164,7 @@ public class MediaController extends CommonServiceController {
             if (warnIfMissing) {
                 LOGGER.warn("Creating RequestId={}", requestID);
             } else {
-                LOGGER.warn("Creating RequestId={}", requestID);
+                LOGGER.info("Creating RequestId={}", requestID);
             }
         }
         return requestID;
@@ -280,11 +277,11 @@ public class MediaController extends CommonServiceController {
         if (!"[]".equals(jsonValidationErrors)) {
             return buildErrorResponse(jsonValidationErrors, serviceUrl, BAD_REQUEST);
         }
-        final ImageMessage updateMessage = ImageMessage.parseJsonMessage(jsonMessage);
         // TODO: Make MediaUpdate Domain Agnostic in the future
         if (!Domain.LODGING.getDomain().equals(originalMedia.getDomain())) {
             return buildErrorResponse("Only Lodging Media Updates can be handled at this time", serviceUrl, BAD_REQUEST);
         }
+        final ImageMessage updateMessage = ImageMessage.parseJsonMessage(jsonMessage);
         if (updateMessage.getHidden() && !canMediaBeHidden(originalMedia)) {
             return buildErrorResponse("Only unpublished media can be hidden", serviceUrl, BAD_REQUEST);
         }
@@ -301,6 +298,7 @@ public class MediaController extends CommonServiceController {
      */
     private String appendDomain(String message, String domainId) throws Exception {
         final Map<String, Object> jsonMap = JSONUtil.buildMapFromJson(message);
+        // TODO: make appending domain, Domain Agnostic. I.e. not only Lodging.
         jsonMap.put(DOMAIN, Domain.LODGING.getDomain());
         jsonMap.put(DOMAIN_ID, domainId);
         return new ObjectMapper().writeValueAsString(jsonMap);
@@ -377,25 +375,20 @@ public class MediaController extends CommonServiceController {
                 LOGGER.warn("INVALID DELETE REQUEST ServiceUrl={} ClientId={} RequestId={} MediaGUID={}", serviceUrl, clientID, requestID, mediaGUID);
                 return buildErrorResponse("Invalid media GUID provided.", serviceUrl, BAD_REQUEST);
             }
-            final String dynamoGuid = getGuidByMediaId(mediaGUID);
-            if (dynamoGuid != null) {
-                LOGGER.info("INVALID GET REQUEST ErrorMessage=\"Media GUID exists please use GUID in request\" MediaID={} MediaGuid={} ClientId={} RequestId={}",
-                        mediaGUID, dynamoGuid, clientID, requestID);
-                return buildErrorResponse("Media GUID " + dynamoGuid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
-            }
             final Media media = mediaDBMediaDao.getMediaByGuid(mediaGUID);
+            if (media == null) {
+                return buildErrorResponse("input GUID does not exist in DB", serviceUrl, NOT_FOUND);
+            }
             media.setHidden(true);
             final ImageMessage imageMessage = media.toImageMessage();
             kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic);
-
-
+            return new ResponseEntity<>("Media GUID " + StringEscapeUtils.escapeHtml(mediaGUID) + " has been deleted successfully.", OK);
         } catch (Exception ex) {
             LOGGER.error(ex, "ERROR ServiceUrl={} ClientId={} RequestId={} MediaGuid={} ErrorMessage={}", serviceUrl, clientID, requestID, mediaGUID,
                     ex.getMessage());
             poker.poke("Media Services failed to process a deleteMedia request - RequestId: " + requestID + " ClientId: " + clientID, hipChatRoom, mediaGUID, ex);
             throw ex;
         }
-        return new ResponseEntity<>("Media GUID " + StringEscapeUtils.escapeHtml(mediaGUID) + " has been deleted successfully.", OK);
     }
 
     /**
@@ -432,7 +425,7 @@ public class MediaController extends CommonServiceController {
                         "DerivativeTypeFilter={}",
                 serviceUrl, clientID, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
         try {
-            final ResponseEntity<String> errorResponse = validateMediaByDomainIdRequest(domainName, activeFilter);
+            final ResponseEntity<String> errorResponse = validateMediaByDomainIdRequest(domainName, activeFilter, pageSize, pageIndex);
             if (errorResponse != null) {
                 LOGGER.warn("INVALID GET BY DOMAIN ID REQUEST ResponseStatus={} ResponseBody={} ServiceUrl={} ClientId={} RequestId={} DomainName={} DomainId={} PageSize={} " +
                                 "PageIndex={} ActiveFilter={} DerivativeTypeFilter={}",
@@ -460,15 +453,28 @@ public class MediaController extends CommonServiceController {
      *
      * @param domainName Domain to validate.
      * @param activeFilter Active filter to validate.
+     * @param pageSize
+     * @param pageIndex
      * @return Returns a response if the validation fails; null otherwise.
      */
-    private ResponseEntity<String> validateMediaByDomainIdRequest(final String domainName, final String activeFilter) {
+    private ResponseEntity<String> validateMediaByDomainIdRequest(final String domainName, final String activeFilter, Integer pageSize, Integer pageIndex) {
         if (activeFilter != null && !activeFilter.equalsIgnoreCase("all") && !activeFilter.equalsIgnoreCase("true")
                 && !activeFilter.equalsIgnoreCase("false")) {
             return new ResponseEntity<>("Unsupported active filter " + activeFilter, BAD_REQUEST);
         }
         if (Domain.findDomain(domainName, true) == null) {
             return new ResponseEntity<>("Domain not found " + domainName, NOT_FOUND);
+        }
+        if (pageSize != null || pageIndex != null) {
+            if (pageIndex == null) {
+                throw new PaginationValidationException("pageIndex is null and pageSize is not null, both pageSize and pageIndex parameters are inclusive. " +
+                        "Set both parameters or neither.");
+            } else if (pageSize == null) {
+                throw new PaginationValidationException("pageSize is null and pageIndex is not null, both pageSize and pageIndex parameters are inclusive. " +
+                        "Set both parameters or neither.");
+            } else if (pageSize < 0 || pageIndex < 0) {
+                throw new PaginationValidationException("pageSize and pageIndex do not accept negative values.");
+            }
         }
         return null;
     }
@@ -497,16 +503,16 @@ public class MediaController extends CommonServiceController {
      */
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     private String validateImageMessage(final String message, final String clientId) throws Exception {
-        final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
         final List<MapMessageValidator> defaultValidatorList = mapValidatorList.get(DEFAULT_VALIDATION_RULES);
         final List<MapMessageValidator> validatorList = mapValidatorList.getOrDefault(clientId, defaultValidatorList);
-        if (validatorList == defaultValidatorList) {
-            LOGGER.warn("NO VALIDATION FOR CLIENT Action=\"Using default validations\" ClientId={}", Arrays.asList(clientId), message);
-        }
         if (validatorList == null && defaultValidatorList == null) {
             return UNAUTHORIZED_USER_MESSAGE;
         }
+        if (validatorList == defaultValidatorList) {
+            LOGGER.warn("NO VALIDATION FOR CLIENT Action=\"Using default validations\" ClientId={}", Arrays.asList(clientId), message);
+        }
         List<String> validationErrorList = null;
+        final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
         for (final MapMessageValidator mapMessageValidator : validatorList) {
             validationErrorList = mapMessageValidator.validateImages(Arrays.asList(imageMessage));
             if (!validationErrorList.isEmpty()) {
@@ -514,22 +520,6 @@ public class MediaController extends CommonServiceController {
             }
         }
         return JSONUtil.convertValidationErrors(validationErrorList);
-    }
-
-    /**
-     * Retrieve the GUID base on a given LCM mediaId.
-     *
-     * @param mediaId
-     * @return The GUID or null if no media found in dynamo.
-     */
-    private String getGuidByMediaId(String mediaId) {
-        if (StringUtils.isNumeric(mediaId)) {
-            final List<Media> mediaList = mediaDBMediaDao.getMediaByMediaId(mediaId);
-            if (!mediaList.isEmpty()) {
-                return mediaList.stream().findFirst().get().getMediaGuid();
-            }
-        }
-        return null;
     }
 
     /**

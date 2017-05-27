@@ -4,6 +4,9 @@ import com.expedia.content.media.processing.pipeline.kafka.KafkaCommonPublisher;
 import com.expedia.content.media.processing.pipeline.reporting.CompositeReporting;
 import com.expedia.content.media.processing.pipeline.reporting.KafkaReporting;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
+import com.expedia.content.media.processing.services.dao.DerivativesDao;
+import com.expedia.content.media.processing.services.dao.DomainCategoriesDao;
+import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.mediadb.MediaDBDerivativesDao;
 import com.expedia.content.media.processing.services.dao.mediadb.MediaDBLodgingReferenceHotelIdDao;
 import com.expedia.content.media.processing.services.dao.mediadb.MediaDBLodgingReferenceRoomIdDao;
@@ -54,7 +57,7 @@ public class ApplicationConfiguration {
     }
 
     @Bean
-    public MediaDBMediaDao mediaDBMediaDao() {
+    public MediaDao mediaDBMediaDao() {
         return new MediaDBMediaDao(mediaDBDataSource());
     }
 
@@ -69,12 +72,12 @@ public class ApplicationConfiguration {
     }
 
     @Bean
-    public MediaDBDomainCategoriesDao mediaDBMediaDomainCategoriesDao() {
+    public DomainCategoriesDao mediaDBMediaDomainCategoriesDao() {
         return new MediaDBDomainCategoriesDao(mediaDBDataSource());
     }
 
     @Bean
-    public MediaDBDerivativesDao mediaDBDerivativesDao() {
+    public DerivativesDao mediaDBDerivativesDao() {
         return new MediaDBDerivativesDao(mediaDBDataSource());
     }
 
