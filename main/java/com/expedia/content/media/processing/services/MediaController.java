@@ -234,7 +234,9 @@ public class MediaController extends CommonServiceController {
             if (!queryId.matches(REG_EX_GUID)) {
                 return buildErrorResponse("input queryId is invalid", serviceUrl, BAD_REQUEST);
             }
+            LOGGER.info("Started querying media by media-guid in MediaDB ClientId={} RequestId={} MediaGUID={}", clientID, requestID, queryId);
             final Media mediaInMediaDB = mediaDBMediaDao.getMediaByGuid(queryId);
+            LOGGER.info("Finished querying media by media-guid in MediaDB ClientId={} RequestId={} MediaGUID={}", clientID, requestID, queryId);
             if (mediaInMediaDB == null) {
                 return buildErrorResponse("input GUID does not exist in DB", serviceUrl, NOT_FOUND);
             }
@@ -339,7 +341,9 @@ public class MediaController extends CommonServiceController {
                 LOGGER.warn("INVALID GET REQUEST ServiceUrl={} ClientId={} RequestId={} MediaGUID={}", serviceUrl, clientID, requestID, mediaGUID);
                 return buildErrorResponse("Invalid media GUID provided.", serviceUrl, BAD_REQUEST);
             }
+            LOGGER.info("Started querying media by media-guid in MediaDB ClientId={} RequestId={} MediaGUID={}", clientID, requestID, mediaGUID);
             final MediaGetResponse mediaResponse = mediaDBMediaDao.getMediaGetResponseByGUID(mediaGUID);
+            LOGGER.info("Finished querying media by media-guid in MediaDB ClientId={} RequestId={} MediaGUID={}", clientID, requestID, mediaGUID);
             if (mediaResponse == null) {
                 final ResponseEntity<String> errorResponse = buildErrorResponse("Provided media GUID does not exist.", serviceUrl, NOT_FOUND);
                 LOGGER.info("INVALID GET REQUEST ResponseStatus={} ResponseBody={} ErrorMessage=\"Response not found. Provided media GUID does not exist\" MediaGUID={} ClientId={} RequestId={}",
@@ -433,8 +437,10 @@ public class MediaController extends CommonServiceController {
                         activeFilter, derivativeTypeFilter);
                 return errorResponse;
             }
+            LOGGER.info("Started querying media by domainId in MediaDB ClientId={} RequestId={} DomainName={} DomainId={}", clientID, requestID, domainName, domainId);
             final MediaByDomainIdResponse response = mediaDBMediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter,
                     derivativeCategoryFilter, pageSize, pageIndex);
+            LOGGER.info("Finished querying media by domainId in MediaDB ClientId={} RequestId={} DomainName={} DomainId={}", clientID, requestID, domainName, domainId);
             return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);
         } catch (PaginationValidationException p) {
             return buildErrorResponse(p.getMessage(), serviceUrl, BAD_REQUEST);

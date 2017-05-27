@@ -78,7 +78,7 @@ public class MediaAddProcessor {
      * Note: If any errors occur in processing, due to bad data, an Error Response entity is return,
      *       otherwise a Successful Response is returned with the media guid attached.
      *
-     * @param message JSON formated ImageMessage.
+     * @param message JSON formatted ImageMessage.
      * @param requestID The id of the request. Used for tracking purposes.
      * @param serviceUrl URL of the message called.
      * @param clientId Web service client id.
@@ -111,9 +111,14 @@ public class MediaAddProcessor {
         }
         // checks if the media is a reprocess, updating the record if it is, and inserting a record if it is not.
         if (StringUtils.isNotEmpty(imageMessage.getOperation()) && imageMessage.getOperation().contains(REPROCESS_OPERATION)) {
+            LOGGER.info("Started updating media in MediaDB MediaGuid={} RequestId={} ClientId={}", imageMessage.getMediaGuid(), requestID, clientId);
             mediaDBMediaDao.updateMedia(imageMessage);
+            LOGGER.info("Finished updating media in MediaDB MediaGuid={} RequestId={} ClientId={}", imageMessage.getMediaGuid(), requestID, clientId);
         } else {
+            LOGGER.info("Started inserting media in MediaDB MediaGuid={} RequestId={} ClientId={}", imageMessage.getMediaGuid(), requestID, clientId);
             mediaDBMediaDao.addMedia(imageMessage);
+            LOGGER.info("Finished inserting media in MediaDB MediaGuid={} RequestId={} ClientId={}", imageMessage.getMediaGuid(), requestID, clientId);
+
         }
         publishMsg(imageMessage);
         final ResponseEntity<String> responseEntity = new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);

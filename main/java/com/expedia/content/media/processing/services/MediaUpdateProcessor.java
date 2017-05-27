@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.expedia.content.media.processing.pipeline.kafka.KafkaCommonPublisher;
+import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +23,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
 public class MediaUpdateProcessor {
+    private static final FormattedLogger LOGGER = new FormattedLogger(MediaUpdateProcessor.class);
+
     private static final String MESSAGE_PROPERTY_HERO = "propertyHero";
     private static final String MESSAGE_SUB_CATEGORY_ID = "subcategoryId";
     private static final String MESSAGE_ROOMS = "rooms";
@@ -48,7 +51,10 @@ public class MediaUpdateProcessor {
     public ResponseEntity<String> processRequest(final ImageMessage updateImageMessage,
                                                  Media originalMedia) throws Exception {
         final ImageMessage updatedImageMessage = buildUpdatedImageMessage(updateImageMessage, originalMedia);
+        LOGGER.info("Started updating media in MediaDB MediaGuid={}", originalMedia.getMediaGuid());
         mediaDBMediaDao.updateMedia(updatedImageMessage);
+        LOGGER.info("Finished updating media in MediaDB MediaGuid={}", originalMedia.getMediaGuid());
+        // TODO: Update all the media that needs to be unhero'd in mediaDB and send them to kafka as well.
         kafkaCommonPublisher.publishImageMessage(addUpdateOperationTag(updatedImageMessage), imageMessageTopic);
         final Map<String, Object> response = new HashMap<>();
         response.put("status", 200);
