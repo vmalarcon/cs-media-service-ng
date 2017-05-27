@@ -89,7 +89,7 @@ public class MediaControllerTest {
     }
 
     @Before
-    public void initialize() throws IllegalAccessException, NoSuchFieldException {
+    public void initialize() throws Exception{
         mediaController = new MediaController();
         setFieldValue(mediaController, "kafkaCommonPublisher", kafkaCommonPublisher);
         setFieldValue(mediaController, "mediaDBMediaDao", mediaDBMediaDao);
