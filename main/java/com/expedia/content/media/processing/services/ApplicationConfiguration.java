@@ -7,9 +7,11 @@ import com.expedia.content.media.processing.pipeline.reporting.KafkaReporting;
 import com.expedia.content.media.processing.pipeline.reporting.Reporting;
 import com.expedia.content.media.processing.pipeline.reporting.dynamo.DynamoReporting;
 import com.expedia.content.media.processing.pipeline.reporting.sql.LcmReporting;
+import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -42,6 +44,12 @@ public class ApplicationConfiguration {
     @Value("${mdb.datasource.url}")
     private String dataSourceURL;
 
+    @Value("${kafka.producer.retries}")
+    private String producerRetries;
+
+    @Autowired
+    private Poker poker;
+
     @Bean
     public DriverManagerDataSource mediaDBDataSource() {
         final DriverManagerDataSource dataSource = new DriverManagerDataSource();
@@ -66,7 +74,8 @@ public class ApplicationConfiguration {
         props.put("schema.registry.url", schemaServer);
         props.put("enableSend", enableSend);
         props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
-        return new KafkaCommonPublisher(props);
+        props.put(ProducerConfig.RETRIES_CONFIG, producerRetries);
+        return new KafkaCommonPublisher(props, poker);
     }
 
     @Bean
@@ -84,7 +93,8 @@ public class ApplicationConfiguration {
         props.put("schema.registry.url", schemaServer);
         props.put("enableSend", enableSend);
         props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
-        final KafkaCommonPublisher kafkaCommonPublisher = new KafkaCommonPublisher(props);
+        props.put(ProducerConfig.RETRIES_CONFIG, producerRetries);
+        final KafkaCommonPublisher kafkaCommonPublisher = new KafkaCommonPublisher(props, poker);
         final KafkaReporting kafkaReporting = new KafkaReporting (kafkaCommonPublisher, appname, activityTopic);
         reportings.add(kafkaReporting);
         reportings.add(lcmReporting);
