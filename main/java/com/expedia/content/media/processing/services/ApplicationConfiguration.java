@@ -45,7 +45,7 @@ public class ApplicationConfiguration {
     private String dataSourceURL;
 
     @Value("${kafka.producer.retries}")
-    private String producerRetries;
+    private Integer producerRetries;
 
     @Autowired
     private Poker poker;
