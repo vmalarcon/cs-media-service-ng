@@ -40,6 +40,8 @@ public class MediaUpdateProcessor {
     public static final String MESSAGE_SUB_CATEGORY_ID = "subcategoryId";
     public static final String MESSAGE_ROOMS = "rooms";
     public static final String UPDATE_OPERATION = "mediaUpdate";
+    public static final String UPDATE_OPERATION_ROUTING = "mediaUpdate&lcmRouting";
+
     public static final String MESSAGE_ROOM_HERO = "roomHero";
 
     @Value("${kafka.imagemessage.topic}")
@@ -144,8 +146,10 @@ public class MediaUpdateProcessor {
     private ImageMessage addOperationTag(final ImageMessage imageMessage, boolean routeLcmCons) {
         ImageMessage.ImageMessageBuilder imageMessageBuilder = new ImageMessage.ImageMessageBuilder();
         imageMessageBuilder = imageMessageBuilder.transferAll(imageMessage);
-        //TODO remove later.
+        //TODO remove later all media update message should have 'mediaUpdate' operation
         if (routeLcmCons) {
+            imageMessageBuilder.operation(UPDATE_OPERATION_ROUTING);
+        } else {
             imageMessageBuilder.operation(UPDATE_OPERATION);
         }
         return imageMessageBuilder.build();
