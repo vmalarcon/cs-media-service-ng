@@ -126,10 +126,11 @@ public class CatalogHeroProcessor {
             final String catalogItemId = domainId;
             List<LcmCatalogItemMedia> lcmHeroMedia = mediaLstWithCatalogItemMediaAndMediaFileNameSproc.getMedia(Integer.parseInt(catalogItemId));
             lcmHeroMedia = lcmHeroMedia.stream().filter(item -> item.getMediaId() != mediaId).collect(Collectors.toList());
-            final List<Media> dynamoHeroMedia = mediaRepo.retrieveHeroPropertyMedia(catalogItemId, LODGING.getDomain());
-            LOGGER.info("propertyHero count from dynamo DomainId={} Count={} Updating MediaGuid={}", domainId, dynamoHeroMedia.size(), guid);
+            List<Media> dynamoHeroMedia = mediaRepo.retrieveHeroPropertyMedia(catalogItemId, LODGING.getDomain());
+            dynamoHeroMedia = dynamoHeroMedia.stream().filter(dynamoMedia -> !guid.equals(dynamoMedia.getMediaGuid())).collect(Collectors.toList());
+                    LOGGER.info("propertyHero count from dynamo DomainId={} Count={} Updating MediaGuid={}", domainId, dynamoHeroMedia.size(), guid);
             for (final Media dynamoMedia : dynamoHeroMedia) {
-                if (!guid.equals(dynamoMedia.getMediaGuid()) && dynamoMedia.getDomainFields() != null) {
+                if (dynamoMedia.getDomainFields() != null) {
                     final Media mediaToSave = Media.of(dynamoMedia);
                     mediaToSave.setDomainFields(StringUtils.replace(dynamoMedia.getDomainFields(),
                             "\"propertyHero\":\"true\"", "\"propertyHero\":\"false\""));
