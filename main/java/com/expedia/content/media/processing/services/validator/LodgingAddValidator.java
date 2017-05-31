@@ -6,6 +6,7 @@ import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.ValidatorUtil;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class LodgingAddValidator extends LodgingValidator {
@@ -13,12 +14,15 @@ public class LodgingAddValidator extends LodgingValidator {
 
 
     public List<String> validateImages(List<ImageMessage> messageList) {
-        final List<String> errorList = super.validateImages(messageList);
+        final List<String> errorList = new ArrayList<>();
         for (final ImageMessage imageMessage : messageList) {
             final StringBuffer errorMsg = validateRequest(imageMessage);
             if (errorMsg.length() > 0) {
                 ValidatorUtil.putErrorMapToList(errorList, errorMsg);
             }
+        }
+        if (errorList.isEmpty()) {
+            errorList.addAll(super.validateImages(messageList));
         }
         return errorList;
     }

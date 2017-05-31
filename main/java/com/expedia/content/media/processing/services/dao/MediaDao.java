@@ -1,6 +1,7 @@
 package com.expedia.content.media.processing.services.dao;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
@@ -85,6 +86,20 @@ public interface MediaDao {
      * @param media
      */
     void saveMedia(Media media);
+
+    /**
+     * store message to media DB
+     * @param message
+     * @throws Exception
+     */
+    void addMediaOnImageMessage(ImageMessage message) throws Exception ;
+
+    /**
+     * update imageMessage to mediaDB
+     * @param message
+     * @throws Exception
+     */
+     void updateMediaOnImageMessage(ImageMessage message) throws Exception;
 
     /**
      * Pulls the latest processing status of media files. When a file doesn't have any process logs the file is

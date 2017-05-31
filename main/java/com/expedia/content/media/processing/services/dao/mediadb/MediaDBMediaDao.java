@@ -1,6 +1,9 @@
 package com.expedia.content.media.processing.services.dao.mediadb;
 
+import com.expedia.content.media.processing.pipeline.avro.ImageMessageAvro;
 import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.reporting.App;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
@@ -10,6 +13,8 @@ import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import com.expedia.content.media.processing.services.util.JSONUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -19,6 +24,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +38,7 @@ import java.util.stream.Collectors;
 public class MediaDBMediaDao implements MediaDao {
 
     private static final FormattedLogger LOGGER = new FormattedLogger(MediaDBMediaDao.class);
+    private final static ObjectWriter WRITER = new ObjectMapper().writer();
     private static final String ACTIVE_FILTER_ALL = "all";
     private static final String ACTIVE_FILTER_TRUE = "true";
     private static final String MEDIA_BY_DOMAIN_ID_QUERY_BASE = "SELECT SQL_CALC_FOUND_ROWS * FROM `media` WHERE `domain` = ? AND `domain-id` = ? AND `hidden` = 0";
@@ -44,6 +51,28 @@ public class MediaDBMediaDao implements MediaDao {
     private static final String MEDIA_BY_GUID_QUERY = "SELECT * FROM `media` WHERE `guid` = ?";
     private static final String DELETE_MEDIA_BY_GUID = "DELETE FROM `media` WHERE `guid` = ?";
     private static final String MEDIA_BY_LCM_MEDIA_ID = "SELECT * FROM `media` WHERE `domain-fields` LIKE ?";
+    private static final String ADD_WITH_IMAGEMESSAGEAVRO_QUERY = "INSERT INTO `media` " +
+            "(`guid`, `file-url`, `file-name`, `active`, `client-id`, `user-id`, `hidden`, `updated-by`, `update-date`, " +
+            "`domain`, `domain-id`, `provider`, `domain-fields`, `comments`, `provided-name`, `callback`)" +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+    private static final String UPDATE_WITH_IMAGEMESSAGEAVRO_QUERY = "UPDATE `media` SET " +
+            "`active` = IFNULL(?, active), " +
+            "`client-id` = IFNULL(?, `client-id`), " +
+            "`user-id` = ?, " +
+            "`hidden` = IFNULL(?, hidden), " +
+            "`updated-by` = ?, " +
+            "`update-date` = ?, " +
+            "`domain-fields` = IFNULL(?, `domain-fields`), " +
+            "`comments` = IFNULL(?, comments), " +
+            "`domain` = ?, " +
+            "`domain-id` = ?, " +
+            "`provider` = IFNULL(?, provider), " +
+            "`file-url` = IFNULL(?, `file-url`), " +
+            "`file-name` = IFNULL(?, `file-name`), " +
+            "`provided-name` = IFNULL(?, `provided-name`), " +
+            "`callback` = IFNULL(?, callback) " +
+            "WHERE `guid` = ?";
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -155,6 +184,68 @@ public class MediaDBMediaDao implements MediaDao {
         final List<String> derivativeTypes = Arrays.asList(derivativeFilter.split(","));
         final List<Map<String, Object>> derivatives = JSONUtil.buildMapListFromJson(jsonString);
         return derivatives.stream().filter(map -> derivativeTypes.contains((String) map.get("type"))).collect(Collectors.toList());
+    }
+
+    @Override
+    public void addMediaOnImageMessage(ImageMessage message) throws Exception {
+        String domain = message.getOuterDomainData().getDomain().getDomain();
+        String domainId = message.getOuterDomainData().getDomainId();
+        String domainProvider = message.getOuterDomainData().getProvider();
+        String domainField = WRITER.writeValueAsString(message.getOuterDomainData().getDomainFields());
+        LOGGER.debug("insert media record with ImageMessageAvro sql={} MediaGuid={} RequestId={} ClientId={} Filename={} FileUrl={} Domain={}",
+                ADD_WITH_IMAGEMESSAGEAVRO_QUERY,
+                message.getMediaGuid(), message.getRequestId(), message.getClientId(), message.getFileName(), message.getFileUrl(), domain);
+        jdbcTemplate.update((Connection connection) -> {
+            PreparedStatement statement = connection.prepareStatement(ADD_WITH_IMAGEMESSAGEAVRO_QUERY);
+            statement.setString(1, message.getMediaGuid());
+            statement.setString(2, message.getFileUrl());
+            statement.setString(3, message.getFileName());
+            statement.setInt(4, message.isActive() == null ? 0 : (message.isActive()) ? 1 : 0);
+            statement.setString(5, message.getClientId());
+            statement.setString(6, message.getUserId());
+            statement.setInt(7, message.getHidden() == null ? 0 : (message.getHidden()) ? 1 : 0);
+            statement.setString(8, App.MEDIA_SERVICE.getName());
+            statement.setTimestamp(9, new Timestamp(System.currentTimeMillis()));
+            statement.setString(10, domain);
+            statement.setString(11, domainId);
+            statement.setString(12, domainProvider);
+            statement.setString(13, domainField);
+            statement.setString(14, message.getComment());
+            statement.setString(15, message.getProvidedName());
+            statement.setString(16, message.getCallback() == null ? "" : message.getCallback().toString());
+            return statement;
+        });
+    }
+
+    @Override
+    public void updateMediaOnImageMessage(ImageMessage message) throws Exception {
+        String domain = message.getOuterDomainData().getDomain().getDomain();
+        String domainId = message.getOuterDomainData().getDomainId();
+        String domainProvider = message.getOuterDomainData().getProvider();
+        String domainField = WRITER.writeValueAsString(message.getOuterDomainData().getDomainFields());
+        LOGGER.debug("update media record with ImageMessageAvro sql={} MediaGuid={} RequestId={} ClientId={} Filename={} FileUrl={} Domain={}",
+                UPDATE_WITH_IMAGEMESSAGEAVRO_QUERY,
+                message.getMediaGuid(), message.getRequestId(), message.getClientId(), message.getFileName(), message.getFileUrl(), domain);
+        jdbcTemplate.update((Connection connection) -> {
+            PreparedStatement statement = connection.prepareStatement(UPDATE_WITH_IMAGEMESSAGEAVRO_QUERY);
+            statement.setInt(1, message.isActive() == null ? 0 : (message.isActive()) ? 1 : 0);
+            statement.setString(2, message.getClientId());
+            statement.setString(3, message.getUserId());
+            statement.setInt(4, message.getHidden() == null ? 0 : (message.getHidden()) ? 1 : 0);
+            statement.setString(5, App.MEDIA_SERVICE.getName());
+            statement.setTimestamp(6, new Timestamp(System.currentTimeMillis()));
+            statement.setString(7, domainField);
+            statement.setString(8, message.getComment());
+            statement.setString(9, domain);
+            statement.setString(10, domainId);
+            statement.setString(11, domainProvider);
+            statement.setString(12, message.getFileUrl());
+            statement.setString(13, message.getFileName());
+            statement.setString(14, message.getProvidedName());
+            statement.setString(15, message.getCallback() == null ? "" : message.getCallback().toString());
+            statement.setString(16, message.getMediaGuid());
+            return statement;
+        });
     }
 
     @Override

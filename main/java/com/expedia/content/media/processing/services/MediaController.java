@@ -41,11 +41,13 @@ import com.expedia.content.media.processing.services.dao.domain.LcmMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.expedia.content.media.processing.services.dao.dynamo.DynamoMediaRepository;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
 import com.expedia.content.media.processing.services.exception.PaginationValidationException;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.FileNameUtil;
+import com.expedia.content.media.processing.services.util.ImageUtil;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaReplacement;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
@@ -86,6 +88,7 @@ import expedia.content.solutions.metrics.annotations.Timer;
  */
 @RestController
 @EnableScheduling
+@SuppressWarnings({"PMD.StdCyclomaticComplexity"})
 public class MediaController extends CommonServiceController {
 
     private static final FormattedLogger LOGGER = new FormattedLogger(MediaController.class);
@@ -112,6 +115,9 @@ public class MediaController extends CommonServiceController {
     private static final String DEFAULT_VALIDATION_RULES = "DEFAULT";
     private static final String REJECTED_STATUS = "REJECTED";
     private static final String REPROCESS_OPERATION = "reprocess";
+    //TODO remove once all msg go to lcmConsumer
+    public static final String LCM_ROUTING = "lcmRouting";
+
     private static final Integer LIVE_COUNT = 1;
     private static final long ONE_HOUR = 3600 * 1000;
     private static final Map<String, HttpStatus> STATUS_MAP = new HashMap<>();
@@ -145,6 +151,8 @@ public class MediaController extends CommonServiceController {
     @Autowired
     private MediaUpdateDao mediaUpdateDao;
     @Autowired
+    private MediaDBMediaDao mediaDBMediaDao;
+    @Autowired
     private DynamoMediaRepository dynamoMediaRepository;
     @Autowired
     private MediaUpdateProcessor mediaUpdateProcessor;
@@ -154,6 +162,11 @@ public class MediaController extends CommonServiceController {
     private String hipChatRoom;
     @Value("${kafka.imagemessage.topic}")
     private String imageMessageTopic;
+    @Value("${kafka.mediadb.update.enable}")
+    private boolean enableMediaDBUpdate;
+    //TODO remove later after route all message to lcm
+    @Value("${kafak.route.lcm.cons.percentage}")
+    private int routeLcmPercentage;
 
 
     @Autowired
@@ -180,7 +193,6 @@ public class MediaController extends CommonServiceController {
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
         LOGGER.info("RECEIVED ADD REQUEST ServiceUrl={} ClientId={} RequestId={} JSONMessage={}", serviceUrl, clientID, requestID, message);
         try {
-
             return processRequest(message, requestID, serviceUrl, clientID, ACCEPTED, timeReceived);
         } catch (ImageMessageException ex) {
             final ResponseEntity<String> responseEntity = this.buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
@@ -326,9 +338,18 @@ public class MediaController extends CommonServiceController {
                         mediaGUID, dynamoGuid, clientID, requestID);
                 return this.buildErrorResponse("Media GUID " + dynamoGuid + " exists, please use GUID in request.", serviceUrl, BAD_REQUEST);
             }
+            //TODO after migration is done and lcm-consumer deployed, remove the old delete logic
             mediaDao.deleteMediaByGUID(mediaGUID);
+            if (mediaGUID.matches(REG_EX_GUID) && enableMediaDBUpdate) {
+                final Media media = mediaDBMediaDao.getMediaByGuid(mediaGUID);
+                media.setHidden(true);
+                final ImageMessage imageMessage = media.toImageMessage();
+                kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic);
+            }
+
         } catch (Exception ex) {
-            LOGGER.error(ex, "ERROR ServiceUrl={} ClientId={} RequestId={} MediaGuid={} ErrorMessage={}", serviceUrl, clientID, requestID, mediaGUID, ex.getMessage());
+            LOGGER.error(ex, "ERROR ServiceUrl={} ClientId={} RequestId={} MediaGuid={} ErrorMessage={}", serviceUrl, clientID, requestID, mediaGUID,
+                    ex.getMessage());
             poker.poke("Media Services failed to process a deleteMedia request - RequestId: " + requestID + " ClientId: " + clientID, hipChatRoom, mediaGUID, ex);
             throw ex;
         }
@@ -564,6 +585,7 @@ public class MediaController extends CommonServiceController {
                 thumbnail = thumbnailProcessor.createThumbnail(imageMessageNew);
             } catch (Exception e) {
                 response.put(RESPONSE_FIELD_STATUS, REJECTED_STATUS);
+
                 response.put(ERROR_MESSAGE, e.getLocalizedMessage());
                 return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), HttpStatus.UNPROCESSABLE_ENTITY);
             }
@@ -572,12 +594,32 @@ public class MediaController extends CommonServiceController {
         if (!isReprocessing || storeMediaAddMessage) {
             dynamoMediaRepository.storeMediaAddMessage(imageMessageNew, thumbnail);
         }
+        //only do add media to mediaDB then kafka is ready
+        if (enableMediaDBUpdate && mediaDBMediaDao.getMediaByGuid(imageMessageNew.getMediaGuid()) == null) {
+            mediaDBMediaDao.addMediaOnImageMessage(imageMessageNew);
+        }
         publishMsg(imageMessageNew);
-        kafkaCommonPublisher.publishImageMessage(imageMessageNew, imageMessageTopic);
         final ResponseEntity<String> responseEntity = new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
         LOGGER.info("SUCCESS ResponseStatus={} ResponseBody={} ServiceUrl={}",
                 Arrays.asList(responseEntity.getStatusCode().toString(), responseEntity.getBody(), serviceUrl), imageMessageNew);
         return responseEntity;
+    }
+
+    /**
+     * publish message to kafka topic and SQS based on routingRate.
+     *
+     * @param imageMessage
+     */
+    private void publishMsg(ImageMessage imageMessage) throws Exception {
+        final boolean routeLcmCons = ImageUtil.routeKafkaLcmConsByPercentage(routeLcmPercentage);
+        if (routeLcmCons) {
+            final ImageMessage messageWithRoutingTag = imageMessage.createBuilderFromMessage().operation(LCM_ROUTING).build();
+            publishMsgSQS(messageWithRoutingTag);
+            kafkaCommonPublisher.publishImageMessage(messageWithRoutingTag, imageMessageTopic);
+        } else {
+            publishMsgSQS(imageMessage);
+            kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic);
+        }
     }
 
     /**
@@ -648,13 +690,16 @@ public class MediaController extends CommonServiceController {
     private  Map<String, Boolean> processReplacement(ImageMessage imageMessage, ImageMessage.ImageMessageBuilder imageMessageBuilder, String clientId) {
         final Map<String, Boolean> reprocessMap = new HashMap<>();
         if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
-            final List<Media> mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
+            List<Media> mediaList = null;
+            //TODO replace with MediaDB query.
+            mediaList = mediaDao.getMediaByFilename(imageMessage.getFileName());
             final Optional<Media> bestMedia = MediaReplacement
                     .selectBestMedia(mediaList, imageMessage.getOuterDomainData().getDomainId(), imageMessage.getOuterDomainData().getProvider());
             // Replace the GUID and MediaId of the existing Media
             if (bestMedia.isPresent()) {
                 final Media media = bestMedia.get();
                 final OuterDomain.OuterDomainBuilder domainBuilder = OuterDomain.builder().from(imageMessage.getOuterDomainData());
+                //TODO change later , we store Integer in MediaDB
                 domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, media.getLcmMediaId());
                 imageMessageBuilder.outerDomainData(domainBuilder.build());
                 imageMessageBuilder.mediaGuid(media.getMediaGuid());
@@ -698,7 +743,7 @@ public class MediaController extends CommonServiceController {
     @Timer(name = "publishMessageTimer")
     @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     @RetryableMethod
-    private void publishMsg(final ImageMessage message) {
+    private void publishMsgSQS(final ImageMessage message) {
         message.addLogEntry(new LogEntry(App.MEDIA_SERVICE, Activity.MEDIA_MESSAGE_RECEIVED, new Date()));        
         try {
             LOGGER.info("Publishing to SQS", message);

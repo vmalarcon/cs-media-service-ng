@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import com.expedia.content.media.processing.pipeline.kafka.KafkaCommonPublisher;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.codehaus.plexus.util.ReflectionUtils;
 import org.joda.time.format.DateTimeFormat;
@@ -115,6 +116,9 @@ public class MediaControllerTest {
     @Mock
     private KafkaCommonPublisher kafkaCommonPublisher;
 
+    @Mock
+    private MediaDBMediaDao mockMediaDBDAO ;
+
     private Set<Map.Entry<Object, Object>> providerMapping;
     private MediaController mediaController;
     private MediaController mediaControllerSpy;
@@ -129,7 +133,7 @@ public class MediaControllerTest {
     }
 
     @Before
-    public void initialize() throws IllegalAccessException {
+    public void initialize() throws Exception {
         mediaController = new MediaController();
 
         ReflectionUtils.setVariableValueInObject(mediaController, "providerProperties", mockProviderProperties);
@@ -146,6 +150,7 @@ public class MediaControllerTest {
         Mockito.doNothing().when(dynamoMediaRepository).storeMediaAddMessage(anyObject(), anyObject());
         FieldUtils.writeField(mediaController, "dynamoMediaRepository", dynamoMediaRepository, true);
         FieldUtils.writeField(mediaController, "kafkaCommonPublisher", kafkaCommonPublisher, true);
+        FieldUtils.writeField(mediaController, "mediaDBMediaDao", mockMediaDBDAO, true);
         Mockito.doNothing().when(kafkaCommonPublisher).publishImageMessage(anyObject(),anyString());
     }
 
@@ -166,6 +171,7 @@ public class MediaControllerTest {
         LcmDynamoMediaDao mockLcmDynamoMediaDao = mock(LcmDynamoMediaDao.class);
         setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
         setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
+        setFieldValue(mediaController, "routeLcmPercentage", 100);
 
         String requestId = "test-request-id"; // invalid UUID provided
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -197,6 +203,8 @@ public class MediaControllerTest {
         verifyZeroInteractions(mockLcmDynamoMediaDao);
         ArgumentCaptor<ImageMessage> imageMessage = ArgumentCaptor.forClass(ImageMessage.class);
         verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage.capture(),anyString());
+        assertFalse(imageMessage.getValue().toJSONMessage().contains("deleteKeyStore"));
+
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -662,6 +670,7 @@ public class MediaControllerTest {
     }
 
 
+
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testReplaceImageWhenDynamoNotFound() throws Exception {
@@ -902,6 +911,7 @@ public class MediaControllerTest {
         LcmDynamoMediaDao mockLcmDynamoMediaDao = mock(LcmDynamoMediaDao.class);
         setFieldValue(mediaController, "mediaDao", mockLcmDynamoMediaDao);
         setFieldValue(mediaController, "dynamoMediaRepository", mock(DynamoMediaRepository.class));
+        setFieldValue(mediaController, "routeLcmPercentage", 100);
 
         String requestId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -930,6 +940,8 @@ public class MediaControllerTest {
         verifyZeroInteractions(mockLcmDynamoMediaDao);
         ArgumentCaptor<ImageMessage> imageMessage = ArgumentCaptor.forClass(ImageMessage.class);
         verify(kafkaCommonPublisher, times(1)).publishImageMessage(imageMessage.capture(), anyString());
+        assertTrue(imageMessage.getValue().toJSONMessage().contains("lcmRouting"));
+
     }
 
     @Test
@@ -1091,6 +1103,28 @@ public class MediaControllerTest {
         ResponseEntity<String> responseEntity = mediaController.deleteMedia("12312", mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+
+    @Test
+    public void testDeleteMediaByGUIDWithKafka() throws Exception {
+        String requestId = "test-request-id";
+        MultiValueMap<String, String> mockHeader = new HttpHeaders();
+        mockHeader.add("request-id", requestId);
+        MediaDao mockMediaDao = mock(MediaDao.class);
+        List<Media> medias = new ArrayList<>();
+        Media resultMedia = Media.builder().active("true").domain("Lodging").domainId("1234").fileName("47474_freetotbook_5h5h5h5h5h5h.jpg")
+                .lcmMediaId("123456").lastUpdated(new Date()).lcmMediaId("123456").mediaGuid("6fe9b8d4-5ce0-41b0-9e17-b4880f542da8").build();
+        medias.add(resultMedia);
+        when(mockMediaDao.getMediaByMediaId(anyString())).thenReturn(medias);
+        when(mockMediaDBDAO.getMediaByGuid(anyString())).thenReturn(resultMedia);
+        setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        setFieldValue(mediaController, "enableMediaDBUpdate", true);
+        ResponseEntity<String> responseEntity = mediaController.deleteMedia("6fe9b8d4-5ce0-41b0-9e17-b4880f542da8", mockHeader);
+        assertNotNull(responseEntity);
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(), anyString());
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
@@ -2073,12 +2107,18 @@ public class MediaControllerTest {
         setFieldValue(mediaController, "reporting", reporting);
 
         MediaDao mockMediaDao = mock(MediaDao.class);
+        MediaDao mockMediaDBDAO = mock(MediaDBMediaDao.class);
+
         when(mockMediaDao.getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"))).thenReturn(new ArrayList<>());
         final LcmMedia media1 = LcmMedia.builder().active(true).domainId(123).fileName("123_1_NASA_ISS-4.jpg").mediaId(12345).build();
         when(mockMediaDao.getMediaByFilenameInLCM(eq(123), eq("123_1_NASA_ISS-4.jpg")))
         .thenReturn(Lists.newArrayList(media1));
 
         setFieldValue(mediaController, "mediaDao", mockMediaDao);
+        setFieldValue(mediaController, "mediaDBMediaDao", mockMediaDBDAO);
+        setFieldValue(mediaController, "enableMediaDBUpdate", true);
+        when(mockMediaDBDAO.getMediaByGuid(anyString())).thenReturn(null);
+
         setFieldValue(mediaController, "dynamoMediaRepository", dynamoMediaRepository);
         String requestId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -2100,6 +2140,8 @@ public class MediaControllerTest {
         verify(mockMediaDao, times(1)).getMediaByFilename(eq("123_1_NASA_ISS-4.jpg"));
         verify(mockMediaDao, times(1)).getMediaByFilenameInLCM(eq(123), eq("123_1_NASA_ISS-4.jpg"));
         verify(dynamoMediaRepository, times(1)).storeMediaAddMessage(any(ImageMessage.class), any(Thumbnail.class));
+        verify(mockMediaDBDAO, times(1)).addMediaOnImageMessage(any(ImageMessage.class));
+
     }
 
 
@@ -2172,6 +2214,8 @@ public class MediaControllerTest {
         FieldUtils.writeField(mockUpdateProcess, "catalogItemMediaDao", catalogItemMediaDao, true);
         FieldUtils.writeField(mockUpdateProcess, "catalogHeroProcessor", catalogHeroProcessor, true);
         setFieldValue(mockUpdateProcess, "kafkaCommonPublisher", kafkaCommonPublisher);
+        setFieldValue(mockUpdateProcess, "mediaDBMediaDao", mockMediaDBDAO);
+
         return mockUpdateProcess;
     }
 
