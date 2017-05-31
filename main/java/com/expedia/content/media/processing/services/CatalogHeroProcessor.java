@@ -77,13 +77,14 @@ public class CatalogHeroProcessor {
     }
 
     /**
-     *  update lastUpdateBy and timestamp to catalogitemMedia table
+     * update lastUpdateBy and timestamp to catalogitemMedia table
+     *
      * @param user
      * @param lcmCatalogItemMedia
      */
     public void updateTimestamp(String user, LcmCatalogItemMedia lcmCatalogItemMedia) {
-            catalogItemMediaChgSproc.updateCategory(lcmCatalogItemMedia.getCatalogItemId(), lcmCatalogItemMedia.getMediaId(),
-                    lcmCatalogItemMedia.getMediaUseRank(), user, ROOM_UPDATED_BY);
+        catalogItemMediaChgSproc.updateCategory(lcmCatalogItemMedia.getCatalogItemId(), lcmCatalogItemMedia.getMediaId(),
+                lcmCatalogItemMedia.getMediaUseRank(), user, ROOM_UPDATED_BY);
 
     }
 
@@ -128,7 +129,7 @@ public class CatalogHeroProcessor {
             lcmHeroMedia = lcmHeroMedia.stream().filter(item -> item.getMediaId() != mediaId).collect(Collectors.toList());
             List<Media> dynamoHeroMedia = mediaRepo.retrieveHeroPropertyMedia(catalogItemId, LODGING.getDomain());
             dynamoHeroMedia = dynamoHeroMedia.stream().filter(dynamoMedia -> !guid.equals(dynamoMedia.getMediaGuid())).collect(Collectors.toList());
-                    LOGGER.info("propertyHero count from dynamo DomainId={} Count={} Updating MediaGuid={}", domainId, dynamoHeroMedia.size(), guid);
+            LOGGER.info("propertyHero count from dynamo DomainId={} Count={} Updating MediaGuid={}", domainId, dynamoHeroMedia.size(), guid);
             for (final Media dynamoMedia : dynamoHeroMedia) {
                 if (dynamoMedia.getDomainFields() != null) {
                     final Media mediaToSave = Media.of(dynamoMedia);
@@ -178,7 +179,7 @@ public class CatalogHeroProcessor {
         dynamoMediaList.stream()
                 .filter(media -> media.getLcmMediaId() != null && media.getDomainFields() != null)
                 .filter(media -> (lcmIdLastUpdateDateMap.get(Integer.valueOf(media.getLcmMediaId())) == null) ? true :
-                                compareDates(lcmIdLastUpdateDateMap.get(Integer.valueOf(media.getLcmMediaId())), media.getLastUpdated()))
+                        compareDates(lcmIdLastUpdateDateMap.get(Integer.valueOf(media.getLcmMediaId())), media.getLastUpdated()))
                 .forEach(media -> {
                     final Map map = JSONUtil.buildMapFromJson(media.getDomainFields());
                     final String subcategory = (String) map.get(SUBCATEGORY_ID);
@@ -197,7 +198,7 @@ public class CatalogHeroProcessor {
      * Compares a media's last update time in LCM and Dynamo DB.
      * LCM only holds the time to the minute, so the seconds are dropped from the Dynamo DB time to normalize the values.
      *
-     * @param lcmDate Last Update Time in LCM
+     * @param lcmDate    Last Update Time in LCM
      * @param dynamoDate Last Update Time in Dynamo DB
      * @return the boolean value of whether the Dynamo last update time is more recent than the LCM last update time
      */
