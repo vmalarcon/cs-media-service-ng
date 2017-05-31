@@ -126,12 +126,16 @@ public class CatalogHeroProcessor {
         try {
             final String catalogItemId = domainId;
             List<LcmCatalogItemMedia> lcmHeroMedia = mediaLstWithCatalogItemMediaAndMediaFileNameSproc.getMedia(Integer.parseInt(catalogItemId));
-            lcmHeroMedia = lcmHeroMedia.stream().filter(item -> item.getMediaId() != mediaId).collect(Collectors.toList());
+            lcmHeroMedia = lcmHeroMedia.stream()
+                    .filter(item -> item.getMediaId() != mediaId)
+                    .collect(Collectors.toList());
             List<Media> dynamoHeroMedia = mediaRepo.retrieveHeroPropertyMedia(catalogItemId, LODGING.getDomain());
-            dynamoHeroMedia = dynamoHeroMedia.stream().filter(dynamoMedia -> !guid.equals(dynamoMedia.getMediaGuid())).collect(Collectors.toList());
+            dynamoHeroMedia = dynamoHeroMedia.stream()
+                    .filter(dynamoMedia -> !guid.equals(dynamoMedia.getMediaGuid()))
+                    .filter(dynamoMedia -> StringUtils.isNotEmpty(dynamoMedia.getDomainFields()))
+                    .collect(Collectors.toList());
             LOGGER.info("propertyHero count from dynamo DomainId={} Count={} Updating MediaGuid={}", domainId, dynamoHeroMedia.size(), guid);
             for (final Media dynamoMedia : dynamoHeroMedia) {
-                if (dynamoMedia.getDomainFields() != null) {
                     final Media mediaToSave = Media.of(dynamoMedia);
                     mediaToSave.setDomainFields(StringUtils.replace(dynamoMedia.getDomainFields(),
                             "\"propertyHero\":\"true\"", "\"propertyHero\":\"false\""));
@@ -140,7 +144,6 @@ public class CatalogHeroProcessor {
                     LOGGER.info("Setting propertyHero false for DomainId={} MediaGuid={}", domainId, mediaToSave.getMediaGuid());
                     mediaDao.saveMedia(mediaToSave);
                     LOGGER.info("Completed setting propertyHero false for DomainId={} MediaGuid={}", domainId, mediaToSave.getMediaGuid());
-                }
             }
             final List<CategoryMedia> categoryMediaList = buildCategoryMediaList(lcmHeroMedia, dynamoHeroMedia);
             for (final CategoryMedia categoryMedia : categoryMediaList) {
