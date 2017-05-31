@@ -216,8 +216,8 @@ public class MediaUpdateProcessor {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
         final String domain = (imageMessage.getOuterDomainData() == null ? "" : imageMessage.getOuterDomainData().getDomain().getDomain());
         if ("true".equalsIgnoreCase(heroProperty)) {
-            setHeroImage(imageMessage, mediaId, domainId);
             unsetHeroImage(imageMessage, mediaId, domainId, guid, domain);
+            setHeroImage(imageMessage, mediaId, domainId);
         } else {
             final LcmCatalogItemMedia lcmCatalogItemMedia = catalogHeroProcessor.getCatalogItemMeida(domainId, mediaId);
             String subcategory = "";
@@ -238,8 +238,8 @@ public class MediaUpdateProcessor {
         final String guid = dynamoMedia == null ? "" : dynamoMedia.getMediaGuid();
         final String domain = (imageMessage.getOuterDomainData() == null ? "" : imageMessage.getOuterDomainData().getDomain().getDomain());
         if ("true".equalsIgnoreCase(heroProperty)) {
-            setHeroImage(imageMessage, mediaId, domainId);
             unsetHeroImage(imageMessage, mediaId, domainId, guid, domain);
+            setHeroImage(imageMessage, mediaId, domainId);
         } else {
             //set the subid from json.
             catalogHeroProcessor.updateCurrentMediaHero(imageMessage, domainId, mediaId);
