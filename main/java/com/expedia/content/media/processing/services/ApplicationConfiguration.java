@@ -47,6 +47,9 @@ public class ApplicationConfiguration {
     @Value("${kafka.producer.retries}")
     private Integer producerRetries;
 
+    @Value("${kafka.producer.retry.backoff.ms}")
+    private Integer producerRetryBackoffMs;
+
     @Autowired
     private Poker poker;
 
@@ -75,14 +78,15 @@ public class ApplicationConfiguration {
         props.put("enableSend", enableSend);
         props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
         props.put(ProducerConfig.RETRIES_CONFIG, producerRetries);
+        props.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, producerRetryBackoffMs);
         return new KafkaCommonPublisher(props, poker);
     }
 
     @Bean
     @Primary
     public CompositeReporting compositeReporting(@Value("${appname}") final String appname, final DynamoDBMapper dynamoMapper,
-            final LcmReporting lcmReporting, @Value("${kafka.activity.topic}") String activityTopic)
-            throws IOException {
+                                                 final LcmReporting lcmReporting, @Value("${kafka.activity.topic}") String activityTopic,
+                                                 @Value("${kafka.activity.topic.retry}") String activityRetryTopic) throws IOException {
         final List<Reporting> reportings = new ArrayList<>();
         final DynamoReporting dynamoReporting = new DynamoReporting(dynamoMapper, appname);
         reportings.add(dynamoReporting);
@@ -94,8 +98,9 @@ public class ApplicationConfiguration {
         props.put("enableSend", enableSend);
         props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
         props.put(ProducerConfig.RETRIES_CONFIG, producerRetries);
+        props.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, producerRetryBackoffMs);
         final KafkaCommonPublisher kafkaCommonPublisher = new KafkaCommonPublisher(props, poker);
-        final KafkaReporting kafkaReporting = new KafkaReporting (kafkaCommonPublisher, appname, activityTopic);
+        final KafkaReporting kafkaReporting = new KafkaReporting(kafkaCommonPublisher, appname, activityTopic, activityRetryTopic);
         reportings.add(kafkaReporting);
         reportings.add(lcmReporting);
         return new CompositeReporting(reportings);

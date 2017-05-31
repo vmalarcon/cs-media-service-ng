@@ -162,6 +162,8 @@ public class MediaController extends CommonServiceController {
     private String hipChatRoom;
     @Value("${kafka.imagemessage.topic}")
     private String imageMessageTopic;
+    @Value("${kafka.imagemessage.topic.retry}")
+    private String imageMessageRetryTopic;
     @Value("${kafka.mediadb.update.enable}")
     private boolean enableMediaDBUpdate;
     //TODO remove later after route all message to lcm
@@ -344,7 +346,7 @@ public class MediaController extends CommonServiceController {
                 final Media media = mediaDBMediaDao.getMediaByGuid(mediaGUID);
                 media.setHidden(true);
                 final ImageMessage imageMessage = media.toImageMessage();
-                kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic);
+                kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic, imageMessageRetryTopic);
             }
 
         } catch (Exception ex) {
@@ -615,10 +617,10 @@ public class MediaController extends CommonServiceController {
         if (routeLcmCons) {
             final ImageMessage messageWithRoutingTag = imageMessage.createBuilderFromMessage().operation(LCM_ROUTING).build();
             publishMsgSQS(messageWithRoutingTag);
-            kafkaCommonPublisher.publishImageMessage(messageWithRoutingTag, imageMessageTopic);
+            kafkaCommonPublisher.publishImageMessage(messageWithRoutingTag, imageMessageTopic, imageMessageRetryTopic);
         } else {
             publishMsgSQS(imageMessage);
-            kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic);
+            kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic, imageMessageRetryTopic);
         }
     }
 

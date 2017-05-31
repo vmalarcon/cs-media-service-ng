@@ -46,6 +46,8 @@ public class MediaUpdateProcessor {
 
     @Value("${kafka.imagemessage.topic}")
     private String imageMessageTopic;
+    @Value("${kafka.imagemessage.topic.retry}")
+    private String imageMessageRetryTopic;
     //TODO remove once all msg go to lcm consumer.
     @Value("${kafak.route.lcm.cons.percentage}")
     private int routeLcmPercentage;
@@ -115,7 +117,7 @@ public class MediaUpdateProcessor {
                 mediaDBMediaDao.updateMediaOnImageMessage(updatedImageMessage);
             }
             //publish here because if update old Media without guid and data in dynamo
-            kafkaCommonPublisher.publishImageMessage(addOperationTag(updatedImageMessage, routeLcm), imageMessageTopic);
+            kafkaCommonPublisher.publishImageMessage(addOperationTag(updatedImageMessage, routeLcm), imageMessageTopic, imageMessageRetryTopic);
         }
         final Map<String, Object> response = new HashMap<>();
         response.put("status", Integer.valueOf(200));
