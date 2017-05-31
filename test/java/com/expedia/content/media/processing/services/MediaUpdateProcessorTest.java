@@ -366,7 +366,7 @@ public class MediaUpdateProcessorTest {
         //do not unhero
         verifyZeroInteractions(mediaDao);
         verifyNoMoreInteractions(catalogItemMediaChgSproc);
-        verify(kafkaCommonPublisher, times(2)).publishImageMessage(any(ImageMessage.class), anyString());
+        verify(kafkaCommonPublisher, times(2)).publishImageMessage(any(ImageMessage.class), anyString(), anyString());
     }
 
 
