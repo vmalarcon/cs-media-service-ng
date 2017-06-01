@@ -97,7 +97,7 @@ public class MediaControllerTest {
         mediaController = new MediaController(mockValidators, mockLogActivityProcess, reporting, queueMessagingTemplateMock, mockMediaDao, kafkaCommonPublisher,
                 mediaUpdateProcessor, mediaGetProcessor, mediaAddProcessor, poker);
         mediaControllerSpy = spy(mediaController);
-        Mockito.doNothing().when(kafkaCommonPublisher).publishImageMessage(anyObject(),anyString());
+        Mockito.doNothing().when(kafkaCommonPublisher).publishImageMessage(anyObject(),anyString(), anyString());
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -541,7 +541,7 @@ public class MediaControllerTest {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         assertTrue(responseEntity.getBody().contains("Media GUID 87654321-4321-4321-4321-605040302010 has been deleted successfully."));
         ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(argument.capture(), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(argument.capture(), anyString(), anyString());
         ImageMessage deleteImageMessage = argument.getValue();
         assertEquals(true, deleteImageMessage.getHidden());
     }

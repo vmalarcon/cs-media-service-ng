@@ -92,6 +92,8 @@ public class MediaController extends CommonServiceController {
     private String hipChatRoom;
     @Value("${kafka.imagemessage.topic}")
     private String imageMessageTopic;
+    @Value("${kafka.imagemessage.topic.retry}")
+    private String imageMessageRetryTopic;
     @Value("${media.aws.processlog.queue.name}")
     private String mediaProcessLogQueue;
     private final Map<String, List<MapMessageValidator>> mapValidatorList;
@@ -391,7 +393,7 @@ public class MediaController extends CommonServiceController {
             final Media media = mediaDao.getMediaByGuid(mediaGUID).orElseThrow(MediaNotFoundException::new);
             media.setHidden(true);
             final ImageMessage imageMessage = media.toImageMessage();
-            kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic);
+            kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic, imageMessageRetryTopic);
             return new ResponseEntity<>("Media GUID " + StringEscapeUtils.escapeHtml(mediaGUID) + " has been deleted successfully.", OK);
         } catch (MediaNotFoundException ex) {
             return buildErrorResponse("Requested resource with ID " + mediaGUID + " was not found.", serviceUrl, NOT_FOUND);

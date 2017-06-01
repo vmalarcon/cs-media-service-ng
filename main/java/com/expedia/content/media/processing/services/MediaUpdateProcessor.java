@@ -31,6 +31,8 @@ public class MediaUpdateProcessor {
 
     @Value("${kafka.imagemessage.topic}")
     private String imageMessageTopic;
+    @Value("${kafka.imagemessage.topic.retry}")
+    private String imageMessageRetryTopic;
     private final KafkaCommonPublisher kafkaCommonPublisher;
     private final MediaDao mediaDao;
 
@@ -58,7 +60,7 @@ public class MediaUpdateProcessor {
         mediaDao.updateMedia(updatedImageMessage);
         LOGGER.info("Finished updating media in MediaDB MediaGuid={}", originalMedia.getMediaGuid());
         // TODO: Update all the media that needs to be unhero'd in mediaDB and send them to kafka as well.
-        kafkaCommonPublisher.publishImageMessage(addUpdateOperationTag(updatedImageMessage), imageMessageTopic);
+        kafkaCommonPublisher.publishImageMessage(addUpdateOperationTag(updatedImageMessage), imageMessageTopic, imageMessageRetryTopic);
         final Map<String, Object> response = new HashMap<>();
         response.put("status", HttpStatus.OK.value());
         final String jsonResponse = new ObjectMapper().writeValueAsString(response);

@@ -66,7 +66,7 @@ public class MediaUpdateProcessorTest {
         ImageMessage updatedImageMessage = media.toImageMessage();
         ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
         verify(mediaDBMediaDao, times(1)).updateMedia(argument.capture());
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString(), anyString());
         assertEquals(updatedImageMessage.getOuterDomainData().getDomainFields(), argument.getValue().getOuterDomainData().getDomainFields());
     }
 
@@ -91,7 +91,7 @@ public class MediaUpdateProcessorTest {
         ImageMessage updatedImageMessage = media.toImageMessage();
         ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
         verify(mediaDBMediaDao, times(1)).updateMedia(argument.capture());
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString(), anyString());
         assertEquals(updatedImageMessage.getOuterDomainData().getDomainFields(), argument.getValue().getOuterDomainData().getDomainFields());
     }
 
@@ -117,7 +117,7 @@ public class MediaUpdateProcessorTest {
         ImageMessage updatedImageMessage = media.toImageMessage();
         ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
         verify(mediaDBMediaDao, times(1)).updateMedia(argument.capture());
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString(), anyString());
         assertEquals(updatedImageMessage.getOuterDomainData().getDomainFields(), argument.getValue().getOuterDomainData().getDomainFields());
     }
 
@@ -142,7 +142,7 @@ public class MediaUpdateProcessorTest {
         ImageMessage updatedImageMessage = media.toImageMessage();
         ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
         verify(mediaDBMediaDao, times(1)).updateMedia(argument.capture());
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString(), anyString());
         assertEquals(updatedImageMessage.getOuterDomainData().getDomainFields(), argument.getValue().getOuterDomainData().getDomainFields());
     }
 
@@ -165,7 +165,7 @@ public class MediaUpdateProcessorTest {
         ImageMessage updatedImageMessage = media.toImageMessage();
         ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
         verify(mediaDBMediaDao, times(1)).updateMedia(argument.capture());
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString(), anyString());
         assertEquals(updatedImageMessage.getComment(), argument.getValue().getComment());
     }
 
@@ -197,7 +197,7 @@ public class MediaUpdateProcessorTest {
         ImageMessage updatedImageMessage = media.toImageMessage();
         ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
         verify(mediaDBMediaDao, times(1)).updateMedia(argument.capture());
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString(), anyString());
         assertEquals(updatedImageMessage.getOuterDomainData().getDomainFields(), argument.getValue().getOuterDomainData().getDomainFields());
     }
 
@@ -229,7 +229,7 @@ public class MediaUpdateProcessorTest {
         ImageMessage updatedImageMessage = media.toImageMessage();
         ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
         verify(mediaDBMediaDao, times(1)).updateMedia(argument.capture());
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString(), anyString());
         assertEquals(updatedImageMessage.getOuterDomainData().getDomainFields(), argument.getValue().getOuterDomainData().getDomainFields());
     }
     
@@ -250,7 +250,7 @@ public class MediaUpdateProcessorTest {
         ImageMessage updatedImageMessage = media.toImageMessage();
         ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
         verify(mediaDBMediaDao, times(1)).updateMedia(argument.capture());
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString(), anyString());
         assertEquals(updatedImageMessage.isActive(), argument.getValue().isActive());
     }
 
@@ -272,6 +272,6 @@ public class MediaUpdateProcessorTest {
                         new Date(), "true", "EPC", "EPC", "bobthegreat", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
                         new HashMap<>(), new ArrayList<>(), "", "", false, false, null);
         mediaUpdateProcessor.processRequest(imageMessage, media);
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString(), anyString());
     }
 }

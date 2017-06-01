@@ -93,7 +93,7 @@ public class MediaAddProcessorTest {
         verify(mockMediaDao, times(0)).updateMedia(any());
         verifyZeroInteractions(thumbnailProcessor);
         ImageMessage processedImageMessage = argument.getValue();
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(eq(processedImageMessage), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(eq(processedImageMessage), anyString(), anyString());
         assertNull(processedImageMessage.getOperation());
         assertEquals("1238_EPCInternalUser_" + processedImageMessage.getMediaGuid() + ".jpg", processedImageMessage.getFileName());
         assertEquals("http://i.imgur.com/3PRGFii.jpg", processedImageMessage.getFileUrl());
@@ -127,7 +127,7 @@ public class MediaAddProcessorTest {
         verify(mockMediaDao, times(1)).updateMedia(argument.capture());
         verifyZeroInteractions(thumbnailProcessor);
         ImageMessage processedImageMessage = argument.getValue();
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(eq(processedImageMessage), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(eq(processedImageMessage), anyString(), anyString());
         assertTrue(processedImageMessage.getOperation().contains(REPROCESS_OPERATION));
         assertEquals("12345678-1234-1234-1234-010203040506", processedImageMessage.getMediaGuid());
         assertEquals("NASA_ISS-4.jpg", processedImageMessage.getFileName());
@@ -152,7 +152,7 @@ public class MediaAddProcessorTest {
         verify(mockMediaDao, times(0)).updateMedia(any());
         verifyZeroInteractions(thumbnailProcessor);
         ImageMessage processedImageMessage = argument.getValue();
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(eq(processedImageMessage), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(eq(processedImageMessage), anyString(), anyString());
         assertNull(processedImageMessage.getOperation());
         assertEquals("1238_EPCInternalUser_" + processedImageMessage.getMediaGuid() + ".jpg", processedImageMessage.getFileName());
         assertEquals("http://i.imgur.com/3PRGFii.jpg", processedImageMessage.getFileUrl());
@@ -179,7 +179,7 @@ public class MediaAddProcessorTest {
         verify(thumbnailProcessor, times(1)).createThumbnail(any());
         verify(mockMediaDao, times(0)).updateMedia(any());
         ImageMessage processedImageMessage = argument.getValue();
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(eq(processedImageMessage), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(eq(processedImageMessage), anyString(), anyString());
         assertNull(processedImageMessage.getOperation());
         assertEquals("1238_EPCInternalUser_" + processedImageMessage.getMediaGuid() + ".jpg", processedImageMessage.getFileName());
         assertEquals("http://i.imgur.com/3PRGFii.jpg", processedImageMessage.getFileUrl());

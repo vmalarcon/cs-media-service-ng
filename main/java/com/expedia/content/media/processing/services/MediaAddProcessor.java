@@ -63,6 +63,8 @@ public class MediaAddProcessor {
     private Properties providerProperties;
     @Value("${kafka.imagemessage.topic}")
     private String imageMessageTopic;
+    @Value("${kafka.imagemessage.topic.retry}")
+    private String imageMessageRetryTopic;
     @Value("${media.aws.collector.queue.name}")
     private String publishQueue;
     private final QueueMessagingTemplate messagingTemplate;
@@ -272,7 +274,7 @@ public class MediaAddProcessor {
             sendMessageToQueue(messagingTemplate, publishQueue, message);
             logActivity(message, Activity.MEDIA_MESSAGE_RECEIVED, null);
             LOGGER.info("Publishing to Kafka", message);
-            kafkaCommonPublisher.publishImageMessage(message, imageMessageTopic);
+            kafkaCommonPublisher.publishImageMessage(message, imageMessageTopic, imageMessageRetryTopic);
         } catch (Exception ex) {
             LOGGER.error(ex, "Error publishing ErrorMessage={}", Arrays.asList(ex.getMessage()), message);
             throw new RuntimeException("Error publishing message=[" + message.toJSONMessage() + "]", ex);
