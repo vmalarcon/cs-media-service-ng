@@ -5,7 +5,9 @@ import com.expedia.content.media.processing.services.dao.domain.Category;
 
 import java.util.List;
 
-// TODO: JAVADOC
+/**
+ * An interface for all DAOs implementations to adhere to for accessing domain categories.
+ */
 public interface DomainCategoriesDao {
 
     /**

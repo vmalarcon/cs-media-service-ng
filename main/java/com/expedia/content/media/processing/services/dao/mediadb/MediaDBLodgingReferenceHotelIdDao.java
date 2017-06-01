@@ -9,6 +9,9 @@ import java.sql.ResultSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Dao class for accessing Hotel Reference Data in MediaDB.
+ */
 public class MediaDBLodgingReferenceHotelIdDao {
     private static final String HOTEL_ID_QUERY = "SELECT `name` FROM `lodging-reference-hotel-id` WHERE `hotel-id` = ?";
 
@@ -18,6 +21,12 @@ public class MediaDBLodgingReferenceHotelIdDao {
         this.jdbcTemplate = new JdbcTemplate(mediaDBDataSource);
     }
 
+    /**
+     * Verifies if a hotel-id (domainId) exists in the MediaDB.
+     *
+     * @param domainId The domainId to verify.
+     * @return true if the domainId exists in the mediaDB, false otherwise.
+     */
     public Boolean domainIdExists(String domainId) {
         final List<String> hotelList = jdbcTemplate.query((Connection connection) -> {
             final PreparedStatement statement = connection.prepareStatement(HOTEL_ID_QUERY);

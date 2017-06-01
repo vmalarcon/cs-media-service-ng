@@ -7,16 +7,11 @@ import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
-import com.expedia.content.media.processing.services.dao.domain.Comment;
 import com.expedia.content.media.processing.services.dao.domain.DomainIdMedia;
-import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
-import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
-import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
-import scala.tools.cmd.Opt;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -24,19 +19,18 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.expedia.content.media.processing.services.dao.mediadb.MediaDBSQLUtil.buildDomainIdMediaFromResultSet;
-import static com.expedia.content.media.processing.services.dao.mediadb.MediaDBSQLUtil.buildMediaFromResultSet;
-import static com.expedia.content.media.processing.services.dao.mediadb.MediaDBSQLUtil.convertLcmMediaIdInMapToString;
-import static com.expedia.content.media.processing.services.dao.mediadb.MediaDBSQLUtil.setArray;
-import static com.expedia.content.media.processing.services.dao.mediadb.MediaDBSQLUtil.setMediaByDomainIdQueryString;
-import static com.expedia.content.media.processing.services.dao.mediadb.MediaDBSQLUtil.setSQLTokensWithArray;
+import static com.expedia.content.media.processing.services.util.MediaDBSQLUtil.buildDomainIdMediaFromResultSet;
+import static com.expedia.content.media.processing.services.util.MediaDBSQLUtil.buildMediaFromResultSet;
+import static com.expedia.content.media.processing.services.util.MediaDBSQLUtil.convertLcmMediaIdInMapToString;
+import static com.expedia.content.media.processing.services.util.MediaDBSQLUtil.setArray;
+import static com.expedia.content.media.processing.services.util.MediaDBSQLUtil.setMediaByDomainIdQueryString;
+import static com.expedia.content.media.processing.services.util.MediaDBSQLUtil.setSQLTokensWithArray;
 
 /**
  * Media data access operations through MediaDB.
@@ -52,7 +46,7 @@ public class MediaDBMediaDao implements MediaDao {
     private static final String TOTAL_ROWS_QUERY = "SELECT COUNT(*) FROM `media` WHERE `domain` = ? AND `domain-id` = ? AND `hidden` = 0";
     private static final String MEDIA_BY_FILE_NAME_QUERY = "SELECT * FROM `media` WHERE `file-name` = ?";
     private static final String MEDIAS_BY_FILE_NAMES_QUERY = "SELECT * FROM `media` WHERE `file-name` IN (?)";
-    private static final String MEDIA_BY_GUID_QUERY = "SELECT `guid`, `file-url`, `source-url`, `file-name`, `active`, `width`, `height`, `file-size`, `status`, `updated-by`, " +
+    private static final String MEDIA_BY_GUID_QUERY = "SELECT `guid`, `file-url`, `source-url`, `file-name`, `active`, `fingerprints`, `width`, `height`, `file-size`, `status`, `updated-by`, " +
             "`update-date`, `provider`, `derivative-category`, `domain-fields`, `derivatives`, `comments`, `update-date`, `domain`, `domain-id`, `provided-name`, `hidden`, `metadata`, `user-id`, `client-id`" +
             " FROM `media` WHERE `guid` = ?";
     private static final String DELETE_MEDIA_BY_GUID = "DELETE FROM `media` WHERE `guid` = ?";
@@ -149,7 +143,7 @@ public class MediaDBMediaDao implements MediaDao {
         String domain = message.getOuterDomainData().getDomain().getDomain();
         String domainId = message.getOuterDomainData().getDomainId();
         String domainProvider = message.getOuterDomainData().getProvider();
-        String domainField = WRITER.writeValueAsString(message.getOuterDomainData().getDomainFields());
+        String domainField = WRITER.writeValueAsString(convertLcmMediaIdInMapToString(message.getOuterDomainData().getDomainFields()));
         LOGGER.debug("insert media record with ImageMessageAvro sql={} MediaGuid={} RequestId={} ClientId={} Filename={} FileUrl={} Domain={}",
                 ADD_WITH_IMAGEMESSAGEAVRO_QUERY,
                 message.getMediaGuid(), message.getRequestId(), message.getClientId(), message.getFileName(), message.getFileUrl(), domain);
@@ -180,7 +174,7 @@ public class MediaDBMediaDao implements MediaDao {
         String domain = message.getOuterDomainData().getDomain().getDomain();
         String domainId = message.getOuterDomainData().getDomainId();
         String domainProvider = message.getOuterDomainData().getProvider();
-        String domainField = WRITER.writeValueAsString(message.getOuterDomainData().getDomainFields());
+        String domainField = WRITER.writeValueAsString(convertLcmMediaIdInMapToString(message.getOuterDomainData().getDomainFields()));
         LOGGER.debug("update media record with ImageMessageAvro sql={} MediaGuid={} RequestId={} ClientId={} Filename={} FileUrl={} Domain={}",
                 UPDATE_WITH_IMAGEMESSAGEAVRO_QUERY,
                 message.getMediaGuid(), message.getRequestId(), message.getClientId(), message.getFileName(), message.getFileUrl(), domain);

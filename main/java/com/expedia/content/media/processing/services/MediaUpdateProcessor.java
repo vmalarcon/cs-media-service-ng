@@ -21,14 +21,12 @@ import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-// TODO: JavaDoc ALL the things
+/**
+ * Helper class for processing Media Update requests.
+ */
 @Component
 public class MediaUpdateProcessor {
     private static final FormattedLogger LOGGER = new FormattedLogger(MediaUpdateProcessor.class);
-
-    private static final String MESSAGE_PROPERTY_HERO = "propertyHero";
-    private static final String MESSAGE_SUB_CATEGORY_ID = "subcategoryId";
-    private static final String MESSAGE_ROOMS = "rooms";
     private static final String UPDATE_OPERATION = "mediaUpdate";
 
     @Value("${kafka.imagemessage.topic}")
@@ -62,7 +60,7 @@ public class MediaUpdateProcessor {
         // TODO: Update all the media that needs to be unhero'd in mediaDB and send them to kafka as well.
         kafkaCommonPublisher.publishImageMessage(addUpdateOperationTag(updatedImageMessage), imageMessageTopic);
         final Map<String, Object> response = new HashMap<>();
-        response.put("status", 200);
+        response.put("status", HttpStatus.OK.value());
         final String jsonResponse = new ObjectMapper().writeValueAsString(response);
         return new ResponseEntity<>(jsonResponse, HttpStatus.OK);
     }
@@ -99,7 +97,7 @@ public class MediaUpdateProcessor {
     }
 
     /**
-     * Replaces 'room','subcategoryId', and 'propertyHero' in the domainFields value with the input JSON message.
+     * Replaces fields in the current domainFields with the domainFields in the input JSON message.
      *
      * @param domainFieldsInDB The domain fields from the database.
      * @param domainFieldsNew The domain fields from the update message.
@@ -111,21 +109,14 @@ public class MediaUpdateProcessor {
         } else if (domainFieldsInDB == null || domainFieldsInDB.isEmpty()) {
             return domainFieldsNew;
         } else {
-            if (domainFieldsNew.get(MESSAGE_ROOMS) != null) {
-                domainFieldsInDB.put(MESSAGE_ROOMS, domainFieldsNew.get(MESSAGE_ROOMS));
-            }
-            if (domainFieldsNew.get(MESSAGE_SUB_CATEGORY_ID) != null) {
-                domainFieldsInDB.put(MESSAGE_SUB_CATEGORY_ID, domainFieldsNew.get(MESSAGE_SUB_CATEGORY_ID));
-            }
-            if (domainFieldsNew.get(MESSAGE_PROPERTY_HERO) != null) {
-                domainFieldsInDB.put(MESSAGE_PROPERTY_HERO, domainFieldsNew.get(MESSAGE_PROPERTY_HERO));
-            }
+            domainFieldsInDB.putAll(domainFieldsNew);
             return domainFieldsInDB;
         }
     }
 
     /**
      * Adds 'mediaUpdate' operation to the ImageMessage's 'operation' property to indicate to the lcm-consumer that the updateImageMessage is a update.
+     *
      * @param imageMessage The ImageMessage to add the operation tag to.
      * @return ImageMessage with operation tag added.
      */

@@ -68,7 +68,6 @@ public class SourceURLControllerTest {
 
     @Before
     public void initialize() throws IllegalAccessException,NoSuchFieldException,IOException {
-        sourceURLController = new SourceURLController(imageCopy, fileSourceFinder, poker);
         imageCopy = mock(S3ImageCopy.class);
         S3Object s3Object = mock(S3Object.class);
         File tmpFile = tempFolder.newFile("test");
@@ -78,6 +77,7 @@ public class SourceURLControllerTest {
         S3ObjectInputStream s3ObjectInputStream = new S3ObjectInputStream(inputStream, httpRequestBase);
         when(s3Object.getObjectContent()).thenReturn(s3ObjectInputStream);
         when(imageCopy.getImage(anyString(), anyString())).thenReturn(s3Object);
+        sourceURLController = new SourceURLController(imageCopy, fileSourceFinder, poker);
     }
 
     @Test
@@ -154,11 +154,11 @@ public class SourceURLControllerTest {
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
-        when(fileSourceFinder.getMediaByDerivativeUrl(eq("http://images.trvl-media.com/hotels/4610000/4600500/4600417/4600417_2_y.jpg"))).thenReturn(null);
+        when(fileSourceFinder.getMediaByDerivativeUrl(eq("http://images.trvl-media.com/hotels/4610000/4600500/4600417/4600417_2_y.jpg"))).thenReturn(Optional.empty());
         ResponseEntity<String> responseEntity = sourceURLController.getSourceURL(jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
-        assertTrue(responseEntity.getBody().contains("http://images.trvl-media.com/hotels/4610000/4600500/4600417/4600417_2_y.jpg not found."));
+        assertTrue(responseEntity.getBody().contains("Requested resource with mediaUrl http://images.trvl-media.com/hotels/4610000/4600500/4600417/4600417_2_y.jpg was not found."));
     }
 
     @Test(expected = RuntimeException.class)

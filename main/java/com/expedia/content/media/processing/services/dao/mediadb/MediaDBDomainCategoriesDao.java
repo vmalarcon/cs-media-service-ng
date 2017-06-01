@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-import static com.expedia.content.media.processing.services.dao.mediadb.MediaDBSQLUtil.domainCategoryListToCategoryList;
+import static com.expedia.content.media.processing.services.util.MediaDBSQLUtil.domainCategoryListToCategoryList;
 
 public class MediaDBDomainCategoriesDao implements DomainCategoriesDao {
     private MediaSubCategoryCache mediaSubCategoryCache;

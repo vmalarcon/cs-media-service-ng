@@ -16,7 +16,7 @@ import java.util.stream.Stream;
  * Utility class for resolving file names
  * --ALL PROVIDERS ADDED TO THE ENUM SHOULD USE THE FUNCTION guidProviderNameToFileNameFunction--
  */
-public class FileNameUtil {
+public final class FileNameUtil {
 
     private static final Pattern INVALID_CHARS_FOR_EXTENSION = Pattern.compile(".*?([\\?\\=].*)");
 

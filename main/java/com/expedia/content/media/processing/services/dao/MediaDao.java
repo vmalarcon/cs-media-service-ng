@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-// TODO: JavaDoc ALL the things, FIX all the javadocs
+/**
+ * An interface for all DAOs implementations to adhere to for accessing media.
+ */
 public interface MediaDao {
 
     /**
@@ -32,7 +34,7 @@ public interface MediaDao {
     Optional<Integer> getTotalMediaCountByDomainId(Domain domain, String domainId, String activeFilter, String derivativeCategoryFilter);
 
     /**
-     * Given a fileName returns all the media that were saved with that name.
+     * Given a fileName returns all the media that were saved with that same name.
      *
      * @param fileName File name of the Media.
      * @return List of Media with the requested Filename.
@@ -47,7 +49,8 @@ public interface MediaDao {
     void deleteMediaByGUID(String mediaGUID);
 
     /**
-     * get Media info from Dynamo by GUID
+     * get a Media record from DB by GUID
+     *
      * @param mediaGUID
      * @return
      */
@@ -62,14 +65,16 @@ public interface MediaDao {
 
 
     /**
-     * store message to media DB
+     * store imageMessage in media DB
+     *
      * @param message
      * @throws Exception
      */
     void addMedia(ImageMessage message) throws Exception;
 
     /**
-     * update imageMessage to mediaDB
+     * update imageMessage in mediaDB
+     *
      * @param message
      * @throws Exception
      */

@@ -459,7 +459,7 @@ public class MediaControllerTest {
         ResponseEntity<String> responseEntity = mediaControllerSpy.mediaUpdate(mediaGuid, jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-        assertTrue(responseEntity.getBody().contains("Input queryId is invalid. Must be a valid guid in the following format [xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx]"));
+        assertTrue(responseEntity.getBody().contains("Input queryId is invalid. Must be a valid GUID in the following format [xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx]"));
         verifyZeroInteractions(mediaUpdateProcessor);
         verifyZeroInteractions(mediaAddProcessor);
     }
@@ -512,7 +512,7 @@ public class MediaControllerTest {
         ResponseEntity<String> responseEntity = mediaControllerSpy.getMedia(mediaGuid, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-        assertTrue(responseEntity.getBody().contains("Invalid media GUID provided."));
+        assertTrue(responseEntity.getBody().contains("Input mediaGUID is invalid. Must be a valid GUID in the following format [xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx]"));
     }
 
     @Test
@@ -525,7 +525,7 @@ public class MediaControllerTest {
         ResponseEntity<String> responseEntity = mediaControllerSpy.getMedia(mediaGuid, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
-        assertTrue(responseEntity.getBody().contains("Provided media GUID does not exist."));
+        assertTrue(responseEntity.getBody().contains("Requested resource with ID " + mediaGuid + " was not found."));
     }
 
     @Test

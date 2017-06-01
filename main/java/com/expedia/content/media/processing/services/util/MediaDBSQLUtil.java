@@ -1,4 +1,4 @@
-package com.expedia.content.media.processing.services.dao.mediadb;
+package com.expedia.content.media.processing.services.util;
 
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.domain.Category;
@@ -8,17 +8,18 @@ import com.expedia.content.media.processing.services.dao.domain.DomainIdMedia;
 import com.expedia.content.media.processing.services.dao.domain.LocalizedName;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.Subcategory;
-import com.expedia.content.media.processing.services.util.JSONUtil;
 import org.springframework.util.StringUtils;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -26,9 +27,10 @@ import java.util.stream.Collectors;
 /**
  * Util class for MediaDB SQL queries
  */
-// TODO: JavaDoc ALL the things!
-public class MediaDBSQLUtil {
+@SuppressWarnings({"PMD.UnsynchronizedStaticDateFormatter"})
+public final class MediaDBSQLUtil {
     private static final FormattedLogger LOGGER = new FormattedLogger(MediaDBSQLUtil.class);
+    private final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS XXX", Locale.US);
     private static final String MEDIA_BY_DOMAIN_ID_ACTIVE_FILTER = " AND `active` = ?";
     private static final String MEDIA_BY_DOMAIN_ID_DERIVATIVE_CATEGORY_FILTER = " AND `derivative-category` IN (?)";
     private static final String MEDIA_BY_DOMAIN_ID_LIMIT = " LIMIT ?, ?";
@@ -119,10 +121,13 @@ public class MediaDBSQLUtil {
      * The logic is a little complex at first, so here's how it works:
      * 1) If a DomainCategory Object has a parentCategoryId, it is Subcategory. Otherwise it is a Category.
      * 2) Different DomainCategories share the same CategoryId (or SubcategoryId), so they must map to the same CategoryId (or SubcategoryId).
-     *   2.a) If a map for category is null, a new one is built. Otherwise the LocalizedName of the DomainCategory is added to the existing categoryMap,
+     *   2.a) If a map for categoryId is null, a new Category is built. Otherwise the LocalizedName of the DomainCategory is added to the existing categoryMap,
      *        and an Empty List is set for the Category Object.
      *   2.b) A subcategory must be added to a Category Object, if one does not exist yet a new Category Object is created, with an emtpy list of LocalizedNames.
-     *
+     * @see DomainCategory
+     * @see Category
+     * @see Subcategory
+     * @see LocalizedName
      *
      * @param domainCategory The DomainCategory to convert, and add to the categoryMap.
      * @param categoryMap The Map to added the Converted Category to.
@@ -165,7 +170,7 @@ public class MediaDBSQLUtil {
     }
 
     /**
-     * Builds a Media from a ResultSet returned form a query.
+     * Builds a Media from a ResultSet returned from a query.
      *
      * @param resultSet A result from a query.
      * @return a Media object of a ResultSet.
@@ -220,14 +225,14 @@ public class MediaDBSQLUtil {
     }
 
     /**
+     * Adds extra WHERE clauses to an SQL Query String.
      *
-     *
-     * @param baseQuery
-     * @param isActiveFilterUsed
-     * @param isDerivativeCategoryFilterUsed
-     * @param isPaginationUsed
-     * @param derivativeCategoryFilterArray
-     * @return
+     * @param baseQuery                         The Base SQL query string to append to.
+     * @param isActiveFilterUsed                A flag to filter records by active status.
+     * @param isDerivativeCategoryFilterUsed    A flag to filter derivative categories.
+     * @param isPaginationUsed                  A flag to limit the record count.
+     * @param derivativeCategoryFilterArray     An array of derivative types to query for.
+     * @return A complete SQL Query based on the flags passed to the method.
      */
     public static String setMediaByDomainIdQueryString(String baseQuery, boolean isActiveFilterUsed, boolean isDerivativeCategoryFilterUsed,
                                                        boolean isPaginationUsed, String[] derivativeCategoryFilterArray ) {
@@ -247,11 +252,12 @@ public class MediaDBSQLUtil {
 
 
     /**
+     * Builds a DomainIdMedia from a result set query.
      *
-     * @param resultSet
-     * @param isDerivativeFilterUsed
-     * @param derivativeFilter
-     * @return
+     * @param resultSet              The resultSet to extract fields from.
+     * @param isDerivativeFilterUsed a flag to decide whether to filter derivatives returned in the result set.
+     * @param derivativeFilter       The filter to determine which derivatives to keep in the result set.
+     * @return An Optional DomainIdMedia object. If the resultSet is malformed an Option.empty() object is returned.
      */
     public static Optional<DomainIdMedia> buildDomainIdMediaFromResultSet(ResultSet resultSet, boolean isDerivativeFilterUsed, String derivativeFilter) {
         try {
@@ -266,7 +272,7 @@ public class MediaDBSQLUtil {
                     .fileSize((long) resultSet.getInt("file-size"))
                     .status(resultSet.getString("status"))
                     .lastUpdatedBy(resultSet.getString("updated-by"))
-                    .lastUpdateDateTime(resultSet.getTimestamp("update-date").toString())
+                    .lastUpdateDateTime(DATE_FORMAT.format(resultSet.getTimestamp("update-date")))
                     .domainProvider(resultSet.getString("provider"))
                     .domainDerivativeCategory(resultSet.getString("derivative-category"))
                     .domainFields(convertLcmMediaIdInMapToString(JSONUtil.buildMapFromJson(resultSet.getString("domain-fields"))))
