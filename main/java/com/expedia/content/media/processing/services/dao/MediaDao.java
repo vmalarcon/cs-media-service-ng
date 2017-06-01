@@ -60,10 +60,19 @@ public interface MediaDao {
      */
     List<Optional<Media>> getMediaByMediaId(String mediaId);
 
-
+    /**
+     * get MediaList by domainId
+     * @param domainId
+     * @return
+     */
     List<Optional<Media>> getMediaByDomainId(String domainId);
 
-    void unheroMedia(String guid, String domainField);
+    /**
+     * set propertyHero to false in media 'domainFields'
+     * @param mediaGUID
+     * @param domainField
+     */
+    void unheroMedia(String mediaGUID, String domainField);
 
     /**
      * store message to media DB

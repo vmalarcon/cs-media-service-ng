@@ -232,6 +232,7 @@ public class MediaDBMediaDao implements MediaDao {
         }, (ResultSet resultSet, int rowNumb) -> buildMediaFromResultSet(resultSet)).stream().collect(Collectors.toList());
     }
 
+    @Override
     public void unheroMedia(String guid, String domainField) {
         jdbcTemplate.update((Connection connection) -> {
             PreparedStatement statement = connection.prepareStatement(UPDATE_MEDIA_UNHERO_QUERY);
