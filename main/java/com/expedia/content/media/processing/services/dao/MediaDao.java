@@ -66,6 +66,10 @@ public interface MediaDao {
     List<Media> getMediaByMediaId(String mediaId);
 
 
+    List<Media> getMediaByDomainId(String domainId);
+
+    void unheroMedia(String guid, String domainField);
+
     /**
      * store message to media DB
      * @param message

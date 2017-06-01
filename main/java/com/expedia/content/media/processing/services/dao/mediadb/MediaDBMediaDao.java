@@ -51,7 +51,7 @@ public class MediaDBMediaDao implements MediaDao {
     private static final String MEDIA_BY_FILE_NAME_QUERY = "SELECT * FROM `media` WHERE `file-name` = ?";
     private static final String MEDIAS_BY_FILE_NAMES_QUERY = "SELECT * FROM `media` WHERE `file-name` IN (?)";
     private static final String MEDIA_BY_GUID_QUERY = "SELECT `guid`, `file-url`, `source-url`, `file-name`, `active`, `width`, `height`, `file-size`, `status`, `updated-by`, " +
-            "`update-date`, `provider`, `derivative-category`, `domain-fields`, `derivatives`, `comments`, `update-date`, `domain`, `domain-id` FROM `media` WHERE `guid` = ?";
+            "`update-date`, `provider`, `derivative-category`, `domain-fields`, `provided-name`, `hidden`, `metadata`, `user-id`, `client-id`, `derivatives`,`fingerprints`, `comments`, `update-date`, `domain`, `domain-id` FROM `media` WHERE `guid` = ?";
     private static final String DELETE_MEDIA_BY_GUID = "DELETE FROM `media` WHERE `guid` = ?";
     private static final String MEDIA_BY_LCM_MEDIA_ID = "SELECT * FROM `media` WHERE `domain-fields` LIKE ?";
     private static final String ADD_WITH_IMAGEMESSAGEAVRO_QUERY = "INSERT INTO `media` " +
@@ -76,6 +76,10 @@ public class MediaDBMediaDao implements MediaDao {
             "`provided-name` = IFNULL(?, `provided-name`), " +
             "`callback` = IFNULL(?, callback) " +
             "WHERE `guid` = ?";
+
+    private static final String HERO_MEDIA_QUERY = "SELECT * FROM `media` WHERE `domain` = ? AND `domain-id` = ? AND `domain-fields` like '%\"propertyHero\":\"true\"%' ";
+
+    private static final String UPDATE_MEDIA_UNHERO_QUERY = "UPDATE `media` SET " + " `domain-fields` = IFNULL(?, `domain-fields`) WHERE `guid` = ?";
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -305,6 +309,26 @@ public class MediaDBMediaDao implements MediaDao {
             statement.setString(1, mediaGUID);
             return statement;
         }, (ResultSet resultSet) -> resultSet.next() ? buildMediaFromResultSet(resultSet) : null);
+    }
+
+
+    @Override
+    public List<Media> getMediaByDomainId(String domainId) {
+        return jdbcTemplate.query((Connection connection) -> {
+            PreparedStatement statement = connection.prepareStatement(HERO_MEDIA_QUERY);
+            statement.setString(1, "Lodging");
+            statement.setInt(2, Integer.valueOf(domainId));
+            return statement;
+        }, (ResultSet resultSet, int rowNumb) -> buildMediaFromResultSet(resultSet)).stream().collect(Collectors.toList());
+    }
+
+    public void unheroMedia(String guid, String domainField) {
+        jdbcTemplate.update((Connection connection) -> {
+            PreparedStatement statement = connection.prepareStatement(UPDATE_MEDIA_UNHERO_QUERY);
+            statement.setString(1, domainField);
+            statement.setString(2, domainField);
+            return statement;
+        });
     }
 
     @Override

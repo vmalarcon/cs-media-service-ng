@@ -53,7 +53,16 @@ public class MediaUpdateProcessor {
         final ImageMessage updatedImageMessage = buildUpdatedImageMessage(updateImageMessage, originalMedia);
         LOGGER.info("Started updating media in MediaDB MediaGuid={}", originalMedia.getMediaGuid());
         mediaDBMediaDao.updateMedia(updatedImageMessage);
-        LOGGER.info("Finished updating media in MediaDB MediaGuid={}", originalMedia.getMediaGuid());
+        if (updatedImageMessage.getOuterDomainData() != null
+                && updatedImageMessage.getOuterDomainData().getDomainFields() != null
+                && ("true").equals(updatedImageMessage.getOuterDomainData().getDomainFields().get("propertyHero"))) {
+            LOGGER.info("Started query media by domainId={}", originalMedia.getDomainId());
+            final List<Media> currentHeroList = mediaDBMediaDao.getMediaByDomainId(originalMedia.getDomainId());
+            LOGGER.info("end query media by domainId={} heroListSize={}", originalMedia.getDomainId(), currentHeroList.size());
+            currentHeroList.forEach(s -> mediaDBMediaDao.unheroMedia(s.getMediaGuid(),
+                    s.getDomainFields().replace("\"propertyHero\":\"true\"", "\"propertyHero\":\"false\"")));
+        }
+            LOGGER.info("Finished updating media in MediaDB MediaGuid={}", originalMedia.getMediaGuid());
         // TODO: Update all the media that needs to be unhero'd in mediaDB and send them to kafka as well.
         kafkaCommonPublisher.publishImageMessage(addUpdateOperationTag(updatedImageMessage), imageMessageTopic);
         final Map<String, Object> response = new HashMap<>();

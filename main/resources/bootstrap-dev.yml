@@ -3,5 +3,5 @@ spring:
     vault:
       enabled: true
       primer:
-        token-file: ${HOME}/.vault_token
+        token-file: ${HOME}/.vault-token
 

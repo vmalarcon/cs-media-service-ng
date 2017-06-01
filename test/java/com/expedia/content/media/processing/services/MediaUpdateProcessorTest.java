@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 
 import com.expedia.content.media.processing.pipeline.kafka.KafkaCommonPublisher;
 import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
@@ -22,6 +23,8 @@ import com.expedia.content.media.processing.services.dao.domain.Media;
 
 import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import static org.mockito.Mockito.times;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
@@ -138,12 +141,18 @@ public class MediaUpdateProcessorTest {
                 "{\"propertyHero\":\"false\",\"subcategoryId\":\"22001\"}",
                 new Date(), "true", "EPC", "EPC", "bobtheokay", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
                 new HashMap<>(), new ArrayList<>(), "", "", true, false, null);
+        Media heroMedia = Media.builder().lcmMediaId("1234").mediaGuid("aaa45678-aaaa-bbbb-cccc-123456789112").domainFields("{\"subcategoryId\":\"22024\",\"propertyHero\":\"true\"}").build();
+        List heroMediaList = Arrays.asList(heroMedia);
+        when(mediaDBMediaDao.getMediaByDomainId(anyString())).thenReturn(heroMediaList);
+
         mediaUpdateProcessor.processRequest(imageMessage, media);
         media.setUserId("bobthegreat");
         media.setDomainFields("{\"propertyHero\":\"true\",\"subcategoryId\":\"22003\"}");
         ImageMessage updatedImageMessage = media.toImageMessage();
         ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
         verify(mediaDBMediaDao, times(1)).updateMedia(argument.capture());
+        verify(mediaDBMediaDao, times(1)).unheroMedia(anyString(),anyString());
+
         verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString());
         assertEquals(updatedImageMessage.getOuterDomainData().getDomainFields(), argument.getValue().getOuterDomainData().getDomainFields());
     }
