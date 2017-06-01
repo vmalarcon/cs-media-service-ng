@@ -34,11 +34,17 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
 
 import static com.expedia.content.media.processing.pipeline.util.SQSUtil.sendMessageToQueue;
 
+/**
+ * A Class to handle the Processing of MediaAdd Requests.
+ * Functions involve dealing with reprocessing media vs new added media, logging processing activities, and sending messages to SQS and Kafka.
+ *
+ */
 @Component
 public class MediaAddProcessor {
     private static final FormattedLogger LOGGER = new FormattedLogger(MediaAddProcessor.class);
@@ -52,25 +58,31 @@ public class MediaAddProcessor {
     private static final String REJECTED_STATUS = "REJECTED";
     private static final String REPROCESS_OPERATION = "reprocess";
 
+
     @Resource(name = "providerProperties")
     private Properties providerProperties;
-    @Value("${media.aws.collector.queue.name}")
-    private String publishQueue;
     @Value("${kafka.imagemessage.topic}")
     private String imageMessageTopic;
-    @Autowired
-    private QueueMessagingTemplate messagingTemplate;
-    @Autowired
-    private LogActivityProcess logActivityProcess;
-    @Autowired
-    private Reporting reporting;
-    @Autowired
-    private ThumbnailProcessor thumbnailProcessor;
-    @Autowired
-    private MediaDao mediaDBMediaDao;
-    @Autowired
-    private KafkaCommonPublisher kafkaCommonPublisher;
+    @Value("${media.aws.collector.queue.name}")
+    private String publishQueue;
+    private final QueueMessagingTemplate messagingTemplate;
+    private final LogActivityProcess logActivityProcess;
+    private final Reporting reporting;
+    private final ThumbnailProcessor thumbnailProcessor;
+    private final MediaDao mediaDao;
+    private final KafkaCommonPublisher kafkaCommonPublisher;
 
+    @Autowired
+    public MediaAddProcessor(MediaDao mediaDao, KafkaCommonPublisher kafkaCommonPublisher, ThumbnailProcessor thumbnailProcessor, LogActivityProcess logActivityProcess,
+                             Reporting reporting, QueueMessagingTemplate messagingTemplate) {
+        this.mediaDao = mediaDao;
+        this.kafkaCommonPublisher = kafkaCommonPublisher;
+        this.thumbnailProcessor = thumbnailProcessor;
+        this.logActivityProcess = logActivityProcess;
+        this.reporting = reporting;
+        this.messagingTemplate = messagingTemplate;
+
+    }
 
     /**
      * Processes a MediaAdd request building a filled out ImageMessage, saving/updating the ImageMessage in the MediaDB, publishing the ImageMessage to Kafka and SQS,
@@ -112,11 +124,11 @@ public class MediaAddProcessor {
         // checks if the media is a reprocess, updating the record if it is, and inserting a record if it is not.
         if (StringUtils.isNotEmpty(imageMessage.getOperation()) && imageMessage.getOperation().contains(REPROCESS_OPERATION)) {
             LOGGER.info("Started updating media in MediaDB MediaGuid={} RequestId={} ClientId={}", imageMessage.getMediaGuid(), requestID, clientId);
-            mediaDBMediaDao.updateMedia(imageMessage);
+            mediaDao.updateMedia(imageMessage);
             LOGGER.info("Finished updating media in MediaDB MediaGuid={} RequestId={} ClientId={}", imageMessage.getMediaGuid(), requestID, clientId);
         } else {
             LOGGER.info("Started inserting media in MediaDB MediaGuid={} RequestId={} ClientId={}", imageMessage.getMediaGuid(), requestID, clientId);
-            mediaDBMediaDao.addMedia(imageMessage);
+            mediaDao.addMedia(imageMessage);
             LOGGER.info("Finished inserting media in MediaDB MediaGuid={} RequestId={} ClientId={}", imageMessage.getMediaGuid(), requestID, clientId);
 
         }
@@ -165,14 +177,15 @@ public class MediaAddProcessor {
      * @param imageMessageBuilder The Builder of the ImageMessage being processed.
      * @param outerDomain The OuterDomain data of the ImageMessage being processed.
      * @param clientId The clientId of the ImageMessage being processed.
-     * @param requestId The requesId of the ImageMessage being processed.
+     * @param requestId The requestId of the ImageMessage being processed.
      * @return If the media being processed is a reprocess message true is returned, otherwise false.
      */
     private boolean verifyReprocessMediaAndUpdateImageMessage(String filename, ImageMessage.ImageMessageBuilder imageMessageBuilder, OuterDomain outerDomain,
                                                               String clientId, String requestId) {
         if (MEDIA_CLOUD_ROUTER_CLIENT_ID.equals(clientId)) {
-            final Media originalMedia = findMediaToReprocess(filename, outerDomain.getDomainId(), outerDomain.getProvider());
-            if (originalMedia != null) {
+            final Optional<Media> optionalMedia = findMediaToReprocess(filename, outerDomain.getDomainId(), outerDomain.getProvider());
+            if (optionalMedia.isPresent()) {
+                final Media originalMedia = optionalMedia.get();
                 addOriginalMediaDataToImageMessage(originalMedia, imageMessageBuilder, outerDomain);
                 LOGGER.info("REPLACEMENT MEDIA RequestId={} MediaGuid={} lcmMediaId={}", requestId, originalMedia.getMediaGuid(), originalMedia.getDomainId());
                 return true;
@@ -189,9 +202,9 @@ public class MediaAddProcessor {
      * @param provider The provider of the ImageMessage being processed.
      * @return A Media Object (if it exists) of the Original Media to reprocess in the MediaId.
      */
-    private Media findMediaToReprocess(String fileName, String domainId, String provider) {
-        final List<Media> mediaList = mediaDBMediaDao.getMediaByFilename(fileName);
-        return (mediaList == null) ? null : MediaReplacement.selectBestMedia(mediaList, domainId, provider);
+    private Optional<Media> findMediaToReprocess(String fileName, String domainId, String provider) {
+        final List<Optional<Media>> mediaList = mediaDao.getMediaByFilename(fileName);
+        return MediaReplacement.selectBestMedia(mediaList, domainId, provider);
     }
 
 
@@ -207,7 +220,7 @@ public class MediaAddProcessor {
      */
     private void addOriginalMediaDataToImageMessage(Media originalMedia, ImageMessage.ImageMessageBuilder imageMessageBuilder, OuterDomain outerDomain) {
         final OuterDomain.OuterDomainBuilder domainBuilder = OuterDomain.builder().from(outerDomain);
-        domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, Integer.valueOf(originalMedia.getLcmMediaId()));
+        domainBuilder.addField(RESPONSE_FIELD_LCM_MEDIA_ID, originalMedia.getLcmMediaId());
         imageMessageBuilder.outerDomainData(domainBuilder.build());
         imageMessageBuilder.mediaGuid(originalMedia.getMediaGuid());
         imageMessageBuilder.providedName(originalMedia.getProvidedName());

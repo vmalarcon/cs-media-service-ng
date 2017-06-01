@@ -44,14 +44,18 @@ public class TempDerivativeController extends CommonServiceController {
         STATUS_MAP.put(ValidationStatus.VALID, OK);
     }
 
-    @Autowired
-    private ThumbnailProcessor thumbnailProcessor;
-    @Autowired
-    private TempDerivativeMVELValidator tempDerivativeMVELValidator;
     @Value("${cs.poke.hip-chat.room}")
     private String hipChatRoom;
+    private final ThumbnailProcessor thumbnailProcessor;
+    private final TempDerivativeMVELValidator tempDerivativeMVELValidator;
+    private final Poker poker;
+
     @Autowired
-    private Poker poker;
+    public TempDerivativeController(ThumbnailProcessor thumbnailProcessor, TempDerivativeMVELValidator tempDerivativeMVELValidator, Poker poker) {
+        this.thumbnailProcessor = thumbnailProcessor;
+        this.tempDerivativeMVELValidator = tempDerivativeMVELValidator;
+        this.poker = poker;
+    }
 
     /**
      * Web services interface to create a temporary derivative of a given image with given specifications.

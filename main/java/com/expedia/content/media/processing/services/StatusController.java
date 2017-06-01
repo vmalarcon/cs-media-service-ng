@@ -5,7 +5,6 @@ import com.expedia.content.media.processing.pipeline.retry.RetryableMethod;
 import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
-import com.expedia.content.media.processing.services.util.ActivityMapping;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
 import com.expedia.content.media.processing.services.exception.RequestMessageException;
@@ -27,7 +26,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -42,16 +40,18 @@ public class StatusController extends CommonServiceController {
 
     private static final FormattedLogger LOGGER = new FormattedLogger(StatusController.class);
 
-    @Autowired
-    private List<RequestMessageValidator> mediaStatusValidatorList;
-    @Autowired
-    private List<ActivityMapping> activityWhiteList;
-    @Autowired
-    private MediaDao mediaDBMediaDao;
     @Value("${cs.poke.hip-chat.room}")
     private String hipChatRoom;
-    @Autowired
+    private List<RequestMessageValidator> mediaStatusValidatorList;
+    private MediaDao mediaDao;
     private Poker poker;
+
+    @Autowired
+    public StatusController(List<RequestMessageValidator> mediaStatusValidatorList, MediaDao mediaDao, Poker poker) {
+        this.mediaStatusValidatorList = mediaStatusValidatorList;
+        this.mediaDao = mediaDao;
+        this.poker = poker;
+    }
 
     /**
      * Web service interface to get the latest media file process status.
@@ -103,7 +103,7 @@ public class StatusController extends CommonServiceController {
      * @throws Exception when the message is not valid json format.
      */
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    public ValidationStatus validateMediaStatusMessage(final String message) throws Exception {
+    private ValidationStatus validateMediaStatusMessage(final String message) throws Exception {
         ValidationStatus validationStatus = new ValidationStatus();
         // in case, no validator defined, we make it true.
         validationStatus.setValid(true);
@@ -127,10 +127,8 @@ public class StatusController extends CommonServiceController {
     @Timer(name = "mediaStatusTimer")
     @RetryableMethod
     private String getMediaStatusList(final List<String> fileNameList) {
-        final List<MediaProcessLog> statusLogList = mediaDBMediaDao.findMediaStatus(fileNameList);
-        final Map<String, List<MediaProcessLog>> mapList = new HashMap<>();
-        JSONUtil.divideStatusListToMap(statusLogList, mapList, fileNameList.size());
-        return JSONUtil.generateJsonByProcessLogList(mapList, fileNameList, activityWhiteList);
+        final List<MediaProcessLog> statusLogList = mediaDao.findMediaStatus(fileNameList);
+        return JSONUtil.generateJsonByProcessLogList(statusLogList);
     }
 
 }

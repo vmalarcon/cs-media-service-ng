@@ -7,8 +7,8 @@ import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
-import com.expedia.content.media.processing.services.reqres.Comment;
-import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
+import com.expedia.content.media.processing.services.dao.domain.Comment;
+import com.expedia.content.media.processing.services.dao.domain.DomainIdMedia;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import com.expedia.content.media.processing.services.util.JSONUtil;
@@ -16,21 +16,26 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import scala.tools.cmd.Opt;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.expedia.content.media.processing.services.dao.mediadb.MediaDBSQLUtil.buildDomainIdMediaFromResultSet;
+import static com.expedia.content.media.processing.services.dao.mediadb.MediaDBSQLUtil.buildMediaFromResultSet;
+import static com.expedia.content.media.processing.services.dao.mediadb.MediaDBSQLUtil.convertLcmMediaIdInMapToString;
 import static com.expedia.content.media.processing.services.dao.mediadb.MediaDBSQLUtil.setArray;
+import static com.expedia.content.media.processing.services.dao.mediadb.MediaDBSQLUtil.setMediaByDomainIdQueryString;
 import static com.expedia.content.media.processing.services.dao.mediadb.MediaDBSQLUtil.setSQLTokensWithArray;
 
 /**
@@ -44,9 +49,6 @@ public class MediaDBMediaDao implements MediaDao {
     private static final String ACTIVE_FILTER_ALL = "all";
     private static final String ACTIVE_FILTER_TRUE = "true";
     private static final String MEDIA_BY_DOMAIN_ID_QUERY_BASE = "SELECT SQL_CALC_FOUND_ROWS * FROM `media` WHERE `domain` = ? AND `domain-id` = ? AND `hidden` = 0";
-    private static final String MEDIA_BY_DOMAIN_ID_ACTIVE_FILTER = " AND `active` = ?";
-    private static final String MEDIA_BY_DOMAIN_ID_DERIVATIVE_CATEGORY_FILTER = " AND `derivative-category` IN (?)";
-    private static final String MEDIA_BY_DOMAIN_ID_LIMIT = " LIMIT ?, ?";
     private static final String TOTAL_ROWS_QUERY = "SELECT COUNT(*) FROM `media` WHERE `domain` = ? AND `domain-id` = ? AND `hidden` = 0";
     private static final String MEDIA_BY_FILE_NAME_QUERY = "SELECT * FROM `media` WHERE `file-name` = ?";
     private static final String MEDIAS_BY_FILE_NAMES_QUERY = "SELECT * FROM `media` WHERE `file-name` IN (?)";
@@ -85,27 +87,16 @@ public class MediaDBMediaDao implements MediaDao {
 
     @Override
     @SuppressWarnings("CPD-START")
-    public MediaByDomainIdResponse getMediaByDomainId(Domain domain, String domainId, String activeFilter, String derivativeFilter,
-                                                      String derivativeCategoryFilter, Integer pageSize, Integer pageIndex) throws Exception {
+    public List<Optional<DomainIdMedia>> getMediaByDomainId(Domain domain, String domainId, String activeFilter, String derivativeFilter,
+                                                      String derivativeCategoryFilter, Integer pageSize, Integer pageIndex) {
         final boolean isActiveFilterUsed = activeFilter != null && !activeFilter.isEmpty() && !ACTIVE_FILTER_ALL.equals(activeFilter);
         final boolean isDerivativeCategoryFilterUsed = derivativeCategoryFilter != null && !derivativeCategoryFilter.isEmpty();
         final boolean isPaginationUsed = pageSize != null && pageIndex != null;
         final boolean isDerivativeFilterUsed = derivativeFilter != null && !derivativeFilter.isEmpty();
-        final StringBuilder getMediaByDomainIdQuery = new StringBuilder(MEDIA_BY_DOMAIN_ID_QUERY_BASE);
-        final StringBuilder totalRowsQuery = new StringBuilder(TOTAL_ROWS_QUERY);
         final String[] derivativeCategoryFilterArray = isDerivativeCategoryFilterUsed ? derivativeCategoryFilter.split(",") : null;
-        if (isActiveFilterUsed) {
-            getMediaByDomainIdQuery.append(MEDIA_BY_DOMAIN_ID_ACTIVE_FILTER);
-            totalRowsQuery.append(MEDIA_BY_DOMAIN_ID_ACTIVE_FILTER);
-        }
-        if (isDerivativeCategoryFilterUsed) {
-            getMediaByDomainIdQuery.append(setSQLTokensWithArray(MEDIA_BY_DOMAIN_ID_DERIVATIVE_CATEGORY_FILTER, derivativeCategoryFilterArray));
-            totalRowsQuery.append(MEDIA_BY_DOMAIN_ID_DERIVATIVE_CATEGORY_FILTER);
-        }
-        if (isPaginationUsed) {
-            getMediaByDomainIdQuery.append(MEDIA_BY_DOMAIN_ID_LIMIT);
-        }
-        final List<DomainIdMedia> domainIdMedias = jdbcTemplate.query((Connection connection) -> {
+        final String getMediaByDomainIdQuery = setMediaByDomainIdQueryString(MEDIA_BY_DOMAIN_ID_QUERY_BASE, isActiveFilterUsed, isDerivativeCategoryFilterUsed,
+                isPaginationUsed, derivativeCategoryFilterArray);
+        return jdbcTemplate.query((Connection connection) -> {
             PreparedStatement statement = connection.prepareStatement(getMediaByDomainIdQuery.toString());
             statement.setString(1, domain.getDomain());
             statement.setString(2, domainId);
@@ -124,34 +115,19 @@ public class MediaDBMediaDao implements MediaDao {
             }
             return statement;
         }, (ResultSet resultSet, int rowNumb) ->
-                DomainIdMedia.builder()
-                .mediaGuid(resultSet.getString("guid"))
-                .fileUrl(resultSet.getString("file-url"))
-                .sourceUrl(resultSet.getString("source-url"))
-                .fileName(resultSet.getString("file-name"))
-                .active((resultSet.getInt("active") == 1) ? Boolean.TRUE.toString() : Boolean.FALSE.toString())
-                .width(resultSet.getInt("width"))
-                .height(resultSet.getInt("height"))
-                .fileSize((long) resultSet.getInt("file-size"))
-                .status(resultSet.getString("status"))
-                .lastUpdatedBy(resultSet.getString("updated-by"))
-                .lastUpdateDateTime(resultSet.getTimestamp("update-date").toString())
-                .domainProvider(resultSet.getString("provider"))
-                .domainDerivativeCategory(resultSet.getString("derivative-category"))
-                .domainFields(convertLcmMediaIdInMapToString(JSONUtil.buildMapFromJson(resultSet.getString("domain-fields"))))
-                .derivatives(resultSet.getString("derivatives") != null ?
-                        (isDerivativeFilterUsed ? filterDerivatives(resultSet.getString("derivatives"), derivativeFilter) :
-                        JSONUtil.buildMapListFromJson(resultSet.getString("derivatives"))) : null
-                )
-                .comments(Arrays.asList(Comment.builder()
-                        .note(resultSet.getString("comments"))
-                        .timestamp(resultSet.getTimestamp("update-date").toString())
-                        .build()))
-                .build()).stream().collect(Collectors.toList());
+                buildDomainIdMediaFromResultSet(resultSet, isDerivativeFilterUsed, derivativeFilter))
+        .stream()
+        .collect(Collectors.toList());
+    }
 
-        // Second Query to get total media for the domainId,
-        final Integer totalMediaCount = jdbcTemplate.query((Connection connection) -> {
-            PreparedStatement statement = connection.prepareStatement(totalRowsQuery.toString());
+    public Optional<Integer> getTotalMediaCountByDomainId(Domain domain, String domainId, String activeFilter, String derivativeCategoryFilter) {
+        final boolean isActiveFilterUsed = activeFilter != null && !activeFilter.isEmpty() && !ACTIVE_FILTER_ALL.equals(activeFilter);
+        final boolean isDerivativeCategoryFilterUsed = derivativeCategoryFilter != null && !derivativeCategoryFilter.isEmpty();
+        final String[] derivativeCategoryFilterArray = isDerivativeCategoryFilterUsed ? derivativeCategoryFilter.split(",") : null;
+        final String totalRowsQuery = setMediaByDomainIdQueryString(TOTAL_ROWS_QUERY, isActiveFilterUsed, isDerivativeCategoryFilterUsed,
+                false, derivativeCategoryFilterArray);
+        return jdbcTemplate.query((Connection connection) -> {
+            PreparedStatement statement = connection.prepareStatement(totalRowsQuery);
             statement.setString(1, domain.getDomain());
             statement.setString(2, domainId);
             int additionalIndex = 3;
@@ -163,31 +139,9 @@ public class MediaDBMediaDao implements MediaDao {
                 setArray(statement, additionalIndex, derivativeCategoryFilterArray);
             }
             return statement;
-        },
-                (ResultSet resultSet) -> resultSet.next() ? resultSet.getInt(1) : null);
-
-        return MediaByDomainIdResponse.builder()
-                .domain(domain.getDomain())
-                .domainId(domainId)
-                .totalMediaCount(totalMediaCount)
-                .images(domainIdMedias)
-                .build();
+        }, (ResultSet resultSet) -> resultSet.next() ? Optional.of(resultSet.getInt(1)) : Optional.empty());
     }
 
-
-    /**
-     * Filters Derivatives by the derivative filter and returns a List of Maps representing Derivatives.
-     *
-     * @param jsonString The JSON String containing the derivatives data from the MediaDB.
-     * @param derivativeFilter The String containing a comma separated list of wanted derivative types.
-     * @return A List of Maps of Derivatives with the wanted derivative types.
-     */
-    @SuppressWarnings("CPD-END")
-    private List<Map<String, Object>> filterDerivatives(String jsonString, String derivativeFilter) {
-        final List<String> derivativeTypes = Arrays.asList(derivativeFilter.split(","));
-        final List<Map<String, Object>> derivatives = JSONUtil.buildMapListFromJson(jsonString);
-        return derivatives.stream().filter(map -> derivativeTypes.contains((String) map.get("type"))).collect(Collectors.toList());
-    }
 
     @Override
     public void addMedia(ImageMessage message) throws Exception {
@@ -252,7 +206,7 @@ public class MediaDBMediaDao implements MediaDao {
     }
 
     @Override
-    public List<Media> getMediaByFilename(String fileName) {
+    public List<Optional<Media>> getMediaByFilename(String fileName) {
         return jdbcTemplate.query((Connection connection) -> {
             PreparedStatement statement = connection.prepareStatement(MEDIA_BY_FILE_NAME_QUERY);
             statement.setString(1, fileName);
@@ -261,54 +215,16 @@ public class MediaDBMediaDao implements MediaDao {
     }
 
     @Override
-    @SuppressWarnings("CPD-START")
-    public MediaGetResponse getMediaGetResponseByGUID(String mediaGUID) {
+    public Optional<Media> getMediaByGuid(String mediaGUID) {
         return jdbcTemplate.query((Connection connection) -> {
             PreparedStatement statement = connection.prepareStatement(MEDIA_BY_GUID_QUERY);
             statement.setString(1, mediaGUID);
             return statement;
-        }, (ResultSet resultSet) -> resultSet.next() ? MediaGetResponse.builder()
-                .mediaGuid(resultSet.getString("guid"))
-                .fileUrl(resultSet.getString("file-url"))
-                .sourceUrl(resultSet.getString("source-url"))
-                .fileName(resultSet.getString("file-name"))
-                .active((resultSet.getInt("active") == 1) ? Boolean.TRUE.toString() : Boolean.FALSE.toString())
-                .width(resultSet.getInt("width"))
-                .height(resultSet.getInt("height"))
-                .fileSize((long) resultSet.getInt("file-size"))
-                .status(resultSet.getString("status"))
-                .lastUpdatedBy(resultSet.getString("updated-by"))
-                .lastUpdateDateTime(resultSet.getTimestamp("update-date").toString())
-                .domainProvider(resultSet.getString("provider"))
-                .domainDerivativeCategory(resultSet.getString("derivative-category"))
-                .domainFields(convertLcmMediaIdInMapToString(JSONUtil.buildMapFromJson(resultSet.getString("domain-fields"))))
-                .derivatives(JSONUtil.buildMapListFromJson(resultSet.getString("derivatives")))
-                .comments(Arrays.asList(Comment.builder()
-                        .note(resultSet.getString("comments"))
-                        .timestamp(resultSet.getTimestamp("update-date").toString())
-                        .build()))
-                .domain(resultSet.getString("domain"))
-                .domainId(resultSet.getString("domain-id"))
-                .build() : null);
+        }, (ResultSet resultSet) -> resultSet.next() ? buildMediaFromResultSet(resultSet) : Optional.empty());
     }
 
     @Override
-    @SuppressWarnings("CPD-END")
-    public void deleteMediaByGUID(String mediaGUID) {
-        // no-op
-    }
-
-    @Override
-    public Media getMediaByGuid(String mediaGUID) {
-        return jdbcTemplate.query((Connection connection) -> {
-            PreparedStatement statement = connection.prepareStatement(MEDIA_BY_GUID_QUERY);
-            statement.setString(1, mediaGUID);
-            return statement;
-        }, (ResultSet resultSet) -> resultSet.next() ? buildMediaFromResultSet(resultSet) : null);
-    }
-
-    @Override
-    public List<Media> getMediaByMediaId(String mediaId) {
+    public List<Optional<Media>> getMediaByMediaId(String mediaId) {
         final String lcmMediaIdSubstring = "%\"lcmMediaId\":\"" + mediaId + "\"%";
         return jdbcTemplate.query((Connection connection) -> {
             PreparedStatement statement = connection.prepareStatement(MEDIA_BY_LCM_MEDIA_ID);
@@ -342,65 +258,11 @@ public class MediaDBMediaDao implements MediaDao {
         return processLogList;
     }
 
-    /**
-     * Builds a Media from a ResultSet returned form a query.
-     *
-     * @param resultSet A result from a query.
-     * @return a Media object of a ResultSet.
-     */
-    private Media buildMediaFromResultSet(ResultSet resultSet) {
-        try {
-            final String domainFields = resultSet.getString("domain-fields");
-            final Map<String, Object> domainData = convertLcmMediaIdInMapToString(JSONUtil.buildMapFromJson(domainFields));
-            final String derivatives = resultSet.getString("derivatives");
-            final String fingerprints = resultSet.getString("fingerprints");
-            final List<Map<String, Object>> fingerprintsList = JSONUtil.buildMapListFromJson(fingerprints);
-            final String pHash = fingerprintsList.stream().filter(map -> "pHash".equals(map.get("algorithm")))
-                    .map(map -> ((List<String>) map.get("values")).get(0)).findFirst().orElse(null);
-            final String sha1 = fingerprintsList.stream().filter(map -> "SHA1".equals(map.get("algorithm")))
-                    .map(map -> ((List<String>) map.get("values")).get(0)).findFirst().orElse(null);
-            return Media.builder()
-                    .mediaGuid(resultSet.getString("guid"))
-                    .fileUrl(resultSet.getString("file-url"))
-                    .fileName(resultSet.getString("file-name"))
-                    .fileSize((long) resultSet.getInt("file-size"))
-                    .width(resultSet.getInt("width"))
-                    .height(resultSet.getInt("height"))
-                    .sourceUrl(resultSet.getString("source-url"))
-                    .domain(resultSet.getString("domain"))
-                    .domainId(resultSet.getString("domain-id"))
-                    .domainFields(domainFields)
-                    .lastUpdated(resultSet.getTimestamp("update-date"))
-                    .active((resultSet.getInt("active") == 1) ? Boolean.TRUE.toString() : Boolean.FALSE.toString())
-                    .provider(resultSet.getString("provider"))
-                    .clientId(resultSet.getString("client-id"))
-                    .userId(resultSet.getString("user-id"))
-                    .metadata(resultSet.getString("metadata"))
-                    .derivatives(derivatives)
-                    .pHash(pHash)
-                    .sha1(sha1)
-                    .environment(null)
-                    .lcmMediaId(domainData.get("lcmMediaId") == null ? "" : domainData.get("lcmMediaId").toString())
-                    .derivativesList(JSONUtil.buildMapListFromJson(derivatives))
-                    .domainData(domainData)
-                    .commentList(Arrays.asList(resultSet.getString("comments")))
-                    .status(resultSet.getString("status"))
-                    .domainDerivativeCategory(resultSet.getString("derivative-category"))
-                    .propertyHero(Boolean.valueOf((String) domainData.get("propertyHero")))
-                    .hidden(resultSet.getInt("hidden") == 1)
-                    .providedName(resultSet.getString("provided-name"))
-                    .build();
-        } catch (SQLException e) {
-            LOGGER.error(e, "Error querying MediaDB result-set={}", resultSet.toString());
-            return null;
-        }
+
+    @Override
+    @SuppressWarnings("CPD-END")
+    public void deleteMediaByGUID(String mediaGUID) {
+        // no-op
     }
 
-    private Map<String, Object> convertLcmMediaIdInMapToString(Map<String, Object> domainFieldsMap) {
-        if (domainFieldsMap != null && domainFieldsMap.get("lcmMediaId") != null) {
-            String lcmMediaId = String.valueOf(domainFieldsMap.get("lcmMediaId"));
-            domainFieldsMap.put("lcmMediaId", lcmMediaId);
-        }
-        return domainFieldsMap;
-    }
 }

@@ -3,13 +3,15 @@ package com.expedia.content.media.processing.services.util;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
 import java.util.*;
 import org.junit.Test;
+import org.springframework.http.HttpStatus;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class JSONUtilTest {
     
     @Test
-    public void testbuildMapFromJson() throws Exception {
+    public void testBuildMapFromJson() throws Exception {
         final String jsonString = "{  \n"
                 + "   \"mediaNames\":\"1037678_109010ice.jpg\"\n"
                 + "}";
@@ -18,7 +20,7 @@ public class JSONUtilTest {
     }
 
     @Test
-    public void testbuildMapFromJsonUnQotedChar() throws Exception {
+    public void testbuildMapFromJsonUnQuotedChar() throws Exception {
         final String jsonString =
                 " {\"userId\":\"PACCurso\",\"active\":\"true\",\"domainFields\":{\"subcategoryId\":\"21001\",\"rooms\":[{\"roomId\":\"17043564\",\"roomHero\":\"false\"},{\"roomId\":\"17099006\",\"roomHero\":\"false\"}]},\"comment\":\"Camera singola con 2 bagni in comune,\\nLetto alla Francese (una piazza e mezza).\\n\\nsingle room with two shared bathrooms,\\nFrench Bed (one and a half).\",\"hidden\":null}";
         final String value = (String) JSONUtil.buildMapFromJson(jsonString).get("comment");
@@ -35,29 +37,12 @@ public class JSONUtilTest {
     
     @Test
     public void testGenerateJsonResponse() throws Exception {
-        final String expededJson =
+        final String expectedJson =
                 "{\"mediaStatuses\":[{\"mediaName\":\"test.jpg\",\"status\":\"PUBLISHED\",\"time\":\"2014-07-11 16:25:06.0290552 -07:00\"}]}";
-        final MediaProcessLog mediaProcessLog = new MediaProcessLog("2014-07-11 16:25:06.0290552 -07:00", "test.jpg", "Publish", "Lodging");
-        
-        final List<MediaProcessLog> mediaProcessLogs = new ArrayList<>();
-        mediaProcessLogs.add(mediaProcessLog);
-        
-        final Map<String, List<MediaProcessLog>> mapList = new HashMap<>();
-        mapList.put("test.jpg", mediaProcessLogs);
-        
-        final List<String> fileNameList = new ArrayList<>();
-        fileNameList.add("test.jpg");
-        final Map<String, String> mediaStatusMap = new HashMap<>();
-        mediaStatusMap.put("Publish", "PUBLISHED");
-        final ActivityMapping activityMapping = new ActivityMapping();
-        activityMapping.setActivityType("Publish");
-        activityMapping.setMediaType(".*");
-        activityMapping.setStatusMessage("PUBLISHED");
-        final List<ActivityMapping> activityMappingList = new ArrayList<>();
-        activityMappingList.add(activityMapping);
-        
-        final String response = JSONUtil.generateJsonByProcessLogList(mapList, fileNameList, activityMappingList);
-        assertTrue(expededJson.equals(response));
+        final MediaProcessLog mediaProcessLog = new MediaProcessLog("2014-07-11 16:25:06.0290552 -07:00", "test.jpg", "PUBLISHED", "Lodging");
+        final List<MediaProcessLog> mediaProcessLogList = Arrays.asList(mediaProcessLog);
+        final String response = JSONUtil.generateJsonByProcessLogList(mediaProcessLogList);
+        assertTrue(expectedJson.equals(response));
     }
     
     @Test
@@ -66,66 +51,34 @@ public class JSONUtilTest {
         Map jsonMap = JSONUtil.buildMapFromJson(res);
         assertTrue("bad request".equals(jsonMap.get("message")));
         assertTrue("/testurl".equals(jsonMap.get("path")));
-        assertTrue(Integer.parseInt(jsonMap.get("status").toString()) == 400);
+        assertEquals(HttpStatus.BAD_REQUEST.value(), Integer.parseInt(jsonMap.get("status").toString()));
         assertTrue("field is required".equals(jsonMap.get("error")));
         
     }
     
     @Test
     public void testGenerateJsonResponseCar() throws Exception {
-        final String expededJson =
+        final String expectedJson =
                 "{\"mediaStatuses\":[{\"mediaName\":\"test.jpg\",\"status\":\"RECEIVED\",\"time\":\"2014-07-11 16:25:06.0290552 -07:00\"}]}";
-        final MediaProcessLog mediaProcessLog = new MediaProcessLog("2014-07-11 16:25:06.0290552 -07:00", "test.jpg", "DcpPickup", "Cars");
-        
-        final List<MediaProcessLog> mediaProcessLogs = new ArrayList<>();
-        mediaProcessLogs.add(mediaProcessLog);
-        
-        final Map<String, List<MediaProcessLog>> mapList = new HashMap<>();
-        mapList.put("test.jpg", mediaProcessLogs);
-        
-        final List<String> fileNameList = new ArrayList<>();
-        fileNameList.add("test.jpg");
-        final ActivityMapping activityMapping = new ActivityMapping();
-        activityMapping.setActivityType("DcpPickup");
-        activityMapping.setMediaType("Cars");
-        activityMapping.setStatusMessage("RECEIVED");
-        final List<ActivityMapping> activityMappingList = new ArrayList<>();
-        activityMappingList.add(activityMapping);
-        
-        final String response = JSONUtil.generateJsonByProcessLogList(mapList, fileNameList, activityMappingList);
-        assertTrue(expededJson.equals(response));
+        final MediaProcessLog mediaProcessLog = new MediaProcessLog("2014-07-11 16:25:06.0290552 -07:00", "test.jpg", "RECEIVED", "Cars");
+        final List<MediaProcessLog> mediaProcessLogList = Arrays.asList(mediaProcessLog);
+        final String response = JSONUtil.generateJsonByProcessLogList(mediaProcessLogList);
+        assertTrue(expectedJson.equals(response));
     }
     
     @Test
     public void testGenerateJsonResponseNotFound() throws Exception {
-        final String expededJson =
+        final String expectedJson =
                 "{\"mediaStatuses\":[{\"mediaName\":\"test.jpg\",\"status\":\"NOT_FOUND\"}]}";
         final MediaProcessLog mediaProcessLog = new MediaProcessLog("2014-07-11 16:25:06.0290552 -07:00", "test.jpg", "UnKnown", "Lodging");
-        
-        final List<MediaProcessLog> mediaProcessLogs = new ArrayList<>();
-        mediaProcessLogs.add(mediaProcessLog);
-        
-        final Map<String, List<MediaProcessLog>> mapList = new HashMap<>();
-        mapList.put("test.jpg", mediaProcessLogs);
-        
-        final List<String> fileNameList = new ArrayList<>();
-        fileNameList.add("test.jpg");
-        final Map<String, String> mediaStatusMap = new HashMap<>();
-        mediaStatusMap.put("Publish", "PUBLISHED");
-        final ActivityMapping activityMapping = new ActivityMapping();
-        activityMapping.setActivityType("Reception");
-        activityMapping.setMediaType("*");
-        activityMapping.setStatusMessage("PUBLISHED");
-        final List<ActivityMapping> activityMappingList = new ArrayList<>();
-        activityMappingList.add(activityMapping);
-        
-        final String response = JSONUtil.generateJsonByProcessLogList(mapList, fileNameList, activityMappingList);
-        assertTrue(expededJson.equals(response));
+        final List<MediaProcessLog> mediaProcessLogList = Arrays.asList(mediaProcessLog);
+        final String response = JSONUtil.generateJsonByProcessLogList(mediaProcessLogList);
+        assertTrue(expectedJson.equals(response));
     }
     
     @Test
     public void testDivideListToMap() throws Exception {
-        final String expededJson =
+        final String expectedJson =
                 "{\"mediaStatuses\":[{\"mediaName\":\"test.jpg\",\"status\":\"PUBLISHED\",\"time\":\"2014-07-11 16:25:06.0290552 -07:00\"}]}";
         final MediaProcessLog mediaProcessLog1 = new MediaProcessLog("2014-07-11 16:24:06.0290552 -07:00", "test1.jpg", "Publish", "Lodging");
         final MediaProcessLog mediaProcessLog2 = new MediaProcessLog("2014-07-11 16:24:07.0290552 -07:00", "tEst1.jpg", "Publish", "Lodging");

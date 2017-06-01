@@ -1,22 +1,19 @@
 package com.expedia.content.media.processing.services.dao.domain;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
+@AllArgsConstructor
+@Builder
+@Getter
 @SuppressWarnings({"PMD.UnusedPrivateField", "PMD.SingularField", "PMD.ImmutableField"})
 public class MediaDerivative {
-    @Getter private String mediaGuid;
-    @Getter private String location;
-    @Getter private String type;
-    @Getter private Integer width;
-    @Getter private Integer height;
-    @Getter private Integer fileSize;
+    private String mediaGuid;
+    private String location;
+    private String type;
+    private Integer width;
+    private Integer height;
+    private Integer fileSize;
 
-    public MediaDerivative(String mediaGuid, String location, String type, Integer width, Integer height, Integer fileSize) {
-        this.mediaGuid = mediaGuid;
-        this.location = location;
-        this.type = type;
-        this.width = width;
-        this.height = height;
-        this.fileSize = fileSize;
-    }
 }

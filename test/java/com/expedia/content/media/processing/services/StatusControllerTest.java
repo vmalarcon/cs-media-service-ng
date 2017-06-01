@@ -34,77 +34,22 @@ public class StatusControllerTest {
 
     @Mock
     private MediaDao mockMediaDao;
+    @Mock
+    private Poker poker;
 
-
-    private static List<ActivityMapping> whitelist = new ArrayList<>();
     private StatusController statusController;
 
     @Before
     public void initialize() throws NoSuchFieldException, IllegalAccessException {
-        ActivityMapping activityMapping1 = new ActivityMapping();
-        activityMapping1.setActivityType("Reception");
-        activityMapping1.setMediaType(".*");
-        activityMapping1.setStatusMessage("RECEIVED");
-
-        ActivityMapping activityMapping2 = new ActivityMapping();
-        activityMapping2.setActivityType("DerivativeCreation");
-        activityMapping2.setMediaType("VirtualTour|Lodging");
-        activityMapping2.setStatusMessage("DERIVATIVES_CREATED");
-
-        ActivityMapping activityMapping3 = new ActivityMapping();
-        activityMapping3.setActivityType("Reject");
-        activityMapping3.setMediaType(".*");
-        activityMapping3.setStatusMessage("REJECTED");
-
-        ActivityMapping activityMapping4 = new ActivityMapping();
-        activityMapping4.setActivityType("Publish");
-        activityMapping4.setMediaType(".*");
-        activityMapping4.setStatusMessage("PUBLISHED");
-
-        ActivityMapping activityMapping5 = new ActivityMapping();
-        activityMapping5.setActivityType("DcpPickup");
-        activityMapping5.setMediaType("Cars");
-        activityMapping5.setStatusMessage("RECEIVED");
-
-        ActivityMapping activityMapping6 = new ActivityMapping();
-        activityMapping6.setActivityType("DerivativeCreation");
-        activityMapping6.setMediaType("Cars");
-        activityMapping6.setStatusMessage("PUBLISHED");
-
-        ActivityMapping activityMapping7 = new ActivityMapping();
-        activityMapping7.setActivityType("MediaMessageReceived");
-        activityMapping7.setMediaType(".*");
-        activityMapping7.setStatusMessage("RECEIVED");
-
-        ActivityMapping activityMapping8 = new ActivityMapping();
-        activityMapping8.setActivityType("CollectorDupMediaFound");
-        activityMapping8.setMediaType(".*");
-        activityMapping8.setStatusMessage("DUPLICATE");
-
-        whitelist.add(activityMapping1);
-        whitelist.add(activityMapping2);
-        whitelist.add(activityMapping3);
-        whitelist.add(activityMapping4);
-        whitelist.add(activityMapping5);
-        whitelist.add(activityMapping6);
-        whitelist.add(activityMapping7);
-        whitelist.add(activityMapping8);
-
-        statusController = new StatusController();
-
-        setFieldValue(statusController, "activityWhiteList", whitelist);
-        setFieldValue(statusController, "mediaDBMediaDao", mockMediaDao);
-
+        List<RequestMessageValidator> validators = new ArrayList<>();
+        statusController = new StatusController(validators, mockMediaDao, poker);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testGetMediaStatusPublished() throws Exception {
-        List<RequestMessageValidator> validators = new ArrayList<>();
-        setFieldValue(statusController, "mediaStatusValidatorList", validators);
-
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
-        MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "Publish", "Lodging");
+        MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "PUBLISHED", "Lodging");
         mediaLogStatuses.add(mediaLogStatus);
         when(mockMediaDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
 
@@ -128,12 +73,10 @@ public class StatusControllerTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testGetMediaStatuses() throws Exception {
-        List<RequestMessageValidator> validators = new ArrayList<>();
-        setFieldValue(statusController, "mediaStatusValidatorList", validators);
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
-        MediaProcessLog mediaLogStatus1 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "MediaMessageReceived", "Lodging");
-        MediaProcessLog mediaLogStatus2 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1234567_891011ice.jpg", "MediaMessageReceived", "Lodging");
-        MediaProcessLog mediaLogStatus3 = new MediaProcessLog("2014-08-01 10:08:12.6890000 -07:00", "1234567_891011ice.jpg", "CollectorDupMediaFound", "Lodging");
+        MediaProcessLog mediaLogStatus1 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "RECEIVED", "Lodging");
+        MediaProcessLog mediaLogStatus2 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1234567_891011ice.jpg", "RECEIVED", "Lodging");
+        MediaProcessLog mediaLogStatus3 = new MediaProcessLog("2014-08-01 10:08:12.6890000 -07:00", "1234567_891011ice.jpg", "DUPLICATE", "Lodging");
         mediaLogStatuses.add(mediaLogStatus1);
         mediaLogStatuses.add(mediaLogStatus2);
         mediaLogStatuses.add(mediaLogStatus3);
@@ -148,21 +91,16 @@ public class StatusControllerTest {
         ResponseEntity response = statusController.getMediaLatestStatus(message, mockHeader);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(
-                "{\"mediaStatuses\":[{\"mediaName\":\"1037678_109010ice.jpg\",\"status\":\"RECEIVED\",\"time\":\"2014-07-29 10:08:12.6890000 -07:00\"}," +
-                        "{\"mediaName\":\"1234567_891011ice.jpg\",\"status\":\"DUPLICATE\",\"time\":\"2014-08-01 10:08:12.6890000 -07:00\"}]}",
-                response.getBody());
+        assertTrue(response.getBody().toString().contains("{\"mediaName\":\"1037678_109010ice.jpg\",\"status\":\"RECEIVED\",\"time\":\"2014-07-29 10:08:12.6890000 -07:00\"}"));
+        assertTrue(response.getBody().toString().contains("{\"mediaName\":\"1234567_891011ice.jpg\",\"status\":\"DUPLICATE\",\"time\":\"2014-08-01 10:08:12.6890000 -07:00\"}"));
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testGetMediaStatusBeingProcessed() throws Exception {
-        List<RequestMessageValidator> validators = new ArrayList<>();
-        setFieldValue(statusController, "mediaStatusValidatorList", validators);
-
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
-        MediaProcessLog mediaLogStatus1 = new MediaProcessLog("2014-07-29 10:06:12.6890000 -07:00", "1037678_109010ice.jpg", "Reception", "Lodging");
-        MediaProcessLog mediaLogStatus2 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "DerivativeCreation", "Lodging");
+        MediaProcessLog mediaLogStatus1 = new MediaProcessLog("2014-07-29 10:06:12.6890000 -07:00", "1037678_109010ice.jpg", "RECEIVED", "Lodging");
+        MediaProcessLog mediaLogStatus2 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "DERIVATIVES_CREATED", "Lodging");
         mediaLogStatuses.add(mediaLogStatus1);
         mediaLogStatuses.add(mediaLogStatus2);
         when(mockMediaDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
@@ -183,11 +121,8 @@ public class StatusControllerTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testGetMediaStatusCarReceived() throws Exception {
-        List<RequestMessageValidator> validators = new ArrayList<>();
-        setFieldValue(statusController, "mediaStatusValidatorList", validators);
-
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
-        MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "DcpPickup", "Cars");
+        MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "RECEIVED", "Cars");
         mediaLogStatuses.add(mediaLogStatus);
         when(mockMediaDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
 
@@ -207,11 +142,8 @@ public class StatusControllerTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testGetMediaStatusCarDerivCreated() throws Exception {
-        List<RequestMessageValidator> validators = new ArrayList<>();
-        setFieldValue(statusController, "mediaStatusValidatorList", validators);
-
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
-        MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "DerivativeCreation", "Cars");
+        MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "PUBLISHED", "Cars");
         mediaLogStatuses.add(mediaLogStatus);
         when(mockMediaDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
 
@@ -231,11 +163,9 @@ public class StatusControllerTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testGetMediaStatusRejected() throws Exception {
-        List<RequestMessageValidator> validators = new ArrayList<>();
-        setFieldValue(statusController, "mediaStatusValidatorList", validators);
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
-        MediaProcessLog mediaLogStatus1 = new MediaProcessLog("2014-07-29 10:06:12.6890000 -07:00", "1037678_109010ice.jpg", "Reception", "Lodging");
-        MediaProcessLog mediaLogStatus2 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "Reject", "Lodging");
+        MediaProcessLog mediaLogStatus1 = new MediaProcessLog("2014-07-29 10:06:12.6890000 -07:00", "1037678_109010ice.jpg", "RECEIVED", "Lodging");
+        MediaProcessLog mediaLogStatus2 = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "REJECTED", "Lodging");
         mediaLogStatuses.add(mediaLogStatus1);
         mediaLogStatuses.add(mediaLogStatus2);
         when(mockMediaDao.findMediaStatus(anyList())).thenReturn(mediaLogStatuses);
@@ -256,8 +186,6 @@ public class StatusControllerTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testGetMediaStatusUnrecognized() throws Exception {
-        List<RequestMessageValidator> validators = new ArrayList<>();
-        setFieldValue(statusController, "mediaStatusValidatorList", validators);
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
         MediaProcessLog mediaLogStatus =
                 new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "mpp_collector/test", "Lodging");
@@ -278,10 +206,8 @@ public class StatusControllerTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test
     public void testGetMediaSuccessFilterArchive() throws Exception {
-        List<RequestMessageValidator> validators = new ArrayList<>();
-        setFieldValue(statusController, "mediaStatusValidatorList", validators);
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
-        MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "Publish", "Lodging");
+        MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "PUBLISHED", "Lodging");
         MediaProcessLog mediaLogStatusArchive = new MediaProcessLog("2014-07-29 10:09:12.6890000 -07:00", "1037678_109010ice.jpg", "Archive", "Lodging");
         mediaLogStatuses.add(mediaLogStatus);
         mediaLogStatuses.add(mediaLogStatusArchive);
@@ -366,26 +292,17 @@ public class StatusControllerTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Test(expected = RuntimeException.class)
     public void pokeTest() throws Exception {
-        List<RequestMessageValidator> validators = new ArrayList<>();
         List<MediaProcessLog> mediaLogStatuses = new ArrayList<>();
-        MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "Publish", "Lodging");
+        MediaProcessLog mediaLogStatus = new MediaProcessLog("2014-07-29 10:08:12.6890000 -07:00", "1037678_109010ice.jpg", "PUBLISHED", "Lodging");
         mediaLogStatuses.add(mediaLogStatus);
         List<String> fileNameList = new ArrayList<>();
         fileNameList.add("1037678_109010ice.jpg");
         RuntimeException exception = new RuntimeException("this is a runtime exception");
         when(mockMediaDao.findMediaStatus(anyList())).thenThrow(exception);
-        Poker poker = mock(Poker.class);
-
-        StatusController statusController = new StatusController();
-        setFieldValue(statusController, "poker", poker);
         setFieldValue(statusController, "hipChatRoom", "EWE CS: Phoenix Notifications");
-        setFieldValue(statusController, "mediaStatusValidatorList", validators);
-        setFieldValue(statusController, "activityWhiteList", whitelist);
-
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
-
         String message = "{\"mediaNames\":[\"1037678_109010ice.jpg\"]}";
         statusController.getMediaLatestStatus(message, mockHeader);
         verify(poker).poke(eq("Media Services failed to process a getMediaLatestStatus request - RequestId: " + requestId), eq("EWE CS: Phoenix Notifications"),

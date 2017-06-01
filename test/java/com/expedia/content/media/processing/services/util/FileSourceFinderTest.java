@@ -11,8 +11,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.Optional;
+
 import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -27,7 +30,7 @@ public class FileSourceFinderTest {
     @Mock
     private MediaDao mediaDBMediaDao;
 
-    FileSourceFinder fileSourceFinder = new FileSourceFinder();
+    private FileSourceFinder fileSourceFinder;
 
     @Before
     public void initialize() throws Exception {
@@ -39,6 +42,7 @@ public class FileSourceFinderTest {
         setFieldValue(fileSourceFinder, "bucketName", bucketName);
         setFieldValue(fileSourceFinder, "bucketPrefix", bucketPrefix);
         setFieldValue(fileSourceFinder, "derivativeBucketPrefix", derivativeBucketPrefix);
+        fileSourceFinder = new FileSourceFinder();
     }
 
     @Test
@@ -68,16 +72,17 @@ public class FileSourceFinderTest {
     public void testMediaByDerivativeUrlSuccess() throws Exception {
         String derivativeUrl = "http://images.trvl-media.com/hotels/1000000/10000/200/123/5d003ca8_e.jpg";
 
-        Media media = Media.builder().mediaGuid("5d003ca8-1234-1234-1234-010203040506")
+        Optional<Media> media = Optional.of(Media.builder().mediaGuid("5d003ca8-1234-1234-1234-010203040506")
                 .fileName("5d003ca8-1234-1234-1234-010203040506.jpg")
                 .sourceUrl("s3://ewe-cs-media-test/test/source/lodging/1000000/10000/200/123/5d003ca8-1234-1234-1234-010203040506.jpg")
-                .build();
-        MediaDerivative derivative = new MediaDerivative("5d003ca8-1234-1234-1234-010203040506", "s3://ewe-cs-media-test/test/derivative/lodging/1000000/10000/200/123/5d003ca8_e.jpg",
-                "e", 350, 350, 12000);
+                .build());
+        Optional<MediaDerivative> derivative = Optional.of(new MediaDerivative("5d003ca8-1234-1234-1234-010203040506", "s3://ewe-cs-media-test/test/derivative/lodging/1000000/10000/200/123/5d003ca8_e.jpg",
+                "e", 350, 350, 12000));
         when(mediaDBDerivativesDao.getDerivativeByLocation(eq("s3://ewe-cs-media-test/test/derivative/lodging/1000000/10000/200/123/5d003ca8_e.jpg"))).thenReturn(derivative);
         when(mediaDBMediaDao.getMediaByGuid(eq("5d003ca8-1234-1234-1234-010203040506"))).thenReturn(media);
-        Media returnedMedia = fileSourceFinder.getMediaByDerivativeUrl(derivativeUrl);
-        assertEquals(media, returnedMedia);
+        Optional<Media> returnedMedia = fileSourceFinder.getMediaByDerivativeUrl(derivativeUrl);
+        assertTrue(returnedMedia.isPresent());
+        assertEquals(media.get(), returnedMedia.get());
         ArgumentCaptor<String> argument = ArgumentCaptor.forClass(String.class);
         verify(mediaDBDerivativesDao, times(1)).getDerivativeByLocation(argument.capture());
         assertEquals("s3://ewe-cs-media-test/test/derivative/lodging/1000000/10000/200/123/5d003ca8_e.jpg", argument.getValue());

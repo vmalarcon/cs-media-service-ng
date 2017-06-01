@@ -8,6 +8,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.Optional;
 
 public class MediaDBDerivativesDao implements DerivativesDao {
 
@@ -23,24 +24,32 @@ public class MediaDBDerivativesDao implements DerivativesDao {
     }
 
     @Override
-    public MediaDerivative getDerivativeByMediaGuid(String mediaGuid) {
+    public Optional<MediaDerivative> getDerivativeByMediaGuid(String mediaGuid) {
         return jdbcTemplate.query((Connection connection) -> {
             final PreparedStatement statement = connection.prepareStatement(GET_DERIVATIVE_BY_MEDIA_GUID);
             statement.setString(1, mediaGuid);
             return statement;
-        }, (ResultSet resultSet) -> resultSet.next() ? new MediaDerivative(resultSet.getString("media-id"), resultSet.getString("location"),
-                resultSet.getString("type"), resultSet.getInt("width"), resultSet.getInt("height"), resultSet.getInt("file-size"))
-                : null);
+        }, (ResultSet resultSet) -> resultSet.next() ? Optional.of(MediaDerivative.builder()
+                .mediaGuid(resultSet.getString("media-id"))
+                .location(resultSet.getString("location"))
+                .type(resultSet.getString("type"))
+                .width(resultSet.getInt("width"))
+                .fileSize(resultSet.getInt("file-size"))
+                .build()) : Optional.empty());
     }
 
     @Override
-    public MediaDerivative getDerivativeByLocation(String location) {
+    public Optional<MediaDerivative> getDerivativeByLocation(String location) {
         return jdbcTemplate.query((Connection connection) -> {
             final PreparedStatement statement = connection.prepareStatement(GET_DERIVATIVE_BY_LOCATION);
             statement.setString(1, location);
             return statement;
-        }, (ResultSet resultSet) -> resultSet.next() ? new MediaDerivative(resultSet.getString("media-id"), resultSet.getString("location"),
-                resultSet.getString("type"), resultSet.getInt("width"), resultSet.getInt("height"), resultSet.getInt("file-size"))
-                : null);
+        }, (ResultSet resultSet) -> resultSet.next() ? Optional.of(MediaDerivative.builder()
+                .mediaGuid(resultSet.getString("media-id"))
+                .location(resultSet.getString("location"))
+                .type(resultSet.getString("type"))
+                .width(resultSet.getInt("width"))
+                .fileSize(resultSet.getInt("file-size"))
+                .build()) : Optional.empty());
     }
 }

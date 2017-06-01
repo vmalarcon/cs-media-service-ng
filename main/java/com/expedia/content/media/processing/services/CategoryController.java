@@ -33,19 +33,24 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 /**
  * Web service controller for domain categories.
  */
+// TODO: Fix JAVADOC
 @RestController
 public class CategoryController extends CommonServiceController {
 
     private static final FormattedLogger LOGGER = new FormattedLogger(CategoryController.class);
-    private static final String SKIP_NULL_CATEGORIES = "0";
-    private static final String SKIP_FEATURE_CATEGORIES = "3";
+    private static final String NULL_CATEGORY = "0";
+    private static final String FEATURE_CATEGORY = "3";
 
-    @Autowired
-    private DomainCategoriesDao mediaDBMediaDomainCategoriesDao;
     @Value("${cs.poke.hip-chat.room}")
     private String hipChatRoom;
+    private final DomainCategoriesDao domainCategoriesDao;
+    private final Poker poker;
+
     @Autowired
-    private Poker poker;
+    public CategoryController(DomainCategoriesDao domainCategoriesDao, Poker poker) {
+        this.domainCategoriesDao = domainCategoriesDao;
+        this.poker = poker;
+    }
 
     /**
      * Media domain categories service. Returns all categories for a domain. Can be filtered by a locale.
@@ -95,9 +100,9 @@ public class CategoryController extends CommonServiceController {
      */
     private String getDomainCategories(String domain, String localeId) throws DomainNotFoundException {
         if (Domain.LODGING.toString().equalsIgnoreCase(domain)) {
-            final List<Category> domainCategories = mediaDBMediaDomainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
+            final List<Category> domainCategories = domainCategoriesDao.getMediaCategoriesWithSubCategories(domain, localeId);
             final List<Category> categoriesWithNonNullSubCategories = domainCategories.stream()
-                    .filter(category -> !category.getCategoryId().equals(SKIP_FEATURE_CATEGORIES))
+                    .filter(category -> !category.getCategoryId().equals(FEATURE_CATEGORY))
                     .filter(category -> !containsNullSubCategory(category.getSubcategories()))
                     .collect(Collectors.toList());
             return JSONUtil.generateJsonByCategoryList(categoriesWithNonNullSubCategories, domain);
@@ -114,6 +119,6 @@ public class CategoryController extends CommonServiceController {
      * @return
      */
     private boolean containsNullSubCategory(List<Subcategory> subcategories) {
-        return subcategories.stream().anyMatch(subcategory -> subcategory.getSubcategoryId().equals(SKIP_NULL_CATEGORIES));
+        return subcategories.stream().anyMatch(subcategory -> subcategory.getSubcategoryId().equals(NULL_CATEGORY));
     }
 }

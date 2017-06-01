@@ -1,4 +1,4 @@
-package com.expedia.content.media.processing.services.reqres;
+package com.expedia.content.media.processing.services.dao.domain;
 
 import java.util.List;
 import java.util.Map;
@@ -13,7 +13,6 @@ import lombok.Getter;
 @Getter
 @SuppressWarnings({"PMD.UnusedPrivateField"})
 public class DomainIdMedia {
-
     private final String mediaGuid;
     private final String fileUrl;
     private final String sourceUrl;

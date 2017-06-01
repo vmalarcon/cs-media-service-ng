@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-public class LodgingAddValidator {
+public class LodgingAddValidator implements MapMessageValidator {
     private final static String SUBCATEGORY_ID = "subcategoryId";
 
     @Autowired
@@ -24,7 +24,7 @@ public class LodgingAddValidator {
     @Resource(name = "providerProperties")
     private Properties providerProperties;
 
-
+    @Override
     public List<String> validateImages(List<ImageMessage> messageList) {
         final List<String> errorList = new ArrayList<>();
         for (final ImageMessage imageMessage : messageList) {

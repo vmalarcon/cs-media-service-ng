@@ -34,6 +34,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
 import static org.junit.Assert.assertEquals;
@@ -50,15 +51,14 @@ public class SourceURLControllerTest {
 
     @Mock
     private Reporting reporting;
-
     @Mock
     private ResourcePatternResolver resourcePatternResolver;
-
     @Mock
     private ImageCopy imageCopy;
-
     @Mock
     private FileSourceFinder fileSourceFinder;
+    @Mock
+    private Poker poker;
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
@@ -68,7 +68,7 @@ public class SourceURLControllerTest {
 
     @Before
     public void initialize() throws IllegalAccessException,NoSuchFieldException,IOException {
-        sourceURLController = new SourceURLController();
+        sourceURLController = new SourceURLController(imageCopy, fileSourceFinder, poker);
         imageCopy = mock(S3ImageCopy.class);
         S3Object s3Object = mock(S3Object.class);
         File tmpFile = tempFolder.newFile("test");
@@ -78,9 +78,6 @@ public class SourceURLControllerTest {
         S3ObjectInputStream s3ObjectInputStream = new S3ObjectInputStream(inputStream, httpRequestBase);
         when(s3Object.getObjectContent()).thenReturn(s3ObjectInputStream);
         when(imageCopy.getImage(anyString(), anyString())).thenReturn(s3Object);
-        setFieldValue(sourceURLController, "imageCopy", imageCopy);
-        setFieldValue(sourceURLController, "fileSourceFinder", fileSourceFinder);
-
     }
 
     @Test
@@ -88,10 +85,10 @@ public class SourceURLControllerTest {
         String jsonMessage = "{ \n"
                 + "  \"mediaUrl\":\"http://images.trvl-media.com/hotels/5000000/4610000/4600500/4600417/4600417_2_y.jpg\" \n"
                 + "}";
-        Media media = Media.builder().mediaGuid("4600417-1234-1234-1234-010203040506")
+        Optional<Media> media = Optional.of(Media.builder().mediaGuid("4600417-1234-1234-1234-010203040506")
                 .fileName("4600417_IMG0010.jpg")
                 .sourceUrl("s3://ewe-cs-media-test/test/source/lodging/5000000/4610000/4600500/4600417/4600417_IMG0010.jpg")
-                .build();
+                .build());
         when(fileSourceFinder.getMediaByDerivativeUrl(eq("http://images.trvl-media.com/hotels/5000000/4610000/4600500/4600417/4600417_2_y.jpg"))).thenReturn(media);
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
@@ -112,11 +109,11 @@ public class SourceURLControllerTest {
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
-        Media media = Media.builder()
+        Optional<Media> media = Optional.of(Media.builder()
                 .mediaGuid("4a8a5b92_real_guid_nota_fakeguid1234")
                 .fileName("I_dont_end_with_a_normal_extension.10")
                 .sourceUrl("s3://ewe-cs-media-test/source/5000000/4610000/4600500/4600417/4a8a5b92_real_guid_nota_fakeguid1234.10")
-                .build();
+                .build());
         when(fileSourceFinder.getMediaByDerivativeUrl(eq("http://images.trvl-media.com/hotels/5000000/4610000/4600500/4600417/4a8a5b92_t.jpg"))).thenReturn(media);
         ResponseEntity<String> responseEntity = sourceURLController.getSourceURL(jsonMessage, mockHeader);
         assertNotNull(responseEntity);
@@ -130,11 +127,11 @@ public class SourceURLControllerTest {
         String jsonMessage = "{ \n"
                 + "  \"mediaUrl\":\"http://images.trvl-media.com/hotels/11000000/10440000/10430400/10430311/8b9680cd_y.jpg\" \n"
                 + "}";
-        Media media = Media.builder()
+        Optional<Media> media = Optional.of(Media.builder()
                 .mediaGuid("8b9680cd-f9f9-4f78-9344-2f00aba91a69")
                 .fileName("4600417_IMG0010.jpg")
                 .sourceUrl("s3://ewe-cs-media-test/test/source/lodging/11000000/10440000/10430400/10430311/8b9680cd-f9f9-4f78-9344-2f00aba91a69.jpg")
-                .build();
+                .build());
         when(fileSourceFinder.getMediaByDerivativeUrl(eq("http://images.trvl-media.com/hotels/11000000/10440000/10430400/10430311/8b9680cd_y.jpg"))).thenReturn(media);
         String requestId = "test-request-id";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();

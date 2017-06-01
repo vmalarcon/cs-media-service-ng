@@ -21,6 +21,7 @@ import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+// TODO: JavaDoc ALL the things
 @Component
 public class MediaUpdateProcessor {
     private static final FormattedLogger LOGGER = new FormattedLogger(MediaUpdateProcessor.class);
@@ -32,10 +33,14 @@ public class MediaUpdateProcessor {
 
     @Value("${kafka.imagemessage.topic}")
     private String imageMessageTopic;
+    private final KafkaCommonPublisher kafkaCommonPublisher;
+    private final MediaDao mediaDao;
+
     @Autowired
-    private KafkaCommonPublisher kafkaCommonPublisher;
-    @Autowired
-    private MediaDao mediaDBMediaDao;
+    public MediaUpdateProcessor(KafkaCommonPublisher kafkaCommonPublisher, MediaDao mediaDao) {
+        this.kafkaCommonPublisher = kafkaCommonPublisher;
+        this.mediaDao = mediaDao;
+    }
 
     /**
      * Processed an Update ImageMessage request. Merges the data from the originalMedia (media from the MediaDB) with the updateImageMessage,
@@ -52,7 +57,7 @@ public class MediaUpdateProcessor {
                                                  Media originalMedia) throws Exception {
         final ImageMessage updatedImageMessage = buildUpdatedImageMessage(updateImageMessage, originalMedia);
         LOGGER.info("Started updating media in MediaDB MediaGuid={}", originalMedia.getMediaGuid());
-        mediaDBMediaDao.updateMedia(updatedImageMessage);
+        mediaDao.updateMedia(updatedImageMessage);
         LOGGER.info("Finished updating media in MediaDB MediaGuid={}", originalMedia.getMediaGuid());
         // TODO: Update all the media that needs to be unhero'd in mediaDB and send them to kafka as well.
         kafkaCommonPublisher.publishImageMessage(addUpdateOperationTag(updatedImageMessage), imageMessageTopic);

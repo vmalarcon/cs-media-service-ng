@@ -2,14 +2,17 @@ package com.expedia.content.media.processing.services.dao;
 
 import com.expedia.content.media.processing.services.dao.domain.MediaDerivative;
 
+import java.util.Optional;
+
+//TODO: JavaDoc ALL the things
 public interface DerivativesDao {
 
-    MediaDerivative getDerivativeByMediaGuid(String mediaGuid);
+    Optional<MediaDerivative> getDerivativeByMediaGuid(String mediaGuid);
 
     /**
      *
      * @param location
      * @return
      */
-    MediaDerivative getDerivativeByLocation(String location);
+    Optional<MediaDerivative> getDerivativeByLocation(String location);
 }

@@ -1,33 +1,17 @@
 package com.expedia.content.media.processing.services;
 
-import static com.expedia.content.media.processing.services.testing.TestingUtil.setFieldValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
 import com.expedia.content.media.processing.pipeline.domain.Domain;
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
 import com.expedia.content.media.processing.pipeline.kafka.KafkaCommonPublisher;
+import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
+import com.expedia.content.media.processing.pipeline.reporting.Reporting;
+import com.expedia.content.media.processing.pipeline.util.Poker;
+import com.expedia.content.media.processing.services.dao.MediaDao;
+import com.expedia.content.media.processing.services.dao.domain.DomainIdMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
-import com.expedia.content.media.processing.services.reqres.DomainIdMedia;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
+import com.expedia.content.media.processing.services.validator.MapMessageValidator;
 import com.expedia.content.media.processing.services.validator.ValidationStatus;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,11 +29,27 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.MultiValueMap;
 
-import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
-import com.expedia.content.media.processing.pipeline.reporting.LogActivityProcess;
-import com.expedia.content.media.processing.pipeline.reporting.Reporting;
-import com.expedia.content.media.processing.services.dao.MediaDao;
-import com.expedia.content.media.processing.services.validator.MapMessageValidator;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MediaControllerTest {
@@ -65,11 +65,15 @@ public class MediaControllerTest {
     @Mock
     private KafkaCommonPublisher kafkaCommonPublisher;
     @Mock
-    private MediaDao mediaDBMediaDao;
+    private MediaDao mockMediaDao;
     @Mock
     private MediaAddProcessor mediaAddProcessor;
     @Mock
+    private MediaGetProcessor mediaGetProcessor;
+    @Mock
     private MediaUpdateProcessor mediaUpdateProcessor;
+    @Mock
+    private Poker poker;
     @Mock
     private Map<String, List<MapMessageValidator>> mockValidators;
     @Mock
@@ -90,15 +94,8 @@ public class MediaControllerTest {
 
     @Before
     public void initialize() throws Exception{
-        mediaController = new MediaController();
-        setFieldValue(mediaController, "kafkaCommonPublisher", kafkaCommonPublisher);
-        setFieldValue(mediaController, "mediaDBMediaDao", mediaDBMediaDao);
-        setFieldValue(mediaController, "mediaAddProcessor", mediaAddProcessor);
-        setFieldValue(mediaController, "mediaUpdateProcessor", mediaUpdateProcessor);
-        setFieldValue(mediaController, "mapValidatorList", mockValidators);
-        setFieldValue(mediaController, "logActivityProcess", mockLogActivityProcess);
-        setFieldValue(mediaController, "messagingTemplate", queueMessagingTemplateMock);
-        setFieldValue(mediaController, "reporting", reporting);
+        mediaController = new MediaController(mockValidators, mockLogActivityProcess, reporting, queueMessagingTemplateMock, mockMediaDao, kafkaCommonPublisher,
+                mediaUpdateProcessor, mediaGetProcessor, mediaAddProcessor, poker);
         mediaControllerSpy = spy(mediaController);
         Mockito.doNothing().when(kafkaCommonPublisher).publishImageMessage(anyObject(),anyString());
     }
@@ -296,8 +293,8 @@ public class MediaControllerTest {
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
         doReturn(new ValidationStatus(true, "yup", HttpStatus.ACCEPTED.toString())).when(mediaControllerSpy).verifyUrl(anyString());
-        Media media = Media.builder().mediaGuid(mediaGuid).lcmMediaId("12345").domain("Lodging").active("true").domainId("54321").build();
-        when(mediaDBMediaDao.getMediaByGuid(eq(mediaGuid))).thenReturn(media);
+        Optional<Media> media = Optional.of(Media.builder().mediaGuid(mediaGuid).lcmMediaId("12345").domain("Lodging").active("true").domainId("54321").build());
+        when(mockMediaDao.getMediaByGuid(eq(mediaGuid))).thenReturn(media);
         List<MapMessageValidator> validatorList = new ArrayList<>();
         List<String> validationErrorList = new ArrayList<>();
         when(mockMessageValidator.validateImages(any())).thenReturn(validationErrorList);
@@ -305,12 +302,12 @@ public class MediaControllerTest {
         when(mockValidators.get(anyString())).thenReturn(validatorList);
         validatorList.add(mockMessageValidator);
         when(mockValidators.getOrDefault(eq("EPCUpdate"), any())).thenReturn(validatorList);
-        when(mediaUpdateProcessor.processRequest(any(ImageMessage.class), eq(media))).thenReturn(new ResponseEntity<String>("You did it!", HttpStatus.OK));
+        when(mediaUpdateProcessor.processRequest(any(ImageMessage.class), eq(media.get()))).thenReturn(new ResponseEntity<String>("You did it!", HttpStatus.OK));
         ResponseEntity<String> responseEntity = mediaControllerSpy.mediaUpdate(mediaGuid, jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         assertTrue(responseEntity.getBody().contains("You did it!"));
-        verify(mediaUpdateProcessor, times(1)).processRequest(any(ImageMessage.class), eq(media));
+        verify(mediaUpdateProcessor, times(1)).processRequest(any(ImageMessage.class), eq(media.get()));
         verifyZeroInteractions(mediaAddProcessor);
     }
 
@@ -329,8 +326,8 @@ public class MediaControllerTest {
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
         doReturn(new ValidationStatus(true, "yup", HttpStatus.ACCEPTED.toString())).when(mediaControllerSpy).verifyUrl(anyString());
-        Media media = Media.builder().mediaGuid(mediaGuid).lcmMediaId("12345").status("REJECTED").domain("Lodging").active("true").domainId("54321").build();
-        when(mediaDBMediaDao.getMediaByGuid(eq(mediaGuid))).thenReturn(media);
+        Optional<Media> media = Optional.of(Media.builder().mediaGuid(mediaGuid).lcmMediaId("12345").status("REJECTED").domain("Lodging").active("true").domainId("54321").build());
+        when(mockMediaDao.getMediaByGuid(eq(mediaGuid))).thenReturn(media);
         List<MapMessageValidator> validatorList = new ArrayList<>();
         List<String> validationErrorList = new ArrayList<>();
         when(mockMessageValidator.validateImages(any())).thenReturn(validationErrorList);
@@ -338,12 +335,12 @@ public class MediaControllerTest {
         when(mockValidators.get(anyString())).thenReturn(validatorList);
         validatorList.add(mockMessageValidator);
         when(mockValidators.getOrDefault(eq("EPCUpdate"), any())).thenReturn(validatorList);
-        when(mediaUpdateProcessor.processRequest(any(ImageMessage.class), eq(media))).thenReturn(new ResponseEntity<String>("You did it!", HttpStatus.OK));
+        when(mediaUpdateProcessor.processRequest(any(ImageMessage.class), eq(media.get()))).thenReturn(new ResponseEntity<String>("You did it!", HttpStatus.OK));
         ResponseEntity<String> responseEntity = mediaControllerSpy.mediaUpdate(mediaGuid, jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         assertTrue(responseEntity.getBody().contains("You did it!"));
-        verify(mediaUpdateProcessor, times(1)).processRequest(any(ImageMessage.class), eq(media));
+        verify(mediaUpdateProcessor, times(1)).processRequest(any(ImageMessage.class), eq(media.get()));
         verifyZeroInteractions(mediaAddProcessor);
     }
 
@@ -362,8 +359,8 @@ public class MediaControllerTest {
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
         doReturn(new ValidationStatus(true, "yup", HttpStatus.ACCEPTED.toString())).when(mediaControllerSpy).verifyUrl(anyString());
-        Media media = Media.builder().mediaGuid(mediaGuid).lcmMediaId("12345").status("PUBLISHED").domain("Lodging").active("true").domainId("54321").build();
-        when(mediaDBMediaDao.getMediaByGuid(eq(mediaGuid))).thenReturn(media);
+        Optional<Media> media = Optional.of(Media.builder().mediaGuid(mediaGuid).lcmMediaId("12345").status("PUBLISHED").domain("Lodging").active("true").domainId("54321").build());
+        when(mockMediaDao.getMediaByGuid(eq(mediaGuid))).thenReturn(media);
         List<MapMessageValidator> validatorList = new ArrayList<>();
         List<String> validationErrorList = new ArrayList<>();
         when(mockMessageValidator.validateImages(any())).thenReturn(validationErrorList);
@@ -371,7 +368,7 @@ public class MediaControllerTest {
         when(mockValidators.get(anyString())).thenReturn(validatorList);
         validatorList.add(mockMessageValidator);
         when(mockValidators.getOrDefault(eq("EPCUpdate"), any())).thenReturn(validatorList);
-        when(mediaUpdateProcessor.processRequest(any(ImageMessage.class), eq(media))).thenReturn(new ResponseEntity<String>("You did it!", HttpStatus.OK));
+        when(mediaUpdateProcessor.processRequest(any(ImageMessage.class), eq(media.get()))).thenReturn(new ResponseEntity<String>("You did it!", HttpStatus.OK));
         ResponseEntity<String> responseEntity = mediaControllerSpy.mediaUpdate(mediaGuid, jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
@@ -395,8 +392,8 @@ public class MediaControllerTest {
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
         doReturn(new ValidationStatus(true, "yup", HttpStatus.ACCEPTED.toString())).when(mediaControllerSpy).verifyUrl(anyString());
-        Media media = Media.builder().mediaGuid(mediaGuid).lcmMediaId("12345").status("PUBLISHED").domain("Cars").active("true").domainId("54321").build();
-        when(mediaDBMediaDao.getMediaByGuid(eq(mediaGuid))).thenReturn(media);
+        Optional<Media> media = Optional.of(Media.builder().mediaGuid(mediaGuid).lcmMediaId("12345").status("PUBLISHED").domain("Cars").active("true").domainId("54321").build());
+        when(mockMediaDao.getMediaByGuid(eq(mediaGuid))).thenReturn(media);
         List<MapMessageValidator> validatorList = new ArrayList<>();
         List<String> validationErrorList = new ArrayList<>();
         when(mockMessageValidator.validateImages(any())).thenReturn(validationErrorList);
@@ -404,7 +401,7 @@ public class MediaControllerTest {
         when(mockValidators.get(anyString())).thenReturn(validatorList);
         validatorList.add(mockMessageValidator);
         when(mockValidators.getOrDefault(eq("EPCUpdate"), any())).thenReturn(validatorList);
-        when(mediaUpdateProcessor.processRequest(any(ImageMessage.class), eq(media))).thenReturn(new ResponseEntity<String>("You did it!", HttpStatus.OK));
+        when(mediaUpdateProcessor.processRequest(any(ImageMessage.class), eq(media.get()))).thenReturn(new ResponseEntity<String>("You did it!", HttpStatus.OK));
         ResponseEntity<String> responseEntity = mediaControllerSpy.mediaUpdate(mediaGuid, jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
@@ -427,8 +424,8 @@ public class MediaControllerTest {
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
         doReturn(new ValidationStatus(true, "yup", HttpStatus.ACCEPTED.toString())).when(mediaControllerSpy).verifyUrl(anyString());
-        Media media = Media.builder().mediaGuid(mediaGuid).lcmMediaId("12345").status("PUBLISHED").domain("Lodging").active("true").domainId("54321").build();
-        when(mediaDBMediaDao.getMediaByGuid(eq(mediaGuid))).thenReturn(media);
+        Optional<Media> media = Optional.of(Media.builder().mediaGuid(mediaGuid).lcmMediaId("12345").status("PUBLISHED").domain("Lodging").active("true").domainId("54321").build());
+        when(mockMediaDao.getMediaByGuid(eq(mediaGuid))).thenReturn(media);
         List<MapMessageValidator> validatorList = new ArrayList<>();
         List<String> validationErrorList = new ArrayList<>();
         validationErrorList.add("an error occurred!");
@@ -437,7 +434,7 @@ public class MediaControllerTest {
         when(mockValidators.get(anyString())).thenReturn(validatorList);
         validatorList.add(mockMessageValidator);
         when(mockValidators.getOrDefault(eq("EPCUpdate"), any())).thenReturn(validatorList);
-        when(mediaUpdateProcessor.processRequest(any(ImageMessage.class), eq(media))).thenReturn(new ResponseEntity<String>("You did it!", HttpStatus.OK));
+        when(mediaUpdateProcessor.processRequest(any(ImageMessage.class), eq(media.get()))).thenReturn(new ResponseEntity<String>("You did it!", HttpStatus.OK));
         ResponseEntity<String> responseEntity = mediaControllerSpy.mediaUpdate(mediaGuid, jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
@@ -462,7 +459,7 @@ public class MediaControllerTest {
         ResponseEntity<String> responseEntity = mediaControllerSpy.mediaUpdate(mediaGuid, jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-        assertTrue(responseEntity.getBody().contains("input queryId is invalid"));
+        assertTrue(responseEntity.getBody().contains("Input queryId is invalid. Must be a valid guid in the following format [xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx]"));
         verifyZeroInteractions(mediaUpdateProcessor);
         verifyZeroInteractions(mediaAddProcessor);
     }
@@ -481,11 +478,11 @@ public class MediaControllerTest {
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
         doReturn(new ValidationStatus(true, "yup", HttpStatus.ACCEPTED.toString())).when(mediaControllerSpy).verifyUrl(anyString());
-        when(mediaDBMediaDao.getMediaByGuid(eq(mediaGuid))).thenReturn(null);
+        when(mockMediaDao.getMediaByGuid(eq(mediaGuid))).thenReturn(Optional.empty());
         ResponseEntity<String> responseEntity = mediaControllerSpy.mediaUpdate(mediaGuid, jsonMessage, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
-        assertTrue(responseEntity.getBody().contains("input GUID does not exist in DB"));
+        assertTrue(responseEntity.getBody().contains("Requested resource with ID " + mediaGuid + " was not found."));
         verifyZeroInteractions(mediaUpdateProcessor);
         verifyZeroInteractions(mediaAddProcessor);
     }
@@ -493,8 +490,8 @@ public class MediaControllerTest {
     @Test
     public void testMediaGetSuccess() throws Exception {
         String mediaGuid = "87654321-4321-4321-4321-605040302010";
-        MediaGetResponse mediaGetResponse = MediaGetResponse.builder().mediaGuid(mediaGuid).build();
-        when(mediaDBMediaDao.getMediaGetResponseByGUID(eq(mediaGuid))).thenReturn(mediaGetResponse);
+        Optional<MediaGetResponse> mediaGetResponse = Optional.of(MediaGetResponse.builder().mediaGuid(mediaGuid).build());
+        when(mediaGetProcessor.processMediaGetRequest(eq(mediaGuid))).thenReturn(mediaGetResponse);
         String requestId = "12345678-1234-1234-1234-010203040506";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
@@ -507,8 +504,8 @@ public class MediaControllerTest {
     @Test
     public void testMediaGetNotAValidGuid() throws Exception {
         String mediaGuid = "not-a-valid-guid";
-        MediaGetResponse mediaGetResponse = MediaGetResponse.builder().mediaGuid(mediaGuid).build();
-        when(mediaDBMediaDao.getMediaGetResponseByGUID(eq(mediaGuid))).thenReturn(mediaGetResponse);
+        Optional<MediaGetResponse> mediaGetResponse = Optional.of(MediaGetResponse.builder().mediaGuid(mediaGuid).build());
+        when(mediaGetProcessor.processMediaGetRequest(eq(mediaGuid))).thenReturn(mediaGetResponse);
         String requestId = "12345678-1234-1234-1234-010203040506";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
@@ -521,7 +518,7 @@ public class MediaControllerTest {
     @Test
     public void testMediaGetMediaNotFound() throws Exception {
         String mediaGuid = "87654321-4321-4321-4321-605040302010";
-        when(mediaDBMediaDao.getMediaGetResponseByGUID(eq(mediaGuid))).thenReturn(null);
+        when(mediaGetProcessor.processMediaGetRequest(eq(mediaGuid))).thenReturn(Optional.empty());
         String requestId = "12345678-1234-1234-1234-010203040506";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
@@ -534,8 +531,8 @@ public class MediaControllerTest {
     @Test
     public void testDeleteMediaSuccess() throws Exception {
         String mediaGuid = "87654321-4321-4321-4321-605040302010";
-        Media media = Media.builder().mediaGuid(mediaGuid).lcmMediaId("12345").domain("Lodging").active("true").domainId("54321").hidden(false).build();
-        when(mediaDBMediaDao.getMediaByGuid(eq(mediaGuid))).thenReturn(media);
+        Optional<Media> media = Optional.of(Media.builder().mediaGuid(mediaGuid).lcmMediaId("12345").domain("Lodging").active("true").domainId("54321").hidden(false).build());
+        when(mockMediaDao.getMediaByGuid(eq(mediaGuid))).thenReturn(media);
         String requestId = "12345678-1234-1234-1234-010203040506";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
@@ -565,14 +562,14 @@ public class MediaControllerTest {
     @Test
     public void testDeleteNonExistentMedia() throws Exception {
         String mediaGuid = "87654321-4321-4321-4321-605040302010";
-        when(mediaDBMediaDao.getMediaByGuid(eq(mediaGuid))).thenReturn(null);
+        when(mockMediaDao.getMediaByGuid(eq(mediaGuid))).thenReturn(Optional.empty());
         String requestId = "12345678-1234-1234-1234-010203040506";
         MultiValueMap<String, String> mockHeader = new HttpHeaders();
         mockHeader.add("request-id", requestId);
         ResponseEntity<String> responseEntity = mediaControllerSpy.deleteMedia(mediaGuid, mockHeader);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
-        assertTrue(responseEntity.getBody().contains("input GUID does not exist in DB"));
+        assertTrue(responseEntity.getBody().contains("Requested resource with ID " + mediaGuid + " was not found."));
         verifyZeroInteractions(kafkaCommonPublisher);
     }
 
@@ -592,7 +589,7 @@ public class MediaControllerTest {
                 .domainId(domainId)
                 .totalMediaCount(mediaList.size())
                 .images(mediaList).build();
-        when(mediaDBMediaDao.getMediaByDomainId(Domain.LODGING, domainId, null, null, null, null, null)).thenReturn(mediaByDomainIdResponse);
+        when(mediaGetProcessor.processMediaByDomainIDRequest(Domain.LODGING, domainId, null, null, null, null, null)).thenReturn(mediaByDomainIdResponse);
         ResponseEntity<String> responseEntity = mediaControllerSpy.getMediaByDomainId(domain, domainId, null, null,
                 null, null, null, mockHeader);
         assertNotNull(responseEntity);

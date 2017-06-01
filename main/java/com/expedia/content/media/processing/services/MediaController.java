@@ -11,6 +11,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
@@ -24,6 +25,7 @@ import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.exception.MediaNotFoundException;
 import com.expedia.content.media.processing.services.exception.PaginationValidationException;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
@@ -86,31 +88,38 @@ public class MediaController extends CommonServiceController {
         STATUS_MAP.put(ValidationStatus.VALID, OK);
     }
 
-
     @Value("${cs.poke.hip-chat.room}")
     private String hipChatRoom;
     @Value("${kafka.imagemessage.topic}")
     private String imageMessageTopic;
     @Value("${media.aws.processlog.queue.name}")
     private String mediaProcessLogQueue;
-    @Value("#{imageMessageValidators}")
-    private Map<String, List<MapMessageValidator>> mapValidatorList;
+    private final Map<String, List<MapMessageValidator>> mapValidatorList;
+    private final LogActivityProcess logActivityProcess;
+    private final Reporting reporting;
+    private final QueueMessagingTemplate messagingTemplate;
+    private final MediaDao mediaDao;
+    private final KafkaCommonPublisher kafkaCommonPublisher;
+    private final MediaUpdateProcessor mediaUpdateProcessor;
+    private final MediaGetProcessor mediaGetProcessor;
+    private final MediaAddProcessor mediaAddProcessor;
+    private final Poker poker;
+
     @Autowired
-    private LogActivityProcess logActivityProcess;
-    @Autowired
-    private Reporting reporting;
-    @Autowired
-    private QueueMessagingTemplate messagingTemplate;
-    @Autowired
-    private MediaDao mediaDBMediaDao;
-    @Autowired
-    private KafkaCommonPublisher kafkaCommonPublisher;
-    @Autowired
-    private MediaUpdateProcessor mediaUpdateProcessor;
-    @Autowired
-    private MediaAddProcessor mediaAddProcessor;
-    @Autowired
-    private Poker poker;
+    public MediaController(@Value("#{imageMessageValidators}") Map<String, List<MapMessageValidator>> mapValidatorList,
+                           LogActivityProcess logActivityProcess, Reporting reporting, QueueMessagingTemplate messagingTemplate, MediaDao mediaDao, KafkaCommonPublisher kafkaCommonPublisher,
+                           MediaUpdateProcessor mediaUpdateProcessor, MediaGetProcessor mediaGetProcessor, MediaAddProcessor mediaAddProcessor, Poker poker) {
+        this.mapValidatorList = mapValidatorList;
+        this.logActivityProcess = logActivityProcess;
+        this.reporting = reporting;
+        this.messagingTemplate = messagingTemplate;
+        this.mediaDao = mediaDao;
+        this.kafkaCommonPublisher = kafkaCommonPublisher;
+        this.mediaUpdateProcessor = mediaUpdateProcessor;
+        this.mediaGetProcessor = mediaGetProcessor;
+        this.mediaAddProcessor = mediaAddProcessor;
+        this.poker = poker;
+    }
 
     /**
      * Web service interface to push a media file into the media processing pipeline.
@@ -132,9 +141,9 @@ public class MediaController extends CommonServiceController {
         final String serviceUrl = MediaServiceUrl.MEDIA_IMAGES.getUrl();
         LOGGER.info("RECEIVED ADD REQUEST ServiceUrl={} ClientId={} RequestId={} JSONMessage={}", serviceUrl, clientID, requestID, message);
         try {
-            final ResponseEntity<String> errorResponse = validateMediaAddRequest(message, requestID, clientID, serviceUrl);
-            if (errorResponse != null) {
-                return errorResponse;
+            final Optional<ResponseEntity<String>> errorResponse = validateMediaAddRequest(message, requestID, clientID, serviceUrl);
+            if (errorResponse.isPresent()) {
+                return errorResponse.get();
             }
             return mediaAddProcessor.processRequest(message, requestID, serviceUrl, clientID, ACCEPTED, timeReceived);
         } catch (ImageMessageException ex) {
@@ -180,12 +189,12 @@ public class MediaController extends CommonServiceController {
      * @return an Error ResponseEntity if the request is not valid, null otherwise.
      * @throws Exception validating the image message can throw an exception.
      */
-    private ResponseEntity<String> validateMediaAddRequest(String message, String requestId, String clientId, String serviceUrl) throws Exception {
+    private Optional<ResponseEntity<String>> validateMediaAddRequest(String message, String requestId, String clientId, String serviceUrl) throws Exception {
         LOGGER.info("Validation of image: RequestId={}", Arrays.asList(requestId), message);
         final String json = validateImageMessage(message, clientId);
         if (!"[]".equals(json)) {
             LOGGER.warn("Returning bad request ServiceUrl={} ClientId={} RequestId={} ErrorMessage={}", Arrays.asList(serviceUrl, clientId, requestId, json), message);
-            return buildErrorResponse(json, serviceUrl, BAD_REQUEST);
+            return Optional.of(buildErrorResponse(json, serviceUrl, BAD_REQUEST));
         }
         @SuppressWarnings("CPD-START")
         final ImageMessage imageMessage = ImageMessage.parseJsonMessage(message);
@@ -205,9 +214,9 @@ public class MediaController extends CommonServiceController {
                             Arrays.asList(serviceUrl, clientId, requestId), message);
                     break;
             }
-            return buildErrorResponse(fileValidation.getMessage(), serviceUrl, STATUS_MAP.get(fileValidation.getStatus()) == null ? BAD_REQUEST : STATUS_MAP.get(fileValidation.getStatus()));
+            return Optional.of(buildErrorResponse(fileValidation.getMessage(), serviceUrl, STATUS_MAP.get(fileValidation.getStatus()) == null ? BAD_REQUEST : STATUS_MAP.get(fileValidation.getStatus())));
         }
-        return null;
+        return Optional.empty();
     }
 
     /**
@@ -232,24 +241,25 @@ public class MediaController extends CommonServiceController {
                 message);
         try {
             if (!queryId.matches(REG_EX_GUID)) {
-                return buildErrorResponse("input queryId is invalid", serviceUrl, BAD_REQUEST);
+                return buildErrorResponse("Input queryId is invalid. Must be a valid GUID in the following format [xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx]",
+                        serviceUrl, BAD_REQUEST);
             }
             LOGGER.info("Started querying media by media-guid in MediaDB ClientId={} RequestId={} MediaGUID={}", clientID, requestID, queryId);
-            final Media mediaInMediaDB = mediaDBMediaDao.getMediaByGuid(queryId);
+            final Media mediaInMediaDB = mediaDao.getMediaByGuid(queryId).orElseThrow(MediaNotFoundException::new);
             LOGGER.info("Finished querying media by media-guid in MediaDB ClientId={} RequestId={} MediaGUID={}", clientID, requestID, queryId);
-            if (mediaInMediaDB == null) {
-                return buildErrorResponse("input GUID does not exist in DB", serviceUrl, NOT_FOUND);
-            }
             final String updatedJsonMessage = appendDomain(message, mediaInMediaDB.getDomainId());
-            final ResponseEntity<String> errorResponse = validateMediaUpdateRequest(mediaInMediaDB, updatedJsonMessage, serviceUrl);
-            if (errorResponse != null) {
-                LOGGER.warn("UPDATE VALIDATION ValidationError={} ServiceUrl={} QueryId={} ClientId={} RequestId={} JSONMessage={}", errorResponse, serviceUrl, queryId, clientID, requestID, message);
-                return errorResponse;
+            final Optional<ResponseEntity<String>> errorResponse = validateMediaUpdateRequest(mediaInMediaDB, updatedJsonMessage, serviceUrl);
+            if (errorResponse.isPresent()) {
+                LOGGER.warn("UPDATE VALIDATION ValidationError={} ServiceUrl={} QueryId={} ClientId={} RequestId={} JSONMessage={}",
+                        errorResponse.get(), serviceUrl, queryId, clientID, requestID, message);
+                return errorResponse.get();
             }
             final ImageMessage imageMessage = ImageMessage.parseJsonMessage(updatedJsonMessage);
             final ResponseEntity<String> response = mediaUpdateProcessor.processRequest(imageMessage, mediaInMediaDB);
             LOGGER.info("END UPDATE REQUEST ServiceUrl={} QueryId={} ClientId={} RequestId={} JSONMessage={}", serviceUrl, queryId, clientID, requestID, message);
             return response;
+        } catch (MediaNotFoundException ex) {
+            return buildErrorResponse("Requested resource with ID " + queryId + " was not found.", serviceUrl, NOT_FOUND);
         } catch (ImageMessageException ex) {
             final ResponseEntity<String> errorResponse = buildErrorResponse("JSON request format is invalid. Json message=" + message, serviceUrl, BAD_REQUEST);
             LOGGER.error(ex, "ERROR ResponseStatus={} ResponseBody={} ServiceUrl={} QueryId={} ClientId={} RequestId={} ErrorMessage={}",
@@ -274,20 +284,20 @@ public class MediaController extends CommonServiceController {
      * @return An Error respone ResponseEntity if the update request is not valid, otherwise null.
      * @throws Exception
      */
-    private ResponseEntity<String> validateMediaUpdateRequest(Media originalMedia, String jsonMessage, String serviceUrl) throws Exception {
+    private Optional<ResponseEntity<String>> validateMediaUpdateRequest(Media originalMedia, String jsonMessage, String serviceUrl) throws Exception {
         final String jsonValidationErrors = validateImageMessage(jsonMessage, "EPCUpdate");
         if (!"[]".equals(jsonValidationErrors)) {
-            return buildErrorResponse(jsonValidationErrors, serviceUrl, BAD_REQUEST);
+            return Optional.of(buildErrorResponse(jsonValidationErrors, serviceUrl, BAD_REQUEST));
         }
         // TODO: Make MediaUpdate Domain Agnostic in the future
         if (!Domain.LODGING.getDomain().equals(originalMedia.getDomain())) {
-            return buildErrorResponse("Only Lodging Media Updates can be handled at this time", serviceUrl, BAD_REQUEST);
+            return Optional.of(buildErrorResponse("Only Lodging Media Updates can be handled at this time", serviceUrl, BAD_REQUEST));
         }
         final ImageMessage updateMessage = ImageMessage.parseJsonMessage(jsonMessage);
         if (updateMessage.getHidden() && !canMediaBeHidden(originalMedia)) {
-            return buildErrorResponse("Only unpublished media can be hidden", serviceUrl, BAD_REQUEST);
+            return Optional.of(buildErrorResponse("Only unpublished media can be hidden", serviceUrl, BAD_REQUEST));
         }
-        return null;
+        return Optional.empty();
     }
 
     /**
@@ -315,7 +325,7 @@ public class MediaController extends CommonServiceController {
      * @return returns true if the media can be hidden or false if not.
      */
     private Boolean canMediaBeHidden(Media media) throws Exception {
-        return (media == null) || (REJECTED_STATUS.equals(media.getStatus()) || DUPLICATED_STATUS.equals(media.getStatus()));
+        return REJECTED_STATUS.equals(media.getStatus()) || DUPLICATED_STATUS.equals(media.getStatus());
     }
 
     /**
@@ -342,15 +352,14 @@ public class MediaController extends CommonServiceController {
                 return buildErrorResponse("Invalid media GUID provided.", serviceUrl, BAD_REQUEST);
             }
             LOGGER.info("Started querying media by media-guid in MediaDB ClientId={} RequestId={} MediaGUID={}", clientID, requestID, mediaGUID);
-            final MediaGetResponse mediaResponse = mediaDBMediaDao.getMediaGetResponseByGUID(mediaGUID);
+            final MediaGetResponse mediaResponse = mediaGetProcessor.processMediaGetRequest(mediaGUID).orElseThrow(MediaNotFoundException::new);
             LOGGER.info("Finished querying media by media-guid in MediaDB ClientId={} RequestId={} MediaGUID={}", clientID, requestID, mediaGUID);
-            if (mediaResponse == null) {
-                final ResponseEntity<String> errorResponse = buildErrorResponse("Provided media GUID does not exist.", serviceUrl, NOT_FOUND);
-                LOGGER.info("INVALID GET REQUEST ResponseStatus={} ResponseBody={} ErrorMessage=\"Response not found. Provided media GUID does not exist\" MediaGUID={} ClientId={} RequestId={}",
-                        errorResponse.getStatusCode().toString(), errorResponse.getBody(), mediaGUID, clientID, requestID);
-                return errorResponse;
-            }
             return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(mediaResponse), OK);
+        } catch (MediaNotFoundException ex) {
+            final ResponseEntity<String> errorResponse = buildErrorResponse("Requested resource with ID " + mediaGUID + " was not found.", serviceUrl, NOT_FOUND);
+            LOGGER.info("INVALID GET REQUEST ResponseStatus={} ResponseBody={} ErrorMessage={} MediaGUID={} ClientId={} RequestId={}",
+                    errorResponse.getStatusCode().toString(), errorResponse.getBody(), ex.getMessage(), mediaGUID, clientID, requestID);
+            return errorResponse;
         } catch (Exception ex) {
             LOGGER.error(ex, "ERROR ServiceUrl={} ClientId={} RequestId={} MediaGuid={} ErrorMessage={}", serviceUrl, clientID, requestID, mediaGUID, ex.getMessage());
             poker.poke("Media Services failed to process a getMedia request - RequestId: " + requestID + " ClientId: " + clientID, hipChatRoom, mediaGUID, ex);
@@ -379,14 +388,13 @@ public class MediaController extends CommonServiceController {
                 LOGGER.warn("INVALID DELETE REQUEST ServiceUrl={} ClientId={} RequestId={} MediaGUID={}", serviceUrl, clientID, requestID, mediaGUID);
                 return buildErrorResponse("Invalid media GUID provided.", serviceUrl, BAD_REQUEST);
             }
-            final Media media = mediaDBMediaDao.getMediaByGuid(mediaGUID);
-            if (media == null) {
-                return buildErrorResponse("input GUID does not exist in DB", serviceUrl, NOT_FOUND);
-            }
+            final Media media = mediaDao.getMediaByGuid(mediaGUID).orElseThrow(MediaNotFoundException::new);
             media.setHidden(true);
             final ImageMessage imageMessage = media.toImageMessage();
             kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic);
             return new ResponseEntity<>("Media GUID " + StringEscapeUtils.escapeHtml(mediaGUID) + " has been deleted successfully.", OK);
+        } catch (MediaNotFoundException ex) {
+            return buildErrorResponse("Requested resource with ID " + mediaGUID + " was not found.", serviceUrl, NOT_FOUND);
         } catch (Exception ex) {
             LOGGER.error(ex, "ERROR ServiceUrl={} ClientId={} RequestId={} MediaGuid={} ErrorMessage={}", serviceUrl, clientID, requestID, mediaGUID,
                     ex.getMessage());
@@ -438,7 +446,7 @@ public class MediaController extends CommonServiceController {
                 return errorResponse;
             }
             LOGGER.info("Started querying media by domainId in MediaDB ClientId={} RequestId={} DomainName={} DomainId={}", clientID, requestID, domainName, domainId);
-            final MediaByDomainIdResponse response = mediaDBMediaDao.getMediaByDomainId(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter,
+            final MediaByDomainIdResponse response = mediaGetProcessor.processMediaByDomainIDRequest(Domain.findDomain(domainName, true), domainId, activeFilter, derivativeTypeFilter,
                     derivativeCategoryFilter, pageSize, pageIndex);
             LOGGER.info("Finished querying media by domainId in MediaDB ClientId={} RequestId={} DomainName={} DomainId={}", clientID, requestID, domainName, domainId);
             return new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), OK);

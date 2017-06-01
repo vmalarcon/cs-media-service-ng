@@ -41,9 +41,7 @@ public class MediaUpdateProcessorTest {
 
     @Before
     public void testSetUp() throws Exception {
-        mediaUpdateProcessor = new MediaUpdateProcessor();
-        setFieldValue(mediaUpdateProcessor, "kafkaCommonPublisher", kafkaCommonPublisher);
-        setFieldValue(mediaUpdateProcessor, "mediaDBMediaDao", mediaDBMediaDao);
+        mediaUpdateProcessor = new MediaUpdateProcessor(kafkaCommonPublisher, mediaDBMediaDao);
     }
 
     @Test
