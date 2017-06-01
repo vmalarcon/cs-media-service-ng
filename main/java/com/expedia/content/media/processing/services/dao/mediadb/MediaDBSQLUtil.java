@@ -9,8 +9,6 @@ import com.expedia.content.media.processing.services.dao.domain.LocalizedName;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.Subcategory;
 import com.expedia.content.media.processing.services.util.JSONUtil;
-import com.mysql.cj.jdbc.result.ResultSetImpl;
-import jdk.nashorn.internal.runtime.options.Option;
 import org.springframework.util.StringUtils;
 
 import java.sql.PreparedStatement;
@@ -91,7 +89,7 @@ public class MediaDBSQLUtil {
      */
     public static Map<String, Object> convertLcmMediaIdInMapToString(Map<String, Object> domainFieldsMap) {
         if (domainFieldsMap != null && domainFieldsMap.get("lcmMediaId") != null) {
-            String lcmMediaId = String.valueOf(domainFieldsMap.get("lcmMediaId"));
+            final String lcmMediaId = String.valueOf(domainFieldsMap.get("lcmMediaId"));
             domainFieldsMap.put("lcmMediaId", lcmMediaId);
         }
         return domainFieldsMap;
@@ -233,17 +231,18 @@ public class MediaDBSQLUtil {
      */
     public static String setMediaByDomainIdQueryString(String baseQuery, boolean isActiveFilterUsed, boolean isDerivativeCategoryFilterUsed,
                                                        boolean isPaginationUsed, String[] derivativeCategoryFilterArray ) {
+        final StringBuilder finalQuery = new StringBuilder(baseQuery);
         if (isActiveFilterUsed) {
-            baseQuery += MEDIA_BY_DOMAIN_ID_ACTIVE_FILTER;
+            finalQuery.append(MEDIA_BY_DOMAIN_ID_ACTIVE_FILTER);
         }
         if (isDerivativeCategoryFilterUsed) {
-            baseQuery += setSQLTokensWithArray(MEDIA_BY_DOMAIN_ID_DERIVATIVE_CATEGORY_FILTER, derivativeCategoryFilterArray);
+            finalQuery.append(setSQLTokensWithArray(MEDIA_BY_DOMAIN_ID_DERIVATIVE_CATEGORY_FILTER, derivativeCategoryFilterArray));
 
         }
         if (isPaginationUsed) {
-            baseQuery += MEDIA_BY_DOMAIN_ID_LIMIT;
+            finalQuery.append(MEDIA_BY_DOMAIN_ID_LIMIT);
         }
-        return baseQuery;
+        return finalQuery.toString();
     }
 
 
@@ -271,9 +270,9 @@ public class MediaDBSQLUtil {
                     .domainProvider(resultSet.getString("provider"))
                     .domainDerivativeCategory(resultSet.getString("derivative-category"))
                     .domainFields(convertLcmMediaIdInMapToString(JSONUtil.buildMapFromJson(resultSet.getString("domain-fields"))))
-                    .derivatives(resultSet.getString("derivatives") != null ?
+                    .derivatives(resultSet.getString("derivatives") == null ? null :
                             (isDerivativeFilterUsed ? filterDerivatives(resultSet.getString("derivatives"), derivativeFilter) :
-                                    JSONUtil.buildMapListFromJson(resultSet.getString("derivatives"))) : null
+                                    JSONUtil.buildMapListFromJson(resultSet.getString("derivatives")))
                     )
                     .comments(Arrays.asList(Comment.builder()
                             .note(resultSet.getString("comments"))

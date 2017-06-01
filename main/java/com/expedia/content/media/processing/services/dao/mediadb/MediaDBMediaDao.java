@@ -53,7 +53,8 @@ public class MediaDBMediaDao implements MediaDao {
     private static final String MEDIA_BY_FILE_NAME_QUERY = "SELECT * FROM `media` WHERE `file-name` = ?";
     private static final String MEDIAS_BY_FILE_NAMES_QUERY = "SELECT * FROM `media` WHERE `file-name` IN (?)";
     private static final String MEDIA_BY_GUID_QUERY = "SELECT `guid`, `file-url`, `source-url`, `file-name`, `active`, `width`, `height`, `file-size`, `status`, `updated-by`, " +
-            "`update-date`, `provider`, `derivative-category`, `domain-fields`, `derivatives`, `comments`, `update-date`, `domain`, `domain-id` FROM `media` WHERE `guid` = ?";
+            "`update-date`, `provider`, `derivative-category`, `domain-fields`, `derivatives`, `comments`, `update-date`, `domain`, `domain-id`, `provided-name`, `hidden`, `metadata`, `user-id`, `client-id`" +
+            " FROM `media` WHERE `guid` = ?";
     private static final String DELETE_MEDIA_BY_GUID = "DELETE FROM `media` WHERE `guid` = ?";
     private static final String MEDIA_BY_LCM_MEDIA_ID = "SELECT * FROM `media` WHERE `domain-fields` LIKE ?";
     private static final String ADD_WITH_IMAGEMESSAGEAVRO_QUERY = "INSERT INTO `media` " +

@@ -38,7 +38,7 @@ public class MediaDBDomainCategoriesDao implements DomainCategoriesDao {
 
     @SuppressWarnings("CPD-START")
     private List<Category> getAllMediaCategoriesWithSubCategories(String domain) {
-        List<DomainCategory> domainCategoryList = jdbcTemplate.query((Connection connection) -> {
+        final List<DomainCategory> domainCategoryList = jdbcTemplate.query((Connection connection) -> {
             final PreparedStatement statement = connection.prepareStatement(ALL_CATEGORIES_AND_SUBCATEGORIES_QUERY);
             statement.setString(1, domain);
             return statement;
@@ -53,7 +53,7 @@ public class MediaDBDomainCategoriesDao implements DomainCategoriesDao {
     }
 
     private List<Category> getMediaCategoriesWithSubCategoriesByLocaleId(String domain, String queryLocaleId) {
-        List<DomainCategory> domainCategoryList = jdbcTemplate.query((Connection connection) -> {
+        final List<DomainCategory> domainCategoryList = jdbcTemplate.query((Connection connection) -> {
             final PreparedStatement statement = connection.prepareStatement(CATEGORIES_AND_SUBCATEGORIES_BY_LOCAL_ID_QUERY);
             statement.setString(1, domain);
             statement.setString(2, queryLocaleId);

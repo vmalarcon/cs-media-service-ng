@@ -8,7 +8,7 @@ import lombok.Getter;
  */
 @AllArgsConstructor
 @Getter
-@SuppressWarnings("PMD.AvoidFieldNameMatchingTypeName")
+@SuppressWarnings({"PMD.AvoidFieldNameMatchingTypeName", "PMD.UnusedPrivateField"})
 public class LocalizedName {
     private final String localizedName;
     private final String localeId;

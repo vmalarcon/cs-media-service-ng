@@ -38,7 +38,7 @@ public class FileSourceFinder {
      */
     public Optional<Media> getMediaByDerivativeUrl(String derivativeUrl) throws Exception {
         final String derivativeLocation = mediaUrlToS3Path(derivativeUrl, false);
-        Optional<MediaDerivative> derivative = mediaDBDerivativesDao.getDerivativeByLocation(derivativeLocation);
+        final Optional<MediaDerivative> derivative = mediaDBDerivativesDao.getDerivativeByLocation(derivativeLocation);
         return derivative.map(der -> mediaDBMediaDao.getMediaByGuid(der.getMediaGuid())).orElse(Optional.empty());
     }
 

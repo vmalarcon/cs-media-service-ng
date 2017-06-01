@@ -10,6 +10,7 @@ import java.util.List;
  */
 @AllArgsConstructor
 @Getter
+@SuppressWarnings({"PMD.UnusedPrivateField"})
 public class Subcategory {
     private final String subcategoryId;
     private final List<LocalizedName> subcategoryName;

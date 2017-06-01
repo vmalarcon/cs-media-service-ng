@@ -42,9 +42,9 @@ public class StatusController extends CommonServiceController {
 
     @Value("${cs.poke.hip-chat.room}")
     private String hipChatRoom;
-    private List<RequestMessageValidator> mediaStatusValidatorList;
-    private MediaDao mediaDao;
-    private Poker poker;
+    private final List<RequestMessageValidator> mediaStatusValidatorList;
+    private final MediaDao mediaDao;
+    private final Poker poker;
 
     @Autowired
     public StatusController(List<RequestMessageValidator> mediaStatusValidatorList, MediaDao mediaDao, Poker poker) {

@@ -113,14 +113,14 @@ public final class JSONUtil {
         final Map<String, Object> allMap = new HashMap<>();
         final ObjectMapper mapper = new ObjectMapper();
         final List mediaStatusList = new ArrayList();
-        mediaProcessLogList = mediaProcessLogList.stream()
+        final List<MediaProcessLog> processedMediaProcessLogList = mediaProcessLogList.stream()
                 .collect(Collectors.groupingBy(MediaProcessLog::getMediaFileName))
                 .values().stream()
                 .map(logList -> logList.stream()
                         .filter(log -> !ARCHIVE_STATUS.equalsIgnoreCase(log.getActivityType()))
                         .max(Comparator.comparing(MediaProcessLog::getActivityTime)).get())
                 .collect(Collectors.toList());
-        for (final MediaProcessLog mediaProcessLog : mediaProcessLogList) {
+        for (final MediaProcessLog mediaProcessLog : processedMediaProcessLogList) {
             final Map<String, Object> eachEntryMap = new LinkedHashMap<>();
             eachEntryMap.put(JSON_TAG_MEDIA_NAME, mediaProcessLog.getMediaFileName());
             if (mediaProcessLog.getActivityType() != null && VALID_STATUSES_SET.contains(mediaProcessLog.getActivityType())) {

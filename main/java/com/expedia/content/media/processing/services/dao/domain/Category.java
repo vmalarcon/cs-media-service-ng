@@ -10,6 +10,7 @@ import java.util.List;
  */
 @AllArgsConstructor
 @Getter
+@SuppressWarnings({"PMD.UnusedPrivateField"})
 public class Category {
     private String categoryId;
     private List<LocalizedName> categoryName;
