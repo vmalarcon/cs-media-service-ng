@@ -24,7 +24,7 @@ public class LodgingAddValidator implements MapMessageValidator {
     @Resource(name = "providerProperties")
     private Properties providerProperties;
 
-
+    @Override
     public List<String> validateImages(List<ImageMessage> messageList) {
         final List<String> errorList = new ArrayList<>();
         for (final ImageMessage imageMessage : messageList) {

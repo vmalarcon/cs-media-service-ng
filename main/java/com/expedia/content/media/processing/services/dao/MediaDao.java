@@ -2,15 +2,15 @@ package com.expedia.content.media.processing.services.dao;
 
 import com.expedia.content.media.processing.pipeline.domain.Domain;
 import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.services.dao.domain.DomainIdMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.MediaProcessLog;
-import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
-import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-
+// TODO: JavaDoc ALL the things, FIX all the javadocs
 public interface MediaDao {
 
     /**
@@ -25,8 +25,11 @@ public interface MediaDao {
      * @param pageIndex                 Positive integer to filter the page to display. pageIndex is inclusive with pageSize.
      * @return List of media that belongs to the domain item.
      */
-    MediaByDomainIdResponse getMediaByDomainId(Domain domain, String domainId, String activeFilter, String derivativeFilter, String derivativeCategoryFilter,
-                                               Integer pageSize, Integer pageIndex) throws Exception;
+    List<Optional<DomainIdMedia>> getMediaByDomainId(Domain domain, String domainId, String activeFilter, String derivativeFilter, String derivativeCategoryFilter,
+                                                     Integer pageSize, Integer pageIndex);
+
+
+    Optional<Integer> getTotalMediaCountByDomainId(Domain domain, String domainId, String activeFilter, String derivativeCategoryFilter);
 
     /**
      * Given a fileName returns all the media that were saved with that name.
@@ -34,15 +37,7 @@ public interface MediaDao {
      * @param fileName File name of the Media.
      * @return List of Media with the requested Filename.
      */
-    List<Media> getMediaByFilename(String fileName);
-
-    /**
-     * Retrieves a media by its GUID.
-     *
-     * @param mediaGUID GUID of the required media.
-     * @return Media with the requested GUID.
-     */
-    MediaGetResponse getMediaGetResponseByGUID(String mediaGUID);
+    List<Optional<Media>> getMediaByFilename(String fileName);
 
     /**
      * Deletes a media by its GUID.
@@ -56,17 +51,17 @@ public interface MediaDao {
      * @param mediaGUID
      * @return
      */
-    Media getMediaByGuid(String mediaGUID);
+    Optional<Media> getMediaByGuid(String mediaGUID);
 
     /**
      * get Media list from MediaDB by lcmMedia ID.
      * @param mediaId
      * @return
      */
-    List<Media> getMediaByMediaId(String mediaId);
+    List<Optional<Media>> getMediaByMediaId(String mediaId);
 
 
-    List<Media> getMediaByDomainId(String domainId);
+    List<Optional<Media>> getMediaByDomainId(String domainId);
 
     void unheroMedia(String guid, String domainField);
 

@@ -4,6 +4,7 @@ import com.expedia.content.media.processing.services.dao.domain.Media;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Utility methods/logic for the Media replacement logic.
@@ -25,13 +26,14 @@ public class MediaReplacement {
      * @param mediaList List of media from which to select the best.
      * @return Best media according to the logic
      */
-    public static Media selectBestMedia(List<Media> mediaList, String domainId, String provider) {
+    public static Optional<Media> selectBestMedia(List<Optional<Media>> mediaList, String domainId, String provider) {
         return mediaList.stream()
+                .filter(Optional::isPresent)
+                .map(Optional::get)
                 .filter(m -> m.getDomainId().equalsIgnoreCase(domainId))
                 //avoid NPE when legacy data record in dynamo does not have "provider".
                 //if it is GUID filename, do not need to check provider.
                 .filter(m -> provider.equalsIgnoreCase(m.getProvider()) || m.getFileName().matches(GUID_PATTERN))
-                .max(Comparator.comparing(Media::getLastUpdated))
-                .orElse(null);
+                .max(Comparator.comparing(Media::getLastUpdated));
     }
 }

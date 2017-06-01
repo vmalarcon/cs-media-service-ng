@@ -3,11 +3,12 @@ package com.expedia.content.media.processing.services.reqres;
 import java.util.List;
 import java.util.Map;
 
+import com.expedia.content.media.processing.services.dao.domain.Comment;
 import lombok.Builder;
 import lombok.Getter;
 
 /**
- * Media response object.
+ * Media Get response object.
  */
 @Builder
 @Getter

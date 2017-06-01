@@ -16,6 +16,7 @@ import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
@@ -28,114 +29,47 @@ import org.apache.commons.lang3.StringUtils;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 @SuppressWarnings({"PMD.TooManyFields", "PMD.ExcessivePublicCount","PMD.UnusedPrivateField", "PMD.SingularField", "PMD.ImmutableField"})
 public class Media {
-
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    @Setter private String mediaGuid;
-    @Setter private String fileUrl;
-    @Setter private String fileName;
-    @Setter private Long fileSize;
-    @Setter private Integer width;
-    @Setter private Integer height;
-    @Setter private String sourceUrl;
-    @Setter private String domain;
-    @Setter private String domainId;
-    @Setter private String domainFields;
-    @Setter private Date lastUpdated;
-    @Setter private String active;
-    @Setter private String provider;
-    @Setter private String clientId;
-    @Setter private String userId;
-    @Setter private String metadata;
-    @Setter private String derivatives;
+    private String mediaGuid;
+    private String fileUrl;
+    private String fileName;
+    private Long fileSize;
+    private Integer width;
+    private Integer height;
+    private String sourceUrl;
+    private String domain;
+    private String domainId;
+    private String domainFields;
+    private Date lastUpdated;
+    private String active;
+    private String provider;
+    private String clientId;
+    private String userId;
+    private String metadata;
+    private String derivatives;
     private String pHash;
-    @Setter private String sha1;
-    @Setter private String environment;
-    @Setter private String lcmMediaId;
-    @Setter private List<Map<String, Object>> derivativesList;
-    @Setter private Map<String, Object> domainData;
-    @Setter private List<String> commentList;
-    @Setter private String status;
-    @Setter private String domainDerivativeCategory;
-    @Setter private Boolean propertyHero;
-    @Setter private Boolean hidden;
-    @Setter private String providedName;
+    private String sha1;
+    private String environment;
+    private String lcmMediaId;
+    private List<Map<String, Object>> derivativesList;
+    private Map<String, Object> domainData;
+    private List<String> commentList;
+    private String status;
+    private String domainDerivativeCategory;
+    private Boolean propertyHero;
+    private Boolean hidden;
+    private String providedName;
 
     public static Media of(Media media) {
         return new Media(media.mediaGuid, media.fileUrl, media.fileName, media.fileSize, media.width, media.height, media.sourceUrl, media.domain, media.domainId, media.domainFields,
                 media.lastUpdated, media.active, media.provider, media.clientId, media.userId, media.metadata, media.derivatives, media.pHash, media.sha1, media.environment,
                 media.lcmMediaId, media.derivativesList, media.domainData, media.commentList, media.status, media.domainDerivativeCategory, media.propertyHero, media.hidden,
                 media.providedName);
-    }
-
-    public String getMediaGuid() {
-        return mediaGuid;
-    }
-
-    public String getFileUrl() {
-        return fileUrl;
-    }
-
-    public String getFileName() {
-        return fileName;
-    }
-
-    public Long getFileSize() {
-        return fileSize;
-    }
-
-    public Integer getWidth() {
-        return width;
-    }
-
-    public Integer getHeight() {
-        return height;
-    }
-
-    public String getSourceUrl() {
-        return sourceUrl;
-    }
-
-    public String getDomain() {
-        return domain;
-    }
-
-    public String getDomainId() {
-        return domainId;
-    }
-
-    public String getDomainFields() {
-        return domainFields;
-    }
-
-    public Date getLastUpdated() {
-        return lastUpdated;
-    }
-
-    public String getActive() {
-        return active;
-    }
-
-    public String getProvider() {
-        return provider;
-    }
-
-    public String getClientId() {
-        return clientId;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public String getDerivatives() {
-        return derivatives;
-    }
-
-    public String getLcmMediaId() {
-        return lcmMediaId;
     }
 
     public Boolean getPropertyHero() {
@@ -147,34 +81,13 @@ public class Media {
         return "true".equalsIgnoreCase(hero);
     }
 
-    public List<Map<String, Object>> getDerivativesList() {
-        return derivativesList;
-    }
-
-    public Map<String, Object> getDomainData() {
-        return domainData;
-    }
-
-    public List<String> getCommentList() {
-        return commentList;
-    }
-
     public String getStatus() {
         return status == null ? "RECEIVED" : status;
-    }
-
-    public String getDomainDerivativeCategory() {
-        return domainDerivativeCategory;
     }
 
     public Boolean isHidden(){
         return hidden == null ? false : hidden;
     }
-
-    public String getProvidedName() {
-        return providedName;
-    }
-
 
     /**
      * Converts the Media to an ImageMessage.
@@ -213,12 +126,11 @@ public class Media {
     }
 
     private static OuterDomain retrieveOuterDomainDomain(Map<String, Object> mapMessage) {
-        final String domainName = (String)mapMessage.get("domain");
+        final String domainName = (String) mapMessage.get("domain");
         if(domainName == null) {
             return null;
         } else {
-            Domain domain = null;
-
+            Domain domain;
             try {
                 domain = getDomain(domainName);
             } catch (InvalidDomainException var5) {
@@ -253,7 +165,7 @@ public class Media {
 
     private static Map buildMapForDomainField(String jsonMessage) {
         try {
-            return (Map)OBJECT_MAPPER.readValue(jsonMessage, Map.class);
+            return OBJECT_MAPPER.readValue(jsonMessage, Map.class);
         } catch (IOException var1) {
             MessageFormat.format("Error parsing/converting Json message: {0}", new Object[]{jsonMessage});
             return null;

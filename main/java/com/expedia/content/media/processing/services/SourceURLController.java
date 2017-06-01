@@ -5,6 +5,7 @@ import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.ImageCopy;
 import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.exception.MediaNotFoundException;
 import com.expedia.content.media.processing.services.util.FileSourceFinder;
 import com.expedia.content.media.processing.services.util.JSONUtil;
 import com.expedia.content.media.processing.services.util.MediaServiceUrl;
@@ -42,17 +43,21 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 public class SourceURLController extends CommonServiceController {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final FormattedLogger LOGGER = new FormattedLogger(SourceURLController.class);
-    @Autowired
-    private FileSourceFinder fileSourceFinder;
+
     @Value("${media.bucket.name}")
     private String bucketName;
     @Value("${cs.poke.hip-chat.room}")
     private String hipChatRoom;
-    @Autowired
-    private Poker poker;
+    private final ImageCopy imageCopy;
+    private final FileSourceFinder fileSourceFinder;
+    private final Poker poker;
 
     @Autowired
-    private ImageCopy imageCopy;
+    public SourceURLController(ImageCopy imageCopy, FileSourceFinder fileSourceFinder, Poker poker) {
+        this.imageCopy = imageCopy;
+        this.fileSourceFinder = fileSourceFinder;
+        this.poker = poker;
+    }
 
     /**
      * Web service interface to source URL and contentProviderName from  derivative file name.
@@ -75,10 +80,7 @@ public class SourceURLController extends CommonServiceController {
             if (mediaUrl == null) {
                 return buildErrorResponse("mediaUrl is required in message.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), BAD_REQUEST);
             }
-            final Media media = fileSourceFinder.getMediaByDerivativeUrl(mediaUrl);
-            if (media == null || media.getFileName() == null || media.getSourceUrl() == null) {
-                return buildErrorResponse(mediaUrl + " not found.", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
-            }
+            final Media media = fileSourceFinder.getMediaByDerivativeUrl(mediaUrl).orElseThrow(() -> new MediaNotFoundException("Requested resource with mediaUrl " + mediaUrl + " was not found."));
             final Map<String, String> responseMap = new HashMap<>();
             responseMap.put("contentProviderMediaName", media.getFileName());
             responseMap.put("mediaSourceUrl", media.getSourceUrl());
@@ -86,6 +88,8 @@ public class SourceURLController extends CommonServiceController {
             final ResponseEntity response = new ResponseEntity<>(jsonResponse, HttpStatus.OK);
             LOGGER.info("SOURCE URL RESPONSE ServiceUrl={} ResponseMessage={} RequestId={}", MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), response.getBody(), requestID);
             return response;
+        } catch (MediaNotFoundException ex) {
+            return buildErrorResponse(ex.getMessage(), MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), NOT_FOUND);
         } catch (RequestMessageException ex) {
             final ResponseEntity<String> responseEntity = buildErrorResponse(ex.getMessage(), MediaServiceUrl.MEDIA_SOURCEURL.getUrl(), BAD_REQUEST);
             LOGGER.error(ex, "ERROR ResponseStatus={} ResponseBody={} ServiceUrl={} RequestMessage={} RequestId={} ErrorMessage={}",

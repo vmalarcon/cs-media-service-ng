@@ -9,13 +9,13 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+@RunWith(MockitoJUnitRunner.class)
 public class MediaReplacementTest {
 
     @Test(expected = NullPointerException.class)
@@ -25,73 +25,73 @@ public class MediaReplacementTest {
 
     @Test
     public void testWithEmptyList() {
-        Media media = MediaReplacement.selectBestMedia(Lists.newArrayList(), "456", "SCORE");
-        assertTrue(media == null);
+        Optional<Media> media = MediaReplacement.selectBestMedia(Lists.newArrayList(), "456", "SCORE");
+        assertFalse(media.isPresent());
     }
 
     @Test
     public void testWithSingleMedia() {
-        Media media = MediaReplacement.selectBestMedia(Lists.newArrayList(
+        Optional<Media> media = MediaReplacement.selectBestMedia(Lists.newArrayList(
                 createByFileNameMedia("a", "456", "true", new Date(), "456")
         ), "456", "SCORE");
-        assertNotNull(media);
+        assertTrue(media.isPresent());
     }
 
     @Test
     public void testWithSingleMediaWithDifferentDomain() {
-        Media media = MediaReplacement.selectBestMedia(Lists.newArrayList(
+        Optional<Media> media = MediaReplacement.selectBestMedia(Lists.newArrayList(
                 createByFileNameMedia("a", "456", "true", new Date(), "456")
         ), "456", "SCORE");
-        assertNotNull(media);
+        assertTrue(media.isPresent());
         media = MediaReplacement.selectBestMedia(Lists.newArrayList(
                 createByFileNameMedia("a", "123", "true", new Date(), "456")
         ), "456", "SCORE");
-        assertNull(media);
+        assertFalse(media.isPresent());
     }
 
     @Test
     public void testWithGuidNameMediaWithDifferentProvider() {
-        Media media = MediaReplacement.selectBestMedia(Lists.newArrayList(
+        Optional<Media> media = MediaReplacement.selectBestMedia(Lists.newArrayList(
                 createByGuidFileNameMedia("a", "456", "true", new Date(), "456", "918492_EPCInternalUser_22dcf000-f34c-4eee-81f0-f971d48cd8e8.jpeg")
         ), "456", "VFML");
-        assertNotNull(media);
+        assertTrue(media.isPresent());
     }
 
     @Test
     public void testWithNameMediaWithDifferentProvider() {
-        Media media = MediaReplacement.selectBestMedia(Lists.newArrayList(
+        Optional<Media> media = MediaReplacement.selectBestMedia(Lists.newArrayList(
                 createByGuidFileNameMedia("a", "456", "true", new Date(), "456", "918492_epc_testdfd.jpeg")
         ), "456", "VFML");
-        assertNull(media);
+        assertFalse(media.isPresent());
     }
 
     @Test
     public void testMultipleMedia() throws Exception {
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        Media media = MediaReplacement.selectBestMedia(Lists.newArrayList(
+        Optional<Media> media = MediaReplacement.selectBestMedia(Lists.newArrayList(
                 createByFileNameMedia("a", "456", "true", dateFormat.parse("2016-02-17 12:00:00"), "456"),
                 createByFileNameMedia("b", "456", "true", dateFormat.parse("2016-02-17 12:00:01"), "456"),
                 createByFileNameMedia("c", "456", "true", dateFormat.parse("2016-02-17 12:00:02"), "456")
         ), "456", "SCORE");
-        assertNotNull(media);
-        assertEquals("c", media.getMediaGuid());
+        assertTrue(media.isPresent());
+        assertEquals("c", media.get().getMediaGuid());
         media = MediaReplacement.selectBestMedia(Lists.newArrayList(
                 createByFileNameMedia("a", "456", "true", dateFormat.parse("2016-02-17 12:00:00"), "456"),
                 createByFileNameMedia("b", "456", "true", dateFormat.parse("2016-02-17 12:00:01"), "456"),
                 createByFileNameMedia("c", "456", "false", dateFormat.parse("2016-02-17 12:00:02"), "456")
         ), "456", "SCORE");
-        assertNotNull(media);
-        assertEquals("c", media.getMediaGuid());
+        assertTrue(media.isPresent());
+        assertEquals("c", media.get().getMediaGuid());
         media = MediaReplacement.selectBestMedia(Lists.newArrayList(
                 createByFileNameMedia("a", "456", "true", dateFormat.parse("2016-02-17 12:00:00"), "456"),
                 createByFileNameMedia("b", "456", "Yes", dateFormat.parse("2016-02-17 12:00:01"), "456"),
                 createByFileNameMedia("c", "456", "false", dateFormat.parse("2016-02-17 12:00:02"), "456")
         ), "456", "SCORE");
-        assertNotNull(media);
-        assertEquals("c", media.getMediaGuid());
+        assertTrue(media.isPresent());
+        assertEquals("c", media.get().getMediaGuid());
     }
 
-    public static Media createByFileNameMedia(String guid, String domainId, String active, Date lastUpdated, String lcmMediaId) {
+    public static Optional<Media> createByFileNameMedia(String guid, String domainId, String active, Date lastUpdated, String lcmMediaId) {
         Media result = new Media();
         result.setMediaGuid(guid);
         result.setLcmMediaId(lcmMediaId);
@@ -100,10 +100,10 @@ public class MediaReplacementTest {
         result.setDomainId(domainId);
         result.setProvider("SCORE");
         result.setFileName("123_test.jpg");
-        return result;
+        return Optional.of(result);
     }
 
-    public static Media createByGuidFileNameMedia(String guid, String domainId, String active, Date lastUpdated, String lcmMediaId, String fileName) {
+    public static Optional<Media> createByGuidFileNameMedia(String guid, String domainId, String active, Date lastUpdated, String lcmMediaId, String fileName) {
         Media result = new Media();
         result.setMediaGuid(guid);
         result.setLcmMediaId(lcmMediaId);
@@ -112,7 +112,7 @@ public class MediaReplacementTest {
         result.setDomainId(domainId);
         result.setProvider("SCORE");
         result.setFileName(fileName);
-        return result;
+        return Optional.of(result);
     }
 
 }

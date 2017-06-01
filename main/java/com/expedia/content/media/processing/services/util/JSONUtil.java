@@ -3,13 +3,18 @@ package com.expedia.content.media.processing.services.util;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import com.expedia.content.media.processing.pipeline.util.ESAPIValidationUtil;
 import com.expedia.content.media.processing.services.exception.RequestMessageException;
@@ -27,7 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 @SuppressWarnings({"PMD.CyclomaticComplexity", "PMD.ModifiedCyclomaticComplexity", "PMD.StdCyclomaticComplexity", "PMD.ConfusingTernary",
         "PMD.NPathComplexity"})
 public final class JSONUtil {
-    
+
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final String JSON_TAG_STATUS = "status";
     private static final String JSON_TAG_TIME = "time";
@@ -36,7 +41,10 @@ public final class JSONUtil {
     private static final String JSON_TAG_STATUS_NOT_FOUND = "NOT_FOUND";
     private static final String JSON_TAG_DOMAIN = "domain";
     private static final String ERROR_WRITING_MAP = "Error writing map to json";
-    
+    public static final String ARCHIVE_STATUS = "Archive";
+    private static final Set<String> VALID_STATUSES_SET = new HashSet<>(Arrays.asList("NOT_FOUND", "RECEIVED", "DERIVATIVES_CREATED", "REJECTED", "DUPLICATE", "PUBLISHED"));
+
+
     private JSONUtil() {
     }
 
@@ -97,39 +105,27 @@ public final class JSONUtil {
     /**
      * Generate the json response message.
      *
-     * @param mapList key is media file name, value is status list that get from DB MediaProcessLog.
-     * @param fileNameList media file name list from input json message
-     * @param activityMappingList activityType to status messsage mapping.
-     * @return
+     * @param mediaProcessLogList list of MediaProcessLog from DB.
+     * @return Json Response of ProcessLogList.
      * @throws RequestMessageException happen when covert map to json error.
      */
-    public static String generateJsonByProcessLogList(Map<String, List<MediaProcessLog>> mapList, List<String> fileNameList,
-            List<ActivityMapping> activityMappingList) throws RequestMessageException {
+    public static String generateJsonByProcessLogList(List<MediaProcessLog> mediaProcessLogList) throws RequestMessageException {
         final Map<String, Object> allMap = new HashMap<>();
         final ObjectMapper mapper = new ObjectMapper();
         final List mediaStatusList = new ArrayList();
-        for (final String fileName : fileNameList) {
+        final List<MediaProcessLog> processedMediaProcessLogList = mediaProcessLogList.stream()
+                .collect(Collectors.groupingBy(MediaProcessLog::getMediaFileName))
+                .values().stream()
+                .map(logList -> logList.stream()
+                        .filter(log -> !ARCHIVE_STATUS.equalsIgnoreCase(log.getActivityType()))
+                        .max(Comparator.comparing(MediaProcessLog::getActivityTime)).get())
+                .collect(Collectors.toList());
+        for (final MediaProcessLog mediaProcessLog : processedMediaProcessLogList) {
             final Map<String, Object> eachEntryMap = new LinkedHashMap<>();
-            eachEntryMap.put(JSON_TAG_MEDIA_NAME, fileName);
-            
-            final List<MediaProcessLog> eachList = mapList.get(fileName);
-            if (eachList != null && !eachList.isEmpty()) {
-                ActivityMapping activityMapping = null;
-                for (int i = eachList.size() - 1; i >= 0; i--) {
-                    final MediaProcessLog mediaProcessLog = eachList.get(i);
-                    activityMapping = getActivityMappingFromList(activityMappingList, mediaProcessLog.getActivityType(), mediaProcessLog.getMediaType());
-                    if (activityMapping != null) {
-                        eachEntryMap.put(JSON_TAG_STATUS, activityMapping.getStatusMessage());
-                        eachEntryMap.put(JSON_TAG_TIME, mediaProcessLog.getActivityTime());
-                        break;
-                    } else {
-                        continue;
-                    }
-                }
-                if (activityMapping == null) {
-                    eachEntryMap.put(JSON_TAG_STATUS, JSON_TAG_STATUS_NOT_FOUND);
-                }
-                
+            eachEntryMap.put(JSON_TAG_MEDIA_NAME, mediaProcessLog.getMediaFileName());
+            if (mediaProcessLog.getActivityType() != null && VALID_STATUSES_SET.contains(mediaProcessLog.getActivityType())) {
+                eachEntryMap.put(JSON_TAG_STATUS, mediaProcessLog.getActivityType());
+                eachEntryMap.put(JSON_TAG_TIME, mediaProcessLog.getActivityTime());
             } else {
                 eachEntryMap.put(JSON_TAG_STATUS, JSON_TAG_STATUS_NOT_FOUND);
             }

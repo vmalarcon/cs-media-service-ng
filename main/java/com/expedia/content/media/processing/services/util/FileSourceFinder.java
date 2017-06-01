@@ -8,9 +8,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 /**
  * Find file path from S3 or window share.
  */
+// TODO: JavaDoc all the things
 @Component
 public class FileSourceFinder {
     public static final String S3_PREFIX = "s3://";
@@ -33,10 +36,10 @@ public class FileSourceFinder {
      * @return A Media Object of the source media record.
      * @throws Exception
      */
-    public Media getMediaByDerivativeUrl(String derivativeUrl) throws Exception {
+    public Optional<Media> getMediaByDerivativeUrl(String derivativeUrl) throws Exception {
         final String derivativeLocation = mediaUrlToS3Path(derivativeUrl, false);
-        final MediaDerivative derivative = mediaDBDerivativesDao.getDerivativeByLocation(derivativeLocation);
-        return mediaDBMediaDao.getMediaByGuid(derivative.getMediaGuid());
+        final Optional<MediaDerivative> derivative = mediaDBDerivativesDao.getDerivativeByLocation(derivativeLocation);
+        return derivative.map(der -> mediaDBMediaDao.getMediaByGuid(der.getMediaGuid())).orElse(Optional.empty());
     }
 
     /**

@@ -37,13 +37,14 @@ public class CategoryControllerTest {
 
     @Mock
     private DomainCategoriesDao mockMediaDomainCategoriesDao;
+    @Mock
+    private Poker poker;
 
     private CategoryController categoryController;
     
     @Before
     public void initialize() throws IllegalAccessException, NoSuchFieldException {
-        categoryController = new CategoryController();
-        setFieldValue(categoryController, "mediaDBMediaDomainCategoriesDao", mockMediaDomainCategoriesDao);
+        categoryController = new CategoryController(mockMediaDomainCategoriesDao, poker);
     }
 
     @Test

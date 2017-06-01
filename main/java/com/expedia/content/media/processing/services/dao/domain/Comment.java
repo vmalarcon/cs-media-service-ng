@@ -1,4 +1,4 @@
-package com.expedia.content.media.processing.services.reqres;
+package com.expedia.content.media.processing.services.dao.domain;
 
 import lombok.Builder;
 import lombok.Getter;

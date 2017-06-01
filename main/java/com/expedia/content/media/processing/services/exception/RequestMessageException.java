@@ -1,7 +1,7 @@
 package com.expedia.content.media.processing.services.exception;
 
 /**
- * This exception happens when JSON image message cannot be parsed into Java object}
+ * This exception happens when JSON image message cannot be parsed into Java object
  */
 @SuppressWarnings("serial")
 public class RequestMessageException extends RuntimeException {
