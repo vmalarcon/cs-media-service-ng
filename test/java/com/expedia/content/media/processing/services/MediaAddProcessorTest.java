@@ -62,7 +62,6 @@ public class MediaAddProcessorTest {
 
     @Before
     public void testSetUp() throws Exception {
-        mediaAddProcessor = new MediaAddProcessor(mockMediaDao, kafkaCommonPublisher, thumbnailProcessor, logActivityProcess, reporting, messagingTemplate);
         providerProperties = new Properties();
         providerProperties.setProperty("1", "EPC Internal User");
         providerProperties.setProperty("6", "SCORE");
@@ -71,6 +70,8 @@ public class MediaAddProcessorTest {
         providerProperties.setProperty("54", "Despegar");
         providerProperties.setProperty("56", "ICE Portal");
         providerProperties.setProperty("56", "VFMLeonardo");
+        mediaAddProcessor = new MediaAddProcessor(mockMediaDao, kafkaCommonPublisher, thumbnailProcessor, logActivityProcess, reporting, messagingTemplate);
+        setFieldValue(mediaAddProcessor, "providerProperties", mockProviderProperties);
         when(mockProviderProperties.entrySet()).thenReturn(providerProperties.entrySet());
     }
 
@@ -85,14 +86,14 @@ public class MediaAddProcessorTest {
                 + "\"domainId\": \"1238\", "
                 + "\"domainProvider\": \"EPC Internal User\" "
                 + "}";
-        when(mockMediaDao.getMediaByFilename("NASA_ISS-4.jpg")).thenReturn(null);
+        when(mockMediaDao.getMediaByFilename("NASA_ISS-4.jpg")).thenReturn(Arrays.asList(Optional.empty()));
         mediaAddProcessor.processRequest(jsonMessage, "123", "expedia.com", "blinn", HttpStatus.ACCEPTED, new Date());
         ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
         verify(mockMediaDao, times(1)).addMedia(argument.capture());
         verify(mockMediaDao, times(0)).updateMedia(any());
         verifyZeroInteractions(thumbnailProcessor);
         ImageMessage processedImageMessage = argument.getValue();
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(eq(processedImageMessage), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(eq(processedImageMessage), anyString(), anyString());
         assertNull(processedImageMessage.getOperation());
         assertEquals("1238_EPCInternalUser_" + processedImageMessage.getMediaGuid() + ".jpg", processedImageMessage.getFileName());
         assertEquals("http://i.imgur.com/3PRGFii.jpg", processedImageMessage.getFileUrl());
@@ -126,7 +127,7 @@ public class MediaAddProcessorTest {
         verify(mockMediaDao, times(1)).updateMedia(argument.capture());
         verifyZeroInteractions(thumbnailProcessor);
         ImageMessage processedImageMessage = argument.getValue();
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(eq(processedImageMessage), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(eq(processedImageMessage), anyString(), anyString());
         assertTrue(processedImageMessage.getOperation().contains(REPROCESS_OPERATION));
         assertEquals("12345678-1234-1234-1234-010203040506", processedImageMessage.getMediaGuid());
         assertEquals("NASA_ISS-4.jpg", processedImageMessage.getFileName());
@@ -144,14 +145,14 @@ public class MediaAddProcessorTest {
                 + "\"domainId\": \"1238\", "
                 + "\"domainProvider\": \"EPC Internal User\" "
                 + "}";
-        when(mockMediaDao.getMediaByFilename("NASA_ISS-4.jpg")).thenReturn(null);
+        when(mockMediaDao.getMediaByFilename("NASA_ISS-4.jpg")).thenReturn(Arrays.asList(Optional.empty()));
         mediaAddProcessor.processRequest(jsonMessage, "123", "expedia.com", MEDIA_CLOUD_ROUTER_CLIENT_ID, HttpStatus.ACCEPTED, new Date());
         ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
         verify(mockMediaDao, times(1)).addMedia(argument.capture());
         verify(mockMediaDao, times(0)).updateMedia(any());
         verifyZeroInteractions(thumbnailProcessor);
         ImageMessage processedImageMessage = argument.getValue();
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(eq(processedImageMessage), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(eq(processedImageMessage), anyString(), anyString());
         assertNull(processedImageMessage.getOperation());
         assertEquals("1238_EPCInternalUser_" + processedImageMessage.getMediaGuid() + ".jpg", processedImageMessage.getFileName());
         assertEquals("http://i.imgur.com/3PRGFii.jpg", processedImageMessage.getFileUrl());
@@ -169,7 +170,7 @@ public class MediaAddProcessorTest {
                 + "\"domainProvider\": \"EPC Internal User\","
                 + "\"generateThumbnail\": \"true\" "
                 + "}";
-        when(mockMediaDao.getMediaByFilename("NASA_ISS-4.jpg")).thenReturn(null);
+        when(mockMediaDao.getMediaByFilename("NASA_ISS-4.jpg")).thenReturn(Arrays.asList(Optional.empty()));
         Thumbnail thumbnail = Thumbnail.builder().location("s3://somewhere/but/not/here").build();
         when(thumbnailProcessor.createThumbnail(any())).thenReturn(thumbnail);
         mediaAddProcessor.processRequest(jsonMessage, "123", "expedia.com", "blinn", HttpStatus.ACCEPTED, new Date());
@@ -178,7 +179,7 @@ public class MediaAddProcessorTest {
         verify(thumbnailProcessor, times(1)).createThumbnail(any());
         verify(mockMediaDao, times(0)).updateMedia(any());
         ImageMessage processedImageMessage = argument.getValue();
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(eq(processedImageMessage), anyString());
+        verify(kafkaCommonPublisher, times(1)).publishImageMessage(eq(processedImageMessage), anyString(), anyString());
         assertNull(processedImageMessage.getOperation());
         assertEquals("1238_EPCInternalUser_" + processedImageMessage.getMediaGuid() + ".jpg", processedImageMessage.getFileName());
         assertEquals("http://i.imgur.com/3PRGFii.jpg", processedImageMessage.getFileUrl());
@@ -196,7 +197,7 @@ public class MediaAddProcessorTest {
                 + "\"domainProvider\": \"EPC Internal User\","
                 + "\"generateThumbnail\": \"true\" "
                 + "}";
-        when(mockMediaDao.getMediaByFilename("NASA_ISS-4.jpg")).thenReturn(null);
+        when(mockMediaDao.getMediaByFilename("NASA_ISS-4.jpg")).thenReturn(Arrays.asList(Optional.empty()));
         when(thumbnailProcessor.createThumbnail(any(ImageMessage.class))).thenThrow(new RuntimeException("whoops"));
         ResponseEntity response = mediaAddProcessor.processRequest(jsonMessage, "123", "expedia.com", "blinn", HttpStatus.ACCEPTED, new Date());
         assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatusCode());

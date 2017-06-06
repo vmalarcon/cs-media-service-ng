@@ -10,15 +10,22 @@ import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.text.SimpleDateFormat;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.expedia.content.media.processing.services.util.JSONUtil.buildMapFromJson;
 
-// TODO: JavaDoc ALL the things
+/**
+ * Helper class for processing Media Get requests.
+ */
 @Component
+@SuppressWarnings({"PMD.UnsynchronizedStaticDateFormatter"})
 public class MediaGetProcessor {
+    private final static SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss.SSS XXX", Locale.US);
 
     private final MediaDao mediaDao;
 
@@ -27,6 +34,19 @@ public class MediaGetProcessor {
         this.mediaDao = mediaDao;
     }
 
+    /**
+     * Handles a MediaByDomainId Request.
+     *
+     * @param domain The domain the domain id belongs to.
+     * @param domainId Identification of the domain item the media is required.
+     * @param activeFilter Filter determining what images to return. When true only active are returned. When false only inactive media is returned. When
+     * all then all are returned. All is set a default.
+     * @param derivativeTypeFilter Inclusive filter to use to only return certain types of derivatives. Returns all derivatives if not specified.
+     * @param derivativeCategoryFilter Inclusive filter to use to only return certain types of medias. Returns all medias if not specified.
+     * @param pageSize Positive integer to filter the number of media displayed per page. pageSize is inclusive with pageIndex.
+     * @param pageIndex Positive integer to filter the page to display. pageIndex is inclusive with pageSize.
+     * @return A MediaByDomainResponse to represent the values from the Media DB.
+     */
     public MediaByDomainIdResponse processMediaByDomainIDRequest(Domain domain, String domainId, String activeFilter, String derivativeTypeFilter,
                                                                  String derivativeCategoryFilter, Integer pageSize, Integer pageIndex) {
         final List<DomainIdMedia> domainIdMedias = mediaDao.getMediaByDomainId(domain, domainId, activeFilter, derivativeTypeFilter, derivativeCategoryFilter, pageSize, pageIndex)
@@ -43,6 +63,12 @@ public class MediaGetProcessor {
                 .build();
     }
 
+    /**
+     * Handles a MediaGet request by media guid
+     *
+     * @param mediaGuid The MediaGuid of the Media to return.
+     * @return An Optional MediaGetResponse if the guid exists in the DB, otherwise an Optional.empty() is returned.
+     */
     public Optional<MediaGetResponse> processMediaGetRequest(String mediaGuid) {
         final Optional<Media> media = mediaDao.getMediaByGuid(mediaGuid);
         if (media.isPresent()) {
@@ -52,6 +78,12 @@ public class MediaGetProcessor {
         }
     }
 
+    /**
+     * Converts a Media object returned by the MediaDB into a MediaGetResponse.
+     *
+     * @param media The Media object to return.
+     * @return A MediaGetResponse object representative of the Media object passed.
+     */
     private MediaGetResponse convertMediaToMediaGetResponse(Media media) {
         return MediaGetResponse.builder()
                 .mediaGuid(media.getMediaGuid())
@@ -64,11 +96,10 @@ public class MediaGetProcessor {
                 .fileSize(media.getFileSize())
                 .status(media.getStatus())
                 .lastUpdatedBy(media.getClientId())
-                // TODO check if timeStamp format is correct here.
-                .lastUpdateDateTime(media.getLastUpdated().toString())
+                .lastUpdateDateTime(DATE_FORMAT.format(media.getLastUpdated()))
                 .domainProvider(media.getProvider())
                 .domainDerivativeCategory(media.getDomainDerivativeCategory())
-                .domainFields(buildMapFromJson(media.getDomainFields()))
+                .domainFields(media.getDomainFields() == null ? new HashMap<>() : buildMapFromJson(media.getDomainFields()))
                 .derivatives(media.getDerivativesList())
                 .comments(media.getCommentList().stream()
                         .map(commentString -> Comment.builder()

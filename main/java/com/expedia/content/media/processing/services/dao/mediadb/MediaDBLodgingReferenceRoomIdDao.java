@@ -13,9 +13,12 @@ import java.sql.ResultSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.expedia.content.media.processing.services.dao.mediadb.MediaDBSQLUtil.setArray;
-import static com.expedia.content.media.processing.services.dao.mediadb.MediaDBSQLUtil.setSQLTokensWithArray;
+import static com.expedia.content.media.processing.services.util.MediaDBSQLUtil.setArray;
+import static com.expedia.content.media.processing.services.util.MediaDBSQLUtil.setSQLTokensWithArray;
 
+/**
+ * Dao class for accessing Room Reference Data in MediaDB.
+ */
 public class MediaDBLodgingReferenceRoomIdDao {
 
     private static final String ROOM_LIST_QUERY = "SELECT `room-id` FROM `lodging-reference-room-id` WHERE `room-id` IN (?) AND `hotel-id` = ?";
@@ -26,6 +29,13 @@ public class MediaDBLodgingReferenceRoomIdDao {
         this.jdbcTemplate = new JdbcTemplate(mediaDBDataSource);
     }
 
+    /**
+     * Final all Invalid RoomIds in OuterDomain data.
+     *
+     * @param outerDomain The outerDomain to find roomIds in.
+     * @return Returns a list of invalid roomIds, the list will be empty if no roomIds are invalid.
+     * @throws ClassCastException
+     */
     public List<Object> getInvalidRoomIds(OuterDomain outerDomain) throws ClassCastException {
         final List<String> validFormatRoomIds = DomainDataUtil.collectValidFormatRoomIds(outerDomain);
         final String[] arrayOfValidRoomIds = validFormatRoomIds.toArray(new String[validFormatRoomIds.size()]);

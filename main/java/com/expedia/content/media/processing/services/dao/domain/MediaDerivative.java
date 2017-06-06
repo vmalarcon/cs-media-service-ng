@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
+/**
+ * Object to represent a derivative record in Media DB.
+ */
 @AllArgsConstructor
 @Builder
 @Getter

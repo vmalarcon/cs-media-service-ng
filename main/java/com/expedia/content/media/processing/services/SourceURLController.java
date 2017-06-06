@@ -43,6 +43,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 public class SourceURLController extends CommonServiceController {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final FormattedLogger LOGGER = new FormattedLogger(SourceURLController.class);
+    public static final String S3_PROTOCOL = "s3://";
 
     @Value("${media.bucket.name}")
     private String bucketName;
@@ -121,7 +122,7 @@ public class SourceURLController extends CommonServiceController {
                 MediaServiceUrl.MEDIA_SOURCEIMAGE.getUrl(), message, requestID);
         final Map messageMap = JSONUtil.buildMapFromJson(message);
         final String fromUrl = (String) messageMap.get("mediaUrl");
-        final String objectName = fromUrl.substring(("s3://" + bucketName).length() + 1);
+        final String objectName = fromUrl.substring((S3_PROTOCOL + bucketName).length() + 1);
         try {
             final S3Object object = imageCopy.getImage(bucketName, objectName);
             if (object == null) {

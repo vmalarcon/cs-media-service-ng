@@ -10,10 +10,12 @@ import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.mediadb.MediaDBDerivativesDao;
 import com.expedia.content.media.processing.services.dao.mediadb.MediaDBLodgingReferenceHotelIdDao;
 import com.expedia.content.media.processing.services.dao.mediadb.MediaDBLodgingReferenceRoomIdDao;
+import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.mediadb.MediaDBMediaDao;
 import com.expedia.content.media.processing.services.dao.mediadb.MediaDBDomainCategoriesDao;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,6 +47,15 @@ public class ApplicationConfiguration {
 
     @Value("${mdb.datasource.url}")
     private String dataSourceURL;
+
+    @Value("${kafka.producer.retries}")
+    private Integer producerRetries;
+
+    @Value("${kafka.producer.retry.backoff.ms}")
+    private Integer producerRetryBackoffMs;
+
+    @Autowired
+    private Poker poker;
 
     @Bean
     public DriverManagerDataSource mediaDBDataSource() {
@@ -90,14 +101,16 @@ public class ApplicationConfiguration {
         props.put("schema.registry.url", schemaServer);
         props.put("enableSend", enableSend);
         props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
-        return new KafkaCommonPublisher(props);
+        props.put(ProducerConfig.RETRIES_CONFIG, producerRetries);
+        props.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, producerRetryBackoffMs);
+        return new KafkaCommonPublisher(props, poker);
     }
 
     @Bean
     @Primary
     public CompositeReporting compositeReporting(@Value("${appname}") final String appname,
-                                                 @Value("${kafka.activity.topic}") String activityTopic)
-            throws IOException {
+                                                 @Value("${kafka.activity.topic}") String activityTopic,
+                                                 @Value("${kafka.activity.topic.retry}") String activityRetryTopic) throws IOException {
         final List<Reporting> reportings = new ArrayList<>();
         final Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, brokerServer);
@@ -106,8 +119,10 @@ public class ApplicationConfiguration {
         props.put("schema.registry.url", schemaServer);
         props.put("enableSend", enableSend);
         props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
-        final KafkaCommonPublisher kafkaCommonPublisher = new KafkaCommonPublisher(props);
-        final KafkaReporting kafkaReporting = new KafkaReporting (kafkaCommonPublisher, appname, activityTopic);
+        props.put(ProducerConfig.RETRIES_CONFIG, producerRetries);
+        props.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, producerRetryBackoffMs);
+        final KafkaCommonPublisher kafkaCommonPublisher = new KafkaCommonPublisher(props, poker);
+        final KafkaReporting kafkaReporting = new KafkaReporting(kafkaCommonPublisher, appname, activityTopic, activityRetryTopic);
         reportings.add(kafkaReporting);
         return new CompositeReporting(reportings);
     }

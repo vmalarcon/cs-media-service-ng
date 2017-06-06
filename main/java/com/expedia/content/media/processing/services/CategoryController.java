@@ -33,7 +33,6 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 /**
  * Web service controller for domain categories.
  */
-// TODO: Fix JAVADOC
 @RestController
 public class CategoryController extends CommonServiceController {
 
@@ -115,8 +114,8 @@ public class CategoryController extends CommonServiceController {
      * returns true is the category has at least one subcategory 0
      * this is because /media/v1/domaincategories/{domainName} should not display subcategory 0
      *
-     * @param subcategories
-     * @return
+     * @param subcategories The list of subcategories to check for null subcategories in.
+     * @return true if a Null subcategory exists, false otherwise.
      */
     private boolean containsNullSubCategory(List<Subcategory> subcategories) {
         return subcategories.stream().anyMatch(subcategory -> subcategory.getSubcategoryId().equals(NULL_CATEGORY));

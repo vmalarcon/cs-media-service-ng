@@ -13,7 +13,6 @@ import java.util.Optional;
 /**
  * Find file path from S3 or window share.
  */
-// TODO: JavaDoc all the things
 @Component
 public class FileSourceFinder {
     public static final String S3_PREFIX = "s3://";
@@ -25,21 +24,26 @@ public class FileSourceFinder {
     @Value("${media.bucket.prefix.derivative.name}")
     private String derivativeBucketPrefix;
 
+    private final DerivativesDao mediaDerivativesDao;
+    private final MediaDao mediaDao;
+
     @Autowired
-    private DerivativesDao mediaDBDerivativesDao;
-    @Autowired
-    private MediaDao mediaDBMediaDao;
+    public FileSourceFinder(DerivativesDao mediaDerivativesDao, MediaDao mediaDao) {
+        this.mediaDerivativesDao = mediaDerivativesDao;
+        this.mediaDao = mediaDao;
+    }
 
     /**
      * Returns a source Media given the derivativeUrl.
+     *
      * @param derivativeUrl the derivative derivativeUrl.
      * @return A Media Object of the source media record.
      * @throws Exception
      */
     public Optional<Media> getMediaByDerivativeUrl(String derivativeUrl) throws Exception {
         final String derivativeLocation = mediaUrlToS3Path(derivativeUrl, false);
-        final Optional<MediaDerivative> derivative = mediaDBDerivativesDao.getDerivativeByLocation(derivativeLocation);
-        return derivative.map(der -> mediaDBMediaDao.getMediaByGuid(der.getMediaGuid())).orElse(Optional.empty());
+        final Optional<MediaDerivative> derivative = mediaDerivativesDao.getDerivativeByLocation(derivativeLocation);
+        return derivative.map(der -> mediaDao.getMediaByGuid(der.getMediaGuid())).orElse(Optional.empty());
     }
 
     /**
@@ -59,8 +63,14 @@ public class FileSourceFinder {
         }
     }
 
+    /**
+     * Parse a fileUrl to get the MillionFolder path.
+     * e.g. "http://images.trvl-media.com/hotels/1000000/10000/8400/8393/4a8a5b92_t.jpg" -> "/1000000/10000/8400/8393/"
+     *
+     * @param fileUrl the fileUrl to parse.
+     * @return A string of the Million folder path.
+     */
     public String getMillionFolderFromUrl(String fileUrl) {
-        //http://images.trvl-media.com/hotels/1000000/10000/8400/8393/4a8a5b92_t.jpg
         if (fileUrl.contains(HOTELS) && fileUrl.contains("/")) {
             final int lastLoc = fileUrl.lastIndexOf('/');
             final int firstLoc = fileUrl.indexOf(HOTELS) + HOTELS.length();

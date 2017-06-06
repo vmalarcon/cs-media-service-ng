@@ -92,6 +92,8 @@ public class MediaController extends CommonServiceController {
     private String hipChatRoom;
     @Value("${kafka.imagemessage.topic}")
     private String imageMessageTopic;
+    @Value("${kafka.imagemessage.topic.retry}")
+    private String imageMessageRetryTopic;
     @Value("${media.aws.processlog.queue.name}")
     private String mediaProcessLogQueue;
     private final Map<String, List<MapMessageValidator>> mapValidatorList;
@@ -349,7 +351,7 @@ public class MediaController extends CommonServiceController {
         try {
             if (!mediaGUID.matches(REG_EX_GUID)) {
                 LOGGER.warn("INVALID GET REQUEST ServiceUrl={} ClientId={} RequestId={} MediaGUID={}", serviceUrl, clientID, requestID, mediaGUID);
-                return buildErrorResponse("Invalid media GUID provided.", serviceUrl, BAD_REQUEST);
+                return buildErrorResponse("Input mediaGUID is invalid. Must be a valid GUID in the following format [xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx]", serviceUrl, BAD_REQUEST);
             }
             LOGGER.info("Started querying media by media-guid in MediaDB ClientId={} RequestId={} MediaGUID={}", clientID, requestID, mediaGUID);
             final MediaGetResponse mediaResponse = mediaGetProcessor.processMediaGetRequest(mediaGUID).orElseThrow(MediaNotFoundException::new);
@@ -391,7 +393,7 @@ public class MediaController extends CommonServiceController {
             final Media media = mediaDao.getMediaByGuid(mediaGUID).orElseThrow(MediaNotFoundException::new);
             media.setHidden(true);
             final ImageMessage imageMessage = media.toImageMessage();
-            kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic);
+            kafkaCommonPublisher.publishImageMessage(imageMessage, imageMessageTopic, imageMessageRetryTopic);
             return new ResponseEntity<>("Media GUID " + StringEscapeUtils.escapeHtml(mediaGUID) + " has been deleted successfully.", OK);
         } catch (MediaNotFoundException ex) {
             return buildErrorResponse("Requested resource with ID " + mediaGUID + " was not found.", serviceUrl, NOT_FOUND);
@@ -424,12 +426,12 @@ public class MediaController extends CommonServiceController {
     @RequestMapping(value = "/media/v1/imagesbydomain/{domainName}/domainId/{domainId}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.GET)
     @Transactional
     public ResponseEntity<String> getMediaByDomainId(@PathVariable("domainName") final String domainName, @PathVariable("domainId") final String domainId,
-                                                     @RequestParam(value = "pageSize", required = false) final Integer pageSize,
-                                                     @RequestParam(value = "pageIndex", required = false) final Integer pageIndex,
-                                                     @RequestParam(value = "activeFilter", required = false, defaultValue = "all") final String activeFilter,
-                                                     @RequestParam(value = "derivativeTypeFilter", required = false) final String derivativeTypeFilter,
-                                                     @RequestParam(value = "derivativeCategoryFilter", required = false) final String derivativeCategoryFilter,
-                                                     @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
+            @RequestParam(value = "pageSize", required = false) final Integer pageSize,
+            @RequestParam(value = "pageIndex", required = false) final Integer pageIndex,
+            @RequestParam(value = "activeFilter", required = false, defaultValue = "all") final String activeFilter,
+            @RequestParam(value = "derivativeTypeFilter", required = false) final String derivativeTypeFilter,
+            @RequestParam(value = "derivativeCategoryFilter", required = false) final String derivativeCategoryFilter,
+            @RequestHeader final MultiValueMap<String,String> headers) throws Exception {
         final String requestID = getRequestId(headers);
         final String clientID = getClientId();
         final String serviceUrl = MediaServiceUrl.MEDIA_BY_DOMAIN.getUrl();
