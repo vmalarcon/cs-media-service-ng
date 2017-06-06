@@ -282,7 +282,7 @@ public final class MediaDBSQLUtil {
                     )
                     .comments(Arrays.asList(Comment.builder()
                             .note(resultSet.getString("comments"))
-                            .timestamp(resultSet.getTimestamp("update-date").toString())
+                            .timestamp(DATE_FORMAT.format(resultSet.getTimestamp("update-date")))
                             .build()))
                     .build();
             return Optional.of(domainIdMedia);

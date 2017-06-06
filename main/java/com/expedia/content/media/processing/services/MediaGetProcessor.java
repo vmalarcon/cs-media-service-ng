@@ -104,7 +104,7 @@ public class MediaGetProcessor {
                 .comments(media.getCommentList().stream()
                         .map(commentString -> Comment.builder()
                             .note(commentString)
-                            .timestamp(media.getLastUpdated().toString())
+                            .timestamp(DATE_FORMAT.format(media.getLastUpdated()))
                             .build())
                         .collect(Collectors.toList()))
                 .domain(media.getDomain())
