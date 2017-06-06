@@ -5,11 +5,11 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import com.expedia.content.media.processing.pipeline.kafka.KafkaCommonPublisher;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.services.dao.MediaDao;
+import com.expedia.content.media.processing.services.util.MediaDBSQLUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -62,15 +62,8 @@ public class MediaUpdateProcessor {
         if (updatedImageMessage.getOuterDomainData() != null
                 && updatedImageMessage.getOuterDomainData().getDomainFields() != null
                 && ("true").equals(updatedImageMessage.getOuterDomainData().getDomainFields().get("propertyHero"))) {
-            LOGGER.info("Started query media by domainId={}", originalMedia.getDomainId());
-            final List<Optional<Media>> currentHeroList = mediaDao.getMediaByDomainId(originalMedia.getDomainId());
-            LOGGER.info("end query media by domainId={} heroListSize={}", originalMedia.getDomainId(), currentHeroList.size());
-            currentHeroList.forEach(s -> {
-                if (s.isPresent()) {
-                    mediaDao.unheroMedia(s.get().getMediaGuid(),
-                            s.get().getDomainFields().replace("\"propertyHero\":\"true\"", "\"propertyHero\":\"false\""));
-                }
-            });
+            MediaDBSQLUtil.sendUnHeroImageMessage(updatedImageMessage, mediaDao, originalMedia.getDomainId(), kafkaCommonPublisher,
+                    imageMessageTopic, imageMessageRetryTopic);
         }
         LOGGER.info("Finished updating media in MediaDB MediaGuid={}", originalMedia.getMediaGuid());
         // TODO: Update all the media that needs to be unhero'd in mediaDB and send them to kafka as well.

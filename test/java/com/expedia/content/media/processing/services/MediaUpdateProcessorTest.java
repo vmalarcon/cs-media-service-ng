@@ -151,7 +151,7 @@ public class MediaUpdateProcessorTest {
         ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
         verify(mediaDBMediaDao, times(1)).updateMedia(argument.capture());
         verify(mediaDBMediaDao, times(1)).unheroMedia(anyString(),anyString());
-        verify(kafkaCommonPublisher, times(1)).publishImageMessage(any(ImageMessage.class), anyString(), anyString());
+        verify(kafkaCommonPublisher, times(2)).publishImageMessage(any(ImageMessage.class), anyString(), anyString());
         assertEquals(updatedImageMessage.getOuterDomainData().getDomainFields(), argument.getValue().getOuterDomainData().getDomainFields());
     }
 

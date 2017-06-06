@@ -1,6 +1,9 @@
 package com.expedia.content.media.processing.services.util;
 
+import com.expedia.content.media.processing.pipeline.domain.ImageMessage;
+import com.expedia.content.media.processing.pipeline.kafka.KafkaCommonPublisher;
 import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
+import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.Category;
 import com.expedia.content.media.processing.services.dao.domain.Comment;
 import com.expedia.content.media.processing.services.dao.domain.DomainCategory;
@@ -222,6 +225,36 @@ public final class MediaDBSQLUtil {
             LOGGER.error(e, "Error querying MediaDB result-set={}", resultSet.toString());
             return Optional.empty();
         }
+    }
+
+    /**
+     * query media table get the current hero media list and send unhero message to kakfa topic
+     * @param imageMessage
+     * @param mediaDao
+     * @param domainId
+     * @param kafkaCommonPublisher
+     * @param imageMessagegTopic
+     * @param imageMessageRetryTopic
+     */
+    public static void sendUnHeroImageMessage(ImageMessage imageMessage, MediaDao mediaDao, String domainId, KafkaCommonPublisher kafkaCommonPublisher,
+            String imageMessagegTopic,
+            String imageMessageRetryTopic) {
+        LOGGER.info("Started query media by domainId={}", imageMessage.getOuterDomainData().getDomainId());
+        final List<Optional<Media>> currentHeroList = mediaDao.getMediaByDomainId(domainId);
+        LOGGER.info("end query media by domainId={} heroListSize={}", imageMessage.getOuterDomainData().getDomainId(), currentHeroList.size());
+        currentHeroList.forEach(s -> {
+            if (s.isPresent()) {
+                mediaDao.unheroMedia(s.get().getMediaGuid(),
+                        s.get().getDomainFields().replace("\"propertyHero\":\"true\"", "\"propertyHero\":\"false\""));
+                try {
+                    kafkaCommonPublisher
+                            .publishImageMessage(s.get().toImageMessage(), imageMessagegTopic, imageMessageRetryTopic);
+                } catch (Exception ex) {
+                    LOGGER.error(ex, "send kafka message failed imageMessage={}", imageMessage.toJSONMessage());
+                }
+
+            }
+        });
     }
 
     /**

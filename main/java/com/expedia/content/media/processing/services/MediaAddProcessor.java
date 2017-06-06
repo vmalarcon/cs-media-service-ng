@@ -15,6 +15,7 @@ import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.FileNameUtil;
+import com.expedia.content.media.processing.services.util.MediaDBSQLUtil;
 import com.expedia.content.media.processing.services.util.MediaReplacement;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import expedia.content.solutions.metrics.annotations.Meter;
@@ -133,6 +134,13 @@ public class MediaAddProcessor {
             mediaDao.addMedia(imageMessage);
             LOGGER.info("Finished inserting media in MediaDB MediaGuid={} RequestId={} ClientId={}", imageMessage.getMediaGuid(), requestID, clientId);
 
+        }
+        //send unhero image message to topic to unhero image in LCM
+        if (imageMessage.getOuterDomainData() != null
+                && imageMessage.getOuterDomainData().getDomainFields() != null
+                && ("true").equals(imageMessage.getOuterDomainData().getDomainFields().get("propertyHero"))) {
+            MediaDBSQLUtil.sendUnHeroImageMessage(imageMessage, mediaDao, imageMessage.getOuterDomainData().getDomainId(), kafkaCommonPublisher,
+                    imageMessageTopic, imageMessageRetryTopic);
         }
         publishMsg(imageMessage);
         final ResponseEntity<String> responseEntity = new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
