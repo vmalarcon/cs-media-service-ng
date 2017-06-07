@@ -36,9 +36,6 @@ public class ApplicationConfiguration {
     @Value("${kafka.schema.server}")
     private String schemaServer;
 
-    @Value("${kafka.message.send.enable}")
-    private String enableSend;
-
     @Value("${mdb.datasource.username}")
     private String username;
 
@@ -99,7 +96,7 @@ public class ApplicationConfiguration {
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroSerializer");
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroSerializer");
         props.put("schema.registry.url", schemaServer);
-        props.put("enableSend", enableSend);
+        props.put("enableSend", true);
         props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
         props.put(ProducerConfig.RETRIES_CONFIG, producerRetries);
         props.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, producerRetryBackoffMs);
@@ -117,7 +114,7 @@ public class ApplicationConfiguration {
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroSerializer");
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroSerializer");
         props.put("schema.registry.url", schemaServer);
-        props.put("enableSend", enableSend);
+        props.put("enableSend", true);
         props.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "snappy");
         props.put(ProducerConfig.RETRIES_CONFIG, producerRetries);
         props.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, producerRetryBackoffMs);
