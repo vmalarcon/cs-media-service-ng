@@ -19,12 +19,13 @@ import java.net.URISyntaxException;
 public class HTTPValidator {
     // Timeout in millis
     private static final int ONE_MINUTE = 1000 * 60;
+    private static final int TEN_SECONDS = 1000 * 10;
 
     private static final FormattedLogger LOGGER = new FormattedLogger(HTTPValidator.class);
 
     private static final CloseableHttpClient HTTP_CLIENT = HttpClients.createDefault();
     private static final RequestConfig REQUEST_CONFIG = RequestConfig.custom()
-                                                            .setConnectTimeout(ONE_MINUTE)
+                                                            .setConnectTimeout(TEN_SECONDS)
                                                             .setSocketTimeout(ONE_MINUTE)
                                                             .build();
 

@@ -1,12 +1,12 @@
 package com.expedia.content.media.processing.services.validator;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class HTTPValidatorTest {
 
@@ -54,5 +54,15 @@ public class HTTPValidatorTest {
         ValidationStatus status = HTTPValidator.checkFileExists("http://images.xtravelsystem.com/slide/files/public/89/0/7/9/Images/c_89079 hotel2.jpg");
         assertTrue(status.isValid());
         assertEquals(ValidationStatus.VALID, status.getStatus());
+    }
+
+    @Test
+    public void testFirewalled() {
+        final long start = System.currentTimeMillis();
+        final ValidationStatus status = HTTPValidator.checkFileExists("https://cs-media-moderate-service.us-west-2.prod-p.expedia.com/buildInfo");
+        final long end = System.currentTimeMillis();
+        assertTrue(end - start < 30000);
+        assertFalse(status.isValid());
+        assertEquals(ValidationStatus.NOT_FOUND, status.getStatus());
     }
 }
