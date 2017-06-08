@@ -17,16 +17,17 @@ import java.net.URISyntaxException;
  * By default (hardcoded) it waits up to 60 seconds for the connection, otherwise it returns a failed URL location.
  */
 public class HTTPValidator {
-    // Timeout in millis
-    private static final int ONE_MINUTE = 1000 * 60;
-    private static final int TEN_SECONDS = 1000 * 10;
+    // Socket timeout: 60 seconds
+    private static final int REQUEST_CONFIG_SOCKET_TIMEOUT = 1000 * 60;
+    // Connect timeout: 10 seconds
+    private static final int REQUEST_CONFIG_CONNECTION_TIMEOUT = 1000 * 10;
 
     private static final FormattedLogger LOGGER = new FormattedLogger(HTTPValidator.class);
 
     private static final CloseableHttpClient HTTP_CLIENT = HttpClients.createDefault();
     private static final RequestConfig REQUEST_CONFIG = RequestConfig.custom()
-                                                            .setConnectTimeout(TEN_SECONDS)
-                                                            .setSocketTimeout(ONE_MINUTE)
+                                                            .setConnectTimeout(REQUEST_CONFIG_CONNECTION_TIMEOUT)
+                                                            .setSocketTimeout(REQUEST_CONFIG_SOCKET_TIMEOUT)
                                                             .build();
 
     private HTTPValidator() {
