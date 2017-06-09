@@ -9,6 +9,7 @@ import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.DomainIdMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBLodgingReferenceHotelIdDao;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
 import com.expedia.content.media.processing.services.validator.MapMessageValidator;
@@ -67,6 +68,8 @@ public class MediaControllerTest {
     @Mock
     private MediaDao mockMediaDao;
     @Mock
+    private MediaDBLodgingReferenceHotelIdDao lodgingReferenceHotelIdDao;
+    @Mock
     private MediaAddProcessor mediaAddProcessor;
     @Mock
     private MediaGetProcessor mediaGetProcessor;
@@ -94,9 +97,10 @@ public class MediaControllerTest {
 
     @Before
     public void initialize() throws Exception{
-        mediaController = new MediaController(mockValidators, mockLogActivityProcess, reporting, queueMessagingTemplateMock, mockMediaDao, kafkaCommonPublisher,
+        mediaController = new MediaController(mockValidators, mockLogActivityProcess, reporting, queueMessagingTemplateMock, mockMediaDao, lodgingReferenceHotelIdDao, kafkaCommonPublisher,
                 mediaUpdateProcessor, mediaGetProcessor, mediaAddProcessor, poker);
         mediaControllerSpy = spy(mediaController);
+        when(lodgingReferenceHotelIdDao.domainIdExists(anyString())).thenReturn(true);
         Mockito.doNothing().when(kafkaCommonPublisher).publishImageMessage(anyObject(),anyString(), anyString());
     }
 
@@ -404,9 +408,9 @@ public class MediaControllerTest {
         when(mediaUpdateProcessor.processRequest(any(ImageMessage.class), eq(media.get()))).thenReturn(new ResponseEntity<String>("You did it!", HttpStatus.OK));
         ResponseEntity<String> responseEntity = mediaControllerSpy.mediaUpdate(mediaGuid, jsonMessage, mockHeader);
         assertNotNull(responseEntity);
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-        assertTrue(responseEntity.getBody().contains("Only Lodging Media Updates can be handled at this time"));
-        verifyZeroInteractions(mediaUpdateProcessor);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertTrue(responseEntity.getBody().contains("You did it!"));
+        verify(mediaUpdateProcessor, times(1)).processRequest(any(ImageMessage.class), eq(media.get()));
         verifyZeroInteractions(mediaAddProcessor);
     }
 

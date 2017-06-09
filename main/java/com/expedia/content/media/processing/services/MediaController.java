@@ -25,6 +25,7 @@ import com.expedia.content.media.processing.pipeline.util.FormattedLogger;
 import com.expedia.content.media.processing.pipeline.util.Poker;
 import com.expedia.content.media.processing.services.dao.MediaDao;
 import com.expedia.content.media.processing.services.dao.domain.Media;
+import com.expedia.content.media.processing.services.dao.mediadb.MediaDBLodgingReferenceHotelIdDao;
 import com.expedia.content.media.processing.services.exception.MediaNotFoundException;
 import com.expedia.content.media.processing.services.exception.PaginationValidationException;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
@@ -66,7 +67,8 @@ import expedia.content.solutions.metrics.annotations.Timer;
  */
 @RestController
 @EnableScheduling
-@SuppressWarnings({"PMD.StdCyclomaticComplexity", "PMD.CyclomaticComplexity"})
+// These suppressions are needed for the validateMediaByDomainIdRequest() method.
+@SuppressWarnings({"PMD.NPathComplexity","PMD.CyclomaticComplexity"})
 public class MediaController extends CommonServiceController {
 
     private static final FormattedLogger LOGGER = new FormattedLogger(MediaController.class);
@@ -101,6 +103,7 @@ public class MediaController extends CommonServiceController {
     private final Reporting reporting;
     private final QueueMessagingTemplate messagingTemplate;
     private final MediaDao mediaDao;
+    private final MediaDBLodgingReferenceHotelIdDao lodgingReferenceHotelIdDao;
     private final KafkaCommonPublisher kafkaCommonPublisher;
     private final MediaUpdateProcessor mediaUpdateProcessor;
     private final MediaGetProcessor mediaGetProcessor;
@@ -108,14 +111,16 @@ public class MediaController extends CommonServiceController {
     private final Poker poker;
 
     @Autowired
-    public MediaController(@Value("#{imageMessageValidators}") Map<String, List<MapMessageValidator>> mapValidatorList,
-                           LogActivityProcess logActivityProcess, Reporting reporting, QueueMessagingTemplate messagingTemplate, MediaDao mediaDao, KafkaCommonPublisher kafkaCommonPublisher,
-                           MediaUpdateProcessor mediaUpdateProcessor, MediaGetProcessor mediaGetProcessor, MediaAddProcessor mediaAddProcessor, Poker poker) {
+    public MediaController(@Value("#{imageMessageValidators}") Map<String, List<MapMessageValidator>> mapValidatorList, LogActivityProcess logActivityProcess, Reporting reporting,
+                           QueueMessagingTemplate messagingTemplate, MediaDao mediaDao, MediaDBLodgingReferenceHotelIdDao lodgingReferenceHotelIdDao,
+                           KafkaCommonPublisher kafkaCommonPublisher, MediaUpdateProcessor mediaUpdateProcessor, MediaGetProcessor mediaGetProcessor,
+                           MediaAddProcessor mediaAddProcessor, Poker poker) {
         this.mapValidatorList = mapValidatorList;
         this.logActivityProcess = logActivityProcess;
         this.reporting = reporting;
         this.messagingTemplate = messagingTemplate;
         this.mediaDao = mediaDao;
+        this.lodgingReferenceHotelIdDao = lodgingReferenceHotelIdDao;
         this.kafkaCommonPublisher = kafkaCommonPublisher;
         this.mediaUpdateProcessor = mediaUpdateProcessor;
         this.mediaGetProcessor = mediaGetProcessor;
@@ -249,7 +254,7 @@ public class MediaController extends CommonServiceController {
             LOGGER.info("Started querying media by media-guid in MediaDB ClientId={} RequestId={} MediaGUID={}", clientID, requestID, queryId);
             final Media mediaInMediaDB = mediaDao.getMediaByGuid(queryId).orElseThrow(MediaNotFoundException::new);
             LOGGER.info("Finished querying media by media-guid in MediaDB ClientId={} RequestId={} MediaGUID={}", clientID, requestID, queryId);
-            final String updatedJsonMessage = appendDomain(message, mediaInMediaDB.getDomainId());
+            final String updatedJsonMessage = appendDomain(message, mediaInMediaDB.getDomainId(), mediaInMediaDB.getDomain());
             final Optional<ResponseEntity<String>> errorResponse = validateMediaUpdateRequest(mediaInMediaDB, updatedJsonMessage, serviceUrl);
             if (errorResponse.isPresent()) {
                 LOGGER.warn("UPDATE VALIDATION ValidationError={} ServiceUrl={} QueryId={} ClientId={} RequestId={} JSONMessage={}",
@@ -291,10 +296,6 @@ public class MediaController extends CommonServiceController {
         if (!"[]".equals(jsonValidationErrors)) {
             return Optional.of(buildErrorResponse(jsonValidationErrors, serviceUrl, BAD_REQUEST));
         }
-        // TODO: Make MediaUpdate Domain Agnostic in the future
-        if (!Domain.LODGING.getDomain().equals(originalMedia.getDomain())) {
-            return Optional.of(buildErrorResponse("Only Lodging Media Updates can be handled at this time", serviceUrl, BAD_REQUEST));
-        }
         final ImageMessage updateMessage = ImageMessage.parseJsonMessage(jsonMessage);
         if (updateMessage.getHidden() && !canMediaBeHidden(originalMedia)) {
             return Optional.of(buildErrorResponse("Only unpublished media can be hidden", serviceUrl, BAD_REQUEST));
@@ -307,13 +308,13 @@ public class MediaController extends CommonServiceController {
      *
      * @param message The JsonMessage to append domainData to.
      * @param domainId The domainId to append to the input JsonMessage.
+     * @param domain The domain of the original Media to append to this update request.
      * @return updated JsonMessage String.
      * @throws Exception
      */
-    private String appendDomain(String message, String domainId) throws Exception {
+    private String appendDomain(String message, String domainId, String domain) throws Exception {
         final Map<String, Object> jsonMap = JSONUtil.buildMapFromJson(message);
-        // TODO: make appending domain, Domain Agnostic. I.e. not only Lodging.
-        jsonMap.put(DOMAIN, Domain.LODGING.getDomain());
+        jsonMap.put(DOMAIN, domain);
         jsonMap.put(DOMAIN_ID, domainId);
         return new ObjectMapper().writeValueAsString(jsonMap);
     }
@@ -439,7 +440,7 @@ public class MediaController extends CommonServiceController {
                         "DerivativeTypeFilter={}",
                 serviceUrl, clientID, requestID, domainName, domainId, pageSize, pageIndex, activeFilter, derivativeTypeFilter);
         try {
-            final ResponseEntity<String> errorResponse = validateMediaByDomainIdRequest(domainName, activeFilter, pageSize, pageIndex);
+            final ResponseEntity<String> errorResponse = validateMediaByDomainIdRequest(domainName, domainId, activeFilter, pageSize, pageIndex);
             if (errorResponse != null) {
                 LOGGER.warn("INVALID GET BY DOMAIN ID REQUEST ResponseStatus={} ResponseBody={} ServiceUrl={} ClientId={} RequestId={} DomainName={} DomainId={} PageSize={} " +
                                 "PageIndex={} ActiveFilter={} DerivativeTypeFilter={}",
@@ -468,18 +469,23 @@ public class MediaController extends CommonServiceController {
      * Validates the media by domain id request.
      *
      * @param domainName Domain to validate.
+     * @param domainId DomainId to validate if it exists.
      * @param activeFilter Active filter to validate.
-     * @param pageSize
-     * @param pageIndex
+     * @param pageSize The pagSize value to validate.
+     * @param pageIndex The pageIndex value to validate.
      * @return Returns a response if the validation fails; null otherwise.
      */
-    private ResponseEntity<String> validateMediaByDomainIdRequest(final String domainName, final String activeFilter, Integer pageSize, Integer pageIndex) {
+    private ResponseEntity<String> validateMediaByDomainIdRequest(final String domainName, String domainId, final String activeFilter, Integer pageSize, Integer pageIndex) {
         if (activeFilter != null && !activeFilter.equalsIgnoreCase("all") && !activeFilter.equalsIgnoreCase("true")
                 && !activeFilter.equalsIgnoreCase("false")) {
             return new ResponseEntity<>("Unsupported active filter " + activeFilter, BAD_REQUEST);
         }
-        if (Domain.findDomain(domainName, true) == null) {
+        final Domain domain = Domain.findDomain(domainName, true);
+        if (domain == null) {
             return new ResponseEntity<>("Domain not found " + domainName, NOT_FOUND);
+        }
+        if (Domain.LODGING.getDomain().equalsIgnoreCase(domain.getDomain()) && !lodgingReferenceHotelIdDao.domainIdExists(domainId)) {
+            return new ResponseEntity<>("DomainId not found: " + domainId, NOT_FOUND);
         }
         if (pageSize != null || pageIndex != null) {
             if (pageIndex == null) {
@@ -517,8 +523,7 @@ public class MediaController extends CommonServiceController {
      * @return JSON string contains fileName and error description.
      * @throws Exception when message to ImageMessage and convert java list to json.
      */
-    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
-    private String validateImageMessage(final String message, final String clientId) throws Exception {
+    private String validateImageMessage(final String message, final String clientId) {
         final List<MapMessageValidator> defaultValidatorList = mapValidatorList.get(DEFAULT_VALIDATION_RULES);
         final List<MapMessageValidator> validatorList = mapValidatorList.getOrDefault(clientId, defaultValidatorList);
         if (validatorList == null && defaultValidatorList == null) {
