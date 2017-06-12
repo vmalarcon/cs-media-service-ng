@@ -7,10 +7,12 @@ import com.expedia.content.media.processing.services.dao.domain.DomainIdMedia;
 import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.reqres.MediaByDomainIdResponse;
 import com.expedia.content.media.processing.services.reqres.MediaGetResponse;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -53,6 +55,9 @@ public class MediaGetProcessor {
                 .stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
+                // NOTE: these sorting orders matter, sort by subcategory, then sort the propertyHero to be first.
+                .sorted(sortBySubcategoryId())
+                .sorted(sortPropertyHeroFirst())
                 .collect(Collectors.toList());
         final Integer totalMediaCount = mediaDao.getTotalMediaCountByDomainId(domain, domainId, activeFilter, derivativeCategoryFilter).orElse(0);
         return MediaByDomainIdResponse.builder()
@@ -61,6 +66,73 @@ public class MediaGetProcessor {
                 .totalMediaCount(totalMediaCount)
                 .images(domainIdMedias)
                 .build();
+    }
+
+    /**
+     * Determines if a DomainIdMedia is a Property Hero Media.
+     * note: the propertyHero flag is contained in the DomainFields Map.
+     * note: this method cannot be part of the DomainIdMedia Object, because the ResponseEntity and Lombok will think it's a
+     *       field of the original Object.
+     * @see org.springframework.http.ResponseEntity
+     * @see lombok.Lombok
+     *
+     * @return true if a DomainIdMedia is a propertyHero, false otherwise.
+     */
+    private static boolean isPropertyHero(DomainIdMedia media) {
+        final String propertyHeroValue = String.valueOf(media.getDomainFields().get("propertyHero"));
+        return StringUtils.isEmpty(propertyHeroValue) ? false : Boolean.valueOf(propertyHeroValue);
+    }
+
+    /**
+     * Gets the subcategoryId of a DomainIdMedia.
+     * note: the subcategoryId of a DomainIdMedia is contained in the DomainFields Map.
+     * note: this method cannot be part of the DomainIdMedia Object, because the ResponseEntity and Lombok will think it's a
+     *       field of the original Object.
+     * @see org.springframework.http.ResponseEntity
+     * @see lombok.Lombok
+     *
+     * @return subcategoryId if it exists, null otherwise.
+     */
+    private static String getSubcategoryId(DomainIdMedia media) {
+        final Object subcategoryIdValue = media.getDomainFields().get("subcategoryId");
+        return subcategoryIdValue == null ? null : subcategoryIdValue.toString();
+    }
+
+    /**
+     * Sorts a list of DomainIdMedia so that the propertyHero is first in the list.
+     *
+     * @return -1 if the first media is a propertyHero, 1 if the second media is a propertyHero, and 0 otherwise.
+     */
+    private static Comparator<DomainIdMedia> sortPropertyHeroFirst() {
+        return (m1, m2) -> isPropertyHero(m1) ? -1 : isPropertyHero(m2) ? 1 : 0;
+    }
+
+    /**
+     * Sorts a list of DomainIdMedia so the media are ordered by subcategoryId in ascending order.
+     *
+     * @return -1 if the fist media has a lower subcategoryId to the second, or the second media doesn't have a subcategoryId,
+     *          1 if the second media has a lower subcategoryId to the first, or the first media doesn't have a subcategoryId,
+     *          0 if both media have the same subcategoryId or if both media dont' have subcategoryIds.
+     */
+    private static Comparator<DomainIdMedia> sortBySubcategoryId() {
+        return (m1, m2) -> {
+            final String m1SubcategoryIdString = getSubcategoryId(m1);
+            final String m2SubcategoryIdString = getSubcategoryId(m2);
+            if (m1SubcategoryIdString != null && m2SubcategoryIdString == null) {
+                return -1;
+            }
+            if (m1SubcategoryIdString == null && m2SubcategoryIdString != null) {
+                return 1;
+            }
+            if (m1SubcategoryIdString == null && m2SubcategoryIdString == null) {
+                return 0;
+            }
+            else {
+                final Integer m1SubcategoryId = Integer.valueOf(m1SubcategoryIdString);
+                final Integer m2SubcategoryId = Integer.valueOf(m2SubcategoryIdString);
+                return m1SubcategoryId < m2SubcategoryId ? -1 : m1SubcategoryId > m2SubcategoryId ? 1 : 0;
+            }
+        };
     }
 
     /**
@@ -104,8 +176,9 @@ public class MediaGetProcessor {
                 .comments(media.getCommentList().stream()
                         .map(commentString -> Comment.builder()
                             .note(commentString)
-                            .timestamp(media.getLastUpdated().toString())
+                            .timestamp(DATE_FORMAT.format(media.getLastUpdated()))
                             .build())
+                        .filter(comment -> !StringUtils.isEmpty(comment.getNote()))
                         .collect(Collectors.toList()))
                 .domain(media.getDomain())
                 .domainId(media.getDomainId())

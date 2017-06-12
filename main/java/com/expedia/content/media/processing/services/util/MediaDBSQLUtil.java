@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Util class for MediaDB SQL queries
@@ -313,10 +314,13 @@ public final class MediaDBSQLUtil {
                             (isDerivativeFilterUsed ? filterDerivatives(resultSet.getString("derivatives"), derivativeFilter) :
                                     JSONUtil.buildMapListFromJson(resultSet.getString("derivatives")))
                     )
-                    .comments(Arrays.asList(Comment.builder()
-                            .note(resultSet.getString("comments"))
-                            .timestamp(resultSet.getTimestamp("update-date").toString())
-                            .build()))
+                    .comments(
+                            Stream.of(Comment.builder()
+                                    .note(resultSet.getString("comments"))
+                                    .timestamp(DATE_FORMAT.format(resultSet.getTimestamp("update-date")))
+                                    .build())
+                            .filter(comment -> !StringUtils.isEmpty(comment.getNote()))
+                            .collect(Collectors.toList()))
                     .build();
             return Optional.of(domainIdMedia);
         } catch (SQLException e) {
