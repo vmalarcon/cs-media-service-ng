@@ -240,7 +240,7 @@ public class MediaDBMediaDao implements MediaDao {
         jdbcTemplate.update((Connection connection) -> {
             PreparedStatement statement = connection.prepareStatement(UPDATE_MEDIA_UNHERO_QUERY);
             statement.setString(1, domainField);
-            statement.setString(2, domainField);
+            statement.setString(2, guid);
             return statement;
         });
     }
