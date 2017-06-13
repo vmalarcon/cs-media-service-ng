@@ -15,7 +15,6 @@ import com.expedia.content.media.processing.services.dao.domain.Media;
 import com.expedia.content.media.processing.services.dao.domain.Thumbnail;
 import com.expedia.content.media.processing.services.util.DomainDataUtil;
 import com.expedia.content.media.processing.services.util.FileNameUtil;
-import com.expedia.content.media.processing.services.util.MediaDBSQLUtil;
 import com.expedia.content.media.processing.services.util.MediaReplacement;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import expedia.content.solutions.metrics.annotations.Meter;
@@ -139,8 +138,22 @@ public class MediaAddProcessor {
         if (imageMessage.getOuterDomainData() != null
                 && imageMessage.getOuterDomainData().getDomainFields() != null
                 && ("true").equals(imageMessage.getOuterDomainData().getDomainFields().get("propertyHero"))) {
-            MediaDBSQLUtil.sendUnHeroImageMessage(imageMessage, mediaDao, imageMessage.getOuterDomainData().getDomainId(), kafkaCommonPublisher,
-                    imageMessageTopic, imageMessageRetryTopic);
+            LOGGER.info("Started query media by domainId={}", imageMessage.getOuterDomainData().getDomainId());
+            final List<Optional<Media>> currentHeroList = mediaDao.getHeroMediaByDomainId(imageMessage.getOuterDomainData().getDomainId());
+            LOGGER.info("end query media by domainId={} heroListSize={}", imageMessage.getOuterDomainData().getDomainId(), currentHeroList.size());
+            currentHeroList.forEach(s -> {
+                if (s.isPresent()) {
+                    mediaDao.unheroMedia(s.get().getMediaGuid(),
+                            s.get().getDomainFields().replace("\"propertyHero\":\"true\"", "\"propertyHero\":\"false\""));
+                    try {
+                        kafkaCommonPublisher
+                                .publishImageMessage(s.get().toImageMessage(), imageMessageTopic, imageMessageRetryTopic);
+                    } catch (Exception ex) {
+                        LOGGER.error(ex, "send kafka message failed imageMessage={}", imageMessage.toJSONMessage());
+                    }
+
+                }
+            });
         }
         publishMsg(imageMessage);
         final ResponseEntity<String> responseEntity = new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);

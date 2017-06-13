@@ -18,8 +18,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -100,6 +103,39 @@ public class MediaAddProcessorTest {
         assertEquals("bobthegreat", processedImageMessage.getUserId());
         assertEquals("90", processedImageMessage.getRotation());
     }
+
+    @Test
+    public void testHeroAndSubcategoryIdFieldsInRQ() throws Exception {
+        String jsonMessage = "{ "
+                + "\"fileUrl\": \"http://i.imgur.com/3PRGFii.jpg\", "
+                + "\"fileName\": \"NASA_ISS-4.jpg\", "
+                + "\"userId\": \"bobthegreat\", "
+                + "\"domain\": \"Lodging\", "
+                + "\"rotation\": \"90\", "
+                + "\"domainId\": \"1238\", "
+                + "   \"domainFields\":{  \n"
+                + "      \"propertyHero\":\"true\",\n"
+                + "      \"subcategoryId\":\"22003\"\n"
+                + "    },\n"
+                + "\"domainProvider\": \"EPC Internal User\" "
+                + "}";
+
+        Media media = new Media("12345678-aaaa-bbbb-cccc-123456789112", null, null, 12L, 400, 400, "", "Lodging", "12345",
+                "{\"propertyHero\":\"false\",\"subcategoryId\":\"22001\"}",
+                new Date(), "true", "EPC", "EPC", "bobtheokay", "", null, "2345145145341", "23142513425431", "", "123", new ArrayList<>(),
+                new HashMap<>(), new ArrayList<>(), "", "", true, false, null);
+        Media heroMedia = Media.builder().lcmMediaId("1234").mediaGuid("aaa45678-aaaa-bbbb-cccc-123456789112").domainFields("{\"subcategoryId\":\"22024\",\"propertyHero\":\"true\"}").build();
+        List heroMediaList = Arrays.asList(Optional.of(heroMedia));
+        when(mockMediaDao.getHeroMediaByDomainId(anyString())).thenReturn(heroMediaList);
+
+        mediaAddProcessor.processRequest(jsonMessage, "123", "expedia.com", "blinn", HttpStatus.ACCEPTED, new Date());
+        media.setUserId("bobthegreat");
+        media.setDomainFields("{\"propertyHero\":\"true\",\"subcategoryId\":\"22003\"}");
+        ImageMessage updatedImageMessage = media.toImageMessage();
+        ArgumentCaptor<ImageMessage> argument = ArgumentCaptor.forClass(ImageMessage.class);
+        verify(mockMediaDao, times(1)).unheroMedia(anyString(), anyString());
+        verify(kafkaCommonPublisher, times(2)).publishImageMessage(any(ImageMessage.class), anyString(), anyString());
+     }
 
     @Test
     public void testProcessReprocessMediaAddRequest() throws Exception {

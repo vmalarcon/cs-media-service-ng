@@ -142,7 +142,7 @@ public class MediaUpdateProcessorTest {
                 new HashMap<>(), new ArrayList<>(), "", "", true, false, null);
         Media heroMedia = Media.builder().lcmMediaId("1234").mediaGuid("aaa45678-aaaa-bbbb-cccc-123456789112").domainFields("{\"subcategoryId\":\"22024\",\"propertyHero\":\"true\"}").build();
         List heroMediaList = Arrays.asList(Optional.of(heroMedia));
-        when(mediaDBMediaDao.getMediaByDomainId(anyString())).thenReturn( heroMediaList);
+        when(mediaDBMediaDao.getHeroMediaByDomainId(anyString())).thenReturn( heroMediaList);
 
         mediaUpdateProcessor.processRequest(imageMessage, media);
         media.setUserId("bobthegreat");

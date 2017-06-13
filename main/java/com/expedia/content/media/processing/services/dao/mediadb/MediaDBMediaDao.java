@@ -226,11 +226,11 @@ public class MediaDBMediaDao implements MediaDao {
 
 
     @Override
-    public List<Optional<Media>> getMediaByDomainId(String domainId) {
+    public List<Optional<Media>> getHeroMediaByDomainId(String domainId) {
         return jdbcTemplate.query((Connection connection) -> {
             PreparedStatement statement = connection.prepareStatement(HERO_MEDIA_QUERY);
             statement.setString(1, "Lodging");
-            statement.setInt(2, Integer.valueOf(domainId));
+            statement.setString(2, domainId);
             return statement;
         }, (ResultSet resultSet, int rowNumb) -> buildMediaFromResultSet(resultSet)).stream().collect(Collectors.toList());
     }

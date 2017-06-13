@@ -68,7 +68,7 @@ public interface MediaDao {
      * @param domainId
      * @return
      */
-    List<Optional<Media>> getMediaByDomainId(String domainId);
+    List<Optional<Media>> getHeroMediaByDomainId(String domainId);
 
     /**
      * set propertyHero to false in media 'domainFields'
