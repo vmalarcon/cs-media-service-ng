@@ -91,10 +91,10 @@ RUN gpg --keyserver pool.sks-keyservers.net --recv-keys 8277377A \
 
 ENV APP_NAME=cs-media-service-ng
 
+USER webmaster
+
 # Add custom entrypoint script
 COPY docker-entrypoint.sh /
 
 # Install application
 COPY target/cs-media-service-ng.jar /app/bin/
-
-USER webmaster
