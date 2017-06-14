@@ -101,7 +101,7 @@ public class MediaAddProcessor {
      * @return The response for the service call.
      * @throws Exception Thrown if the message can't be validated or the response can't be serialized.
      */
-    @SuppressWarnings({"PMD.PrematureDeclaration", "PMD.CyclomaticComplexity", "PMD.NPathComplexity"})
+    @SuppressWarnings({"PMD.PrematureDeclaration", "PMD.CyclomaticComplexity", "PMD.NPathComplexity","Duplicates"})
     public ResponseEntity<String> processRequest(final String message, final String requestID,
                                                   final String serviceUrl, final String clientId, HttpStatus successStatus, Date timeReceived) throws Exception {
         final ImageMessage imageMessage = buildImageMessageFromJSONMessage(message, requestID, clientId);
@@ -134,32 +134,44 @@ public class MediaAddProcessor {
             LOGGER.info("Finished inserting media in MediaDB MediaGuid={} RequestId={} ClientId={}", imageMessage.getMediaGuid(), requestID, clientId);
 
         }
-        //send unhero image message to topic to unhero image in LCM
-        if (imageMessage.getOuterDomainData() != null
-                && imageMessage.getOuterDomainData().getDomainFields() != null
-                && ("true").equals(imageMessage.getOuterDomainData().getDomainFields().get("propertyHero"))) {
-            LOGGER.info("Started query media by domainId={}", imageMessage.getOuterDomainData().getDomainId());
-            final List<Optional<Media>> currentHeroList = mediaDao.getHeroMediaByDomainId(imageMessage.getOuterDomainData().getDomainId());
-            LOGGER.info("end query media by domainId={} heroListSize={}", imageMessage.getOuterDomainData().getDomainId(), currentHeroList.size());
-            currentHeroList.forEach(s -> {
-                if (s.isPresent()) {
-                    mediaDao.unheroMedia(s.get().getMediaGuid(),
-                            s.get().getDomainFields().replace("\"propertyHero\":\"true\"", "\"propertyHero\":\"false\""));
-                    try {
-                        kafkaCommonPublisher
-                                .publishImageMessage(s.get().toImageMessage(), imageMessageTopic, imageMessageRetryTopic);
-                    } catch (Exception ex) {
-                        LOGGER.error(ex, "send kafka message failed imageMessage={}", imageMessage.toJSONMessage());
-                    }
-
-                }
-            });
-        }
+        unHeroMedia(imageMessage);
         publishMsg(imageMessage);
         final ResponseEntity<String> responseEntity = new ResponseEntity<>(OBJECT_MAPPER.writeValueAsString(response), successStatus);
         LOGGER.info("SUCCESS ResponseStatus={} ResponseBody={} ServiceUrl={}",
                 Arrays.asList(responseEntity.getStatusCode().toString(), responseEntity.getBody(), serviceUrl), imageMessage);
         return responseEntity;
+    }
+
+    /**
+     * unhero current hero image in mediaDB
+     * @param imageMessage
+     */
+    private void unHeroMedia(ImageMessage imageMessage) {
+        if (imageMessage.getOuterDomainData() != null
+                && imageMessage.getOuterDomainData().getDomainFields() != null
+                && ("true").equals(imageMessage.getOuterDomainData().getDomainFields().get("propertyHero"))
+                && imageMessage.getOuterDomainData().getDomain() != null
+                && ("Lodging").equals(imageMessage.getOuterDomainData().getDomain().getDomain())) {
+            LOGGER.info("Started query media by domainId={}", imageMessage.getOuterDomainData().getDomainId());
+            final List<Optional<Media>> currentHeroList = mediaDao.getHeroMediaByDomainId(imageMessage.getOuterDomainData().getDomainId());
+            LOGGER.info("end query media by domainId={} heroListSize={}", imageMessage.getOuterDomainData().getDomainId(), currentHeroList.size());
+            currentHeroList
+                    .stream()
+                    .filter(Optional::isPresent)
+                    .filter(media -> !media.get().getMediaGuid().equals(imageMessage.getMediaGuid()))
+                    .map(Optional::get)
+                    .forEach(media -> {
+                        mediaDao.unheroMedia(media.getMediaGuid(),
+                                media.getDomainFields().replace("\"propertyHero\":\"true\"", "\"propertyHero\":\"false\""));
+                        try {
+                            kafkaCommonPublisher
+                                    .publishImageMessage(media.toImageMessage(), imageMessageTopic, imageMessageRetryTopic);
+                        } catch (Exception ex) {
+                            LOGGER.error(ex, "send kafka message failed imageMessage={}", imageMessage.toJSONMessage());
+                        }
+
+                    });
+        }
     }
 
     /**
