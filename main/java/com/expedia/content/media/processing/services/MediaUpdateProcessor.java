@@ -74,7 +74,7 @@ public class MediaUpdateProcessor {
      * @param imageMessage
      * @param domainId
      */
-    @SuppressWarnings("PMD")
+    @SuppressWarnings("CPD-START")
     private void unHeroMedia(ImageMessage imageMessage, String domainId) {
         if (imageMessage.getOuterDomainData() != null
                 && imageMessage.getOuterDomainData().getDomainFields() != null
@@ -110,7 +110,8 @@ public class MediaUpdateProcessor {
      * @return an up to date ImageMessage containing data from both the updateImageMessage and the originalMedia.
      * @throws Exception
      */
-    @SuppressWarnings("PMD.NPathComplexity")
+    //CPD END to suppress the above method of duplicate warning
+    @SuppressWarnings({"PMD.NPathComplexity","CPD-END"})
     private ImageMessage buildUpdatedImageMessage(ImageMessage updateImageMessage, Media originalMedia) throws Exception {
         if (updateImageMessage.getComment() != null) {
             final List<String> commentList = new ArrayList<>();
