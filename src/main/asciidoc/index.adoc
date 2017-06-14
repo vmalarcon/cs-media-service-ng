@@ -1,0 +1,14 @@
+= {project-name}
+
+:doctype: book
+:icons: font
+:source-highlighter: highlightjs
+:sectlinks:
+
+== Quick links
+
+link:/swagger-ui.html[Swagger UI]
+
+link:/v2/api-docs[Swagger API Docs]
+
+link:/docs/api-guide.html[Static HTML Docs]

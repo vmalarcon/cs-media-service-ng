@@ -1,0 +1,145 @@
+{
+  "name": "cs-media-service-ng",
+  "team": "CS-Media-Service",
+  "owner": "valarcon",
+  "appName": "cs-media-service-ng",
+  "description": null,
+  "disabled": false,
+  "steps": [
+    {
+      "name": "Build_cs-media-service-ng",
+      "actionId": "cs-media-service-ng-master",
+      "params": {
+        "token": "masterBuild"
+      },
+      "action": {
+        "name": "primerBuildsJenkins"
+      },
+      "disabled": false,
+      "triggerType": "automatic",
+      "description": null,
+      "ignoreResult": false,
+      "successChildren": [
+        "DeployTest_cs-media-service-ng",
+        "Fortify-Scan"
+      ]
+    },
+    {
+      "name": "DeployTest_cs-media-service-ng",
+      "actionId": "ewetest_deploy-docker-ecs",
+      "params": {
+        "jobParameters": {
+          "ROLE_NAME": "cs-media-service-ng",
+          "PERFORM_RELEASE": "false"
+        },
+        "token": "ewetestEcsDeploy"
+      },
+      "action": {
+        "name": "ewedeployJenkins"
+      },
+      "disabled": false,
+      "triggerType": "automatic",
+      "description": null,
+      "ignoreResult": false,
+      "successChildren": [
+        "ReleaseTest_cs-media-service-ng"
+      ]
+    },
+    {
+      "name": "Fortify-Scan",
+      "actionId": "cs-media-service-ng-fortifyScan",
+      "params": {
+        "jobParameters": {},
+        "token": "fortifyScan"
+      },
+      "action": {
+        "name": "primerBuildsJenkins"
+      },
+      "disabled": false,
+      "triggerType": "automatic",
+      "description": "Fortify Scan",
+      "ignoreResult": true,
+      "successChildren": []
+    },
+    {
+      "name": "ReleaseTest_cs-media-service-ng",
+      "actionId": "ewetest_release-docker-ecs",
+      "params": {
+        "jobParameters": {
+          "ROLE_NAME": "cs-media-service-ng"
+        },
+        "token": "ewetestReleaseDockerEcs"
+      },
+      "action": {
+        "name": "ewedeployJenkins"
+      },
+      "disabled": false,
+      "triggerType": "automatic",
+      "description": null,
+      "ignoreResult": false,
+      "successChildren": [
+        "Perf_cs-media-service-ng"
+      ]
+    },
+    {
+      "name": "Perf_cs-media-service-ng",
+      "actionId": "primer-perftest-template",
+      "params": {
+        "jobParameters": {
+          "ROLE_NAME": "cs-media-service-ng",
+          "REGION": "us-west-2",
+          "ENVIRONMENT": "test"
+        },
+        "token": "perfPrimerAutomationToken"
+      },
+      "action": {
+        "name": "eweperfJenkins"
+      },
+      "disabled": false,
+      "triggerType": "automatic",
+      "description": null,
+      "ignoreResult": false,
+      "successChildren": [
+        "DeployProd_cs-media-service-ng"
+      ]
+    },
+    {
+      "name": "DeployProd_cs-media-service-ng",
+      "actionId": "eweprod-ee_deploy-docker-ecs",
+      "params": {
+        "jobParameters": {
+          "ROLE_NAME": "cs-media-service-ng"
+        },
+        "token": "eweprodeeEcsDeploy"
+      },
+      "action": {
+        "name": "ewedeployProdP"
+      },
+      "disabled": false,
+      "triggerType": "manual",
+      "description": null,
+      "ignoreResult": false,
+      "successChildren": [
+        "ReleaseProd_cs-media-service-ng"
+      ]
+    },
+    {
+      "name": "ReleaseProd_cs-media-service-ng",
+      "actionId": "eweprod-ee_release-docker-ecs",
+      "params": {
+        "jobParameters": {
+          "ROLE_NAME": "cs-media-service-ng"
+        },
+        "token": "eweprodeeEcsRelease"
+      },
+      "action": {
+        "name": "ewedeployProdP"
+      },
+      "disabled": false,
+      "triggerType": "automatic",
+      "description": null,
+      "ignoreResult": false,
+      "successChildren": []
+    }
+  ]
+}

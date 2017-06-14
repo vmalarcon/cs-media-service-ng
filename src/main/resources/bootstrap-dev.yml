@@ -1,0 +1,5 @@
+spring:
+  cloud:
+    vault:
+      primer:
+        token-file: .vault_token

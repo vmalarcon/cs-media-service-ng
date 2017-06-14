@@ -1,0 +1,27 @@
+{
+  "global": {
+    "app_type": "springboot",
+    "app_variant": "cs-springboot",
+    "isactive_support": {
+      "enabled": true,
+      "file": "/opt/cs-media-service-ng/active.txt"
+    },
+    "app_name": "cs-media-service-ng",
+    "source_repo": "git@ewegithub.sb.karmalab.net:EWE/cs-media-service-ng.git",
+    "team": "CS-Media-Service",
+    "department": "LPS Eng Ldg Content CA",
+    "cost_center": "80239",
+    "portfolio": "Media",
+    "product_area": "Media",
+    "notify": {
+      "email": {
+        "addresses": [
+          "phoenix@expedia.com"
+        ]
+      },
+      "hipchat": {
+        "room": "Phoenix"
+      }
+    }
+  }
+}

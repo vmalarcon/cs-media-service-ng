@@ -1,0 +1,100 @@
+spring:
+  boot:
+    admin:
+      url: "https://cs-spring-boot-admin-service.${application.region}.${application.dns-zone}"
+      auto-deregistration: true
+      client:
+        name: ${spring.application.name}
+        enabled: true
+        # Env variables HOST_IP and HOST_PORT are only available when running inside Docker.
+        health-url: http://${HOST_IP}:${HOST_PORT}/health
+        service-url: http://${HOST_IP}:${HOST_PORT}/
+        management-url: http://${HOST_IP}:${HOST_PORT}/
+
+# Running on ECS so the automatic stack name detection for the application must be set to false
+cloud:
+  aws:
+    stack:
+      auto: false
+
+# All endpoints are enabled.
+endpoints:
+  enabled: true
+
+# Security has been disabled
+management:
+  security:
+    enabled: false
+
+application:
+  home: target/
+  environment: "${EXPEDIA_ENVIRONMENT:dev}"
+  deployed-environment: "${EXPEDIA_DEPLOYED_ENVIRONMENT:dev}"
+  region: "${AWS_REGION:us-west-2}"
+  dns-zone: "${EXPEDIA_DNS_ZONE:test.expedia.com}"
+
+info:
+  version: @project.version@
+  endpoint: https://${spring.application.name}.${application.region}.${application.dns-zone}/
+
+swagger:
+  service:
+    version: "1.0"
+    title: ${spring.application.name}
+    description: "A service that provides APIs for ..."
+    termsPath: ""
+    email: "noreply@expedia.com"
+    licenceType: ""
+    licencePath: ""
+
+server:
+  tomcat:
+    basedir: ${application.home}
+    max-threads: 100
+##  < HTTPS: Uncomment this section enable HTTPS support. Follow instructions in DEVELOP.md !
+#    remote-ip-header: x-forwarded-for
+#    protocol-header: x-forwarded-proto
+#  port: 8443
+#  ssl:
+#    key-alias: "expedia-${application.deployed-environment}-${application.region}"
+#    key-store: "classpath:keystore.jks"
+#    key-store-password: tDo4bgBIa3nZq16i
+##  HTTPS >
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+
+cs:
+  # POKE
+  poke:
+    enabled: true
+    group: ${spring.application.name}
+    server: "https://poke-service.${application.region}.${application.dns-zone}/api/poke"
+    instance: ${AWS_REGION:${user.name}}-${application.dns-zone:sea.corp.expecn.com}-${HOSTNAME:${PID}}
+    hip-chat:
+      enabled: false
+      room: poke-them-all
+    email:
+      enabled: false
+      address:
+
+  # METRICS
+  metrics:
+    register-post-processor: false
+    include-class-in-the-name: true
+    application-name: ewe.cs-media-service-ng.${application.deployed-environment}-${application.region}
+    publisher:
+      enabled: true
+      delay: 30
+    statsd:
+      hostname: "statsd"
+      port: 8125
+
+logging:
+  file: ${APP_LOGS:${application.home:target}/logs}/cs-media-service-ng.txt
+  level:
+    org.springframework: INFO
+  # Replace new lines in logs
+  pattern:
+    console: "${CONSOLE_LOG_PATTERN:%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(Level=${LOG_LEVEL_PATTERN:%p}) %clr(${PID: }){magenta} %clr(---){faint} %clr([%15.15t]){faint}%X{MDC_Values} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %replace(%msg){'[\r\n]+', '__'}%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}}"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} Level=${LOG_LEVEL_PATTERN:%p} ${PID: } --- [%t]%X{MDC_Values} %-40.40logger{39} : %replace(%msg){'[\r\n]+', '__'}%n${LOG_EXCEPTION_CONVERSION_WORD:%wEx}"

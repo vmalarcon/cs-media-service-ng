@@ -1,0 +1,15 @@
+.idea
+*.iml
+src/*
+target/*
+!target/*.jar
+!target/*.war
+pom.xml
+*.md
+!README.md
+settings.xml
+logs
+certificates.sh
+native/
+.vault_token
+meka

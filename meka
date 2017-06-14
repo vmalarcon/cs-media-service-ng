@@ -1,0 +1,916 @@
+#!/usr/bin/env bash
+
+CWD="${PWD}"
+APP_NAME="$(basename $(pwd))"
+ENVIRONMENT=test
+TEMPLATE_NAME=primer-template-cs-spring-boot
+WORK_DIR=target
+KEY_STORE=src/main/resources/keystore.jks
+USERNAME="${USER:-${LOGNAME}}"
+
+log_debug() {
+    echo "[DEBUG]: $1"
+}
+log_info() {
+    echo "[INFO]: $1"
+}
+log_error() {
+    echo "[ERROR]: $1"
+}
+
+usage() {
+    cat << EOF
+Helper script for managing and maintaining your app. Like a mechanic, it can work with the nuts and bolts of your app.
+
+usage: $(basename $0) <module> [parameters]
+MODULES:
+   certificates     Manage certificate in key store.
+   keystore         Manage key store.
+   help             Show this message.
+   update           Simply and naively generates a stub project based on yours, apply and propose changes in a Git branch.
+   vault            Manage Vault token for local development and CI/CD.
+   version          Print this script version.
+EOF
+}
+
+prompt_secret() {
+    # Credits: http://www.ict.griffith.edu.au/anthony/software/ask_password_stars.sh
+    unset secret
+    secret=
+
+    # If no TTY just read one line and output it (short circuit)
+    if ! tty >/dev/null;  then
+      read -r -s secret
+      echo "$secret"
+      return 0
+    fi
+
+    # Set cbreak mode with noecho
+    stty_save=`stty -g`
+    trap 'stty "$stty_save";' EXIT
+    trap 'exit_loop=true; exit 10' HUP INT QUIT ABRT TERM  # how to kill the read?
+    stty cbreak -echo </dev/tty >/dev/tty 2>&1  # raw mode
+
+    # Prompt and read password one character at a time
+    echo -n "${1:-Password: }" >/dev/tty
+    while IFS= read -r -n1 char; do
+      # Was the read Interrupted - not working yet
+      [ "$exit_loop" -o $? -ne 0 ] && { code=03; break; }
+
+      # Hexadecimal Code of the users key press...
+      code="$( echo -n "$char" | od -An -tx1 | tr -d ' ' )"
+      case "$code" in
+      ''|03|0a|0d) break ;;               # Finish on EOF, ^C, LineFeed, or Return
+      08|7f)                              # Backspace or Delete
+          if [ -n "$secret" ]; then
+            secret="$( echo "$secret" | sed 's/.$//' )"
+            echo -n $'\b \b' >/dev/tty
+          fi
+          ;;
+      15)                                 # ^U or kill line
+          echo -n "$secret" | sed 's/./\cH \cH/g' >/dev/tty # remove in reverse
+          secret=''
+          ;;
+      [01]?) ;;                           # Ignore ALL other control characters
+      *)  secret="$secret$char"             # Normal char - record it
+          echo -n '*' >/dev/tty
+          ;;
+      esac
+    done
+
+    # Disable TTY cbreak mode
+    stty "$stty_save"
+    trap - EXIT HUP INT QUIT TERM
+
+    case "$code" in   # what was the last code - and report appropriately
+      03) echo >/dev/tty "==== INTERRUPT ====" ;;   # currently does not happen
+      *)  echo >/dev/tty  ;;
+    esac
+
+    echo "$secret"
+}
+
+prompt_permission() {
+    local answer=''
+    while [[ -z "${answer}" ]]; do
+        read -p "[INFO]: ${1:-Are you ready? [y/n]: }" answer < /dev/tty
+    done
+    echo "${answer}"
+}
+
+gen_secret() {
+    checks_openssl
+    echo $(openssl rand -rand /dev/random -base64 12 2> /dev/null)
+}
+
+checks_keytool() {
+    if [ $(keytool -help &> /dev/null; echo $?) -ne 0 ]; then
+      log_error "Missing 'keytool' command. Make sure a full Java JDK is installed."
+      exit 3
+    fi
+}
+
+tests_jq() {
+    # Test if jq (commandline JSON processor) is available
+    $(jq --help &> /dev/null)
+    echo $?
+}
+
+checks_jq() {
+    if [ $(tests_jq) -ne 0 ]; then
+      log_error "Missing 'jq' command. Try either: brew install jq;  OR  sudo port install jq;  OR  sudo yum install -y jq"
+      exit 3
+    fi
+}
+
+checks_openssl() {
+    # Test if openssl is available
+    if [ $(which openssl &> /dev/null; echo $?) -ne 0 ]; then
+      log_error "Missing 'openssl' command. Make sure openssl package is installed."
+      exit 3
+    fi
+}
+
+check_git() {
+    if [[ -z "$(which git)" ]]; then
+        log_error "Missing git binary on the PATH! Git is required."
+        exit 3
+    fi
+}
+
+checks_macOS() {
+    if [[ "$OSTYPE" =~ ^darwin ]]; then
+        if [[ $(sed --version | grep -c GNU 2> /dev/null) -lt 1 ]]; then
+            log_error "Missing GNU compatible 'sed' command. Try either: brew install gnu-sed --with-default-names;  OR  sudo port install gsed;"
+            exit 3
+        fi
+        if [[ $(find --version | grep -c GNU 2> /dev/null) -lt 1 ]]; then
+            log_error "Missing GNU compatible 'find' command. Try either: brew install findutils --with-default-names;  OR  sudo port install findutils;"
+            exit 3
+        fi
+        if [[ $(xargs --version | grep -c GNU 2> /dev/null) -lt 1 ]]; then
+            log_error "Missing GNU compatible 'xargs' command. Try either: brew install findutils --with-default-names;  OR sudo port install findutils;"
+            exit 3
+        fi
+    fi
+}
+
+getKeyStorePswd() {
+    local file="${CWD}/src/main/resources/application.yml"
+    if [[ -f "${file}" ]] && [[ -n $(grep -om1 -E 'key-store-password: *.+$' "${file}") ]]; then
+        echo $(grep -om1 -E 'key-store-password: *.+$' "${file}" | sed -r 's/key-store-password: *//')
+    fi
+}
+
+####################################################################
+# Certificates Module
+certs_usage() {
+    if [ "a$1" != "a" ]; then
+      echo
+      echo $1
+    fi
+    cat << EOF
+certificates: Manage certificate in key store.
+
+usage: $(basename $0) certificates [parameters]
+PARAMETERS:
+   -c       Command to execute. Possible commands are: import
+   -h       Show this message
+   -n       The application name. Default is [${APP_NAME}].
+
+   COMMANDS:
+   import
+      -s    The certificate package ZIP file. Default is [${CERT_PCK}].
+      -a    Alias name of imported certificate. Default is [${CERT_ALIAS}].
+      -k    The key store file to import certificate into. Default is [${KEY_STORE}].
+      -p    Key store password. You can find it in [src/main/resources/application.yml] under property [server.ssl.key-store-password].
+
+EOF
+}
+
+certs_import() {
+
+    if [[ ! "${CERT_PCK: -3}" == 'zip' ]]; then
+        log_error "Certificate package doesn't appear to be a ZIP file."
+        exit 2
+    fi
+
+    if [[ ! -f "${CERT_PCK}" ]]; then
+        log_error "Certificate package file ${CERT_PCK} doesn't exist!"
+        exit 2
+    fi
+
+    if [[ ! -f "${KEY_STORE}" ]]; then
+        log_error "Key store file ${KEY_STORE} doesn't exist!"
+        exit 2
+    fi
+
+    if [[ -z "${KEY_STORE_PASWD}" ]]; then
+        log_error "Key store password is required! Check in [src/main/resources/application.yml] under property [server.ssl.key-store-password]."
+        exit 2
+    fi
+
+    checks_keytool
+    checks_openssl
+
+    mkdir -p "${WORK_DIR}"
+    unzip -qo "${CERT_PCK}" -d "${WORK_DIR}/"
+
+    CERT_NAME="$(basename ${CERT_PCK} | sed 's/\.zip//')"
+
+    if [[ ! -f "${WORK_DIR}/${CERT_NAME}.crt" ]] && [[ ! -f "${WORK_DIR}/${CERT_NAME}.pem" ]]; then
+        log_error "Certificate package is missing both files ${CERT_NAME}.crt and ${CERT_NAME}.pem"
+        exit 2
+    fi
+    if [[ ! -f "${WORK_DIR}/netscaler.txt" ]]; then
+        log_error "Certificate package is missing file netscaler.txt (private key)"
+        exit 2
+    fi
+
+    expRootExists="$(keytool -list -keystore "${KEY_STORE}" -storepass "${KEY_STORE_PASWD}" -alias ExpediaRoot2015 &> /dev/null; echo $?)"
+    expChainExists="$(keytool -list -keystore "${KEY_STORE}" -storepass "${KEY_STORE_PASWD}" -alias ExpediaInternal2015C1 &> /dev/null; echo $?)"
+
+    if [[ "${expRootExists}" != '0' ]]; then
+        log_error "Key store ${KEY_STORE_PASWD} is missing ExpediaRoot2015 certificate."
+        exit 2
+    fi
+    if [[ "${expChainExists}" != '0' ]]; then
+        log_error "Key store ${KEY_STORE_PASWD} is missing ExpediaInternal2015C1 certificate."
+        exit 2
+    fi
+
+    if [[ ! -f "${WORK_DIR}/${CERT_NAME}.pem" ]] && [[ -f "${WORK_DIR}/${CERT_NAME}.crt" ]]; then
+        # Convert cert into PEM
+        openssl x509 -in "${WORK_DIR}/${CERT_NAME}.crt" -out "${WORK_DIR}/${CERT_NAME}.pem" -outform PEM
+    fi
+
+    # Export Expedia CA Root & Chain from key store
+    keytool -exportcert -rfc \
+        -alias ExpediaRoot2015 \
+        -keystore "${KEY_STORE}" \
+        -storepass "${KEY_STORE_PASWD}" \
+        -file "${WORK_DIR}/ExpediaRoot2015.pem"
+    keytool -exportcert -rfc \
+        -alias ExpediaInternal2015C1 \
+        -keystore "${KEY_STORE}" \
+        -storepass "${KEY_STORE_PASWD}" \
+        -file "${WORK_DIR}/ExpediaInternal2015C1.pem"
+
+    # Combine certificates
+    cat "${WORK_DIR}/${CERT_NAME}.pem" "${WORK_DIR}/ExpediaRoot2015.pem" "${WORK_DIR}/ExpediaInternal2015C1.pem" > "${WORK_DIR}/combined.pem"
+
+    # Generate PKCS12 certificate
+    openssl pkcs12 -export \
+        -inkey "${WORK_DIR}/netscaler.txt" \
+        -in "${WORK_DIR}/combined.pem" \
+        -name "${CERT_ALIAS}" \
+        -out "${WORK_DIR}/certificate.p12" \
+        -password "pass:${KEY_STORE_PASWD}"
+
+    # Import PKCS12 certificate into key store
+    keytool -importkeystore \
+        -srckeystore "${WORK_DIR}/certificate.p12" \
+        -destkeystore "${KEY_STORE}" \
+        -srcstoretype pkcs12 \
+        -srcstorepass "${KEY_STORE_PASWD}" \
+        -deststorepass "${KEY_STORE_PASWD}" \
+        -noprompt
+
+    exit 0
+}
+
+certs_main() {
+    WORK_DIR="${WORK_DIR}/certs"
+    CERT_PCK="${APP_NAME}.expedia.com.zip"
+    CERT_ALIAS="$(basename ${CERT_PCK} | sed 's/\.zip//')"
+    KEY_STORE_PASWD=changeme
+    local command=help
+
+    while getopts "hc:n:a:s:k:p:" OPTION; do
+        case "${OPTION}" in
+        h)
+            certs_usage
+            exit
+            ;;
+        c)
+            command="${OPTARG}"
+            ;;
+        n)
+            APP_NAME="${OPTARG}"
+            ;;
+        a)
+            CERT_ALIAS="${OPTARG}"
+            ;;
+        s)
+            CERT_PCK="${OPTARG}"
+            ;;
+        k)
+            KEY_STORE="${OPTARG}"
+            ;;
+        p)
+            KEY_STORE_PASWD="${OPTARG}"
+            ;;
+        ?)
+            certs_usage
+            exit 1
+            ;;
+        esac
+    done
+
+    case "${command}" in
+    change)
+        certs_import
+        exit
+        ;;
+    import)
+        certs_import
+        exit
+        ;;
+    help)
+        certs_usage
+        exit 1
+        ;;
+    *)
+        log_error "Unsupported command ${command}"
+        exit 1
+        ;;
+    esac
+}
+####################################################################
+
+####################################################################
+# Keystore Module
+keystore_usage() {
+    cat << EOF
+keystore: Manage keystore
+
+usage: $(basename $0) keystore [parameters]
+
+PARAMETERS:
+    -c      Command to execute. Possible commands are: password
+    -h      Show this message
+    -k      The key store file. Default is [${KEY_STORE}].
+    -p      The key store password.
+    -P      Get key store password from src/main/resources/application.yml file.
+    -w      A new password for the key store file.
+    -W      Generate new password instead of prompting for it.
+
+EOF
+}
+keystore_password() {
+    checks_keytool
+
+    if [[ "${KEY_STORE_FIND_PASWD}" == 'yes' ]]; then
+        log_info "Retrieving key store password from configuration file."
+        KEY_STORE_PASWD=$(getKeyStorePswd)
+    fi
+    while [[ -z "${KEY_STORE_PASWD}" ]]; do
+        KEY_STORE_PASWD=$(prompt_secret "[INFO]: Key store password (will be masked): ")
+    done
+
+    if [[ "${KEY_STORE_GEN_NEW_PASWD}" == 'yes' ]]; then
+        log_info "Generating new key store password."
+        KEY_STORE_NEW_PASWD=$(gen_secret)
+    else
+        while [[ -z "${KEY_STORE_NEW_PASWD}" ]]; do
+            KEY_STORE_NEW_PASWD=$(prompt_secret "[INFO]: New key store password (will be masked): ")
+            if [[ "${#KEY_STORE_NEW_PASWD}" -lt 6 ]]; then
+                log_error "New password must be at least 6 characters"
+                KEY_STORE_NEW_PASWD=''
+            fi
+        done
+    fi
+
+    local aliases=( $(keytool -list -keystore "${KEY_STORE}" -storepass "${KEY_STORE_PASWD}" | grep PrivateKeyEntry | cut -d, -f1) )
+    for alias in "${aliases[@]}"; do
+        log_debug "Changing password on key ${alias}"
+        keytool -keypasswd \
+            -keystore "${KEY_STORE}" \
+            -storepass "${KEY_STORE_PASWD}" \
+            -keypass "${KEY_STORE_PASWD}" \
+            -new "${KEY_STORE_NEW_PASWD}" \
+            -alias "${alias}"
+    done
+
+    keytool -storepasswd -keystore "${KEY_STORE}" -storepass "${KEY_STORE_PASWD}" -new "${KEY_STORE_NEW_PASWD}"
+
+    if [[ -f "src/main/resources/application.yml" ]]; then
+        sed -r --in-place='' \
+            -e "s|key-store-password: *${KEY_STORE_PASWD}|key-store-password: ${KEY_STORE_NEW_PASWD}|g" \
+            "src/main/resources/application.yml"
+    fi
+}
+keystore_main() {
+    KEY_STORE_NEW_PASWD=
+    KEY_STORE_GEN_NEW_PASWD=no
+    KEY_STORE_FIND_PASWD=no
+    local command=help
+
+    while getopts "c:hk:p:Pw:W" OPTION; do
+        case "${OPTION}" in
+        c)
+            command="${OPTARG}"
+            ;;
+        h)
+            keystore_usage
+            exit
+            ;;
+        k)
+            KEY_STORE="${OPTARG}"
+            ;;
+        p)
+            KEY_STORE_PASWD="${OPTARG}"
+            ;;
+        P)
+            KEY_STORE_FIND_PASWD=yes
+            ;;
+        w)
+            KEY_STORE_NEW_PASWD="${OPTARG}"
+            ;;
+        W)
+            KEY_STORE_GEN_NEW_PASWD=yes
+            ;;
+        ?)
+            certs_usage
+            exit 1
+            ;;
+        esac
+    done
+
+    case "${command}" in
+    password)
+        keystore_password
+        exit
+        ;;
+    help)
+        keystore_usage
+        exit 1
+        ;;
+    *)
+        log_error "Unsupported command ${command}"
+        exit 1
+        ;;
+    esac
+}
+####################################################################
+
+####################################################################
+# Update Module
+update_usage() {
+    cat << EOF
+update: Simply and naively generates a stub project based on yours, apply and propose changes in a Git branch.
+
+usage: $(basename $0) update [parameters]
+PARAMETERS:
+   -h      Show this message
+   -g      Template Git repository URL or local path. Default is [${TEMPLATE_REPO_URL}]
+   -y      Assume yes to everything.
+
+EOF
+}
+
+update_getAppPackage() {
+    local app_class=$(find "${CWD}/src/main/java" -type f -name Application.java)
+    if [[ -n "${app_class}" ]]; then
+        echo $(grep -m1 package "${app_class}" | sed 's/^package //; s/\;//')
+        return
+    fi
+    if [[ -n "$(grep '<start-class>' ${CWD}/pom.xml)" ]]; then
+        echo $(grep -om1 -E '<start-class>.*' pom.xml | sed -E 's|<[^>]+>||g; s|\.[^.]+$||')
+        return
+    fi
+    echo "com.expedia.www.${APP_NAME//-/.}"
+}
+
+update_getDockerPort() {
+    if [[ -f "${CWD}/docker-entrypoint.sh" ]]; then
+        echo $(grep -om1 -E 'HOST_PORT=[0-9]+$' "${CWD}/docker-entrypoint.sh" | sed 's/HOST_PORT=//')
+    fi
+}
+
+update_main() {
+    TARGET="${CWD}/target"
+    WORK_DIR="${TARGET}/${TEMPLATE_NAME}"
+    TEMPLATE_REPO_URL="git@ewegithub.sb.karmalab.net:EWE/${TEMPLATE_NAME}.git"
+    ASSUME_YES=no
+
+    if [[ "$(whoami)" == 'root' ]]; then
+        log_error "Don't run this script as root or using sudo! We don't want anything bad happening, don't we?"
+        exit -1
+    fi
+
+    while getopts "hg:y" OPTION; do
+        case "${OPTION}" in
+        h)
+            update_usage
+            exit 1
+            ;;
+        g)
+            TEMPLATE_REPO_URL="$([[ -d ${OPTARG} ]] && echo $(cd ${OPTARG} && pwd) || echo ${OPTARG})"
+            ;;
+        y)
+            ASSUME_YES=yes
+            ;;
+        ?)
+            update_usage
+            exit
+            ;;
+        esac
+    done
+
+    # Verify we are dealing with a project coming from CS-SpringBoot
+    if [[ ! -f "${CWD}/.primer/deployment.json" ]]; then
+        log_error "Missing file .primer/deployment.json! Is this a Primer project?"
+        exit 1
+    fi
+    if [[ "$(grep app_variant "${CWD}/.primer/deployment.json" | tr -d '", ' | cut -d: -f2)" != 'cs-springboot' ]]; then
+        log_error "Invalid application variant! Only project generated with CS-SpringBoot template are supported."
+        exit 1
+    fi
+    if [[ ! -d "${CWD}/.git" ]]; then
+        log_error "Missing .git directory inside project structure! Current directory must be at project root folder."
+        exit 1
+    fi
+    check_git
+    checks_macOS
+    #if [[ "$(git rev-parse --abbrev-ref HEAD)" != 'master' ]]; then
+    #    log_error "Git branch is not pointing on master! Please checkout your branch to origin/master."
+    #    exit 1
+    #fi
+    if [[ "${TEMPLATE_REPO_URL}" =~ ^git@ ]]; then
+        git ls-remote --exit-code --heads "${TEMPLATE_REPO_URL}" &> /dev/null
+        if [[ $? -ne 0 ]]; then
+            log_error "Unable to communicate with template Git repository! Check your Git connection settings."
+            exit 1
+        fi
+    elif [[ "$(git -C ${TEMPLATE_REPO_URL} rev-parse --is-inside-work-tree)" != 'true' ]]; then
+        log_error "Local template Git repository path is not under Git control!"
+        exit 1
+    fi
+
+    cat << EOF
+Here what is going to happen:
+  -> We will create (or refresh) a branch origin/template-update
+  -> We will checkout (or update) CS-SpringBoot template from Git in ${TARGET}
+  -> We will generate a stub project from the template, using these parameters:
+     -> name: ${APP_NAME}
+     -> package: $(update_getAppPackage)
+     -> host port: $(update_getDockerPort)
+  -> We will copy the stuff onto your current project in ${CWD}
+  -> You will review the changes, merge what you need and commit when ready.
+
+EOF
+
+    if [[ "${ASSUME_YES}" == 'no' ]]; then
+        USER_READY=
+        while [[ -z "${USER_READY}" ]]; do
+            read -p "Are you ready? [y/n]: " USER_READY < /dev/tty
+        done
+        if [[ "${USER_READY}" =~ ^(yes|y)$ ]]; then
+            log_info "Let's begin, shall we?"
+        else
+            log_info "Okay, not updating. See you later!"
+            exit 0
+        fi
+    fi
+
+    # Create or reset update branch
+    if [[ -z "$(git -C ${CWD} branch --list template-update)" ]]; then
+        log_info "Creating branch template-update..."
+        git -C "${CWD}" checkout -q -b template-update -t
+    else
+        log_info "Checking out branch template-update and cleaning it..."
+        git -C "${CWD}" checkout -q template-update
+        git -C "${CWD}" reset -q --hard
+        git -C "${CWD}" clean -qdf
+    fi
+
+    # Checkout template source
+    mkdir -p "${TARGET}"
+    if [[ "${TEMPLATE_REPO_URL}" =~ ^git@ ]]; then
+        if [[ ! -d "${TARGET}/${TEMPLATE_NAME}/.git" ]]; then
+            log_info "Checking out template source from ${TEMPLATE_REPO_URL} ..."
+            git -C "${TARGET}" clone -q "${TEMPLATE_REPO_URL}"
+        else
+            log_info "Updating template source..."
+            git -C "${TARGET}" pull -q
+        fi
+    else
+        log_info "Copying template source from local path ${TEMPLATE_REPO_URL} ..."
+        rm -fr "${TARGET}/$(basename ${TEMPLATE_REPO_URL})/.git"
+    #    cp -a "${TEMPLATE_REPO_URL}" "${TARGET}/"
+        mkdir -p "${WORK_DIR}"
+        find "${TEMPLATE_REPO_URL}" -mindepth 1 -maxdepth 1 \
+            -not -name target \
+            -not -name logs \
+            -not -name .idea \
+            -not -name '*.iml' \
+            -not -name '*.iws' \
+            -not -name .classpath \
+            -not -name .project \
+            -not -name .settings \
+            -not -name .checkstyle \
+            -not -name .DS_Store \
+            -not -name native \
+        | xargs -I % cp -fa % "${WORK_DIR}/"
+    fi
+
+    # Generate stub project from template
+    log_info "Cloning template for app ${APP_NAME} with package $(update_getAppPackage), port $(update_getDockerPort), into ${WORK_DIR}/target ..."
+    [[ -d "${WORK_DIR}/target/${APP_NAME}" ]] && rm -fr "${WORK_DIR}/target/${APP_NAME}"
+    cd "${WORK_DIR}";
+
+    cmd_params="-n ${APP_NAME} -p $(update_getAppPackage) -d ${WORK_DIR}/target -r $(update_getDockerPort) -s"
+    if [[ -n "$(getKeyStorePswd)" ]]; then
+        cmd_params+=" -k '$(getKeyStorePswd)'"
+    fi
+
+    ./clone.sh ${cmd_params}
+    cd "${CWD}"
+
+    # Remove cloned resources not supported for update
+    rm -fr "${WORK_DIR}/target/${APP_NAME}/src/main/java/"* \
+        "${WORK_DIR}/target/${APP_NAME}/src/test/java/"* \
+        "${WORK_DIR}/target/${APP_NAME}/src/main/resources/keystore.jks" \
+        "${WORK_DIR}/target/${APP_NAME}/src/main/asciidoc/"*
+
+    # Overlay stub project atop current project
+    cp -r "${WORK_DIR}/target/${APP_NAME}/"* "${CWD}/"
+    cp "${WORK_DIR}/target/${APP_NAME}/".*ignore "${CWD}/"
+
+    # Optionally removed deprecated files
+    local deprecates=( "certificates.sh|Script 'certificates.sh' has been deprecated. Use '$(basename $0) certificates' instead." )
+    for dep in "${deprecates[@]}"; do
+        local item=$(echo "${dep}" | cut -d'|' -f1)
+        local msg=$(echo "${dep}" | cut -d'|' -f2)
+        if [[ -f "${CWD}/${item}" ]]; then
+            if [[ "${ASSUME_YES}" == 'yes' ]] || [[ $(prompt_permission "${msg} Do you want to delete '${item}'? [y/n] ") =~ ^(yes|y)$ ]]; then
+                rm "${CWD}/${item}"
+            fi
+        fi
+    done
+
+    # Clean up
+    rm -fr "${WORK_DIR}"
+
+    echo
+    log_info "Changes from CS-SpringBoot template has been applied, but no staged, in local branch origin/template-update. Please review and merge as you see fit."
+    echo
+}
+####################################################################
+
+####################################################################
+# Vault Module
+vault_usage() {
+    cat << EOF
+vault: manage Vault token for local development and CI/CD.
+
+usage: $(basename $0) vault [parameters]
+PARAMETERS:
+   -a   Login to Vault and obtains a token, write it to [${TOKEN_FILE}].
+   -h   Show this message.
+   -c   Register the Vault application in the current user Keychain. Only works for macOS.
+   -e   Vault environment, one of [test|prod|prod-p]. Default is test.
+   -m   Method of authentication to Vault server. One of [ldap|approle|default]. Default is ldap. When using ldap, environment variable are not considered.
+   -n   The application name. Default is [${APP_NAME}].
+   -r   The application Vault Role ID, given by email during on-boarding. Support environment variable VAULT_ROLE_ID.
+   -s   The application Vault Secret ID, given by email during on-boarding. Support environment variable VAULT_SECRET_ID.
+   -t   Token file location, default to [${TOKEN_FILE}].
+
+EOF
+}
+
+vault_getAppRoleId() {
+    if [[ "$OSTYPE" =~ ^darwin ]]; then
+        local roleId=$(security find-generic-password -a ${USERNAME} -l ${APP_NAME} 2> /dev/null | grep svce | sed -r 's/.*"([^"]+)"/\1/g')
+        if [[ $? -eq 0 ]]; then
+            echo ${roleId}
+        fi
+    else
+        log_error "Only macOS is supported at the moment."
+        exit 10
+    fi
+}
+
+vault_getAppSecretId() {
+    if [[ "$OSTYPE" =~ ^darwin ]]; then
+        local secretId=$(security find-generic-password -a ${USERNAME} -l ${APP_NAME} -w 2> /dev/null)
+        if [[ $? -eq 0 ]]; then
+            echo ${secretId}
+        fi
+    else
+        log_error "Only macOS is supported at the moment."
+        exit 10
+    fi
+}
+
+vault_promptForAppSecretIds() {
+    if [[ -z "${VAULT_ROLE_ID}" ]] || [[ -z "${VAULT_SECRET_ID}" ]]; then
+        log_info "Please provide the credentials for your Vault application ${APP_NAME}"
+    fi
+    if [[ -z "${VAULT_ROLE_ID}" ]]; then
+        while [[ -z "${VAULT_ROLE_ID}" ]]; do
+            read -p "[INFO]: Vault Role ID: " VAULT_ROLE_ID < /dev/tty
+        done
+    fi
+    if [[ -z "${VAULT_SECRET_ID}" ]]; then
+        VAULT_SECRET_ID=$(prompt_secret "[INFO]: Vault Secret ID (will be masked): ")
+    fi
+}
+
+vault_setOrGetAppSecretIds() {
+    VAULT_ROLE_ID="${VAULT_ROLE_ID:-$(vault_getAppRoleId)}"
+    VAULT_SECRET_ID="${VAULT_SECRET_ID:-$(vault_getAppSecretId)}"
+
+    vault_promptForAppSecretIds
+
+    if [[ -z "${VAULT_ROLE_ID}" ]]; then
+        log_error "Vault role ID is required. Use parameter -r to specify the Vault role ID."
+        exit 3
+    fi
+    if [[ -z "${VAULT_SECRET_ID}" ]]; then
+        log_error "Vault secret ID is required. Use parameter -s to specify the Vault secret ID."
+        exit 3
+    fi
+}
+
+vault_authenticate() {
+    local response=''
+    local rc=99
+    if [[ "${VAULT_AUTH_METHOD}" =~ ^(ldap|default)$ ]]; then
+        local password="$(prompt_secret "[INFO]: SEA\\${USERNAME} password (will be masked): ")"
+
+        response=$(curl -s -XPOST "${VAULT_ADDRESS}/v1/auth/ldap/login/${USERNAME}" -d '{"password":"'${password}'"}')
+        rc=$?
+        unset password
+    elif [[ "${VAULT_AUTH_METHOD}" == 'approle' ]]; then
+        vault_setOrGetAppSecretIds
+
+        response=$(curl -s -XPOST "${VAULT_ADDRESS}/v1/auth/approle/login" \
+            -d '{"role_id":"'${VAULT_ROLE_ID}'","secret_id":"'${VAULT_SECRET_ID}'"}')
+        rc=$?
+    else
+        log_error "Unsupported authentication method '${VAULT_AUTH_METHOD}'!"
+        exit 3
+    fi
+
+    if [[ ${rc} -eq 0 ]]; then
+        if [[ -z "$(echo "${response}" | grep errors)" ]]; then
+            if [[ ! -e "${TOKEN_FILE}" ]]; then
+                touch "${TOKEN_FILE}"
+                chmod 0600 "${TOKEN_FILE}"
+            fi
+            if [[ $(tests_jq) -eq 0 ]]; then
+                echo "${response}" | jq ".auth.client_token" -r > "${TOKEN_FILE}"
+            else
+                echo "${response}" | sed -E 's/client_token":"([^"]+)"/\1/g' > "${TOKEN_FILE}"
+            fi
+        else
+            log_error "Error occurred while retrieving token from Vault."
+            log_error "$(jq -r '.errors[]' <<< "${response}")"
+            exit 4
+        fi
+    else
+        log_error "Error occurred while retrieving token from Vault."
+        exit 4
+    fi
+}
+
+vault_configure() {
+    vault_promptForAppSecretIds
+
+    if [[ "$OSTYPE" =~ ^darwin ]]; then
+        security add-generic-password -a ${USERNAME} -l ${APP_NAME} -s ${VAULT_ROLE_ID} -w ${VAULT_SECRET_ID} -U
+
+        if [[ ! $? -eq 0 ]]; then
+            log_error "Unable to save Vault credentials to Keychain."
+            exit 3
+        fi
+    else
+        log_error "Only macOS is supported at the moment."
+        exit 10
+    fi
+}
+
+vault_main() {
+    VAULT_ADDRESS="https://ewe-vault.${ENVIRONMENT}.expedia.com:8200"
+    TOKEN_FILE="${CWD}/.vault_token"
+    VAULT_AUTH_METHOD=ldap
+    VAULT_ROLE_ID="${VAULT_ROLE_ID}"
+    VAULT_SECRET_ID="${VAULT_SECRET_ID}"
+    local command=help
+
+    while getopts "ae:chm:n:t:r:s:" OPTION; do
+        case "${OPTION}" in
+        a)
+            command=authenticate
+            ;;
+        c)
+            command=configure
+            ;;
+        e)
+            ENVIRONMENT="${OPTARG}"
+            ;;
+        h)
+            command=help
+            ;;
+        m)
+            VAULT_AUTH_METHOD="${OPTARG}"
+            ;;
+        n)
+            APP_NAME="${OPTARG}"
+            ;;
+        t)
+            TOKEN_FILE="${OPTARG}"
+            ;;
+        r)
+            VAULT_ROLE_ID="${OPTARG}"
+            ;;
+        s)
+            VAULT_SECRET_ID="${OPTARG}"
+            ;;
+        ?)
+            log_error "Unsupported option"
+            exit 1
+            ;;
+        esac
+    done
+
+    if [[ "$(whoami)" == 'root' ]]; then
+        log_error "Don't run this script as root or using sudo! We don't want anything bad happening, don't we?"
+        exit -1
+    fi
+
+    if [[ ! "${ENVIRONMENT}" =~ ^test|prod|prod-p$ ]]; then
+        log_error "Environment must be one of [test|prod|prod-p]."
+        exit 3
+    fi
+
+    # Test if curl command is available
+    CURL_TEST=$(curl --help &> /dev/null)
+    if [ $? -ne 0 ]; then
+      log_error "Missing 'curl' command."
+      exit 3
+    fi
+
+    checks_jq
+    
+    if [[ -d "${TOKEN_FILE}" ]]; then
+        log_error "Token file ${TOKEN_FILE} is an existing directory!"
+        exit 3
+    fi
+
+    case "${command}" in
+    help)
+        vault_usage
+        exit
+        ;;
+    configure)
+        vault_configure
+        exit $?
+        ;;
+    authenticate)
+        vault_authenticate
+        exit $?
+        ;;
+    *)
+        log_error "Unsupported command ${command}"
+        exit 1
+        ;;
+    esac
+}
+
+####################################################################
+
+MODULE=${1-help}
+shift
+case "${MODULE}" in
+certificates)
+    certs_main "$@"
+    exit $?
+    ;;
+help)
+    usage
+    exit
+    ;;
+keystore)
+    keystore_main "$@"
+    exit $?
+    ;;
+update)
+    update_main "$@"
+    exit $?
+    ;;
+vault)
+    vault_main "$@"
+    exit $?
+    ;;
+version)
+    echo "cec4f5928101e8fa79e331c50595ea393f54c849"
+    exit 0
+    ;;
+*)
+    log_error "Unsupported module ${MODULE}"
+    exit 1
+    ;;
+esac

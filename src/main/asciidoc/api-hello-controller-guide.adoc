@@ -1,0 +1,22 @@
+[[hello-controller]]
+== Generate a message
+Generate a message
+
+=== Curl Request
+include::{snippets}/hello-controller/curl-request.adoc[]
+
+=== Http ie Request
+include::{snippets}/hello-controller/httpie-request.adoc[]
+
+=== Http Request
+include::{snippets}/hello-controller/http-request.adoc[]
+
+==== Request parameters
+include::{snippets}/hello-controller/path-parameters.adoc[]
+
+=== Http Response
+include::{snippets}/hello-controller/http-response.adoc[]
+
+==== Response fields
+include::{snippets}/hello-controller/response-fields.adoc[]
+
