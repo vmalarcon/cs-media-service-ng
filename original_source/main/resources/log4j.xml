@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd" [
+        ]>
+<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/" debug="false">
+
+    <appender name="devAppender" class="org.apache.log4j.ConsoleAppender">
+        <param name="threshold" value="DEBUG" />
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d [%.30t] %c %p %m%n"/>
+        </layout>
+    </appender>
+
+    <appender name="fileAppender" class="org.apache.log4j.RollingFileAppender">
+        <param name="file" value="${application.home}/logs/${application.name}.txt"/>
+        <param name="append" value="false"/>
+        <param name="MaxFileSize" value="1000KB"/>
+        <param name="MaxBackupIndex" value="100"/>
+        <layout class="org.apache.log4j.EnhancedPatternLayout">
+            <param name="ConversionPattern"
+                   value="Application=${application.name} Type=%p Message=%m%n DateTime=%d{ISO8601}{GMT} Logger=[%c] Thread=[%.30t] "/>
+        </layout>
+    </appender>
+
+    <appender name="testAppender" class="org.apache.log4j.AsyncAppender">
+        <param name="threshold" value="INFO" />
+        <appender-ref ref="fileAppender"/>
+    </appender>
+
+    <appender name="intAppender" class="org.apache.log4j.AsyncAppender">
+        <param name="threshold" value="INFO" />
+        <appender-ref ref="fileAppender"/>
+    </appender>
+
+    <appender name="prodAppender" class="org.apache.log4j.AsyncAppender">
+        <param name="threshold" value="INFO" />
+        <appender-ref ref="fileAppender"/>
+    </appender>
+
+    <appender name="stressAppender" class="org.apache.log4j.AsyncAppender">
+        <param name="threshold" value="INFO" />
+        <appender-ref ref="fileAppender"/>
+    </appender>
+
+    <appender name="errorAppender" class="org.apache.log4j.RollingFileAppender">
+        <param name="file" value="${application.home}/logs/errors.txt"/>
+        <param name="append" value="false"/>
+        <param name="MaxFileSize" value="1000KB"/>
+        <param name="MaxBackupIndex" value="100"/>
+        <layout class="org.apache.log4j.EnhancedPatternLayout">
+            <param name="ConversionPattern"
+                   value="DateTime=%d{ISO8601}{GMT} Type=%p Message=%m%n"/>
+        </layout>
+        <filter class="org.apache.log4j.varia.LevelRangeFilter">
+            <param name="LevelMax" value="fatal"/>
+            <param name="LevelMin" value="error"/>
+            <param name="AcceptOnMatch" value="true"/>
+        </filter>
+    </appender>
+
+    <logger name="com.expedia.www.platform.connector.logging.ConnectorLogger.Transaction" additivity="false">
+        <param name="threshold" value="INFO" />
+        <appender-ref ref="devAppender"/>
+    </logger>
+
+    <logger name="com.expedia.www.platform.connector.logging.ConnectorLogger.Trace" additivity="false">
+        <param name="threshold" value="INFO" />
+        <appender-ref ref="devAppender"/>
+    </logger>
+
+    <logger name="com.expedia.www.commons.statsd.StatsdClient" additivity="false">
+        <param name="threshold" value="INFO" />
+        <appender-ref ref="devAppender" />
+    </logger>
+
+    <logger name="com.amazonaws" additivity="false">
+        <param name="threshold" value="INFO" />
+        <appender-ref ref="devAppender" />
+    </logger>
+
+    <logger name="org.apache.http" additivity="false">
+        <param name="threshold" value="INFO" />
+        <appender-ref ref="devAppender" />
+    </logger>
+
+    <logger name="org.springframework" additivity="false">
+        <level value="INFO" />
+        <appender-ref ref="${application.environment}Appender"/>
+    </logger>
+
+    <logger name="com.expedia.www.commons.io" additivity="false">
+        <level value="ERROR" />
+        <appender-ref ref="${application.environment}Appender" />
+    </logger>
+
+    <root>
+        <priority value="INFO"/>
+        <appender-ref ref="${application.environment}Appender"/>
+        <appender-ref ref="errorAppender"/>
+    </root>
+
+
+</log4j:configuration>

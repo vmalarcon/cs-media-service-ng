@@ -1,0 +1,10 @@
+server:
+   ssl:
+      key-alias: "cs-media-service.prod-p.expedia.com"
+   tomcat:
+      max-threads: 200
+cs:
+   poke:
+      server: https://poke-service.us-west-2.prod-p.expedia.com/api/poke
+      enabled: true
+

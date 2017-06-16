@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aws-context="http://www.springframework.org/schema/cloud/aws/context"
+       xmlns:aws-messaging="http://www.springframework.org/schema/cloud/aws/messaging"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns="http://www.springframework.org/schema/beans"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+                           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+                           http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.1.xsd
+                           http://www.springframework.org/schema/cloud/aws/context http://www.springframework.org/schema/cloud/aws/context/spring-cloud-aws-context-1.0.xsd
+                           http://www.springframework.org/schema/cloud/aws/messaging http://www.springframework.org/schema/cloud/aws/messaging/spring-cloud-aws-messaging-1.0.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+    <context:property-placeholder location="classpath:${EXPEDIA_ENVIRONMENT}.${AWS_REGION}.properties"/>
+    <aop:config proxy-target-class="true" />
+
+    <aws-messaging:annotation-driven-queue-listener wait-time-out="20" />
+
+    <aws-context:context-region region="${AWS_REGION}" />
+    <aws-context:context-resource-loader region="${AWS_REGION}" />
+
+    <aws-messaging:notification-messaging-template id="notificationMessagingTemplate" />
+
+    <mvc:annotation-driven>
+        <mvc:argument-resolvers>
+            <ref bean="notificationResolver" />
+        </mvc:argument-resolvers>
+    </mvc:annotation-driven>
+
+    <aws-messaging:notification-argument-resolver id="notificationResolver" />
+
+    <bean id="retryableAspect" class="com.expedia.content.media.processing.pipeline.retry.RetryableAspect" factory-method="aspectOf" autowire="byType" />
+
+    <util:map id="imageMessageValidators">
+        <entry key="DEFAULT">
+            <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                <ref bean="mediaAddValidator"/>
+                <ref bean="lodgingAddValidator"/>
+                <ref bean="roomValidator"/>
+            </list>
+        </entry>
+        <entry key="Media Cloud Router">
+            <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                <ref bean="lodgingAddValidator"/>
+                <ref bean="mediaAddValidator"/>
+            </list>
+        </entry>
+        <entry key="Multisource">
+            <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                <ref bean="multisourceValidator"/>
+                <ref bean="lodgingValidator"/>
+            </list>
+        </entry>
+        <entry key="EPCUpdate">
+            <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                <ref bean="mediaUpdateValidator"/>
+                <ref bean="lodgingUpdateValidator"/>
+                <ref bean="roomValidator"/>
+            </list>
+        </entry>
+        <entry key="csMediaTools">
+            <list value-type="com.expedia.content.media.processing.services.validator.MapMessageValidator">
+                <ref bean="mediaAddValidator"/>
+                <ref bean="lodgingAddValidator"/>
+            </list>
+        </entry>
+    </util:map>
+
+    <aws-messaging:queue-messaging-template id="queueMessagingTemplate" />
+
+    <bean id="mediaAddValidator" class="com.expedia.content.media.processing.services.validator.MVELValidator">
+        <property name="clientRule" value="mediaAdd" />
+        <property name="ruleMaps">
+            <map>
+                <entry key="mediaAdd">
+                    <list>
+                        <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
+                        <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
+                        <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
+                        <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars|ContentRepo")) ? "domain must be either 'Lodging', 'Cars' or 'ContentRepo'" : "valid"</value>
+                        <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
+                        <value>(domainData.domain.domain.endsWith('Lodging') &amp;&amp; domainData.domainId != null &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
+                        <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
+                        <value>(domainData != null &amp;&amp; domainData.provider == null) ? "domainProvider is required." : "valid"</value>
+                        <value>(domainData.domain.domain.equals('Lodging') &amp;&amp; domainData.domainFields != null &amp;&amp; domainData.domainFields.containsKey("category") &amp;&amp; !domainData.domainFields.get("category").toString.matches("[0-9]+")) ? "category is not numeric." : "valid"</value>
+                        <value>(domainData.domain.domain.equals('Lodging') &amp;&amp; domainData.domainFields != null &amp;&amp; domainData.domainFields.containsKey("roomHero") &amp;&amp; !domainData.domainFields.get("roomHero").toString.matches("true|false")) ? "roomHero is not boolean." : "valid"</value>
+                        <value>(imageMessage.rotation == null) ? "valid" : (imageMessage.rotation.matches("[0-9]+") &amp;&amp; Integer.parseInt(imageMessage.rotation)%90 == 0  &amp;&amp; Integer.parseInt(imageMessage.rotation) &lt;= 270) ? "valid" : "rotation accepted values are 0, 90, 180, and 270."</value>
+                    </list>
+                </entry>
+            </map>
+        </property>
+    </bean>
+
+    <bean id="mediaUpdateValidator" class="com.expedia.content.media.processing.services.validator.MVELValidator">
+        <property name="clientRule" value="mediaUpdate" />
+        <property name="ruleMaps">
+            <map>
+                <entry key="mediaUpdate">
+                    <list>
+                        <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
+                    </list>
+                </entry>
+            </map>
+        </property>
+    </bean>
+
+    <bean id="multisourceValidator" class="com.expedia.content.media.processing.services.validator.MVELValidator">
+        <property name="clientRule" value="Multisource" />
+        <property name="ruleMaps">
+            <map>
+                <entry key="Multisource">
+                    <list>
+                        <value>imageMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
+                        <value>(imageMessage.fileUrl != null &amp;&amp; !imageMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
+                        <value>imageMessage.outerDomainData == null ? "domain is required." : "valid"</value>
+                        <value>(domainData != null &amp;&amp; !domainData.domain.domain.matches("Lodging|Cars")) ? "domain must be 'Lodging' or 'Cars'" : "valid"</value>
+                        <value>domainData.domainId != null ? "valid" : "domainId is required."</value>
+                        <value>(domainData.domain.domain.endsWith('Lodging') &amp;&amp; domainData.domainId != null &amp;&amp; !domainData.domainId.matches("[0-9]+")) ? "domainId is not numeric." : "valid"</value>
+                        <value>imageMessage.userId != null ? "valid" : "userId is required."</value>
+                        <value>(domainData != null &amp;&amp; domainData.provider == null) ? "domainProvider is required." : "valid"</value>
+                        <value>(imageMessage.rotation == null) ? "valid" : (imageMessage.rotation.matches("[0-9]+") &amp;&amp; Integer.parseInt(imageMessage.rotation)%90 == 0  &amp;&amp; Integer.parseInt(imageMessage.rotation) &lt;= 270) ? "valid" : "rotation accepted values are 0, 90, 180, and 270."</value>
+                    </list>
+                </entry>
+            </map>
+        </property>
+    </bean>
+
+    <bean id="tempDerivativeMVELValidator" class="com.expedia.content.media.processing.services.validator.TempDerivativeMVELValidator">
+        <property name="ruleList">
+            <list>
+                <value>tempDerivativeMessage.fileUrl != null ? "valid" : "fileUrl is required."</value>
+                <value>(tempDerivativeMessage.fileUrl != null &amp;&amp; !tempDerivativeMessage.fileUrl.matches(".*http://.*|.*https://.*|.*s3://.*|.*file:///.*")) ? "fileUrl is malformed." : "valid"</value>
+                <value>(tempDerivativeMessage.rotation == null) ? "valid" : (tempDerivativeMessage.rotation.matches("[0-9]+") &amp;&amp; Integer.parseInt(tempDerivativeMessage.rotation)%90 == 0  &amp;&amp; Integer.parseInt(tempDerivativeMessage.rotation) &lt;= 270) ? "valid" : "rotation accepted values are 0, 90, 180, and 270."</value>
+                <value>tempDerivativeMessage.width != null ? "valid" : "width is required."</value>
+                <value>tempDerivativeMessage.height != null ? "valid" : "height is required."</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="threadedLogger" class="com.expedia.content.media.processing.pipeline.reporting.LogActivityProcessQueue">
+        <constructor-arg name="logThreadPoolSize" value="10" />
+        <constructor-arg name="deadLetterQueue" value="${media.aws.processlog.queue.name}" />
+    </bean>
+
+    <bean id="providerProperties"
+          class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+        <property name="locations">
+            <list>
+                <value>classpath*:provider-mapping.properties</value>
+            </list>
+        </property>
+    </bean>
+
+
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+    <!-- Retry -->
+    <bean id="loggingRetryListener" class="com.expedia.content.media.processing.pipeline.retry.LoggingRetryListener" />
+
+    <bean id="retryTemplate" class="org.springframework.retry.support.RetryTemplate">
+        <property name="retryPolicy">
+            <bean class="org.springframework.retry.policy.ExceptionClassifierRetryPolicy">
+                <property name="policyMap">
+                    <map>
+                        <entry key="java.net.MalformedURLException">
+                            <bean class="org.springframework.retry.policy.NeverRetryPolicy" />
+                        </entry>
+                        <entry key="com.expedia.content.media.processing.pipeline.exception.ImageMessageException">
+                            <bean class="org.springframework.retry.policy.NeverRetryPolicy" />
+                        </entry>
+                        <entry key="java.net.URISyntaxException">
+                            <bean class="org.springframework.retry.policy.NeverRetryPolicy" />
+                        </entry>
+                        <entry key="java.nio.file.FileSystemNotFoundException">
+                            <bean class="org.springframework.retry.policy.NeverRetryPolicy" />
+                        </entry>
+                        <entry key="org.im4java.core.InfoException">
+                            <bean class="org.springframework.retry.policy.NeverRetryPolicy" />
+                        </entry>
+                        <entry key="java.lang.Exception">
+                            <bean class="org.springframework.retry.policy.SimpleRetryPolicy">
+                                <property name="maxAttempts" value="${retry.max.attempts}" />
+                            </bean>
+                        </entry>
+                    </map>
+                </property>
+            </bean>
+        </property>
+        <property name="backOffPolicy">
+            <bean class="org.springframework.retry.backoff.ExponentialBackOffPolicy">
+                <property name="initialInterval" value="${retry.interval.ms}" />
+                <property name="multiplier" value="${retry.multiplier}" />
+                <property name="maxInterval" value="${retry.max.interval.ms}" />
+            </bean>
+        </property>
+        <property name="listeners">
+            <list>
+                <ref bean="loggingRetryListener" />
+            </list>
+        </property>
+    </bean>
+
+    <!-- Status Controller -->
+    <bean id="AWSReceptionActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="MediaMessageReceived"/>
+        <property name="statusMessage" value="RECEIVED"/>
+        <property name="mediaType" value=".*"/>
+    </bean>
+
+    <bean id="receptionActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <!-- this will work -->
+        <property name="activityType" value="Reception"/>
+        <!-- this will *not* work -->
+        <property name="statusMessage" value="RECEIVED"/>
+        <property name="mediaType" value=".*"/>
+    </bean>
+
+    <bean id="derivativeCreationActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="DerivativeCreation"/>
+        <property name="statusMessage" value="DERIVATIVES_CREATED"/>
+        <property name="mediaType" value="VirtualTour|Lodging"/>
+    </bean>
+
+    <bean id="duplicateFoundActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="CollectorDupMediaFound"/>
+        <property name="statusMessage" value="DUPLICATE"/>
+        <property name="mediaType" value=".*"/>
+    </bean>
+
+    <bean id="rejectActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="Reject"/>
+        <property name="statusMessage" value="REJECTED"/>
+        <property name="mediaType" value=".*"/>
+    </bean>
+
+    <bean id="publishActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="Publish"/>
+        <property name="statusMessage" value="PUBLISHED"/>
+        <property name="mediaType" value=".*"/>
+    </bean>
+
+    <bean id="dcpPickupActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="DcpPickup"/>
+        <property name="statusMessage" value="RECEIVED"/>
+        <property name="mediaType" value="Cars"/>
+    </bean>
+
+    <bean id="carsDerivativeCreationActivity" class="com.expedia.content.media.processing.services.util.ActivityMapping">
+        <property name="activityType" value="DerivativeCreation"/>
+        <property name="statusMessage" value="PUBLISHED"/>
+        <property name="mediaType" value="Cars"/>
+    </bean>
+
+    <bean id="mediaStatusTypeValidator"
+          class="com.expedia.content.media.processing.services.validator.MediaNamesValidator">
+    </bean>
+
+    <bean id="lodgingValidator" class="com.expedia.content.media.processing.services.validator.LodgingValidator" />
+
+    <bean id="lodgingAddValidator" class="com.expedia.content.media.processing.services.validator.LodgingAddValidator" />
+
+    <bean id="lodgingUpdateValidator" class="com.expedia.content.media.processing.services.validator.LodgingValidator" />
+
+    <bean id="roomValidator" class="com.expedia.content.media.processing.services.validator.RoomValidator" />
+</beans>

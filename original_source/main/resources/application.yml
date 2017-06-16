@@ -1,0 +1,70 @@
+swagger:
+    service:
+        version: "1.0"
+        title: ${application.name}
+        description: "Media Service API"
+        termsPath: ""
+        email: "phoenix@expedia.com"
+        licenceType: ""
+        licencePath: "#"
+
+endpoints:
+  enabled: false
+  metrics:
+    enabled: true
+
+server:
+  tomcat:
+    basedir: ${application.home}
+    max-threads: 1
+    access-log-enabled: true
+    remote-ip-header: x-forwarded-for
+    protocol-header: x-forwarded-proto
+  port: 8443
+# TODO remove addtional.port once all clients moved to HTTPS
+  additional:
+    #fix weird deployment issue with error 'Port 8080 was already in use'
+    port: 8080
+  ssl:
+    key-alias: "expedia-${EXPEDIA_DEPLOYED_ENVIRONMENT:test}-${AWS_REGION:us-west-2}"
+    key-store: "classpath:keystore.jks"
+    enabled: true
+
+monitoringAgent:
+  application:
+    name: ${application.name}
+    append:
+      process:
+        id: false
+  configuration:
+    disable:
+      default: false
+    urls: "classpath:platform/monitoring/yammer.xml"
+  statsd:
+    hostname: "statsd"
+    port: 8125
+
+cs:
+  metrics:
+    application-name: ${application.name}.${application.environment}
+    publisher:
+      enabled: true
+      delay: 30
+    statsd:
+      hostname: ${monitoringAgent.statsd.hostname}
+      port: ${monitoringAgent.statsd.port}
+# Poke configuration
+  poke:
+    enabled: false
+    group: ${application.name}
+    instance: ${application.name}.${application.environment}
+    hip-chat:
+      enabled: true
+      room: "EWE CS: Phoenix Notifications"
+    email:
+      enabled: true
+      address: phoenix@expedia.com
+    report-on-server: false
+
+aws:
+  endPoint: "https://dynamodb.us-west-2.amazonaws.com"
